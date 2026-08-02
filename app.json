@@ -1,0 +1,53 @@
+{
+  "expo": {
+    "name": "Bebix",
+    "slug": "bebix",
+    "scheme": "bebix",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "userInterfaceStyle": "automatic",
+    "icon": "./assets/icon.png",
+    "newArchEnabled": true,
+    "assetBundlePatterns": ["**/*"],
+    "ios": {
+      "supportsTablet": true,
+      "bundleIdentifier": "com.bebix.app",
+      "infoPlist": {
+        "NSCameraUsageDescription": "Bebix përdor kamerën për të shtuar foto të bebit tënd.",
+        "NSPhotoLibraryUsageDescription": "Bebix përdor galerinë për të zgjedhur foto të bebit tënd."
+      }
+    },
+    "android": {
+      "package": "com.bebix.app",
+      "adaptiveIcon": {
+        "foregroundImage": "./assets/adaptive-icon.png",
+        "backgroundColor": "#FBF6EE"
+      },
+      "permissions": ["CAMERA", "READ_EXTERNAL_STORAGE"]
+    },
+    "plugins": [
+      "expo-router",
+      "expo-apple-authentication",
+      [
+        "expo-image-picker",
+        {
+          "photosPermission": "Bebix përdor galerinë për të shtuar foto të bebit tënd."
+        }
+      ],
+      [
+        "expo-splash-screen",
+        {
+          "image": "./assets/splash.png",
+          "imageWidth": 200,
+          "resizeMode": "contain",
+          "backgroundColor": "#FBF6EE"
+        }
+      ]
+    ],
+    "extra": {
+      "router": {
+        "origin": false
+      }
+    }
+  }
+}
