@@ -22,7 +22,7 @@ export function SecondaryButton({ label, style, ...props }: SecondaryButtonProps
         transition={{ type: "timing", duration: 150 }}
         className="w-full items-center justify-center rounded-2xl border border-ink/15 bg-cream py-4"
       >
-        <Text className="font-bodySemibold text-[15px] text-ink">{label}</Text>
+        <Text className="font-bodyMedium text-[15px] text-ink">{label}</Text>
       </MotiView>
     </Pressable>
   );

@@ -173,7 +173,7 @@ export default function VaccinationsScreen() {
                       }}
                       className="rounded-full bg-ink px-3 py-1.5"
                     >
-                      <Text className="font-bodySemibold text-[11px] text-cream">{t("vaccine_mark_done")}</Text>
+                      <Text className="font-bodyMedium text-[11px] text-cream">{t("vaccine_mark_done")}</Text>
                     </Pressable>
                   ) : (
                     <Icon name="check" size={16} color="#6E7452" />
@@ -188,7 +188,7 @@ export default function VaccinationsScreen() {
       <View className="px-5 pb-6">
         <Pressable onPress={openNew} className="flex-row items-center justify-center gap-2 rounded-2xl bg-ink py-4">
           <Icon name="plus" size={16} color="#FBF6EE" />
-          <Text className="font-bodySemibold text-[15px] text-cream">{t("vaccine_add")}</Text>
+          <Text className="font-bodyMedium text-[15px] text-cream">{t("vaccine_add")}</Text>
         </Pressable>
       </View>
 
@@ -219,7 +219,7 @@ export default function VaccinationsScreen() {
             />
           </View>
           <Pressable onPress={save} className="mt-1 items-center rounded-2xl bg-ink py-4">
-            <Text className="font-bodySemibold text-[15px] text-cream">{editingId ? t("save_action") : t("add_action")}</Text>
+            <Text className="font-bodyMedium text-[15px] text-cream">{editingId ? t("save_action") : t("add_action")}</Text>
           </Pressable>
         </View>
       </RecordSheet>

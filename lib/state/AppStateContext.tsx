@@ -7,6 +7,7 @@ import {
   BabyProfile,
   FavoriteItem,
   MemoryPhoto,
+  CartItem,
   BabyModuleState,
   GrowthStat,
   MedicalInfoRow,
@@ -130,6 +131,10 @@ type Action =
   | { type: "ADD_MEMORY"; memory: MemoryPhoto }
   | { type: "REMOVE_MEMORY"; id: string }
   | { type: "BUMP_CART"; delta: number }
+  | { type: "ADD_TO_CART"; item: CartItem }
+  | { type: "REMOVE_FROM_CART"; id: string }
+  | { type: "UPDATE_CART_QTY"; id: string; qty: number }
+  | { type: "CLEAR_CART" }
   | { type: "SET_BABY"; value: Partial<BabyModuleState> }
   | { type: "TOGGLE_LIKE_POST"; id: string }
   | { type: "TOGGLE_SAVE_POST"; id: string }
@@ -159,6 +164,25 @@ function reducer(state: AppState, action: Action): AppState {
       return { ...state, memories: state.memories.filter((m) => m.id !== action.id) };
     case "BUMP_CART":
       return { ...state, cartCount: Math.max(0, state.cartCount + action.delta) };
+      case "ADD_TO_CART": {
+      const existing = state.cartItems.find((i) => i.id === action.item.id);
+      const cartItems = existing
+        ? state.cartItems.map((i) => (i.id === action.item.id ? { ...i, qty: i.qty + action.item.qty } : i))
+        : [...state.cartItems, action.item];
+      return { ...state, cartItems, cartCount: cartItems.reduce((s, i) => s + i.qty, 0) };
+    }
+    case "REMOVE_FROM_CART": {
+      const cartItems = state.cartItems.filter((i) => i.id !== action.id);
+      return { ...state, cartItems, cartCount: cartItems.reduce((s, i) => s + i.qty, 0) };
+    }
+    case "UPDATE_CART_QTY": {
+      const cartItems = state.cartItems
+        .map((i) => (i.id === action.id ? { ...i, qty: Math.max(0, action.qty) } : i))
+        .filter((i) => i.qty > 0);
+      return { ...state, cartItems, cartCount: cartItems.reduce((s, i) => s + i.qty, 0) };
+    }
+    case "CLEAR_CART":
+      return { ...state, cartItems: [], cartCount: 0 };
     case "SET_BABY":
       return { ...state, baby: { ...state.baby, ...action.value } };
     case "TOGGLE_LIKE_POST":
@@ -178,6 +202,7 @@ function reducer(state: AppState, action: Action): AppState {
       return {
         ...initialAppState,
         ...action.state,
+        cartItems: (action.state as AppState).cartItems ?? initialAppState.cartItems,
         community: { ...initialAppState.community, ...(action.state as AppState).community },
         notificationPrefs: { ...initialAppState.notificationPrefs, ...(action.state as AppState).notificationPrefs },
       };
@@ -236,6 +261,11 @@ function buildValue(state: AppState, dispatch: React.Dispatch<Action>) {
     addMemory: (memory: MemoryPhoto) => dispatch({ type: "ADD_MEMORY", memory }),
     removeMemory: (id: string) => dispatch({ type: "REMOVE_MEMORY", id }),
     bumpCart: (delta = 1) => dispatch({ type: "BUMP_CART", delta }),
+    addToCart: (item: Omit<CartItem, "qty">, qty = 1) => dispatch({ type: "ADD_TO_CART", item: { ...item, qty } }),
+    removeFromCart: (id: string) => dispatch({ type: "REMOVE_FROM_CART", id }),
+    updateCartQty: (id: string, qty: number) => dispatch({ type: "UPDATE_CART_QTY", id, qty }),
+    clearCart: () => dispatch({ type: "CLEAR_CART" }),
+    cartTotal: () => state.cartItems.reduce((sum, i) => sum + i.price * i.qty, 0),
     resetBabyData: () => {
       dispatch({ type: "UPDATE_PROFILE", value: initialAppState.profile });
       dispatch({ type: "SET_BABY", value: initialAppState.baby });

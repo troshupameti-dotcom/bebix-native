@@ -99,7 +99,7 @@ export default function ArchivedRecordsScreen() {
                 }}
                 className="rounded-full bg-ink px-3 py-1.5"
               >
-                <Text className="font-bodySemibold text-[11px] text-cream">{t("restore_action")}</Text>
+                <Text className="font-bodyMedium text-[11px] text-cream">{t("restore_action")}</Text>
               </Pressable>
             </MotiView>
           ))

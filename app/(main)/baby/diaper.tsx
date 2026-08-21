@@ -137,7 +137,7 @@ export default function DiaperScreen() {
             className="flex-1 items-center gap-1 rounded-2xl bg-ink py-4"
           >
             <Icon name="baby" size={16} color="#FBF6EE" />
-            <Text className="font-bodySemibold text-[12px] text-cream">{t(`diaper_type_${type}` as never)}</Text>
+            <Text className="font-bodyMedium text-[12px] text-cream">{t(`diaper_type_${type}` as never)}</Text>
           </Pressable>
         ))}
       </View>
@@ -178,7 +178,7 @@ export default function DiaperScreen() {
               multiline
             />
             <Pressable onPress={save} className="mt-1 items-center rounded-2xl bg-ink py-4">
-              <Text className="font-bodySemibold text-[15px] text-cream">{t("save_action")}</Text>
+              <Text className="font-bodyMedium text-[15px] text-cream">{t("save_action")}</Text>
             </Pressable>
           </View>
         </RecordSheet>

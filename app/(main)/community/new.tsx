@@ -30,9 +30,9 @@ export default function NewPostScreen() {
         <Pressable onPress={() => router.back()}>
           <Icon name="close" size={22} color="#2C271F" />
         </Pressable>
-        <Text className="font-display text-lg text-ink">Postim i Ri</Text>
+        <Text className="font-bodySemibold text-lg text-ink">Postim i Ri</Text>
         <Pressable onPress={submit} disabled={!text.trim()} className={`px-4 py-2 rounded-full ${text.trim() ? "bg-olive" : "bg-cream-line"}`}>
-          <Text className={`font-bodySemibold text-xs ${text.trim() ? "text-white" : "text-ink-faint"}`}>Posto</Text>
+          <Text className={`font-bodyMedium text-xs ${text.trim() ? "text-white" : "text-ink-faint"}`}>Posto</Text>
         </Pressable>
       </View>
 

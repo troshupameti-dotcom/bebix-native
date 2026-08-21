@@ -66,7 +66,7 @@ export default function PostDetailScreen() {
         <Pressable onPress={() => router.back()} style={shadows.soft} className="w-10 h-10 rounded-full bg-surface items-center justify-center mr-3">
           <Icon name="chevronLeft" size={18} color="#2C271F" />
         </Pressable>
-        <Text className="font-display text-lg text-ink">Postimi</Text>
+        <Text className="font-bodySemibold  text-lg text-ink">Postimi</Text>
       </View>
 
       <KeyboardAvoidingView behavior={Platform.OS === "ios" ? "padding" : undefined} className="flex-1">

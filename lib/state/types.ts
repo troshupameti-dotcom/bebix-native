@@ -8,7 +8,7 @@ export type BabyProfile = {
   nickname: string | null;
   babyDob: string | null;
   babyGender: BabyGender;
-  babyPhoto: string | null; // local URI for now, swap for Supabase Storage URL later
+  babyPhoto: string | null;
   bloodType: BloodType;
   allergies: string;
   pediatrician: string;
@@ -31,12 +31,14 @@ export type MemoryPhoto = {
   uri: string;
 };
 
-// ---------------------------------------------------------------------
-// Community — local-only interaction state (likes/saves/joins/follows).
-// Real cross-user data (other people's posts, comments, messages) needs
-// Supabase tables later; this is what makes the local UI interactive
-// today, mirroring the favorites/cartCount pattern above.
-// ---------------------------------------------------------------------
+export type CartItem = {
+  id: string;
+  name: string;
+  price: number;
+  imageUrl: string | null;
+  icon: string;
+  qty: number;
+};
 
 export type CommunityState = {
   likedPostIds: string[];
@@ -51,12 +53,6 @@ export const initialCommunityState: CommunityState = {
   joinedGroupIds: [],
   followedExpertIds: [],
 };
-
-// ---------------------------------------------------------------------
-// Notification preferences — çelësa lokalë, të ruajtur. Kontrollojnë
-// çfarë do të dërgohet KUR të lidhet push/email/SMS reale; deri atëherë
-// thjesht ruajnë zgjedhjen e përdoruesit.
-// ---------------------------------------------------------------------
 
 export type NotificationPrefs = {
   pushEnabled: boolean;
@@ -91,7 +87,7 @@ export const initialNotificationPrefs: NotificationPrefs = {
   marketing: false,
   weeklyReports: true,
   monthlyReports: false,
-  emergencyAlerts: true, // rekomandohet të mos çaktivizohet kurrë
+  emergencyAlerts: true,
 };
 
 export type AppState = {
@@ -99,6 +95,7 @@ export type AppState = {
   profile: BabyProfile;
   favorites: FavoriteItem[];
   cartCount: number;
+  cartItems: CartItem[];
   memories: MemoryPhoto[];
   baby: BabyModuleState;
   community: CommunityState;
@@ -126,6 +123,7 @@ export const initialAppState: AppState = {
   profile: emptyProfile,
   favorites: [],
   cartCount: 0,
+  cartItems: [],
   memories: [],
   baby: initialBabyState,
   community: initialCommunityState,

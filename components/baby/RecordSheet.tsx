@@ -78,7 +78,7 @@ export function RecordSheet({
   return (
     <BottomSheet visible={visible} onClose={onClose} maxHeightPct={90}>
       <View className="mb-1 flex-row items-center justify-between">
-        <Text className="font-display text-lg text-ink">{title}</Text>
+        <Text className="font-bodySemibold text-lg text-ink">{title}</Text>
         <View className="flex-row items-center gap-2">
           {onTogglePin && !isNew && (
             <Pressable onPress={() => { haptics.select(); onTogglePin(); }} hitSlop={8} className="h-8 w-8 items-center justify-center rounded-full bg-cream-soft">

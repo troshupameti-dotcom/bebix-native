@@ -140,7 +140,7 @@ export default function SignupScreen() {
             <View className="mt-6 mb-8 flex-row justify-center gap-1">
               <Text className="font-body text-sm text-ink-soft">Already have an account?</Text>
               <Pressable onPress={() => router.push("/(auth)/login")}>
-                <Text className="font-bodySemibold text-sm text-orange">Log In</Text>
+                <Text className="font-bodyMedium text-sm text-orange">Log In</Text>
               </Pressable>
             </View>
           </MotiView>

@@ -8,13 +8,16 @@
     "userInterfaceStyle": "automatic",
     "icon": "./assets/icon.png",
     "newArchEnabled": true,
-    "assetBundlePatterns": ["**/*"],
+    "assetBundlePatterns": [
+      "**/*"
+    ],
     "ios": {
       "supportsTablet": true,
       "bundleIdentifier": "com.bebix.app",
       "infoPlist": {
         "NSCameraUsageDescription": "Bebix përdor kamerën për të shtuar foto të bebit tënd.",
-        "NSPhotoLibraryUsageDescription": "Bebix përdor galerinë për të zgjedhur foto të bebit tënd."
+        "NSPhotoLibraryUsageDescription": "Bebix përdor galerinë për të zgjedhur foto të bebit tënd.",
+        "ITSAppUsesNonExemptEncryption": false
       }
     },
     "android": {
@@ -23,15 +26,18 @@
         "foregroundImage": "./assets/adaptive-icon.png",
         "backgroundColor": "#FBF6EE"
       },
-      "permissions": ["CAMERA", "READ_EXTERNAL_STORAGE"]
+      "permissions": [
+        "android.permission.CAMERA",
+        "android.permission.READ_EXTERNAL_STORAGE",
+        "android.permission.RECORD_AUDIO"
+      ]
     },
     "plugins": [
-      "expo-router",
-      "expo-apple-authentication",
       [
-        "expo-image-picker",
+        "expo-notifications",
         {
-          "photosPermission": "Bebix përdor galerinë për të shtuar foto të bebit tënd."
+          "icon": "./assets/images/adaptive-icon.png",
+          "color": "#6E7452"
         }
       ],
       [
@@ -42,11 +48,15 @@
           "resizeMode": "contain",
           "backgroundColor": "#FBF6EE"
         }
-      ]
+      ],
+      "@react-native-community/datetimepicker"
     ],
     "extra": {
       "router": {
         "origin": false
+      },
+      "eas": {
+        "projectId": "0797c8a5-c2a5-4d7d-9d7a-d5c60743b62a"
       }
     }
   }

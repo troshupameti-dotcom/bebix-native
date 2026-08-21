@@ -16,8 +16,8 @@ import { shadows } from "@/lib/shadows";
 import { GrowthHistoryEntry } from "@/lib/state/types";
 
 type Metric = "weight" | "height";
-const CHART_WIDTH = Dimensions.get("window").width - 40;
-const CHART_HEIGHT = 160;
+const CHART_WIDTH = Dimensions.get("window").width - 72;
+const CHART_HEIGHT = 140;
 
 type FormShape = { date: string; weightKg: string; heightCm: string; headCm: string; note: string };
 function formFromEntry(e: GrowthHistoryEntry): FormShape {
@@ -41,6 +41,11 @@ export default function GrowthScreen() {
   const [sheetOpen, setSheetOpen] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [form, setForm] = useState<FormShape>(emptyForm());
+
+  // Matja për të cilën âsht i hapun grafiku — vetëm një herësh, mbyllet kur
+  // klikon prapë ose zgjedh një matje tjetër (ndryshim #7: grafiku vetëm
+  // sipas kërkesës, jo i përhershëm).
+  const [expandedId, setExpandedId] = useState<string | null>(null);
 
   const history = active(state.baby.growthHistory).sort(
     (a, b) => new Date(a.date).getTime() - new Date(b.date).getTime()
@@ -117,6 +122,10 @@ export default function GrowthScreen() {
     if (!editingId) return;
     baby.duplicateGrowthHistoryEntry(editingId);
   }
+  function toggleChart(id: string) {
+    haptics.select();
+    setExpandedId((prev) => (prev === id ? null : id));
+  }
   const editingEntry = editingId ? history.find((e) => e.id === editingId) : null;
 
   return (
@@ -132,11 +141,14 @@ export default function GrowthScreen() {
         {(["weight", "height"] as Metric[]).map((m) => (
           <Pressable
             key={m}
-            onPress={() => setMetric(m)}
+            onPress={() => {
+              setMetric(m);
+              setExpandedId(null); // ndrron njësinë, mbyll çdo grafik të hapun
+            }}
             className="flex-1 items-center rounded-xl py-2.5"
             style={metric === m ? [shadows.press, { backgroundColor: "#fff" }] : undefined}
           >
-            <Text className={`font-bodySemibold text-[12.5px] ${metric === m ? "text-ink" : "text-ink-faint"}`}>
+            <Text className={`font-bodyMedium text-[12.5px] ${metric === m ? "text-ink" : "text-ink-faint"}`}>
               {t(m === "weight" ? "growth_weight" : "growth_height")}
             </Text>
           </Pressable>
@@ -144,61 +156,79 @@ export default function GrowthScreen() {
       </View>
 
       <ScrollView className="flex-1 px-5" contentContainerStyle={{ paddingBottom: 24 }}>
-        <View style={shadows.soft} className="items-center rounded-xl3 border border-ink/10 bg-white p-4">
-          {values.length >= 2 ? (
-            <>
-              <Svg width={CHART_WIDTH} height={CHART_HEIGHT + 20}>
-                <SvgLine x1={0} y1={CHART_HEIGHT} x2={CHART_WIDTH} y2={CHART_HEIGHT} stroke="#E9DFCC" strokeWidth={1} />
-                <Path d={bandTop} stroke="#E9DFCC" strokeWidth={1.5} fill="none" strokeDasharray="4,4" />
-                <Path d={bandBottom} stroke="#E9DFCC" strokeWidth={1.5} fill="none" strokeDasharray="4,4" />
-                <Path d={path} stroke="#6E7452" strokeWidth={2.5} fill="none" strokeLinecap="round" strokeLinejoin="round" />
-                {values.map((v, i) => {
-                  const min = Math.min(...values) * 0.85;
-                  const max = Math.max(...values) * 1.15;
-                  const range = max - min || 1;
-                  const stepX = CHART_WIDTH / (values.length - 1);
-                  const x = i * stepX;
-                  const y = CHART_HEIGHT - ((v - min) / range) * CHART_HEIGHT;
-                  return <Circle key={i} cx={x} cy={y} r={4} fill="#6E7452" />;
-                })}
-              </Svg>
-              <Text className="mt-2 font-body text-[10.5px] text-ink-faint">{t("growth_percentile_note")}</Text>
-            </>
-          ) : (
-            <View className="h-[160px] items-center justify-center">
-              <Text className="font-body text-sm text-ink-soft">{t("growth_add_measurement")}</Text>
-            </View>
-          )}
-        </View>
+        <Text className="mb-2 font-bodySemibold text-base text-ink">{t("baby_growth_summary")}</Text>
 
-        <Text className="mb-2 mt-6 font-display text-base text-ink">{t("baby_growth_summary")}</Text>
-        {[...history].reverse().map((h) => {
-          const bmi = h.weightKg && h.heightCm ? (h.weightKg / (h.heightCm / 100) ** 2).toFixed(1) : null;
-          return (
-            <Pressable
-              key={h.id}
-              onPress={() => openEdit(h)}
-              className="flex-row items-center justify-between border-b border-ink/8 py-3"
-            >
-              <Text className="font-body text-[13.5px] text-ink-soft">{formatDate(h.date, lang)}</Text>
-              <View className="flex-row items-center gap-2">
-                <Text className="font-bodySemibold text-[13.5px] text-ink">
-                  {h.weightKg ? `${h.weightKg} kg` : ""}
-                  {h.weightKg && h.heightCm ? " · " : ""}
-                  {h.heightCm ? `${h.heightCm} cm` : ""}
-                  {bmi ? ` · ${t("growth_bmi")} ${bmi}` : ""}
-                </Text>
-                <Icon name="chevronRight" size={14} color="#A79D8A" />
+        {history.length === 0 ? (
+          <View className="items-center gap-2 rounded-xl3 border border-ink/10 bg-white py-14">
+            <Icon name="chart" size={24} color="#E9DFCC" />
+            <Text className="font-body text-sm text-ink-soft">{t("growth_add_measurement")}</Text>
+          </View>
+        ) : (
+          [...history].reverse().map((h) => {
+            const bmi = h.weightKg && h.heightCm ? (h.weightKg / (h.heightCm / 100) ** 2).toFixed(1) : null;
+            const isExpanded = expandedId === h.id;
+            return (
+              <View key={h.id} className="border-b border-ink/8">
+                <Pressable onPress={() => openEdit(h)} className="flex-row items-center justify-between py-3">
+                  <Text className="font-body text-[13.5px] text-ink-soft">{formatDate(h.date, lang)}</Text>
+                  <View className="flex-row items-center gap-3">
+                    <Text className="font-bodySemibold text-[13.5px] text-ink">
+                      {h.weightKg ? `${h.weightKg} kg` : ""}
+                      {h.weightKg && h.heightCm ? " · " : ""}
+                      {h.heightCm ? `${h.heightCm} cm` : ""}
+                      {bmi ? ` · ${t("growth_bmi")} ${bmi}` : ""}
+                    </Text>
+                    <Pressable
+                      onPress={(e) => {
+                        e.stopPropagation();
+                        toggleChart(h.id);
+                      }}
+                      hitSlop={8}
+                      className="flex-row items-center gap-1"
+                    >
+                      <Icon name="chart" size={15} color={isExpanded ? "#6E7452" : "#A79D8A"} />
+                    </Pressable>
+                    <Icon name="chevronRight" size={14} color="#A79D8A" />
+                  </View>
+                </Pressable>
+
+                {isExpanded && (
+                  <View className="mb-4 items-center rounded-xl2 border border-ink/10 bg-white p-4">
+                    <Text className="mb-2 font-bodyMedium text-[12px] text-ink-soft">Shiko grafikun</Text>
+                    {values.length >= 2 ? (
+                      <>
+                        <Svg width={CHART_WIDTH} height={CHART_HEIGHT + 20}>
+                          <SvgLine x1={0} y1={CHART_HEIGHT} x2={CHART_WIDTH} y2={CHART_HEIGHT} stroke="#E9DFCC" strokeWidth={1} />
+                          <Path d={bandTop} stroke="#E9DFCC" strokeWidth={1.5} fill="none" strokeDasharray="4,4" />
+                          <Path d={bandBottom} stroke="#E9DFCC" strokeWidth={1.5} fill="none" strokeDasharray="4,4" />
+                          <Path d={path} stroke="#6E7452" strokeWidth={2.5} fill="none" strokeLinecap="round" strokeLinejoin="round" />
+                          {values.map((v, i) => {
+                            const min = Math.min(...values) * 0.85;
+                            const max = Math.max(...values) * 1.15;
+                            const range = max - min || 1;
+                            const stepX = CHART_WIDTH / (values.length - 1);
+                            const x = i * stepX;
+                            const y = CHART_HEIGHT - ((v - min) / range) * CHART_HEIGHT;
+                            return <Circle key={i} cx={x} cy={y} r={4} fill="#6E7452" />;
+                          })}
+                        </Svg>
+                        <Text className="mt-2 font-body text-[10.5px] text-ink-faint">{t("growth_percentile_note")}</Text>
+                      </>
+                    ) : (
+                      <Text className="py-6 font-body text-[13px] text-ink-soft">{t("growth_add_measurement")}</Text>
+                    )}
+                  </View>
+                )}
               </View>
-            </Pressable>
-          );
-        })}
+            );
+          })
+        )}
       </ScrollView>
 
       <View className="px-5 pb-6">
         <Pressable onPress={openNew} className="flex-row items-center justify-center gap-2 rounded-2xl bg-ink py-4">
           <Icon name="plus" size={16} color="#FBF6EE" />
-          <Text className="font-bodySemibold text-[15px] text-cream">{t("growth_add_measurement")}</Text>
+          <Text className="font-bodyMedium text-[15px] text-cream">{t("growth_add_measurement")}</Text>
         </Pressable>
       </View>
 
@@ -220,7 +250,7 @@ export default function GrowthScreen() {
           <FormField label={t("growth_head")} keyboardType="decimal-pad" value={form.headCm} onChangeText={(v) => setForm((f) => ({ ...f, headCm: v }))} />
           <FormField label={t("note_field")} placeholder={t("growth_note_ph")} value={form.note} onChangeText={(v) => setForm((f) => ({ ...f, note: v }))} multiline />
           <Pressable onPress={save} className="mt-1 items-center rounded-2xl bg-ink py-4">
-            <Text className="font-bodySemibold text-[15px] text-cream">{editingId ? t("save_action") : t("add_action")}</Text>
+            <Text className="font-bodyMedium text-[15px] text-cream">{editingId ? t("save_action") : t("add_action")}</Text>
           </Pressable>
         </View>
       </RecordSheet>

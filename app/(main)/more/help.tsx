@@ -27,7 +27,7 @@ export default function HelpCenterScreen() {
       </View>
 
       <ScrollView contentContainerStyle={{ paddingBottom: 40 }}>
-        <Text className="font-bodySemibold text-xs text-ink-faint uppercase px-5 mb-2">Pyetje të Shpeshta</Text>
+        <Text className="font-bodyMedium text-xs text-ink-faint uppercase px-5 mb-2">Pyetje të Shpeshta</Text>
         <View className="px-5 mb-6">
           {FAQS.map((f, i) => (
             <View key={f.q} style={shadows.soft} className="bg-surface rounded-xl2 mb-3 overflow-hidden">
@@ -44,7 +44,7 @@ export default function HelpCenterScreen() {
           ))}
         </View>
 
-        <Text className="font-bodySemibold text-xs text-ink-faint uppercase px-5 mb-2">Na kontakto</Text>
+        <Text className="font-bodyMedium text-xs text-ink-faint uppercase px-5 mb-2">Na kontakto</Text>
         <View className="px-5">
           <Pressable
             onPress={() => Linking.openURL("mailto:support@bebix.app?subject=Ndihmë%20Bebix")}

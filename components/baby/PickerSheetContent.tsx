@@ -104,7 +104,7 @@ export function PickerSheetContent({
             </View>
           )}
           <Pressable onPress={confirm} className="mt-2 items-center rounded-2xl bg-ink py-4">
-            <Text className="font-bodySemibold text-[15px] text-cream">{t("add_action")}</Text>
+            <Text className="font-bodyMedium text-[15px] text-cream">{t("add_action")}</Text>
           </Pressable>
         </View>
       )}

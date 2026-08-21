@@ -175,7 +175,7 @@ export default function SleepScreen() {
           className={`flex-1 flex-row items-center justify-center gap-2 rounded-2xl py-4 ${ongoing ? "bg-ink/30" : "bg-ink"}`}
         >
           <Icon name="moon" size={16} color="#FBF6EE" />
-          <Text className="font-bodySemibold text-[14px] text-cream">{t("sleep_is_nap")}</Text>
+          <Text className="font-bodyMedium text-[14px] text-cream">{t("sleep_is_nap")}</Text>
         </Pressable>
         <Pressable
           disabled={!!ongoing}
@@ -186,7 +186,7 @@ export default function SleepScreen() {
           className={`flex-1 flex-row items-center justify-center gap-2 rounded-2xl py-4 ${ongoing ? "bg-ink/30" : "bg-olive"}`}
         >
           <Icon name="moon" size={16} color="#FBF6EE" />
-          <Text className="font-bodySemibold text-[14px] text-cream">{t("sleep_is_night")}</Text>
+          <Text className="font-bodyMedium text-[14px] text-cream">{t("sleep_is_night")}</Text>
         </Pressable>
       </View>
 
@@ -232,7 +232,7 @@ export default function SleepScreen() {
               multiline
             />
             <Pressable onPress={save} className="mt-1 items-center rounded-2xl bg-ink py-4">
-              <Text className="font-bodySemibold text-[15px] text-cream">{t("save_action")}</Text>
+              <Text className="font-bodyMedium text-[15px] text-cream">{t("save_action")}</Text>
             </Pressable>
           </View>
         </RecordSheet>

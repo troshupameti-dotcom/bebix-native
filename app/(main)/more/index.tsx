@@ -4,6 +4,7 @@ import { useRouter } from "expo-router";
 import { useAppState } from "@/lib/state/AppStateContext";
 import { Icon, IconName } from "@/components/ui/Icon";
 import { shadows } from "@/lib/shadows";
+import { supabase } from "@/lib/supabase/client";
 
 type Row = {
   icon: IconName;
@@ -15,7 +16,7 @@ type Row = {
 function Section({ title, rows }: { title: string; rows: Row[] }) {
   return (
     <View className="mb-6">
-      <Text className="font-bodySemibold text-xs text-ink-faint uppercase px-5 mb-2">{title}</Text>
+      <Text className="font-bodyMedium text-xs text-ink-faint uppercase px-5 mb-2">{title}</Text>
       <View className="mx-5 bg-surface rounded-xl2 overflow-hidden" style={shadows.soft}>
         {rows.map((r, i) => (
           <Pressable
@@ -131,11 +132,9 @@ export default function MoreScreen() {
                 {
                   text: "Dil",
                   style: "destructive",
-                  onPress: () => {
-                    // ⚠️ Rregullo importin sipas rrugës reale të klientit Supabase
-                    // te projekti yt, p.sh.: import { supabase } from "@/lib/supabase";
-                    // supabase.auth.signOut().then(() => router.replace("/(auth)/login"));
-                    Alert.alert("Lidhe Supabase-in", "Shto thirrjen reale supabase.auth.signOut() këtu — shiko komentin te kodi.");
+                  onPress: async () => {
+                    await supabase.auth.signOut();
+                    router.replace("/(auth)/login");
                   },
                 },
               ])

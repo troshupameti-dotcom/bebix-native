@@ -26,7 +26,7 @@ export default function LanguageScreen() {
       </View>
 
       <View className="px-5">
-        <Text className="font-bodySemibold text-xs text-ink-faint uppercase mb-2">Aktive</Text>
+        <Text className="font-bodyMedium text-xs text-ink-faint uppercase mb-2">Aktive</Text>
         <View style={shadows.soft} className="bg-surface rounded-xl2 overflow-hidden mb-6">
           {ACTIVE.map((l, i) => (
             <Pressable
@@ -40,7 +40,7 @@ export default function LanguageScreen() {
           ))}
         </View>
 
-        <Text className="font-bodySemibold text-xs text-ink-faint uppercase mb-2">Së shpejti</Text>
+        <Text className="font-bodyMedium text-xs text-ink-faint uppercase mb-2">Së shpejti</Text>
         <View style={shadows.soft} className="bg-surface rounded-xl2 overflow-hidden opacity-50">
           {PLANNED.map((l, i) => (
             <View key={l} className={`flex-row items-center justify-between px-4 py-3.5 ${i < PLANNED.length - 1 ? "border-b border-cream-line" : ""}`}>

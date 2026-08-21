@@ -1,11 +1,13 @@
-import { useMemo, useState } from "react";
-import { View, Text, ScrollView, Pressable, Dimensions } from "react-native";
+import { useToast } from "@/lib/toast/ToastContext";
+import { useEffect, useMemo, useState } from "react";
+import { View, Text, ScrollView, Pressable, Dimensions, Image, ActivityIndicator } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import { useAppState } from "@/lib/state/AppStateContext";
 import { Icon, IconName } from "@/components/ui/Icon";
 import { shadows } from "@/lib/shadows";
-import { productCatalog, reviewCatalog, questionCatalog, Product, CATEGORY_META } from "@/lib/homeContent";
+import { Product, CATEGORY_META } from "@/lib/homeContent";
+import { fetchProductById, fetchProducts } from "@/lib/shopData";
 
 const { width } = Dimensions.get("window");
 
@@ -36,8 +38,12 @@ function RelatedCard({ product, onPress }: { product: Product; onPress: () => vo
   const fg = product.accent === "olive" ? "#6E7452" : "#C9702E";
   return (
     <Pressable onPress={onPress} style={shadows.soft} className="w-32 bg-surface rounded-xl2 p-3 mr-3">
-      <View className={`w-full h-16 rounded-xl items-center justify-center mb-2 ${bg}`}>
-        <Icon name={product.icon} size={22} color={fg} />
+      <View className={`w-full h-16 rounded-xl items-center justify-center mb-2 overflow-hidden ${bg}`}>
+        {product.imageUrl ? (
+          <Image source={{ uri: product.imageUrl }} className="w-full h-full" resizeMode="cover" />
+        ) : (
+          <Icon name={product.icon} size={22} color={fg} />
+        )}
       </View>
       <Text className="font-bodyMedium text-xs text-ink" numberOfLines={2}>{product.name}</Text>
       <Text className="font-bodySemibold text-xs text-ink mt-1">€{product.price.toFixed(2)}</Text>
@@ -48,46 +54,57 @@ function RelatedCard({ product, onPress }: { product: Product; onPress: () => vo
 export default function ProductDetailsScreen() {
   const router = useRouter();
   const { id } = useLocalSearchParams<{ id: string }>();
-  const { toggleFavorite, isFavorite, bumpCart } = useAppState();
+  const { toggleFavorite, isFavorite, addToCart } = useAppState();
+  const { showToast } = useToast();
   const [slide, setSlide] = useState(0);
 
-  const product = productCatalog.find((p) => p.id === id);
+  const [product, setProduct] = useState<Product | null | undefined>(undefined); // undefined = duke ngarkuar
+  const [related, setRelated] = useState<Product[]>([]);
+  const [loadError, setLoadError] = useState<string | null>(null);
 
-  const reviews = useMemo(() => reviewCatalog.filter((r) => r.productId === id), [id]);
-  const questions = useMemo(() => questionCatalog.filter((q) => q.productId === id), [id]);
+  useEffect(() => {
+    let active = true;
+    (async () => {
+      try {
+        const [p, all] = await Promise.all([fetchProductById(id), fetchProducts()]);
+        if (!active) return;
+        setProduct(p);
+        if (p) setRelated(all.filter((x) => x.category === p.category && x.id !== p.id).slice(0, 4));
+      } catch (e: any) {
+        if (active) setLoadError(e.message ?? "Diçka shkoi keq.");
+      }
+    })();
+    return () => {
+      active = false;
+    };
+  }, [id]);
 
-  const related = useMemo(() => {
-    if (!product) return [];
-    const byId = product.relatedIds?.map((rid) => productCatalog.find((p) => p.id === rid)).filter(Boolean) as Product[] | undefined;
-    if (byId && byId.length) return byId;
-    return productCatalog.filter((p) => p.category === product.category && p.id !== product.id).slice(0, 4);
-  }, [product]);
+  const avgRating = product?.rating ?? 0;
 
-  const boughtTogether = useMemo(() => {
-    if (!product) return [];
-    const byId = product.boughtWithIds?.map((bid) => productCatalog.find((p) => p.id === bid)).filter(Boolean) as Product[] | undefined;
-    if (byId && byId.length) return byId;
-    return productCatalog.filter((p) => p.category === product.category && p.id !== product.id).slice(0, 2);
-  }, [product]);
-
-  const avgRating = reviews.length ? reviews.reduce((s, r) => s + r.rating, 0) / reviews.length : product?.rating ?? 0;
-
-  // "AI Product Explanation" — përshkrim i gjeneruar nga të dhënat e produktit
-  // (jo thirrje reale AI ende — kërkon backend për çelës të fshehur).
+  // "AI Product Explanation" — përshkrim i gjeneruar nga të dhënat e
+  // produktit (jo thirrje reale AI ende).
   const aiExplanation = useMemo(() => {
     if (!product) return "";
     const catLabel = CATEGORY_META[product.category]?.labelKey ?? product.category;
     const dealNote = product.compareAtPrice ? ` Aktualisht në ofertë, kursim prej €${(product.compareAtPrice - product.price).toFixed(2)}.` : "";
-    return `${product.name} nga ${product.brand} bën pjesë te kategoria ${catLabel}, me vlerësim mesatar ${avgRating.toFixed(1)}/5 nga ${reviews.length || product.reviewCount || 0} blerës.${dealNote} Zgjidhje e mirë nëse kërkon cilësi të qëndrueshme për përdorim të përditshëm.`;
-  }, [product, avgRating, reviews.length]);
+    return `${product.name} nga ${product.brand} bën pjesë te kategoria ${catLabel}, me vlerësim mesatar ${avgRating.toFixed(1)}/5 nga ${product.reviewCount ?? 0} blerës.${dealNote} Zgjidhje e mirë nëse kërkon cilësi të qëndrueshme për përdorim të përditshëm.`;
+  }, [product, avgRating]);
 
-  if (!product) {
+  if (product === undefined && !loadError) {
+    return (
+      <SafeAreaView className="flex-1 bg-cream items-center justify-center">
+        <ActivityIndicator color="#6E7452" />
+      </SafeAreaView>
+    );
+  }
+
+  if (loadError || !product) {
     return (
       <SafeAreaView className="flex-1 bg-cream items-center justify-center px-8">
         <Icon name="close" size={28} color="#A79D8A" />
-        <Text className="font-bodyMedium text-sm text-ink-soft mt-3 text-center">Produkti s'u gjet.</Text>
+        <Text className="font-bodyMedium text-sm text-ink-soft mt-3 text-center">{loadError ?? "Produkti s'u gjet."}</Text>
         <Pressable onPress={() => router.back()} className="mt-4">
-          <Text className="font-bodySemibold text-sm text-olive">Kthehu mbrapa</Text>
+          <Text className="font-bodyMedium text-sm text-olive">Kthehu mbrapa</Text>
         </Pressable>
       </SafeAreaView>
     );
@@ -96,7 +113,7 @@ export default function ProductDetailsScreen() {
   const bg = product.accent === "olive" ? "bg-olive-bg" : "bg-orange-bg";
   const fg = product.accent === "olive" ? "#6E7452" : "#C9702E";
   const fav = isFavorite(product.id);
-  const gallerySlides = [product.icon, product.icon, product.icon]; // placeholder — zëvendëso me foto reale kur t'i kesh
+  const gallerySlides = [product.imageUrl, product.imageUrl, product.imageUrl]; // vetëm 1 foto ende — galeri e vërtetë vjen kur admin panel mbështet disa foto
 
   return (
     <SafeAreaView className="flex-1 bg-cream" edges={["top"]}>
@@ -114,25 +131,15 @@ export default function ProductDetailsScreen() {
       </View>
 
       <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={{ paddingBottom: 130 }}>
-        {/* Large gallery */}
+        {/* Gallery */}
         <View>
-          <ScrollView
-            horizontal
-            pagingEnabled
-            showsHorizontalScrollIndicator={false}
-            onMomentumScrollEnd={(e) => setSlide(Math.round(e.nativeEvent.contentOffset.x / width))}
-          >
-            {gallerySlides.map((icon, i) => (
-              <View key={i} style={{ width }} className={`h-72 items-center justify-center ${bg}`}>
-                <Icon name={icon} size={72} color={fg} />
-              </View>
-            ))}
-          </ScrollView>
-          <View className="flex-row justify-center mt-3">
-            {gallerySlides.map((_, i) => (
-              <View key={i} className={`w-1.5 h-1.5 rounded-full mx-1 ${i === slide ? "bg-olive" : "bg-cream-line"}`} />
-            ))}
-          </View>
+          {product.imageUrl ? (
+            <Image source={{ uri: product.imageUrl }} style={{ width, height: 288 }} resizeMode="cover" />
+          ) : (
+            <View style={{ width, height: 288 }} className={`items-center justify-center ${bg}`}>
+              <Icon name={product.icon} size={72} color={fg} />
+            </View>
+          )}
         </View>
 
         {/* Video / 360 / AR — placeholder deri sa të ketë media reale + development build */}
@@ -149,7 +156,7 @@ export default function ProductDetailsScreen() {
           <View className="flex-row items-center mb-3">
             <StarRow rating={avgRating} />
             <Text className="font-body text-xs text-ink-soft ml-2">
-              {avgRating.toFixed(1)} ({reviews.length || product.reviewCount || 0} vlerësime)
+              {avgRating.toFixed(1)} ({product.reviewCount ?? 0} vlerësime)
             </Text>
           </View>
           <View className="flex-row items-center">
@@ -168,46 +175,10 @@ export default function ProductDetailsScreen() {
           <Text className="font-body text-sm text-ink flex-1 leading-5">{aiExplanation}</Text>
         </View>
 
-        {/* Frequently bought together */}
-        {boughtTogether.length > 0 && (
-          <>
-            <Text className="font-display text-lg text-ink px-5 mt-7 mb-3">Blihen shpesh së bashku</Text>
-            <View className="px-5 flex-row items-center flex-wrap">
-              <View className={`w-16 h-16 rounded-xl2 items-center justify-center mr-2 ${bg}`}>
-                <Icon name={product.icon} size={26} color={fg} />
-              </View>
-              <Icon name="plus" size={16} color="#A79D8A" />
-              {boughtTogether.map((p, i) => {
-                const pbg = p.accent === "olive" ? "bg-olive-bg" : "bg-orange-bg";
-                const pfg = p.accent === "olive" ? "#6E7452" : "#C9702E";
-                return (
-                  <View key={p.id} className="flex-row items-center ml-2">
-                    <View className={`w-16 h-16 rounded-xl2 items-center justify-center ${pbg}`}>
-                      <Icon name={p.icon} size={26} color={pfg} />
-                    </View>
-                    {i < boughtTogether.length - 1 && <Icon name="plus" size={16} color="#A79D8A" style={{ marginLeft: 8 }} />}
-                  </View>
-                );
-              })}
-            </View>
-            <Pressable
-              onPress={() => bumpCart(1 + boughtTogether.length)}
-              style={shadows.soft}
-              className="mx-5 mt-3 bg-surface rounded-xl2 p-3 flex-row items-center justify-between"
-            >
-              <Text className="font-bodyMedium text-sm text-ink">
-                Shto të {boughtTogether.length + 1} — €
-                {(product.price + boughtTogether.reduce((s, p) => s + p.price, 0)).toFixed(2)}
-              </Text>
-              <Icon name="cart" size={18} color="#6E7452" />
-            </Pressable>
-          </>
-        )}
-
         {/* Related products */}
         {related.length > 0 && (
           <>
-            <Text className="font-display text-lg text-ink px-5 mt-7 mb-3">Produkte të Ngjashme</Text>
+            <Text className="font-bodySemibold text-lg text-ink px-5 mt-7 mb-3">Vlerësime</Text>
             <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ paddingHorizontal: 20 }}>
               {related.map((p) => (
                 <RelatedCard key={p.id} product={p} onPress={() => router.push(`/shop/${p.id}`)} />
@@ -216,62 +187,46 @@ export default function ProductDetailsScreen() {
           </>
         )}
 
-        {/* Reviews */}
-        <Text className="font-display text-lg text-ink px-5 mt-7 mb-3">Vlerësime ({reviews.length})</Text>
+        {/* Reviews — vijnë kur shtojmë tabelën `reviews` te Supabase */}
+        <Text className="font-bodySemibold text-lg text-ink px-5 mt-7 mb-3">Vlerësime</Text>
         <View className="px-5">
-          {reviews.length === 0 ? (
-            <Text className="font-body text-sm text-ink-soft">Ende s'ka vlerësime për këtë produkt.</Text>
-          ) : (
-            reviews.map((r) => (
-              <View key={r.id} style={shadows.soft} className="bg-surface rounded-xl2 p-4 mb-3">
-                <View className="flex-row items-center justify-between mb-1">
-                  <Text className="font-bodySemibold text-sm text-ink">{r.author}</Text>
-                  <Text className="font-body text-xs text-ink-faint">{r.date}</Text>
-                </View>
-                <StarRow rating={r.rating} size={12} />
-                <Text className="font-body text-sm text-ink-soft mt-2 leading-5">{r.comment}</Text>
-              </View>
-            ))
-          )}
-        </View>
-
-        {/* Questions */}
-        <Text className="font-display text-lg text-ink px-5 mt-4 mb-3">Pyetje & Përgjigje ({questions.length})</Text>
-        <View className="px-5">
-          {questions.length === 0 ? (
-            <Text className="font-body text-sm text-ink-soft">Ende s'ka pyetje. Bëhu i pari!</Text>
-          ) : (
-            questions.map((q) => (
-              <View key={q.id} style={shadows.soft} className="bg-surface rounded-xl2 p-4 mb-3">
-                <Text className="font-bodySemibold text-sm text-ink mb-1">P: {q.question}</Text>
-                <Text className="font-body text-xs text-ink-faint mb-2">— {q.author}, {q.date}</Text>
-                {q.answer ? (
-                  <Text className="font-body text-sm text-ink-soft leading-5">P: {q.answer}</Text>
-                ) : (
-                  <Text className="font-body text-xs text-ink-faint italic">Pa përgjigje ende.</Text>
-                )}
-              </View>
-            ))
-          )}
+          <Text className="font-body text-sm text-ink-soft">
+            Ende s'ka vlerësime reale për këtë produkt (kërkon tabelë `reviews` shtesë te Supabase — hap tjetër i mundshëm).
+          </Text>
         </View>
       </ScrollView>
 
       {/* Sticky bottom actions */}
       <View className="absolute bottom-0 left-0 right-0 bg-cream px-5 pt-3 pb-6 flex-row" style={shadows.softLg}>
         <Pressable
-          onPress={() => bumpCart(1)}
+          onPress={() => {
+            addToCart({
+              id: product.id,
+              name: product.name,
+              price: product.price,
+              imageUrl: product.imageUrl ?? null,
+              icon: product.icon,
+            });
+            showToast(`${product.name} u shtua në shportë`);
+          }}
           className="flex-1 bg-surface border border-olive rounded-xl2 py-3.5 items-center mr-3"
         >
-          <Text className="font-bodySemibold text-sm text-olive">Shto në Shportë</Text>
+          <Text className="font-bodyMedium text-sm text-olive">Shto në Shportë</Text>
         </Pressable>
         <Pressable
           onPress={() => {
-            bumpCart(1);
+            addToCart({
+              id: product.id,
+              name: product.name,
+              price: product.price,
+              imageUrl: product.imageUrl ?? null,
+              icon: product.icon,
+            });
             router.push("/shop/cart");
           }}
           className="flex-1 bg-olive rounded-xl2 py-3.5 items-center"
         >
-          <Text className="font-bodySemibold text-sm text-white">Bli Tani</Text>
+          <Text className="font-bodyMedium text-sm text-white">Bli Tani</Text>
         </Pressable>
       </View>
     </SafeAreaView>

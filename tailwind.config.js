@@ -28,11 +28,12 @@ module.exports = {
           alt: "#F6F1E7",
         },
       },
-      fontFamily: {
-        display: ["Fraunces_600SemiBold"],
-        body: ["Inter_400Regular"],
-        bodyMedium: ["Inter_500Medium"],
-        bodySemibold: ["Inter_600SemiBold"],
+     fontFamily: {
+        display: ["Inter_700Bold"],       // H1 / tituj kryesorë / çmime / numra të rëndësishëm
+        body: ["Inter_400Regular"],       // tekst i zakonshëm
+        bodyMedium: ["Inter_500Medium"],  // butona, navigim, metadata
+        bodySemibold: ["Inter_600SemiBold"], // section headings, card titles
+        wordmark: ["Poppins_700Bold"],    // VETËM për fjalën "Bebix" në logo
       },
       borderRadius: {
         xl2: "22px",

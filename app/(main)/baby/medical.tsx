@@ -135,7 +135,7 @@ export default function MedicalScreen() {
       <View className="px-5 pb-6">
         <Pressable onPress={openNew} className="flex-row items-center justify-center gap-2 rounded-2xl bg-ink py-4">
           <Icon name="plus" size={16} color="#FBF6EE" />
-          <Text className="font-bodySemibold text-[15px] text-cream">{t("medical_add")}</Text>
+          <Text className="font-bodyMedium text-[15px] text-cream">{t("medical_add")}</Text>
         </Pressable>
       </View>
 
@@ -164,7 +164,7 @@ export default function MedicalScreen() {
           <DateTimeField label={t("date_field")} mode="date" value={form.at} onChange={(iso) => setForm((f) => ({ ...f, at: iso }))} />
           <FormField label={t("note_field")} placeholder={t("note_ph")} value={form.note} onChangeText={(v) => setForm((f) => ({ ...f, note: v }))} multiline />
           <Pressable onPress={save} className="mt-1 items-center rounded-2xl bg-ink py-4">
-            <Text className="font-bodySemibold text-[15px] text-cream">{editingId ? t("save_action") : t("add_action")}</Text>
+            <Text className="font-bodyMedium text-[15px] text-cream">{editingId ? t("save_action") : t("add_action")}</Text>
           </Pressable>
         </View>
       </RecordSheet>

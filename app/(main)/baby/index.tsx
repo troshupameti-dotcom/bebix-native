@@ -7,7 +7,8 @@ import { Icon, IconName } from "@/components/ui/Icon";
 import { SectionHeader } from "@/components/baby/SectionHeader";
 import { StatCard } from "@/components/baby/StatCard";
 import { AddTile } from "@/components/baby/AddTile";
-import { QuickActionTile } from "@/components/baby/QuickActionTile";
+import { FormField } from "@/components/baby/FormField";
+import { DateTimeField } from "@/components/baby/DateTimeField";
 import { InfoRow } from "@/components/baby/InfoRow";
 import { MilestoneChip } from "@/components/baby/MilestoneChip";
 import { BottomSheet } from "@/components/ui/BottomSheet";
@@ -18,25 +19,11 @@ import { useTranslation } from "@/lib/i18n/LanguageContext";
 import { haptics } from "@/lib/haptics";
 import { computeAgeText, formatDate, formatTime } from "@/lib/dateUtils";
 import { shadows } from "@/lib/shadows";
-import { QuickActionKey } from "@/lib/state/types";
 
 const TABS = ["profile", "timeline", "health", "milestones"] as const;
 type TabKey = (typeof TABS)[number];
 
-const QA_META: Record<QuickActionKey, { icon: IconName; labelKey: string; accent: "olive" | "orange" }> = {
-  feeding: { icon: "spoon", labelKey: "tile_feeding", accent: "orange" },
-  sleep: { icon: "moon", labelKey: "tile_sleep", accent: "olive" },
-  diaper: { icon: "baby", labelKey: "diaper_title", accent: "orange" },
-  growth: { icon: "chart", labelKey: "tile_growth", accent: "olive" },
-  vaccinations: { icon: "syringe", labelKey: "qa_vaccinations", accent: "olive" },
-  medical: { icon: "shield", labelKey: "medical_screen_title", accent: "olive" },
-  moments: { icon: "sparkle", labelKey: "moments_screen_title", accent: "orange" },
-  bath: { icon: "bath", labelKey: "qa_bath", accent: "olive" },
-  medicine: { icon: "pill", labelKey: "qa_medicine", accent: "orange" },
-  play: { icon: "play", labelKey: "qa_play", accent: "orange" },
-};
-
-type SheetContext = "growth" | "quickActions" | "medical" | "timeline" | null;
+type SheetContext = "growth" | "medical" | "timeline" | "statEdit" | null;
 type FeedKind = "event" | "feeding" | "sleep" | "diaper" | "growth" | "vaccine" | "medical";
 type FeedEntry = {
   id: string;
@@ -59,10 +46,12 @@ export default function BabyProfileScreen() {
 
   const [activeTab, setActiveTab] = useState<TabKey>("profile");
   const [editGrowth, setEditGrowth] = useState(false);
-  const [editQuickActions, setEditQuickActions] = useState(false);
   const [editMedical, setEditMedical] = useState(false);
   const [editMilestones, setEditMilestones] = useState(false);
   const [sheet, setSheet] = useState<SheetContext>(null);
+  const [editingStatKey, setEditingStatKey] = useState<string | null>(null);
+  const [statValue, setStatValue] = useState("");
+  const [statDate, setStatDate] = useState(new Date().toISOString());
 
   const [search, setSearch] = useState("");
   const [kindFilter, setKindFilter] = useState<FeedKind | "all">("all");
@@ -136,21 +125,44 @@ export default function BabyProfileScreen() {
   const ageText = profile.babyDob ? computeAgeText(profile.babyDob, lang) : "";
   const upcomingVaccineCount = active(b.vaccines).filter((v) => !v.givenDate).length;
 
-  function runQuickAction(key: QuickActionKey) {
-    haptics.tap();
-    if (key === "feeding") router.push("/(main)/baby/feeding");
-    else if (key === "sleep") router.push("/(main)/baby/sleep");
-    else if (key === "diaper") router.push("/(main)/baby/diaper");
-    else if (key === "growth") router.push("/(main)/baby/growth");
-    else if (key === "vaccinations") router.push("/(main)/baby/vaccinations");
-    else if (key === "medical") router.push("/(main)/baby/medical");
-    else if (key === "moments") router.push("/(main)/baby/moments");
-    else setActiveTab("health");
-  }
-
   function closeSheet() {
     setSheet(null);
+    setEditingStatKey(null);
   }
+
+  // Kliko direkt mbi kartën e rritjes (Pesha/Gjatësia/etj) — hap editim të
+  // shpejtë, pa nevojë me aktivizu fillimisht "modalitetin e editimit".
+  function openStatEdit(key: string, currentValue: string) {
+    haptics.select();
+    setEditingStatKey(key);
+    setStatValue(currentValue);
+    setStatDate(new Date().toISOString());
+    setSheet("statEdit");
+  }
+
+  function saveStatEdit() {
+    if (!editingStatKey) return;
+    const stat = b.growthStats.find((g) => g.key === editingStatKey);
+    baby.updateGrowthStat(editingStatKey, { value: statValue });
+
+    // Nëse âsht pesha/gjatësia standarde, shtohet edhe si matje e re në
+    // historikun e rritjes — kështu përditësohet automatikisht edhe
+    // grafiku kalendarik te ekrani i Rritjes (ndryshim #7).
+    // ⚠️ Supozova që "key" standard për peshë/gjatësi janë "weight"/"height" —
+    // nëse tek ty janë emra tjerë, m'i trego dhe e ndreqi.
+    if (stat && !stat.isCustom) {
+      const num = parseFloat(statValue.replace(",", "."));
+      if (!isNaN(num)) {
+        if (stat.key === "weight") baby.addGrowthHistoryEntry({ date: statDate, weightKg: num });
+        else if (stat.key === "height") baby.addGrowthHistoryEntry({ date: statDate, heightCm: num });
+      }
+    }
+    haptics.success();
+    setSheet(null);
+    setEditingStatKey(null);
+  }
+
+  const editingStat = editingStatKey ? b.growthStats.find((g) => g.key === editingStatKey) ?? null : null;
 
   function toggleEdit(setter: (v: (p: boolean) => boolean) => void) {
     haptics.select();
@@ -296,7 +308,7 @@ export default function BabyProfileScreen() {
                   style={[shadows.press, { position: "absolute", inset: 2, borderRadius: 14, backgroundColor: "#fff" }]}
                 />
               )}
-              <Text className={`text-center font-bodySemibold text-[12.5px] ${isActive ? "text-ink" : "text-ink-faint"}`}>
+              <Text className={`text-center font-bodyMedium text-[12.5px] ${isActive ? "text-ink" : "text-ink-faint"}`}>
                 {t(`baby_tab_${tab}` as never)}
               </Text>
             </Pressable>
@@ -317,7 +329,7 @@ export default function BabyProfileScreen() {
                 </View>
               )}
               <View className="flex-1">
-                <Text className="font-display text-base text-ink">{babyName}</Text>
+                <Text className="font-bodySemibold text-base text-ink">{babyName}</Text>
                 {profile.babyDob && (
                   <Text className="mt-0.5 font-body text-xs text-ink-soft">
                     {t("baby_born")} {formatDate(profile.babyDob, lang)}
@@ -331,7 +343,12 @@ export default function BabyProfileScreen() {
             <SectionHeader title={t("baby_growth_summary")} editable editing={editGrowth} onToggleEdit={() => toggleEdit(setEditGrowth)} />
             <View className="flex-row flex-wrap gap-3">
               {b.growthStats.map((g) => (
-                <View key={g.key} style={{ width: "47.5%" }}>
+                <Pressable
+                  key={g.key}
+                  disabled={editGrowth}
+                  onPress={() => openStatEdit(g.key, g.value)}
+                  style={{ width: "47.5%" }}
+                >
                   <StatCard
                     label={g.isCustom ? g.label ?? "" : t(g.labelKey as never)}
                     value={g.value}
@@ -342,7 +359,7 @@ export default function BabyProfileScreen() {
                     onChangeLabel={(v) => baby.updateGrowthStat(g.key, { label: v })}
                     onRemove={() => baby.removeGrowthStat(g.key)}
                   />
-                </View>
+                </Pressable>
               ))}
               {editGrowth && (
                 <View style={{ width: "47.5%" }}>
@@ -351,33 +368,10 @@ export default function BabyProfileScreen() {
               )}
             </View>
             <Pressable onPress={() => router.push("/(main)/baby/growth")} className="mt-3 items-center rounded-2xl bg-ink py-3.5">
-              <Text className="font-bodySemibold text-[14px] text-cream">{t("baby_see_chart")}</Text>
+              <Text className="font-bodyMedium text-[14px] text-cream">{t("baby_see_chart")}</Text>
             </Pressable>
 
-            {/* Quick actions */}
-            <SectionHeader title={t("baby_quick_actions")} editable editing={editQuickActions} onToggleEdit={() => toggleEdit(setEditQuickActions)} />
-            <View className="flex-row flex-wrap gap-2.5">
-              {b.quickActionKeys.map((key) => {
-                const meta = QA_META[key];
-                return (
-                  <View key={key} style={{ width: "22.5%" }}>
-                    <QuickActionTile
-                      icon={meta.icon}
-                      label={t(meta.labelKey as never)}
-                      accent={meta.accent}
-                      editing={editQuickActions}
-                      onPress={() => runQuickAction(key)}
-                      onRemove={() => baby.removeQuickAction(key)}
-                    />
-                  </View>
-                );
-              })}
-              {editQuickActions && (
-                <View style={{ width: "22.5%" }}>
-                  <AddTile onPress={() => setSheet("quickActions")} />
-                </View>
-              )}
-            </View>
+            {/* Veprimet e shpejta u hoqën krejtësisht nga ky ekran (ndryshim #7) */}
           </MotiView>
         )}
 
@@ -440,7 +434,7 @@ export default function BabyProfileScreen() {
                     className="flex-1 items-center rounded-xl py-2"
                     style={isActive ? [shadows.press, { backgroundColor: "#fff" }] : undefined}
                   >
-                    <Text className={`font-bodySemibold text-[11.5px] ${isActive ? "text-ink" : "text-ink-faint"}`}>
+                    <Text className={`font-bodyMedium text-[11.5px] ${isActive ? "text-ink" : "text-ink-faint"}`}>
                       {t(`timeline_view_${r}` as never)}
                     </Text>
                   </Pressable>
@@ -511,7 +505,7 @@ export default function BabyProfileScreen() {
                 style={shadows.softLg}
                 className="mt-2 flex-row items-center justify-between rounded-2xl bg-ink px-4 py-3"
               >
-                <Text className="font-bodySemibold text-[12.5px] text-cream">
+                <Text className="font-bodyMedium text-[12.5px] text-cream">
                   {selectedIds.size} {t("bulk_selected_count")}
                 </Text>
                 <View className="flex-row gap-4">
@@ -654,19 +648,6 @@ export default function BabyProfileScreen() {
         />
       </BottomSheet>
 
-      <BottomSheet visible={sheet === "quickActions"} onClose={closeSheet}>
-        <PickerSheetContent
-          title={t("baby_quick_actions")}
-          options={(Object.keys(QA_META) as QuickActionKey[])
-            .filter((k) => !b.quickActionKeys.includes(k))
-            .map<PickerOption>((k) => ({ key: k, label: t(QA_META[k].labelKey as never), icon: QA_META[k].icon }))}
-          onSelect={(key) => {
-            baby.addQuickAction(key as QuickActionKey);
-            closeSheet();
-          }}
-        />
-      </BottomSheet>
-
       <BottomSheet visible={sheet === "medical"} onClose={closeSheet}>
         <PickerSheetContent
           title={t("baby_medical_info")}
@@ -684,6 +665,19 @@ export default function BabyProfileScreen() {
             closeSheet();
           }}
         />
+      </BottomSheet>
+
+      <BottomSheet visible={sheet === "statEdit"} onClose={closeSheet}>
+        <View className="gap-4">
+          <Text className="font-bodySemibold text-base text-ink">
+            {editingStat?.isCustom ? editingStat.label ?? "" : editingStat ? t(editingStat.labelKey as never) : ""}
+          </Text>
+          <DateTimeField label={t("date_field")} mode="date" value={statDate} onChange={setStatDate} />
+          <FormField label={t("value_field")} value={statValue} onChangeText={setStatValue} />
+          <Pressable onPress={saveStatEdit} className="mt-1 items-center rounded-2xl bg-ink py-4">
+            <Text className="font-bodyMedium text-[15px] text-cream">{t("save_action")}</Text>
+          </Pressable>
+        </View>
       </BottomSheet>
 
       <BottomSheet visible={sheet === "timeline"} onClose={closeSheet}>

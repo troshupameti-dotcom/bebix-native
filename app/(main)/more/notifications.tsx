@@ -76,7 +76,7 @@ export default function NotificationsScreen() {
       <ScrollView contentContainerStyle={{ paddingBottom: 40 }}>
         {GROUPS.map((group) => (
           <View key={group.title} className="mb-5">
-            <Text className="font-bodySemibold text-xs text-ink-faint uppercase px-5 mb-2">{group.title}</Text>
+            <Text className="font-bodyMedium text-xs text-ink-faint uppercase px-5 mb-2">{group.title}</Text>
             <View style={shadows.soft} className="mx-5 bg-surface rounded-xl2 overflow-hidden">
               {group.rows.map((row, i) => (
                 <View

@@ -1,4 +1,5 @@
-import { useMemo } from "react";
+import { useMemo, useEffect } from "react";
+import { registerForPushNotificationsAsync } from "@/lib/notifications";
 import { View, Text, ScrollView, Pressable, Image } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useRouter } from "expo-router";
@@ -60,7 +61,7 @@ function isToday(iso: string): boolean {
 function SectionHeader({ title, onSeeAll }: { title: string; onSeeAll?: () => void }) {
   return (
     <View className="flex-row items-center justify-between mb-3 mt-7 px-5">
-      <Text className="font-display text-lg text-ink">{title}</Text>
+      <Text className="font-bodySemibold text-lg text-ink">{title}</Text>
       {onSeeAll && (
         <Pressable onPress={onSeeAll}>
           <Text className="font-bodyMedium text-sm text-olive">Shiko të gjitha</Text>
@@ -76,12 +77,14 @@ function ReminderCard({
   subLabel,
   accent,
   onPress,
+  todayCount,
 }: {
   icon: IconName;
   label: string;
   subLabel: string;
   accent: "olive" | "orange";
   onPress: () => void;
+  todayCount?: number;
 }) {
   const bg = accent === "olive" ? "bg-olive-bg" : "bg-orange-bg";
   const fg = accent === "olive" ? "#6E7452" : "#C9702E";
@@ -91,8 +94,15 @@ function ReminderCard({
       style={shadows.soft}
       className="w-[47%] bg-surface rounded-xl2 p-4 mb-3"
     >
-      <View className={`w-10 h-10 rounded-full items-center justify-center mb-3 ${bg}`}>
-        <Icon name={icon} size={20} color={fg} />
+      <View className="flex-row items-start justify-between mb-3">
+        <View className={`w-10 h-10 rounded-full items-center justify-center ${bg}`}>
+          <Icon name={icon} size={20} color={fg} />
+        </View>
+        {!!todayCount && (
+          <View className="bg-orange rounded-full px-2 py-0.5 min-w-[22px] items-center">
+            <Text className="font-bodySemibold text-[10px] text-white">{todayCount}x sot</Text>
+          </View>
+        )}
       </View>
       <Text className="font-bodySemibold text-sm text-ink mb-1">{label}</Text>
       <Text className="font-body text-xs text-ink-soft">{subLabel}</Text>
@@ -122,7 +132,7 @@ function ProductCard({ product, onPress }: { product: Product; onPress: () => vo
         <Icon name={product.icon} size={26} color={fg} />
       </View>
       {product.badge && (
-        <Text className="font-bodySemibold text-[10px] text-orange mb-1 uppercase">{product.badge}</Text>
+        <Text className="font-bodyMedium text-[10px] text-orange mb-1 uppercase">{product.badge}</Text>
       )}
       <Text className="font-bodyMedium text-xs text-ink mb-1" numberOfLines={2}>
         {product.name}
@@ -138,6 +148,11 @@ function ProductCard({ product, onPress }: { product: Product; onPress: () => vo
 
 export default function HomeScreen() {
   const router = useRouter();
+
+  useEffect(() => {
+    registerForPushNotificationsAsync();
+  }, []);
+
   const { state } = useAppState();
   const { profile, baby } = state;
 
@@ -154,14 +169,24 @@ export default function HomeScreen() {
     return list.sort((a, b) => new Date(a.dueDate).getTime() - new Date(b.dueDate).getTime())[0] ?? null;
   }, [baby.vaccines]);
 
-  const todayItems = useMemo(() => {
-    type Item = { id: string; icon: IconName; label: string; at: string };
-    const items: Item[] = [];
-    active(baby.feedingLog).forEach((f) => isToday(f.at) && items.push({ id: `f-${f.id}`, icon: "spoon", label: "Ushqyerje", at: f.at }));
-    active(baby.sleepLog).forEach((s) => isToday(s.startAt) && items.push({ id: `s-${s.id}`, icon: "moon", label: s.isNap ? "Gjumë ditor" : "Gjumë nate", at: s.startAt }));
-    active(baby.diaperLog).forEach((d) => isToday(d.at) && items.push({ id: `d-${d.id}`, icon: "baby", label: "Ndërrim pelene", at: d.at }));
-    return items.sort((a, b) => new Date(b.at).getTime() - new Date(a.at).getTime());
-  }, [baby.feedingLog, baby.sleepLog, baby.diaperLog]);
+  // Numri i ngjarjeve të sotme — përdoret si badge "Xx sot" brenda kartave të Kujtesave
+  // (rubrika e veçantë "Sot" u bashkua këtu — ndryshim #3)
+  const feedingTodayCount = useMemo(
+    () => active(baby.feedingLog).filter((f) => f.type !== "medicine" && isToday(f.at)).length,
+    [baby.feedingLog]
+  );
+  const sleepTodayCount = useMemo(
+    () => active(baby.sleepLog).filter((s) => isToday(s.startAt)).length,
+    [baby.sleepLog]
+  );
+  const diaperTodayCount = useMemo(
+    () => active(baby.diaperLog).filter((d) => isToday(d.at)).length,
+    [baby.diaperLog]
+  );
+  const medicineTodayCount = useMemo(
+    () => active(baby.feedingLog).filter((f) => f.type === "medicine" && isToday(f.at)).length,
+    [baby.feedingLog]
+  );
 
   const growthInsight = useMemo(() => {
     const history = active(baby.growthHistory).slice().sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
@@ -171,19 +196,6 @@ export default function HomeScreen() {
     const heightDiff = latest.heightCm != null && prev.heightCm != null ? latest.heightCm - prev.heightCm : null;
     return { latest, weightDiff, heightDiff };
   }, [baby.growthHistory]);
-
-  const aiInsight = useMemo(() => {
-    const feedings = active(baby.feedingLog).slice(0, 6);
-    if (feedings.length < 2) {
-      return "Regjistro pak ushqyerje dhe gjumë sot — sa më shumë të dhëna, aq më të sakta bëhen këshillat këtu.";
-    }
-    const gaps: number[] = [];
-    for (let i = 0; i < feedings.length - 1; i++) {
-      gaps.push((new Date(feedings[i].at).getTime() - new Date(feedings[i + 1].at).getTime()) / 3600000);
-    }
-    const avg = gaps.reduce((a, b) => a + b, 0) / gaps.length;
-    return `${displayName} është ushqyer mesatarisht çdo ${avg.toFixed(1)} orë kohët e fundit. Kjo është brenda rangut normal për moshën e tij/saj.`;
-  }, [baby.feedingLog, displayName]);
 
   return (
     <SafeAreaView className="flex-1 bg-cream" edges={["top"]}>
@@ -228,33 +240,72 @@ export default function HomeScreen() {
           <Icon name="chevronRight" size={20} color="#A79D8A" />
         </Pressable>
 
-        {/* Today's schedule */}
-        <SectionHeader title="Sot" onSeeAll={() => router.push("/baby")} />
-        <View className="px-5">
-          {todayItems.length === 0 ? (
-            <View style={shadows.soft} className="bg-surface rounded-xl2 p-4">
-              <Text className="font-body text-sm text-ink-soft">Ende s'ka regjistrime sot — shto ushqyerjen, gjumin ose pelenën e parë.</Text>
-            </View>
-          ) : (
-            todayItems.slice(0, 4).map((item) => (
-              <View key={item.id} style={shadows.soft} className="flex-row items-center bg-surface rounded-xl2 p-3 mb-2">
-                <View className="w-9 h-9 rounded-full bg-cream-soft items-center justify-center mr-3">
-                  <Icon name={item.icon} size={16} color="#6E7452" />
-                </View>
-                <Text className="font-bodyMedium text-sm text-ink flex-1">{item.label}</Text>
-                <Text className="font-body text-xs text-ink-faint">{timeOfDay(item.at)}</Text>
-              </View>
-            ))
-          )}
+        {/* Quick actions — RUBRIKA E PARË në homepage (ndryshim #1) */}
+        <SectionHeader title="Veprime të shpejta" />
+        <View className="px-5 flex-row flex-wrap justify-between">
+          <QuickAction icon="spoon" label="Ushqyerje" onPress={() => router.push("/baby/feeding")} />
+          <QuickAction icon="moon" label="Gjumë" onPress={() => router.push("/baby/sleep")} />
+          <QuickAction icon="baby" label="Pelenë" onPress={() => router.push("/baby/diaper")} />
+          <QuickAction icon="chart" label="Rritja" onPress={() => router.push("/baby/growth")} />
+          <QuickAction icon="syringe" label="Vaksina" onPress={() => router.push("/baby/vaccinations")} />
+          <QuickAction icon="camera" label="Momente" onPress={() => router.push("/baby/moments")} />
+          <QuickAction icon="shield" label="Mjekësore" onPress={() => router.push("/baby/medical")} />
+          <QuickAction icon="cart" label="Dyqan" onPress={() => router.push("/shop")} />
         </View>
 
-        {/* Reminders */}
+        {/* AI Chat entry point — RUBRIKA E DYTË (ndryshim #2) */}
+        <View className="px-5 mt-7">
+          <Pressable
+            onPress={() => router.push("/ai-chat")}
+            style={shadows.softLg}
+            className="bg-olive rounded-xl3 p-4 flex-row items-center"
+          >
+            <View className="w-11 h-11 rounded-full bg-surface items-center justify-center mr-3">
+              <Icon name="sparkle" size={20} color="#6E7452" />
+            </View>
+            <View className="flex-1">
+              <Text className="font-bodyMedium text-base text-white">Bisedo me AI</Text>
+              <Text className="font-body text-xs text-white/80">Pyet çdo gjë rreth bebit tënd</Text>
+            </View>
+            <Icon name="chevronRight" size={20} color="#FFFFFF" />
+          </Pressable>
+        </View>
+
+        {/* Reminders — "Sot" tani është e bashkuar këtu si badge "Xx sot" (ndryshim #3) */}
         <SectionHeader title="Kujtesat" />
         <View className="px-5 flex-row flex-wrap justify-between">
-          <ReminderCard icon="spoon" label="Ushqyerje" subLabel={timeAgoLabel(lastFeeding?.at ?? null)} accent="orange" onPress={() => router.push("/baby/feeding")} />
-          <ReminderCard icon="moon" label="Gjumë" subLabel={timeAgoLabel(lastSleep?.startAt ?? null)} accent="olive" onPress={() => router.push("/baby/sleep")} />
-          <ReminderCard icon="baby" label="Pelenë" subLabel={timeAgoLabel(lastDiaper?.at ?? null)} accent="orange" onPress={() => router.push("/baby/diaper")} />
-          <ReminderCard icon="pill" label="Ilaç" subLabel={timeAgoLabel(lastMedicine?.at ?? null)} accent="olive" onPress={() => router.push("/baby/feeding")} />
+          <ReminderCard
+            icon="spoon"
+            label="Ushqyerje"
+            subLabel={timeAgoLabel(lastFeeding?.at ?? null)}
+            accent="orange"
+            todayCount={feedingTodayCount}
+            onPress={() => router.push("/baby/feeding")}
+          />
+          <ReminderCard
+            icon="moon"
+            label="Gjumë"
+            subLabel={timeAgoLabel(lastSleep?.startAt ?? null)}
+            accent="olive"
+            todayCount={sleepTodayCount}
+            onPress={() => router.push("/baby/sleep")}
+          />
+          <ReminderCard
+            icon="baby"
+            label="Pelenë"
+            subLabel={timeAgoLabel(lastDiaper?.at ?? null)}
+            accent="orange"
+            todayCount={diaperTodayCount}
+            onPress={() => router.push("/baby/diaper")}
+          />
+          <ReminderCard
+            icon="pill"
+            label="Ilaç"
+            subLabel={timeAgoLabel(lastMedicine?.at ?? null)}
+            accent="olive"
+            todayCount={medicineTodayCount}
+            onPress={() => router.push("/baby/feeding")}
+          />
           <ReminderCard
             icon="syringe"
             label="Vaksinë"
@@ -271,68 +322,10 @@ export default function HomeScreen() {
           />
         </View>
 
-        {/* AI Insight of the Day */}
-        <SectionHeader title="Këshilla e ditës" />
-        <View className="mx-5 bg-olive-bg rounded-xl3 p-4 flex-row" style={shadows.soft}>
-          <View className="w-9 h-9 rounded-full bg-surface items-center justify-center mr-3">
-            <Icon name="sparkle" size={18} color="#6E7452" />
-          </View>
-          <Text className="font-body text-sm text-ink flex-1 leading-5">{aiInsight}</Text>
-        </View>
-
-        {/* Weekly growth summary */}
-        {growthInsight && (
-          <>
-            <SectionHeader title="Përmbledhja e rritjes" onSeeAll={() => router.push("/baby/growth")} />
-            <View className="mx-5 flex-row" style={shadows.soft}>
-              <View className="flex-1 bg-surface rounded-xl2 p-4 mr-2">
-                <Text className="font-body text-xs text-ink-soft mb-1">Peshë</Text>
-                <Text className="font-display text-lg text-ink">{growthInsight.latest.weightKg ?? "–"} kg</Text>
-                {growthInsight.weightDiff != null && (
-                  <Text className="font-bodyMedium text-xs text-olive mt-1">
-                    {growthInsight.weightDiff >= 0 ? "+" : ""}
-                    {growthInsight.weightDiff.toFixed(1)} kg
-                  </Text>
-                )}
-              </View>
-              <View className="flex-1 bg-surface rounded-xl2 p-4 ml-2">
-                <Text className="font-body text-xs text-ink-soft mb-1">Gjatësi</Text>
-                <Text className="font-display text-lg text-ink">{growthInsight.latest.heightCm ?? "–"} cm</Text>
-                {growthInsight.heightDiff != null && (
-                  <Text className="font-bodyMedium text-xs text-olive mt-1">
-                    {growthInsight.heightDiff >= 0 ? "+" : ""}
-                    {growthInsight.heightDiff.toFixed(1)} cm
-                  </Text>
-                )}
-              </View>
-            </View>
-          </>
-        )}
-
-        {/* Quick actions */}
-        <SectionHeader title="Veprime të shpejta" />
-        <View className="px-5 flex-row flex-wrap justify-between">
-          <QuickAction icon="spoon" label="Ushqyerje" onPress={() => router.push("/baby/feeding")} />
-          <QuickAction icon="moon" label="Gjumë" onPress={() => router.push("/baby/sleep")} />
-          <QuickAction icon="baby" label="Pelenë" onPress={() => router.push("/baby/diaper")} />
-          <QuickAction icon="chart" label="Rritja" onPress={() => router.push("/baby/growth")} />
-          <QuickAction icon="syringe" label="Vaksina" onPress={() => router.push("/baby/vaccinations")} />
-          <QuickAction icon="camera" label="Momente" onPress={() => router.push("/baby/moments")} />
-          <QuickAction icon="shield" label="Mjekësore" onPress={() => router.push("/baby/medical")} />
-          <QuickAction icon="cart" label="Dyqan" onPress={() => router.push("/shop")} />
-        </View>
-
-        {/* --- Shop section (të dhëna shembull — Shop-i real ende s'ekziston) --- */}
+        {/* --- Shop section — RUBRIKA MENJËHERË PAS KUJTESAVE (ndryshim #5) --- */}
         <SectionHeader title="Vazhdo blerjen" onSeeAll={() => router.push("/shop")} />
         <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ paddingLeft: 20, paddingRight: 8 }}>
           {productCatalog.slice(0, 5).map((p) => (
-            <ProductCard key={p.id} product={p} onPress={() => router.push("/shop")} />
-          ))}
-        </ScrollView>
-
-        <SectionHeader title="Shikuar së fundi" onSeeAll={() => router.push("/shop")} />
-        <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ paddingLeft: 20, paddingRight: 8 }}>
-          {productCatalog.slice(3, 7).map((p) => (
             <ProductCard key={p.id} product={p} onPress={() => router.push("/shop")} />
           ))}
         </ScrollView>

@@ -1,59 +1,25 @@
-import { useMemo, useState } from "react";
-import { View, Text, ScrollView, Pressable, TextInput } from "react-native";
+import { useEffect, useMemo, useState } from "react";
+import { View, Text, ScrollView, Pressable, TextInput, useWindowDimensions } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useRouter } from "expo-router";
 import { useAppState } from "@/lib/state/AppStateContext";
-import { Icon, IconName } from "@/components/ui/Icon";
+import { Icon } from "@/components/ui/Icon";
 import { shadows } from "@/lib/shadows";
-import { productCatalog, brandCatalog, CATEGORY_META, Product, ProductCategory } from "@/lib/homeContent";
+import { brandCatalog, CATEGORY_META, Product, ProductCategory } from "@/lib/homeContent";
+import { fetchProducts } from "@/lib/shopData";
+import { ProductCard, ProductCardSkeleton } from "@/components/ProductCard";
 
 type SortMode = "relevant" | "priceAsc" | "priceDesc" | "rating";
 
-function ProductGridCard({ product, onPress }: { product: Product; onPress: () => void }) {
-  const { toggleFavorite, isFavorite, bumpCart } = useAppState();
-  const fav = isFavorite(product.id);
-  const bg = product.accent === "olive" ? "bg-olive-bg" : "bg-orange-bg";
-  const fg = product.accent === "olive" ? "#6E7452" : "#C9702E";
+const PADDING_X = 20; // px-5
+const GRID_GAP = 12;
 
-  return (
-    <Pressable onPress={onPress} style={shadows.soft} className="w-[47%] bg-surface rounded-xl2 p-3 mb-4">
-      <View className={`w-full h-24 rounded-xl items-center justify-center mb-2 relative ${bg}`}>
-        <Icon name={product.icon} size={30} color={fg} />
-        <Pressable
-          onPress={(e) => {
-            e.stopPropagation?.();
-            toggleFavorite({ id: product.id, name: product.name, price: `€${product.price.toFixed(2)}`, icon: product.icon });
-          }}
-          className="absolute top-1.5 right-1.5 w-7 h-7 rounded-full bg-surface items-center justify-center"
-        >
-          <Icon name="heart" size={14} color={fav ? "#C9702E" : "#A79D8A"} />
-        </Pressable>
-        {product.badge && (
-          <View className="absolute top-1.5 left-1.5 bg-surface rounded-full px-2 py-0.5">
-            <Text className="font-bodySemibold text-[9px] text-orange uppercase">{product.badge}</Text>
-          </View>
-        )}
-      </View>
-      <Text className="font-body text-[10px] text-ink-faint mb-0.5">{product.brand}</Text>
-      <Text className="font-bodyMedium text-xs text-ink mb-1" numberOfLines={2}>
-        {product.name}
-      </Text>
-      <View className="flex-row items-center justify-between">
-        <View>
-          <Text className="font-bodySemibold text-sm text-ink">€{product.price.toFixed(2)}</Text>
-          {product.compareAtPrice && (
-            <Text className="font-body text-[10px] text-ink-faint line-through">€{product.compareAtPrice.toFixed(2)}</Text>
-          )}
-        </View>
-        <Pressable
-          onPress={() => bumpCart(1)}
-          className="w-7 h-7 rounded-full bg-olive items-center justify-center"
-        >
-          <Icon name="plus" size={14} color="#FFFFFF" />
-        </Pressable>
-      </View>
-    </Pressable>
-  );
+/** 15. Mobile → 2, Tablet → 3, Desktop → 4 kolona. */
+function useGridColumns() {
+  const { width } = useWindowDimensions();
+  if (width >= 1024) return 4;
+  if (width >= 768) return 3;
+  return 2;
 }
 
 function Chip({ label, active, onPress }: { label: string; active: boolean; onPress: () => void }) {
@@ -71,17 +37,41 @@ function Chip({ label, active, onPress }: { label: string; active: boolean; onPr
 export default function ShopScreen() {
   const router = useRouter();
   const { state } = useAppState();
+  const { width } = useWindowDimensions();
+  const columns = useGridColumns();
+  const cardWidth = (width - PADDING_X * 2 - GRID_GAP * (columns - 1)) / columns;
+
   const [query, setQuery] = useState("");
   const [category, setCategory] = useState<ProductCategory | "all">("all");
   const [sort, setSort] = useState<SortMode>("relevant");
   const [showFilters, setShowFilters] = useState(false);
 
-  const flashDeals = useMemo(() => productCatalog.filter((p) => p.compareAtPrice != null), []);
-  const trending = useMemo(() => productCatalog.filter((p) => p.rating >= 4.6).slice(0, 6), []);
-  const bestSellers = useMemo(() => productCatalog.filter((p) => p.badge === "bestseller"), []);
+  const [products, setProducts] = useState<Product[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [loadError, setLoadError] = useState<string | null>(null);
+
+  async function load() {
+    setLoading(true);
+    setLoadError(null);
+    try {
+      const data = await fetchProducts();
+      setProducts(data);
+    } catch (e: any) {
+      setLoadError(e.message ?? "Diçka shkoi keq.");
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  useEffect(() => {
+    load();
+  }, []);
+
+  const flashDeals = useMemo(() => products.filter((p) => p.compareAtPrice != null), [products]);
+  const trending = useMemo(() => products.filter((p) => p.rating >= 4.6).slice(0, 6), [products]);
 
   const filtered = useMemo(() => {
-    let list = productCatalog.slice();
+    let list = products.slice();
     if (query.trim()) {
       const q = query.toLowerCase();
       list = list.filter((p) => p.name.toLowerCase().includes(q) || p.brand.toLowerCase().includes(q));
@@ -91,15 +81,48 @@ export default function ShopScreen() {
     if (sort === "priceDesc") list.sort((a, b) => b.price - a.price);
     if (sort === "rating") list.sort((a, b) => b.rating - a.rating);
     return list;
-  }, [query, category, sort]);
+  }, [products, query, category, sort]);
 
   const isSearching = query.trim().length > 0 || category !== "all" || sort !== "relevant";
+
+  function ProductGrid({ items }: { items: Product[] }) {
+    return (
+      <View
+        className="px-5 mt-4 flex-row flex-wrap"
+        style={{ columnGap: GRID_GAP, rowGap: GRID_GAP, paddingHorizontal: PADDING_X }}
+      >
+        {items.map((p) => (
+          <ProductCard key={p.id} product={p} cardWidth={cardWidth} onPress={() => router.push(`/shop/${p.id}`)} />
+        ))}
+      </View>
+    );
+  }
+
+  function SkeletonGrid() {
+    return (
+      <View
+        className="flex-row flex-wrap"
+        style={{ columnGap: GRID_GAP, rowGap: GRID_GAP, paddingHorizontal: PADDING_X, paddingTop: 16 }}
+      >
+        {Array.from({ length: columns * 3 }).map((_, i) => (
+          <ProductCardSkeleton key={i} cardWidth={cardWidth} />
+        ))}
+      </View>
+    );
+  }
 
   return (
     <SafeAreaView className="flex-1 bg-cream" edges={["top"]}>
       {/* Header */}
       <View className="flex-row items-center justify-between px-5 pt-2 mb-4">
-        <Text className="font-display text-2xl text-ink">Dyqani</Text>
+        <View>
+          <Text className="font-display text-2xl text-ink">Dyqani</Text>
+          {state.profile.parentName && (
+            <Text className="font-body text-xs text-ink-faint mt-0.5">
+              Mirë se erdhe, {state.profile.parentName.split(" ")[0]}
+            </Text>
+          )}
+        </View>
         <View className="flex-row items-center">
           <Pressable
             onPress={() => router.push("/shop/wishlist")}
@@ -140,10 +163,9 @@ export default function ShopScreen() {
         </View>
       </View>
 
-      {/* Filters (inline panel) */}
       {showFilters && (
         <View className="px-5 mb-4">
-          <Text className="font-bodySemibold text-xs text-ink-soft mb-2">Rendit sipas</Text>
+          <Text className="font-bodyMedium text-xs text-ink-soft mb-2">Rendit sipas</Text>
           <View className="flex-row mb-3">
             <Chip label="Relevante" active={sort === "relevant"} onPress={() => setSort("relevant")} />
             <Chip label="Çmimi ↑" active={sort === "priceAsc"} onPress={() => setSort("priceAsc")} />
@@ -153,85 +175,123 @@ export default function ShopScreen() {
         </View>
       )}
 
-      <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={{ paddingBottom: 40 }}>
-        {/* Categories */}
-        <View className="mb-2">
-          <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ paddingHorizontal: 20 }}>
-            <Chip label="Të gjitha" active={category === "all"} onPress={() => setCategory("all")} />
-            {(Object.keys(CATEGORY_META) as ProductCategory[]).map((cat) => (
-              <Chip key={cat} label={CATEGORY_META[cat].labelKey} active={category === cat} onPress={() => setCategory(cat)} />
-            ))}
-          </ScrollView>
+      {loading ? (
+        <ScrollView showsVerticalScrollIndicator={false}>
+          <SkeletonGrid />
+        </ScrollView>
+      ) : loadError ? (
+        <View className="flex-1 items-center justify-center px-8">
+          <Icon name="close" size={24} color="#C9702E" />
+          <Text className="font-bodyMedium text-sm text-ink mt-3 text-center">S'u ngarkuan produktet.</Text>
+          <Text className="font-body text-xs text-ink-faint mt-1 text-center">{loadError}</Text>
+          <Pressable onPress={load} className="mt-4 bg-olive rounded-full px-5 py-2.5">
+            <Text className="font-bodyMedium text-xs text-white">Provo Përsëri</Text>
+          </Pressable>
         </View>
-
-        {isSearching ? (
-          // Rezultatet e kërkimit / filtrave
-          <View className="px-5 mt-4 flex-row flex-wrap justify-between">
-            {filtered.length === 0 ? (
-              <Text className="font-body text-sm text-ink-soft mt-6 mx-auto">S'u gjet asnjë produkt.</Text>
-            ) : (
-              filtered.map((p) => <ProductGridCard key={p.id} product={p} onPress={() => router.push(`/shop/${p.id}`)} />)
-            )}
+      ) : products.length === 0 ? (
+        // 14. Empty state
+        <View className="flex-1 items-center justify-center px-8">
+          <Icon name="cube" size={24} color="#A79D8A" />
+          <Text className="font-bodyMedium text-sm text-ink mt-3 text-center">Ende s'ka produkte.</Text>
+          <Text className="font-body text-xs text-ink-faint mt-1 text-center">Shtoi te admin panel: bebix-admin.html</Text>
+        </View>
+      ) : (
+        <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={{ paddingBottom: 40 }}>
+          <View className="mb-2">
+            <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ paddingHorizontal: 20 }}>
+              <Chip label="Të gjitha" active={category === "all"} onPress={() => setCategory("all")} />
+              {(Object.keys(CATEGORY_META) as ProductCategory[]).map((cat) => (
+                <Chip key={cat} label={CATEGORY_META[cat].labelKey} active={category === cat} onPress={() => setCategory(cat)} />
+              ))}
+            </ScrollView>
           </View>
-        ) : (
-          <>
-            {/* Brands */}
-            <Text className="font-display text-lg text-ink px-5 mt-5 mb-3">Markat</Text>
-            <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ paddingHorizontal: 20 }}>
-              {brandCatalog.map((b) => {
-                const bg = b.accent === "olive" ? "bg-olive-bg" : "bg-orange-bg";
-                const fg = b.accent === "olive" ? "#6E7452" : "#C9702E";
-                return (
-                  <Pressable
-                    key={b.id}
-                    onPress={() => {
-                      const match = productCatalog.find((p) => p.brand === b.name);
-                      if (match) setCategory(match.category);
-                    }}
-                    style={shadows.soft}
-                    className="items-center bg-surface rounded-xl2 p-3 mr-3 w-24"
-                  >
-                    <View className={`w-11 h-11 rounded-full items-center justify-center mb-2 ${bg}`}>
-                      <Icon name={b.icon} size={20} color={fg} />
-                    </View>
-                    <Text className="font-bodyMedium text-[11px] text-ink text-center" numberOfLines={1}>
-                      {b.name}
-                    </Text>
-                  </Pressable>
-                );
-              })}
-            </ScrollView>
 
-            {/* Flash Deals */}
-            <Text className="font-display text-lg text-ink px-5 mt-6 mb-3">⚡ Oferta të Menjëhershme</Text>
-            <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ paddingHorizontal: 20 }}>
-              {flashDeals.map((p) => (
-                <View key={p.id} className="mr-3" style={{ width: 150 }}>
-                  <ProductGridCard product={p} onPress={() => router.push(`/shop/${p.id}`)} />
-                </View>
-              ))}
-            </ScrollView>
+          {isSearching ? (
+            filtered.length === 0 ? (
+              // 14. Empty state kur s'ka rezultate
+              <View className="items-center justify-center px-8 mt-10">
+                <Icon name="search" size={24} color="#A79D8A" />
+                <Text className="font-bodyMedium text-sm text-ink mt-3 text-center">S'u gjet asnjë produkt.</Text>
+                <Pressable
+                  onPress={() => {
+                    setQuery("");
+                    setCategory("all");
+                    setSort("relevant");
+                  }}
+                  className="mt-4 bg-olive rounded-full px-5 py-2.5"
+                >
+                  <Text className="font-bodyMedium text-xs text-white">Shiko të gjitha produktet</Text>
+                </Pressable>
+              </View>
+            ) : (
+              <ProductGrid items={filtered} />
+            )
+          ) : (
+            <>
+              {/* 9. Section header — Markat */}
+              <Text className="font-bodySemibold text-lg text-ink px-5 mt-5 mb-3">Markat</Text>
+              <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ paddingHorizontal: 20 }}>
+                {brandCatalog.map((b) => {
+                  const bg = b.accent === "olive" ? "bg-olive-bg" : "bg-orange-bg";
+                  const fg = b.accent === "olive" ? "#6E7452" : "#C9702E";
+                  return (
+                    <Pressable
+                      key={b.id}
+                      onPress={() => {
+                        const match = products.find((p) => p.brand === b.name);
+                        if (match) setCategory(match.category);
+                      }}
+                      style={shadows.soft}
+                      className="items-center bg-surface rounded-xl2 p-3 mr-3 w-24"
+                    >
+                      <View className={`w-11 h-11 rounded-full items-center justify-center mb-2 ${bg}`}>
+                        <Icon name={b.icon} size={20} color={fg} />
+                      </View>
+                      <Text className="font-bodyMedium text-[11px] text-ink text-center" numberOfLines={1}>
+                        {b.name}
+                      </Text>
+                    </Pressable>
+                  );
+                })}
+              </ScrollView>
 
-            {/* Trending */}
-            <Text className="font-display text-lg text-ink px-5 mt-6 mb-3">Në Modë</Text>
-            <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ paddingHorizontal: 20 }}>
-              {trending.map((p) => (
-                <View key={p.id} className="mr-3" style={{ width: 150 }}>
-                  <ProductGridCard product={p} onPress={() => router.push(`/shop/${p.id}`)} />
-                </View>
-              ))}
-            </ScrollView>
+              {flashDeals.length > 0 && (
+                <>
+                  <View className="flex-row items-center justify-between px-5 mt-6 mb-3">
+                    <Text className="font-bodySemibold text-lg text-ink">⚡ Oferta të Menjëhershme</Text>
+                  </View>
+                  <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ paddingHorizontal: 20 }}>
+                    {flashDeals.map((p) => (
+                      <View key={p.id} className="mr-3">
+                        <ProductCard product={p} cardWidth={150} onPress={() => router.push(`/shop/${p.id}`)} />
+                      </View>
+                    ))}
+                  </ScrollView>
+                </>
+              )}
 
-            {/* Best Sellers */}
-            <Text className="font-display text-lg text-ink px-5 mt-6 mb-3">Më të Shiturat</Text>
-            <View className="px-5 flex-row flex-wrap justify-between">
-              {bestSellers.map((p) => (
-                <ProductGridCard key={p.id} product={p} onPress={() => router.push(`/shop/${p.id}`)} />
-              ))}
-            </View>
-          </>
-        )}
-      </ScrollView>
+              {trending.length > 0 && (
+                <>
+                  <Text className="font-bodySemibold text-lg text-ink px-5 mt-6 mb-3">Në Modë</Text>
+                  <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ paddingHorizontal: 20 }}>
+                    {trending.map((p) => (
+                      <View key={p.id} className="mr-3">
+                        <ProductCard product={p} cardWidth={150} onPress={() => router.push(`/shop/${p.id}`)} />
+                      </View>
+                    ))}
+                  </ScrollView>
+                </>
+              )}
+
+              {/* 9. Section header — grid kryesor, me "Shiko të gjitha" */}
+              <View className="flex-row items-center justify-between px-5 mt-6 mb-1">
+                <Text className="font-bodySemibold text-lg text-ink">Të Gjitha Produktet</Text>
+              </View>
+              <ProductGrid items={products} />
+            </>
+          )}
+        </ScrollView>
+      )}
     </SafeAreaView>
   );
 }

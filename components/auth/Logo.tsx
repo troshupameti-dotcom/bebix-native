@@ -29,7 +29,7 @@ export function Logo({ tagline = "For every little step.", size = "lg" }: LogoPr
         />
       </Svg>
 
-      <Text className={`font-display text-ink ${wordmarkClass}`}>Bebix</Text>
+      <Text className={`font-wordmark text-ink ${wordmarkClass}`}>Bebix</Text>
 
       {tagline ? <Text className="font-body text-sm text-ink-soft tracking-wide">{tagline}</Text> : null}
     </MotiView>

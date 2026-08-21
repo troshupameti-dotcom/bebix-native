@@ -29,7 +29,7 @@ function timeAgoLabel(iso: string): string {
 function SectionHeader({ title, onSeeAll }: { title: string; onSeeAll?: () => void }) {
   return (
     <View className="flex-row items-center justify-between mb-3 mt-7 px-5">
-      <Text className="font-display text-lg text-ink">{title}</Text>
+      <Text className="font-bodySemibold text-lg text-ink">{title}</Text>
       {onSeeAll && (
         <Pressable onPress={onSeeAll}>
           <Text className="font-bodyMedium text-sm text-olive">Shiko të gjitha</Text>

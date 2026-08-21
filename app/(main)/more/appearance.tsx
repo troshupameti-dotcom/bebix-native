@@ -19,7 +19,7 @@ export default function AppearanceScreen() {
       </View>
 
       <View className="px-5">
-        <Text className="font-bodySemibold text-xs text-ink-faint uppercase mb-2">Tema</Text>
+        <Text className="font-bodyMedium text-xs text-ink-faint uppercase mb-2">Tema</Text>
         <View style={shadows.soft} className="bg-surface rounded-xl2 overflow-hidden mb-6">
           <Pressable onPress={() => setDarkMode(false)} className="flex-row items-center justify-between px-4 py-3.5 border-b border-cream-line">
             <View className="flex-row items-center">
@@ -45,7 +45,7 @@ export default function AppearanceScreen() {
           </Text>
         </View>
 
-        <Text className="font-bodySemibold text-xs text-ink-faint uppercase mt-6 mb-2">Të tjera</Text>
+        <Text className="font-bodyMedium text-xs text-ink-faint uppercase mt-6 mb-2">Të tjera</Text>
         <View style={shadows.soft} className="bg-surface rounded-xl2 overflow-hidden opacity-50">
           {["Madhësia e Shkronjave", "Densiteti i Ekranit", "Animacione", "Kontrasti i Lartë"].map((label, i, arr) => (
             <View key={label} className={`flex-row items-center justify-between px-4 py-3.5 ${i < arr.length - 1 ? "border-b border-cream-line" : ""}`}>

@@ -3,8 +3,8 @@ import { useEffect } from "react";
 import { Stack } from "expo-router";
 import { GestureHandlerRootView } from "react-native-gesture-handler";
 import * as SplashScreen from "expo-splash-screen";
-import { useFonts, Inter_400Regular, Inter_500Medium, Inter_600SemiBold } from "@expo-google-fonts/inter";
-import { Fraunces_500Medium, Fraunces_600SemiBold, Fraunces_700Bold } from "@expo-google-fonts/fraunces";
+import { useFonts, Inter_400Regular, Inter_500Medium, Inter_600SemiBold, Inter_700Bold } from "@expo-google-fonts/inter";
+import { Poppins_700Bold } from "@expo-google-fonts/poppins";
 import { LanguageProvider } from "@/lib/i18n/LanguageContext";
 import { AppStateProvider } from "@/lib/state/AppStateContext";
 import { ToastProvider } from "@/lib/toast/ToastContext";
@@ -12,13 +12,12 @@ import { ToastProvider } from "@/lib/toast/ToastContext";
 SplashScreen.preventAutoHideAsync();
 
 export default function RootLayout() {
-  const [fontsLoaded] = useFonts({
+ const [fontsLoaded] = useFonts({
     Inter_400Regular,
     Inter_500Medium,
     Inter_600SemiBold,
-    Fraunces_500Medium,
-    Fraunces_600SemiBold,
-    Fraunces_700Bold,
+    Inter_700Bold,
+    Poppins_700Bold,
   });
 
   useEffect(() => {

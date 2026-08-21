@@ -39,7 +39,7 @@ export default function ProfileScreen() {
         <Pressable onPress={() => router.back()} style={shadows.soft} className="w-10 h-10 rounded-full bg-surface items-center justify-center">
           <Icon name="chevronLeft" size={18} color="#2C271F" />
         </Pressable>
-        <Text className="font-display text-lg text-ink">Profili Im</Text>
+        <Text className="font-bodyMedium text-lg text-ink">Profili Im</Text>
         <Pressable onPress={save} className="px-4 py-2 rounded-full bg-olive">
           <Text className="font-bodySemibold text-xs text-white">Ruaj</Text>
         </Pressable>

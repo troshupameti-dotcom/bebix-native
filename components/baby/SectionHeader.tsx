@@ -14,7 +14,7 @@ export function SectionHeader({ title, editable, editing, onToggleEdit, trailing
   const { t } = useTranslation();
   return (
     <View className="mt-6 mb-2.5 flex-row items-center justify-between">
-      <Text className="font-display text-lg text-ink dark:text-cream">{title}</Text>
+      <Text className="font-bodySemibold text-lg text-ink dark:text-cream">{title}</Text>
       {trailing}
       {editable && (
         <Pressable onPress={onToggleEdit} hitSlop={8}>

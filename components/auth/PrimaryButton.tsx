@@ -29,7 +29,7 @@ export function PrimaryButton({ label, loading, disabled, style, ...props }: Pri
         {loading ? (
           <ActivityIndicator color="#FBF6EE" />
         ) : (
-          <Text className="font-bodySemibold text-[15px] text-cream">{label}</Text>
+          <Text className="font-bodyMedium text-[15px] text-cream">{label}</Text>
         )}
       </MotiView>
     </Pressable>
