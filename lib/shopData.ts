@@ -34,6 +34,7 @@ type BrandRow = {
   name: string;
   tagline: string | null;
   icon: string | null;
+  logo_url: string | null;
 };
 
 /** Ikonë e arsyeshme kur produkti s'ka kategori/nuk përputhet me listën e njohur. */
@@ -72,6 +73,7 @@ function mapRow(row: ProductRow): Product {
     freeDelivery: row.free_delivery ?? false,
     merchant: row.merchant_name ?? null,
     stock: row.stock ?? 0,
+    galleryUrls: Array.isArray(row.gallery_urls) ? row.gallery_urls : [],
   };
 }
 
@@ -82,6 +84,7 @@ function mapBrandRow(row: BrandRow, index: number): Brand {
     tagline: row.tagline ?? "",
     icon: iconForBrand(row.icon),
     accent: index % 2 === 0 ? "olive" : "orange",
+    logoUrl: row.logo_url ?? null,
   };
 }
 
@@ -119,4 +122,29 @@ export async function fetchBrands(): Promise<Brand[]> {
 
   if (error) throw error;
   return (data as unknown as BrandRow[]).map(mapBrandRow);
+}
+
+/** Merr një markë të vetme sipas ID — për ekranin "produktet e markës". */
+export async function fetchBrandById(id: string): Promise<Brand | null> {
+  const { data, error } = await supabase
+    .from("brands")
+    .select("*")
+    .eq("id", id)
+    .maybeSingle();
+
+  if (error) throw error;
+  return data ? mapBrandRow(data as unknown as BrandRow, 0) : null;
+}
+
+/** Merr produktet aktive që i përkasin një marke specifike (sipas brand_id). */
+export async function fetchProductsByBrand(brandId: string): Promise<Product[]> {
+  const { data, error } = await supabase
+    .from("products")
+    .select("*, brands(name), categories(key)")
+    .eq("is_active", true)
+    .eq("brand_id", brandId)
+    .order("created_at", { ascending: false });
+
+  if (error) throw error;
+  return (data as unknown as ProductRow[]).map(mapRow);
 }

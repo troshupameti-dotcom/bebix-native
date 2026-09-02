@@ -44,45 +44,55 @@ function Section({ title, rows }: { title: string; rows: Row[] }) {
 export default function MoreScreen() {
   const router = useRouter();
   const { state } = useAppState();
-  const { profile } = state;
+  const { profile } = state as any;
 
-  const soon = (title: string, reason?: string, icon?: string) =>
-    router.push({ pathname: "/more/soon", params: { title, reason, icon } });
+  // Defensive reads — these fields are set on AppState per the community feature build.
+  // If the names differ in your actual AppStateContext, tell me and I'll adjust.
+  const savedPostsCount = (state as any).savedPostIds?.length ?? 0;
+  const joinedGroupsCount = (state as any).joinedGroupIds?.length ?? 0;
 
   return (
     <SafeAreaView className="flex-1 bg-cream" edges={["top"]}>
       <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={{ paddingBottom: 40 }}>
-        <Text className="font-display text-2xl text-ink px-5 pt-2 mb-5">Më Shumë</Text>
-
-        {/* Profile card */}
+        {/* Hero */}
         <Pressable
           onPress={() => router.push("/more/profile")}
           style={shadows.softLg}
-          className="mx-5 bg-surface rounded-xl3 p-4 flex-row items-center mb-6"
+          className="mx-5 mt-2 bg-surface rounded-xl3 p-5 mb-6"
         >
-          <View className="w-14 h-14 rounded-full bg-olive-bg items-center justify-center overflow-hidden mr-4">
-            {profile.parentPhoto ? (
-              <Image source={{ uri: profile.parentPhoto }} className="w-14 h-14" />
-            ) : (
-              <Icon name="family" size={24} color="#6E7452" />
-            )}
+          <View className="flex-row items-center mb-4">
+            <View className="w-16 h-16 rounded-full bg-olive-bg items-center justify-center overflow-hidden mr-4">
+              {profile?.parentPhoto ? (
+                <Image source={{ uri: profile.parentPhoto }} className="w-16 h-16" />
+              ) : (
+                <Icon name="family" size={26} color="#6E7452" />
+              )}
+            </View>
+            <View className="flex-1">
+              <Text className="font-display text-xl text-ink">{profile?.parentName || "Shto emrin tënd"}</Text>
+              <Text className="font-body text-xs text-ink-soft mt-0.5">Shiko dhe ndrysho profilin</Text>
+            </View>
+            <Icon name="chevronRight" size={18} color="#A79D8A" />
           </View>
-          <View className="flex-1">
-            <Text className="font-bodySemibold text-base text-ink">{profile.parentName || "Shto emrin tënd"}</Text>
-            <Text className="font-body text-xs text-ink-soft">Shiko dhe ndrysho profilin</Text>
+
+          <View className="flex-row border-t border-cream-line pt-3">
+            <View className="flex-1 items-center">
+              <Text className="font-bodySemibold text-base text-ink">{savedPostsCount}</Text>
+              <Text className="font-body text-[11px] text-ink-faint mt-0.5">Postime të Ruajtura</Text>
+            </View>
+            <View className="w-px bg-cream-line" />
+            <View className="flex-1 items-center">
+              <Text className="font-bodySemibold text-base text-ink">{joinedGroupsCount}</Text>
+              <Text className="font-body text-[11px] text-ink-faint mt-0.5">Grupe të Bashkuara</Text>
+            </View>
           </View>
-          <Icon name="chevronRight" size={18} color="#A79D8A" />
         </Pressable>
 
         <Section
-          title="Llogaria ime"
+          title="Të Ruajturat"
           rows={[
-            { icon: "baby", label: "Bebet e Mia", onPress: () => soon("Bebet e Mia", "Mbështetja për disa bebe njëherësh kërkon ndryshim strukturor te modeli i të dhënave — vjen te faza tjetër.") },
-            { icon: "family", label: "Anëtarët e Familjes", onPress: () => soon("Anëtarët e Familjes", "Ndarja e llogarisë me role (mami, babi, gjyshërit...) kërkon Supabase.") },
-            { icon: "cube", label: "Porositë", onPress: () => soon("Porositë", "Historiku i porosive kërkon checkout dhe backend real.") },
-            { icon: "heart", label: "Wishlist", onPress: () => router.push("/shop/wishlist") },
+            { icon: "heart", label: "Produkte të Ruajtura", onPress: () => router.push("/shop/wishlist") },
             { icon: "bookmark", label: "Postime të Ruajtura", onPress: () => router.push("/community/saved") },
-            { icon: "sparkle", label: "Historiku i AI-t", onPress: () => soon("Historiku i AI-t", "Ende s'ka integrim real AI me histori bisedash.") },
           ]}
         />
 
@@ -92,7 +102,6 @@ export default function MoreScreen() {
             { icon: "shield", label: "Të Dhëna Mjekësore", onPress: () => router.push("/baby/medical") },
             { icon: "syringe", label: "Regjistrimet e Vaksinave", onPress: () => router.push("/baby/vaccinations") },
             { icon: "chart", label: "Raportet e Rritjes", onPress: () => router.push("/baby/growth") },
-            { icon: "download", label: "Dokumente", onPress: () => soon("Dokumente", "Ngarkimi/ruajtja e dokumenteve kërkon Supabase Storage.") },
           ]}
         />
 
@@ -101,17 +110,7 @@ export default function MoreScreen() {
           rows={[
             { icon: "bell", label: "Njoftimet", onPress: () => router.push("/more/notifications") },
             { icon: "moon", label: "Pamja (Dark Mode)", onPress: () => router.push("/more/appearance") },
-            { icon: "globe", label: "Gjuha", onPress: () => router.push("/more/language"), badge: state.darkMode ? undefined : undefined },
-            { icon: "lock", label: "Privatësia", onPress: () => soon("Privatësia", "Kontrollet e privatësisë kërkojnë llogari dhe të dhëna të ruajtura në server.") },
-            { icon: "shield", label: "Siguria", onPress: () => soon("Siguria", "Face ID/2FA kërkojnë 'development build' (jashtë Expo Go) dhe/ose backend.") },
-            { icon: "sparkle", label: "Cilësimet e AI", onPress: () => soon("Cilësimet e AI", "Ende s'ka motor AI real të lidhur me app-in.") },
-          ]}
-        />
-
-        <Section
-          title="Premium"
-          rows={[
-            { icon: "flame", label: "Bebix Premium", onPress: () => soon("Bebix Premium", "Abonimet reale kërkojnë RevenueCat/Stripe dhe App Store/Play Store setup.") },
+            { icon: "globe", label: "Gjuha", onPress: () => router.push("/more/language") },
           ]}
         />
 
@@ -124,29 +123,42 @@ export default function MoreScreen() {
           ]}
         />
 
-        <View className="mx-5 mt-2">
-          <Pressable
-            onPress={() =>
-              Alert.alert("Dil nga llogaria", "A je i sigurt?", [
-                { text: "Anulo", style: "cancel" },
-                {
-                  text: "Dil",
-                  style: "destructive",
-                  onPress: async () => {
-                    await supabase.auth.signOut();
-                    router.replace("/(auth)/login");
-                  },
-                },
-              ])
-            }
-            style={shadows.soft}
-            className="bg-surface rounded-xl2 py-3.5 items-center"
-          >
-            <Text className="font-bodySemibold text-sm text-orange">Dil nga Llogaria</Text>
-          </Pressable>
-        </View>
+        {/* Expert CTA — separate from settings list, so it reads as an invitation, not a menu item */}
+        <Pressable
+          onPress={() => router.push("/more/doctor-registration")}
+          style={shadows.soft}
+          className="mx-5 mb-6 bg-olive-bg rounded-xl2 p-4 flex-row items-center"
+        >
+          <View className="w-10 h-10 rounded-full bg-surface items-center justify-center mr-3">
+            <Icon name="shield" size={18} color="#6E7452" />
+          </View>
+          <View className="flex-1">
+            <Text className="font-bodySemibold text-sm text-ink">Je mjek apo ekspert i fëmijëve?</Text>
+            <Text className="font-body text-xs text-ink-soft mt-0.5">Bëhu ekspert i verifikuar në Bebix</Text>
+          </View>
+          <Icon name="chevronRight" size={16} color="#6E7452" />
+        </Pressable>
 
-        <Text className="font-body text-[11px] text-ink-faint text-center mt-6">Bebix v1.0.0</Text>
+        <Pressable
+          onPress={() =>
+            Alert.alert("Dil nga llogaria", "A je i sigurt?", [
+              { text: "Anulo", style: "cancel" },
+              {
+                text: "Dil",
+                style: "destructive",
+                onPress: async () => {
+                  await supabase.auth.signOut();
+                  router.replace("/(auth)/login");
+                },
+              },
+            ])
+          }
+          className="items-center py-3"
+        >
+          <Text className="font-bodyMedium text-sm text-orange">Dil nga Llogaria</Text>
+        </Pressable>
+
+        <Text className="font-body text-[11px] text-ink-faint text-center mt-4">Bebix v1.0.0</Text>
       </ScrollView>
     </SafeAreaView>
   );

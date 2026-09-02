@@ -1,12 +1,13 @@
 import { useEffect, useMemo, useState } from "react";
-import { View, Text, ScrollView, Pressable, TextInput, useWindowDimensions } from "react-native";
+import { View, Text, ScrollView, Pressable, TextInput, Image, useWindowDimensions } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useRouter } from "expo-router";
 import { useAppState } from "@/lib/state/AppStateContext";
+import { useTranslation } from "@/lib/i18n/LanguageContext";
 import { Icon } from "@/components/ui/Icon";
 import { shadows } from "@/lib/shadows";
-import { brandCatalog, CATEGORY_META, Product, ProductCategory } from "@/lib/homeContent";
-import { fetchProducts } from "@/lib/shopData";
+import { CATEGORY_META, Product, ProductCategory, Brand } from "@/lib/homeContent";
+import { fetchProducts, fetchBrands } from "@/lib/shopData";
 import { ProductCard, ProductCardSkeleton } from "@/components/ProductCard";
 
 type SortMode = "relevant" | "priceAsc" | "priceDesc" | "rating";
@@ -34,8 +35,35 @@ function Chip({ label, active, onPress }: { label: string; active: boolean; onPr
   );
 }
 
+/** Kategoritë tash si grid 2×3 me ikona të mëdha — krejt 6 shihen menjëherë, pa scroll. */
+function CategoryTile({
+  label,
+  icon,
+  active,
+  onPress,
+}: {
+  label: string;
+  icon: Parameters<typeof Icon>[0]["name"];
+  active: boolean;
+  onPress: () => void;
+}) {
+  return (
+    <Pressable
+      onPress={onPress}
+      style={!active ? shadows.soft : undefined}
+      className={`flex-1 items-center py-4 rounded-xl2 ${active ? "bg-olive" : "bg-surface"}`}
+    >
+      <Icon name={icon} size={22} color={active ? "#FFFFFF" : "#6E7452"} />
+      <Text className={`font-bodyMedium text-xs mt-2 text-center ${active ? "text-white" : "text-ink"}`} numberOfLines={1}>
+        {label}
+      </Text>
+    </Pressable>
+  );
+}
+
 export default function ShopScreen() {
   const router = useRouter();
+  const { t } = useTranslation();
   const { state } = useAppState();
   const { width } = useWindowDimensions();
   const columns = useGridColumns();
@@ -47,6 +75,7 @@ export default function ShopScreen() {
   const [showFilters, setShowFilters] = useState(false);
 
   const [products, setProducts] = useState<Product[]>([]);
+  const [brands, setBrands] = useState<Brand[]>([]);
   const [loading, setLoading] = useState(true);
   const [loadError, setLoadError] = useState<string | null>(null);
 
@@ -54,8 +83,9 @@ export default function ShopScreen() {
     setLoading(true);
     setLoadError(null);
     try {
-      const data = await fetchProducts();
-      setProducts(data);
+      const [productsData, brandsData] = await Promise.all([fetchProducts(), fetchBrands()]);
+      setProducts(productsData);
+      setBrands(brandsData);
     } catch (e: any) {
       setLoadError(e.message ?? "Diçka shkoi keq.");
     } finally {
@@ -84,6 +114,7 @@ export default function ShopScreen() {
   }, [products, query, category, sort]);
 
   const isSearching = query.trim().length > 0 || category !== "all" || sort !== "relevant";
+  const categoryKeys = Object.keys(CATEGORY_META) as ProductCategory[];
 
   function ProductGrid({ items }: { items: Product[] }) {
     return (
@@ -197,13 +228,26 @@ export default function ShopScreen() {
         </View>
       ) : (
         <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={{ paddingBottom: 40 }}>
-          <View className="mb-2">
-            <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ paddingHorizontal: 20 }}>
+          {/* Kategoritë — grid 2×3, krejt të dukshme pa scroll */}
+          <View className="px-5 mb-2">
+            <View className="flex-row justify-between mb-2">
               <Chip label="Të gjitha" active={category === "all"} onPress={() => setCategory("all")} />
-              {(Object.keys(CATEGORY_META) as ProductCategory[]).map((cat) => (
-                <Chip key={cat} label={CATEGORY_META[cat].labelKey} active={category === cat} onPress={() => setCategory(cat)} />
+            </View>
+            <View style={{ gap: GRID_GAP }}>
+              {[0, 1].map((row) => (
+                <View key={row} className="flex-row" style={{ gap: GRID_GAP }}>
+                  {categoryKeys.slice(row * 3, row * 3 + 3).map((cat) => (
+                    <CategoryTile
+                      key={cat}
+                      label={t(CATEGORY_META[cat].labelKey as any)}
+                      icon={CATEGORY_META[cat].icon}
+                      active={category === cat}
+                      onPress={() => setCategory(category === cat ? "all" : cat)}
+                    />
+                  ))}
+                </View>
               ))}
-            </ScrollView>
+            </View>
           </View>
 
           {isSearching ? (
@@ -229,31 +273,40 @@ export default function ShopScreen() {
           ) : (
             <>
               {/* 9. Section header — Markat */}
-              <Text className="font-bodySemibold text-lg text-ink px-5 mt-5 mb-3">Markat</Text>
-              <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ paddingHorizontal: 20 }}>
-                {brandCatalog.map((b) => {
-                  const bg = b.accent === "olive" ? "bg-olive-bg" : "bg-orange-bg";
-                  const fg = b.accent === "olive" ? "#6E7452" : "#C9702E";
-                  return (
-                    <Pressable
-                      key={b.id}
-                      onPress={() => {
-                        const match = products.find((p) => p.brand === b.name);
-                        if (match) setCategory(match.category);
-                      }}
-                      style={shadows.soft}
-                      className="items-center bg-surface rounded-xl2 p-3 mr-3 w-24"
-                    >
-                      <View className={`w-11 h-11 rounded-full items-center justify-center mb-2 ${bg}`}>
-                        <Icon name={b.icon} size={20} color={fg} />
-                      </View>
-                      <Text className="font-bodyMedium text-[11px] text-ink text-center" numberOfLines={1}>
-                        {b.name}
-                      </Text>
-                    </Pressable>
-                  );
-                })}
-              </ScrollView>
+              {brands.length > 0 && (
+                <>
+                  <Text className="font-bodySemibold text-lg text-ink px-5 mt-5 mb-3">Markat</Text>
+                  <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ paddingHorizontal: 20 }}>
+                    {brands.map((b) => {
+                      const bg = b.accent === "olive" ? "bg-olive-bg" : "bg-orange-bg";
+                      const fg = b.accent === "olive" ? "#6E7452" : "#C9702E";
+                      return (
+                        <Pressable
+                          key={b.id}
+                          onPress={() => router.push(`/shop/brand/${b.id}`)}
+                          className="items-center mr-4 w-20"
+                        >
+                          <View
+                            style={shadows.soft}
+                            className="w-20 h-20 rounded-2xl bg-surface items-center justify-center overflow-hidden"
+                          >
+                            {b.logoUrl ? (
+                              <Image source={{ uri: b.logoUrl }} className="w-full h-full" resizeMode="cover" />
+                            ) : (
+                              <View className={`w-full h-full items-center justify-center ${bg}`}>
+                                <Icon name={b.icon} size={26} color={fg} />
+                              </View>
+                            )}
+                          </View>
+                          <Text className="font-bodyMedium text-[11px] text-ink text-center mt-2" numberOfLines={1}>
+                            {b.name}
+                          </Text>
+                        </Pressable>
+                      );
+                    })}
+                  </ScrollView>
+                </>
+              )}
 
               {flashDeals.length > 0 && (
                 <>

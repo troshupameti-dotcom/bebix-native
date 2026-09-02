@@ -20,7 +20,11 @@ import { haptics } from "@/lib/haptics";
 import { computeAgeText, formatDate, formatTime } from "@/lib/dateUtils";
 import { shadows } from "@/lib/shadows";
 
-const TABS = ["profile", "timeline", "health", "milestones"] as const;
+// Ridizajnim: 4 tabe → 2. "Sot" (dikur "Profili") mbetet pamja e qetë e
+// gjendjes aktuale. "Ditari" bashkon Kronologjinë, Shëndetin (linqet) dhe
+// Momentet-e-arritjes (Milestones) — s'ka arsye me qenë 3 vende të veçanta
+// për "gjëra që ndodhën në kohë".
+const TABS = ["today", "diary"] as const;
 type TabKey = (typeof TABS)[number];
 
 type SheetContext = "growth" | "medical" | "timeline" | "statEdit" | null;
@@ -44,15 +48,17 @@ export default function BabyProfileScreen() {
   const { profile } = state;
   const b = state.baby;
 
-  const [activeTab, setActiveTab] = useState<TabKey>("profile");
+  const [activeTab, setActiveTab] = useState<TabKey>("today");
   const [editGrowth, setEditGrowth] = useState(false);
   const [editMedical, setEditMedical] = useState(false);
   const [editMilestones, setEditMilestones] = useState(false);
   const [sheet, setSheet] = useState<SheetContext>(null);
+  const [timelineSheetPurpose, setTimelineSheetPurpose] = useState<"milestone" | "event">("event");
   const [editingStatKey, setEditingStatKey] = useState<string | null>(null);
   const [statValue, setStatValue] = useState("");
   const [statDate, setStatDate] = useState(new Date().toISOString());
 
+  const [showSearch, setShowSearch] = useState(false);
   const [search, setSearch] = useState("");
   const [kindFilter, setKindFilter] = useState<FeedKind | "all">("all");
   const [rangeView, setRangeView] = useState<(typeof RANGE_KEYS)[number]>("week");
@@ -144,12 +150,6 @@ export default function BabyProfileScreen() {
     if (!editingStatKey) return;
     const stat = b.growthStats.find((g) => g.key === editingStatKey);
     baby.updateGrowthStat(editingStatKey, { value: statValue });
-
-    // Nëse âsht pesha/gjatësia standarde, shtohet edhe si matje e re në
-    // historikun e rritjes — kështu përditësohet automatikisht edhe
-    // grafiku kalendarik te ekrani i Rritjes (ndryshim #7).
-    // ⚠️ Supozova që "key" standard për peshë/gjatësi janë "weight"/"height" —
-    // nëse tek ty janë emra tjerë, m'i trego dhe e ndreqi.
     if (stat && !stat.isCustom) {
       const num = parseFloat(statValue.replace(",", "."));
       if (!isNaN(num)) {
@@ -169,7 +169,29 @@ export default function BabyProfileScreen() {
     setter((v) => !v);
   }
 
-  // ---- Unified timeline feed ----
+  // ---- Sugjerimi i vetëm inteligjent — zëvendëson 8 butonat "Veprime të
+  // shpejta". Shof cila gjë âsht ma e "vjetruar" (ushqyerje/pelenë) dhe
+  // sugjeron vetëm atë, jo krejt opsionet njëkohësisht. ----
+  const suggestion = useMemo(() => {
+    const lastFeeding = active(b.feedingLog)[0];
+    const lastDiaper = active(b.diaperLog)[0];
+    const candidates: { label: string; hrs: number; icon: IconName; route: "/(main)/baby/feeding" | "/(main)/baby/diaper" }[] = [];
+    if (lastFeeding) {
+      const hrs = (Date.now() - new Date(lastFeeding.at).getTime()) / 3600000;
+      candidates.push({ label: "ushqyerjes", hrs, icon: "spoon", route: "/(main)/baby/feeding" });
+    }
+    if (lastDiaper) {
+      const hrs = (Date.now() - new Date(lastDiaper.at).getTime()) / 3600000;
+      candidates.push({ label: "pelenës", hrs, icon: "baby", route: "/(main)/baby/diaper" });
+    }
+    if (candidates.length === 0) return null;
+    const oldest = candidates.sort((x, y) => y.hrs - x.hrs)[0];
+    if (oldest.hrs < 2) return null; // krejt âsht "e freskët", s'ka nevojë me sugjeru
+    const hrsRounded = Math.floor(oldest.hrs);
+    return { text: `Ka kalu ${hrsRounded} orë prej ${oldest.label} të fundit`, icon: oldest.icon, route: oldest.route };
+  }, [b.feedingLog, b.diaperLog]);
+
+  // ---- Unified diary feed ----
   const feed = useMemo<FeedEntry[]>(() => {
     const items: FeedEntry[] = [];
     active(b.timeline).forEach((ev) => {
@@ -287,7 +309,7 @@ export default function BabyProfileScreen() {
         </View>
       </View>
 
-      {/* Segmented tab control */}
+      {/* Segmented tab control — tash vetëm 2 tabe */}
       <View className="mx-5 mb-2 flex-row rounded-2xl bg-cream-soft p-1">
         {TABS.map((tab) => {
           const isActive = activeTab === tab;
@@ -308,8 +330,8 @@ export default function BabyProfileScreen() {
                   style={[shadows.press, { position: "absolute", inset: 2, borderRadius: 14, backgroundColor: "#fff" }]}
                 />
               )}
-              <Text className={`text-center font-bodyMedium text-[12.5px] ${isActive ? "text-ink" : "text-ink-faint"}`}>
-                {t(`baby_tab_${tab}` as never)}
+              <Text className={`text-center font-bodyMedium text-[13px] ${isActive ? "text-ink" : "text-ink-faint"}`}>
+                {tab === "today" ? "Sot" : "Ditari"}
               </Text>
             </Pressable>
           );
@@ -317,38 +339,82 @@ export default function BabyProfileScreen() {
       </View>
 
       <ScrollView className="flex-1 px-5" contentContainerStyle={{ paddingBottom: 24 }} showsVerticalScrollIndicator={false}>
-        {activeTab === "profile" && (
+        {activeTab === "today" && (
           <MotiView from={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ type: "timing", duration: 200 }}>
-            {/* Baby card */}
-            <View style={shadows.soft} className="mt-2 flex-row items-center gap-4 rounded-xl3 border border-ink/10 bg-white p-4">
+            {/* Hero — foto e madhe, jo ikonë e vogël. Kjo âsht qendra
+                emocionale e app-it, duhet me u ndje si e tillë. */}
+            <View className="mt-2 items-center">
               {profile.babyPhoto ? (
-                <Image source={{ uri: profile.babyPhoto }} className="h-16 w-16 rounded-full" />
+                <Image source={{ uri: profile.babyPhoto }} style={{ width: "100%", aspectRatio: 1.3, borderRadius: 28 }} />
               ) : (
-                <View className="h-16 w-16 items-center justify-center rounded-full bg-cream-soft">
-                  <Icon name="baby" size={26} color="#A79D8A" />
+                <View
+                  style={{ width: "100%", aspectRatio: 1.3, borderRadius: 28 }}
+                  className="items-center justify-center bg-cream-soft"
+                >
+                  <Icon name="baby" size={44} color="#A79D8A" />
                 </View>
               )}
-              <View className="flex-1">
-                <Text className="font-bodySemibold text-base text-ink">{babyName}</Text>
-                {profile.babyDob && (
-                  <Text className="mt-0.5 font-body text-xs text-ink-soft">
-                    {t("baby_born")} {formatDate(profile.babyDob, lang)}
+              <Text className="mt-4 font-display text-[26px] text-ink">{babyName}</Text>
+              {ageText ? <Text className="mt-0.5 font-body text-[14px] text-ink-soft">{ageText}</Text> : null}
+              {profile.babyDob && (
+                <Text className="mt-0.5 font-body text-[12px] text-ink-faint">
+                  {t("baby_born")} {formatDate(profile.babyDob, lang)}
+                </Text>
+              )}
+            </View>
+
+            {/* Sugjerim i vetëm, kontekstual — jo 8 butona */}
+            {suggestion && (
+              <Pressable
+                onPress={() => router.push(suggestion.route)}
+                style={shadows.softLg}
+                className="mt-5 flex-row items-center gap-3 rounded-2xl bg-ink px-4 py-3.5"
+              >
+                <View className="h-9 w-9 items-center justify-center rounded-full bg-white/15">
+                  <Icon name={suggestion.icon} size={16} color="#FBF6EE" />
+                </View>
+                <Text className="flex-1 font-bodyMedium text-[13.5px] text-cream">{suggestion.text}</Text>
+                <Icon name="chevronRight" size={16} color="#FBF6EE" />
+              </Pressable>
+            )}
+
+            {/* Lidhje të shpejta minimale — vetëm 2, jo 8 */}
+            <View className="mt-5 flex-row gap-3">
+              <Pressable
+                onPress={() => router.push("/(main)/baby/vaccinations")}
+                style={shadows.soft}
+                className="flex-1 flex-row items-center gap-2.5 rounded-xl2 border border-ink/10 bg-white p-3.5"
+              >
+                <View className="h-9 w-9 items-center justify-center rounded-xl bg-olive-bg">
+                  <Icon name="syringe" size={16} color="#6E7452" />
+                </View>
+                <View className="flex-1">
+                  <Text className="font-bodySemibold text-[13px] text-ink">{t("vaccine_screen_title")}</Text>
+                  <Text className="font-body text-[10.5px] text-ink-soft">
+                    {upcomingVaccineCount} {t("vaccine_status_upcoming").toLowerCase()}
                   </Text>
-                )}
-                {ageText ? <Text className="mt-0.5 font-body text-xs text-ink-soft">{ageText}</Text> : null}
-              </View>
+                </View>
+              </Pressable>
+              <Pressable
+                onPress={() => router.push("/(main)/baby/medical")}
+                style={shadows.soft}
+                className="flex-1 flex-row items-center gap-2.5 rounded-xl2 border border-ink/10 bg-white p-3.5"
+              >
+                <View className="h-9 w-9 items-center justify-center rounded-xl bg-orange-bg">
+                  <Icon name="shield" size={16} color="#C9702E" />
+                </View>
+                <View className="flex-1">
+                  <Text className="font-bodySemibold text-[13px] text-ink">{t("medical_screen_title")}</Text>
+                  <Text className="font-body text-[10.5px] text-ink-soft">{active(b.medicalRecords).length}</Text>
+                </View>
+              </Pressable>
             </View>
 
             {/* Growth summary */}
             <SectionHeader title={t("baby_growth_summary")} editable editing={editGrowth} onToggleEdit={() => toggleEdit(setEditGrowth)} />
             <View className="flex-row flex-wrap gap-3">
               {b.growthStats.map((g) => (
-                <Pressable
-                  key={g.key}
-                  disabled={editGrowth}
-                  onPress={() => openStatEdit(g.key, g.value)}
-                  style={{ width: "47.5%" }}
-                >
+                <Pressable key={g.key} disabled={editGrowth} onPress={() => openStatEdit(g.key, g.value)} style={{ width: "47.5%" }}>
                   <StatCard
                     label={g.isCustom ? g.label ?? "" : t(g.labelKey as never)}
                     value={g.value}
@@ -370,33 +436,81 @@ export default function BabyProfileScreen() {
             <Pressable onPress={() => router.push("/(main)/baby/growth")} className="mt-3 items-center rounded-2xl bg-ink py-3.5">
               <Text className="font-bodyMedium text-[14px] text-cream">{t("baby_see_chart")}</Text>
             </Pressable>
-
-            {/* Veprimet e shpejta u hoqën krejtësisht nga ky ekran (ndryshim #7) */}
           </MotiView>
         )}
 
-        {activeTab === "timeline" && (
+        {activeTab === "diary" && (
           <MotiView from={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ type: "timing", duration: 200 }}>
-            <View className="mt-2 flex-row items-center gap-2">
-              <View className="flex-1 flex-row items-center gap-2 rounded-2xl bg-white border border-ink/10 px-3.5 py-2.5">
-                <Icon name="search" size={15} color="#A79D8A" />
-                <TextInput
-                  value={search}
-                  onChangeText={setSearch}
-                  placeholder={t("timeline_search_ph")}
-                  placeholderTextColor="#A79D8A"
-                  className="flex-1 font-body text-[13.5px] text-ink"
-                />
-              </View>
+            {/* Milestones — tash kompakte, lart te Ditari, jo tab e vet */}
+            <View className="mt-2 flex-row items-center justify-between">
+              <Text className="font-bodySemibold text-[15px] text-ink">{t("baby_tab_milestones")}</Text>
+              <Pressable onPress={() => toggleEdit(setEditMilestones)} hitSlop={8}>
+                <Text className="font-bodySemibold text-[12.5px] text-orange">{editMilestones ? t("done_action") : t("edit_action")}</Text>
+              </Pressable>
+            </View>
+            <ScrollView horizontal showsHorizontalScrollIndicator={false} className="mt-2.5" contentContainerStyle={{ gap: 8 }}>
+              {b.milestones
+                .filter((m) => b.milestoneActiveKeys.includes(m.key))
+                .map((m) => (
+                  <MilestoneChip
+                    key={m.key}
+                    label={m.isCustom ? m.label ?? "" : t(m.labelKey as never)}
+                    done={m.done}
+                    isCustom={m.isCustom}
+                    editing={editMilestones}
+                    onToggle={() => {
+                      haptics.success();
+                      baby.toggleMilestone(m.key);
+                    }}
+                    onChangeLabel={(v) => baby.updateMilestoneLabel(m.key, v)}
+                    onRemove={() => baby.removeMilestone(m.key)}
+                  />
+                ))}
+              <Pressable
+                onPress={() => {
+                  setTimelineSheetPurpose("milestone");
+                  setSheet("timeline");
+                }}
+                className="items-center justify-center rounded-2xl border border-dashed border-cream-line px-4 py-2"
+              >
+                <Icon name="plus" size={16} color="#A79D8A" />
+              </Pressable>
+            </ScrollView>
+
+            {/* Rryma kronologjike — kontrollet tash ma kompakte */}
+            <View className="mt-6 flex-row items-center gap-2">
+              {showSearch ? (
+                <View className="flex-1 flex-row items-center gap-2 rounded-2xl bg-white border border-ink/10 px-3.5 py-2.5">
+                  <Icon name="search" size={15} color="#A79D8A" />
+                  <TextInput
+                    autoFocus
+                    value={search}
+                    onChangeText={setSearch}
+                    placeholder={t("timeline_search_ph")}
+                    placeholderTextColor="#A79D8A"
+                    className="flex-1 font-body text-[13.5px] text-ink"
+                  />
+                  <Pressable onPress={() => { setShowSearch(false); setSearch(""); }} hitSlop={8}>
+                    <Icon name="close" size={14} color="#A79D8A" />
+                  </Pressable>
+                </View>
+              ) : (
+                <>
+                  <Text className="flex-1 font-bodySemibold text-[15px] text-ink">{t("baby_tab_timeline")}</Text>
+                  <Pressable onPress={() => setShowSearch(true)} hitSlop={8} className="h-9 w-9 items-center justify-center rounded-full bg-white border border-ink/10">
+                    <Icon name="search" size={15} color="#2C271F" />
+                  </Pressable>
+                </>
+              )}
               <Pressable
                 onPress={() => {
                   haptics.select();
                   if (selectMode) exitSelectMode();
                   else setSelectMode(true);
                 }}
-                className={`rounded-2xl px-3.5 py-3 ${selectMode ? "bg-ink" : "bg-white border border-ink/10"}`}
+                className={`rounded-2xl px-3.5 py-2.5 ${selectMode ? "bg-ink" : "bg-white border border-ink/10"}`}
               >
-                <Text className={`font-bodyMedium text-[12.5px] ${selectMode ? "text-cream" : "text-ink"}`}>
+                <Text className={`font-bodyMedium text-[12px] ${selectMode ? "text-cream" : "text-ink"}`}>
                   {selectMode ? t("bulk_cancel") : t("bulk_select_action")}
                 </Text>
               </Pressable>
@@ -421,27 +535,6 @@ export default function BabyProfileScreen() {
               })}
             </ScrollView>
 
-            <View className="mt-3 flex-row rounded-2xl bg-cream-soft p-1">
-              {RANGE_KEYS.map((r) => {
-                const isActive = rangeView === r;
-                return (
-                  <Pressable
-                    key={r}
-                    onPress={() => {
-                      haptics.select();
-                      setRangeView(r);
-                    }}
-                    className="flex-1 items-center rounded-xl py-2"
-                    style={isActive ? [shadows.press, { backgroundColor: "#fff" }] : undefined}
-                  >
-                    <Text className={`font-bodyMedium text-[11.5px] ${isActive ? "text-ink" : "text-ink-faint"}`}>
-                      {t(`timeline_view_${r}` as never)}
-                    </Text>
-                  </Pressable>
-                );
-              })}
-            </View>
-
             <View className="mt-4">
               {filteredFeed.length === 0 ? (
                 <View className="items-center gap-2 py-14">
@@ -453,23 +546,14 @@ export default function BabyProfileScreen() {
                   const key = selectionKey(item.kind, item.id);
                   const isSelected = selectedIds.has(key);
                   return (
-                    <Pressable
-                      key={key}
-                      onPress={() => (selectMode ? toggleSelect(item.kind, item.id) : undefined)}
-                      className="flex-row gap-3"
-                    >
+                    <Pressable key={key} onPress={() => (selectMode ? toggleSelect(item.kind, item.id) : undefined)} className="flex-row gap-3">
                       <View className="items-center">
                         {selectMode ? (
-                          <View
-                            className={`mt-0.5 h-4 w-4 items-center justify-center rounded-full border ${isSelected ? "border-ink bg-ink" : "border-ink/25 bg-white"}`}
-                          >
+                          <View className={`mt-0.5 h-4 w-4 items-center justify-center rounded-full border ${isSelected ? "border-ink bg-ink" : "border-ink/25 bg-white"}`}>
                             {isSelected && <Icon name="check" size={9} color="#FBF6EE" />}
                           </View>
                         ) : (
-                          <View
-                            style={{ backgroundColor: item.tint === "orange" ? "#C9702E" : "#6E7452" }}
-                            className="mt-1.5 h-2.5 w-2.5 rounded-full"
-                          />
+                          <View style={{ backgroundColor: item.tint === "orange" ? "#C9702E" : "#6E7452" }} className="mt-1.5 h-2.5 w-2.5 rounded-full" />
                         )}
                         {i < filteredFeed.length - 1 && <View className="w-px flex-1 bg-ink/10" />}
                       </View>
@@ -525,47 +609,12 @@ export default function BabyProfileScreen() {
               </MotiView>
             )}
 
-            <Pressable onPress={() => setSheet("timeline")} className="mt-1 flex-row items-center gap-2 py-2">
+            <Pressable onPress={() => { setTimelineSheetPurpose("event"); setSheet("timeline"); }} className="mt-1 flex-row items-center gap-2 py-2">
               <Icon name="plus" size={14} color="#6E7452" />
               <Text className="font-bodyMedium text-[13.5px] text-olive">{t("add_action")}</Text>
             </Pressable>
-          </MotiView>
-        )}
 
-        {activeTab === "health" && (
-          <MotiView from={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ type: "timing", duration: 200 }}>
-            <Pressable
-              onPress={() => router.push("/(main)/baby/vaccinations")}
-              style={shadows.soft}
-              className="mt-2 flex-row items-center gap-3 rounded-xl2 border border-ink/10 bg-white p-4"
-            >
-              <View className="h-10 w-10 items-center justify-center rounded-xl bg-olive-bg">
-                <Icon name="syringe" size={18} color="#6E7452" />
-              </View>
-              <View className="flex-1">
-                <Text className="font-bodySemibold text-[14px] text-ink">{t("vaccine_screen_title")}</Text>
-                <Text className="font-body text-xs text-ink-soft">
-                  {upcomingVaccineCount} {t("vaccine_status_upcoming").toLowerCase()}
-                </Text>
-              </View>
-              <Icon name="chevronRight" size={16} color="#A79D8A" />
-            </Pressable>
-
-            <Pressable
-              onPress={() => router.push("/(main)/baby/medical")}
-              style={shadows.soft}
-              className="mt-3 flex-row items-center gap-3 rounded-xl2 border border-ink/10 bg-white p-4"
-            >
-              <View className="h-10 w-10 items-center justify-center rounded-xl bg-orange-bg">
-                <Icon name="shield" size={18} color="#C9702E" />
-              </View>
-              <View className="flex-1">
-                <Text className="font-bodySemibold text-[14px] text-ink">{t("medical_screen_title")}</Text>
-                <Text className="font-body text-xs text-ink-soft">{active(b.medicalRecords).length}</Text>
-              </View>
-              <Icon name="chevronRight" size={16} color="#A79D8A" />
-            </Pressable>
-
+            {/* Info mjekësore — dikur ishte tab "Shëndeti", tash pjesë kompakte e Ditarit */}
             <SectionHeader title={t("baby_medical_info")} editable editing={editMedical} onToggleEdit={() => toggleEdit(setEditMedical)} />
             <View style={shadows.soft} className="rounded-xl2 border border-ink/10 bg-white px-4">
               {b.medicalInfo
@@ -590,40 +639,6 @@ export default function BabyProfileScreen() {
                 <Text className="font-bodyMedium text-[13.5px] text-olive">{t("add_action")}</Text>
               </Pressable>
             )}
-          </MotiView>
-        )}
-
-        {activeTab === "milestones" && (
-          <MotiView from={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ type: "timing", duration: 200 }}>
-            <SectionHeader title={t("baby_tab_milestones")} editable editing={editMilestones} onToggleEdit={() => toggleEdit(setEditMilestones)} />
-            <View className="flex-row flex-wrap gap-2.5">
-              {b.milestones
-                .filter((m) => b.milestoneActiveKeys.includes(m.key))
-                .map((m) => (
-                  <MilestoneChip
-                    key={m.key}
-                    label={m.isCustom ? m.label ?? "" : t(m.labelKey as never)}
-                    done={m.done}
-                    isCustom={m.isCustom}
-                    editing={editMilestones}
-                    onToggle={() => {
-                      haptics.success();
-                      baby.toggleMilestone(m.key);
-                    }}
-                    onChangeLabel={(v) => baby.updateMilestoneLabel(m.key, v)}
-                    onRemove={() => baby.removeMilestone(m.key)}
-                  />
-                ))}
-              {editMilestones && (
-                <Pressable
-                  onPress={() => setSheet("timeline")}
-                  style={{ width: "48%" }}
-                  className="items-center justify-center rounded-2xl border border-dashed border-cream-line py-3.5"
-                >
-                  <Icon name="plus" size={18} color="#A79D8A" />
-                </Pressable>
-              )}
-            </View>
           </MotiView>
         )}
       </ScrollView>
@@ -682,9 +697,9 @@ export default function BabyProfileScreen() {
 
       <BottomSheet visible={sheet === "timeline"} onClose={closeSheet}>
         <PickerSheetContent
-          title={activeTab === "milestones" ? t("baby_tab_milestones") : t("baby_tab_timeline")}
+          title={timelineSheetPurpose === "milestone" ? t("baby_tab_milestones") : t("baby_tab_timeline")}
           options={
-            activeTab === "milestones"
+            timelineSheetPurpose === "milestone"
               ? baby.availableMilestonePresets().map<PickerOption>((m) => ({ key: m.key, label: t(m.labelKey as never) }))
               : []
           }
@@ -693,11 +708,11 @@ export default function BabyProfileScreen() {
             closeSheet();
           }}
           allowCustom
-          needsValue={activeTab !== "milestones"}
-          customLabelPlaceholder={activeTab === "milestones" ? t("ms_smile") : t("label_field")}
+          needsValue={timelineSheetPurpose === "event"}
+          customLabelPlaceholder={timelineSheetPurpose === "milestone" ? t("ms_smile") : t("label_field")}
           customValuePlaceholder="12 Korrik, 2025"
           onConfirmCustom={(label, value) => {
-            if (activeTab === "milestones") baby.addCustomMilestone(label);
+            if (timelineSheetPurpose === "milestone") baby.addCustomMilestone(label);
             else baby.addTimelineEvent(label, value);
             closeSheet();
           }}

@@ -1,202 +1,137 @@
-import { useMemo, useState } from "react";
-import { View, Text, ScrollView, Pressable, TextInput } from "react-native";
+import { useCallback, useMemo, useState } from "react";
+import { View, Text, ScrollView, Pressable, TextInput, ActivityIndicator } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
-import { useRouter } from "expo-router";
+import { useRouter, useFocusEffect } from "expo-router";
 import { useAppState } from "@/lib/state/AppStateContext";
-import { Icon, IconName } from "@/components/ui/Icon";
+import { Icon } from "@/components/ui/Icon";
 import { shadows } from "@/lib/shadows";
+import { PostCard } from "@/components/community/PostCard";
+import { TodayCard } from "@/components/community/TodayCard";
 import {
-  storyCatalog,
-  topicCatalog,
-  expertCatalog,
-  groupCatalog,
-  postCatalog,
-  communityTipCatalog,
-  commentCatalog,
-  Post,
-  Expert,
-  Group,
-} from "@/lib/communityContent";
+  fetchGroups, fetchExperts, fetchTopics, fetchTips, fetchFeed,
+  CommunityGroup, CommunityExpert, CommunityTopic, CommunityTip, CommunityPost,
+} from "@/lib/communityData";
+import { fetchGameRecommendations, ageInMonths, GameSuggestion } from "@/lib/aiGameRecommendations";
 
-function timeAgoLabel(iso: string): string {
-  const mins = Math.floor((Date.now() - new Date(iso).getTime()) / 60000);
-  if (mins < 60) return `${mins} min`;
-  const hrs = Math.floor(mins / 60);
-  if (hrs < 24) return `${hrs} orë`;
-  return `${Math.floor(hrs / 24)} ditë`;
-}
-
-function SectionHeader({ title, onSeeAll }: { title: string; onSeeAll?: () => void }) {
+function SectionHeader({ title }: { title: string }) {
   return (
-    <View className="flex-row items-center justify-between mb-3 mt-7 px-5">
+    <View className="mb-3 mt-6 px-5">
       <Text className="font-bodySemibold text-lg text-ink">{title}</Text>
-      {onSeeAll && (
-        <Pressable onPress={onSeeAll}>
-          <Text className="font-bodyMedium text-sm text-olive">Shiko të gjitha</Text>
-        </Pressable>
-      )}
     </View>
   );
 }
 
-function Avatar({ initial, accent, size = 44 }: { initial: string; accent: "olive" | "orange"; size?: number }) {
-  const bg = accent === "olive" ? "bg-olive-bg" : "bg-orange-bg";
-  const fg = accent === "olive" ? "#6E7452" : "#C9702E";
+function TopicChip({ label, count, onPress }: { label: string; count: number; onPress: () => void }) {
   return (
-    <View style={{ width: size, height: size, borderRadius: size / 2 }} className={`items-center justify-center ${bg}`}>
-      <Text style={{ color: fg, fontSize: size * 0.4 }} className="font-bodySemibold">{initial}</Text>
-    </View>
-  );
-}
-
-function StoryBubble({ id, name, initial, accent, seen, isOwn }: (typeof storyCatalog)[number] & { onPress: () => void }) {
-  return (
-    <Pressable className="items-center mr-4 w-16">
-      <View
-        className={`w-16 h-16 rounded-full items-center justify-center ${seen ? "bg-cream-line" : "bg-olive"}`}
-        style={{ padding: 2 }}
-      >
-        <View className="w-full h-full rounded-full bg-cream items-center justify-center">
-          <Avatar initial={initial} accent={accent} size={56} />
-        </View>
-        {isOwn && (
-          <View className="absolute bottom-0 right-0 w-5 h-5 rounded-full bg-olive items-center justify-center border-2 border-cream">
-            <Icon name="plus" size={10} color="#FFFFFF" />
-          </View>
-        )}
-      </View>
-      <Text className="font-body text-[11px] text-ink-soft mt-1" numberOfLines={1}>{isOwn ? "Ti" : name}</Text>
+    <Pressable onPress={onPress} style={shadows.soft} className="bg-surface rounded-full px-3.5 py-1 mr-2 flex-row items-center">
+      <Text className="font-bodyMedium text-[11px] text-ink">{label}</Text>
+      <Text className="font-body text-[10px] text-ink-faint ml-1">{count}</Text>
     </Pressable>
   );
 }
 
-function TopicChip({ label, count }: { label: string; count: number }) {
+function ExploreBanner({ expertsCount, groupsCount, onPress }: { expertsCount: number; groupsCount: number; onPress: () => void }) {
   return (
-    <View style={shadows.soft} className="bg-surface rounded-full px-4 py-2 mr-2 flex-row items-center">
-      <Text className="font-bodyMedium text-xs text-ink">{label}</Text>
-      <Text className="font-body text-[10px] text-ink-faint ml-1.5">{count}</Text>
-    </View>
-  );
-}
-
-function ExpertCard({ expert }: { expert: Expert }) {
-  const { toggleFollowExpert, isExpertFollowed } = useAppState();
-  const followed = isExpertFollowed(expert.id);
-  const bg = expert.accent === "olive" ? "bg-olive-bg" : "bg-orange-bg";
-  const fg = expert.accent === "olive" ? "#6E7452" : "#C9702E";
-  return (
-    <View style={shadows.soft} className="w-56 bg-surface rounded-xl2 p-4 mr-3">
-      <View className="flex-row items-center mb-2">
-        <View className={`w-11 h-11 rounded-full items-center justify-center mr-2 ${bg}`}>
-          <Icon name={expert.icon} size={20} color={fg} />
-        </View>
-        <View className="flex-1">
-          <View className="flex-row items-center">
-            <Text className="font-bodySemibold text-xs text-ink" numberOfLines={1}>{expert.name}</Text>
-            <Icon name="check" size={11} color="#6E7452" />
-          </View>
-          <Text className="font-body text-[10px] text-ink-faint">{expert.kind}</Text>
-        </View>
+    <Pressable onPress={onPress} style={shadows.soft} className="mx-5 bg-olive-bg rounded-xl3 p-4 flex-row items-center mb-2">
+      <View className="w-11 h-11 rounded-full bg-surface items-center justify-center mr-3">
+        <Icon name="shield" size={20} color="#6E7452" />
       </View>
-      <Text className="font-body text-[11px] text-ink-soft mb-3" numberOfLines={2}>{expert.bio}</Text>
-      <View className="flex-row items-center justify-between">
-        <Text className="font-bodyMedium text-[11px] text-ink-soft">⭐ {expert.rating} ({expert.reviewCount})</Text>
-        <Pressable onPress={() => toggleFollowExpert(expert.id)} className={`px-3 py-1.5 rounded-full ${followed ? "bg-cream-soft" : "bg-olive"}`}>
-          <Text className={`font-bodySemibold text-[10px] ${followed ? "text-ink-soft" : "text-white"}`}>
-            {followed ? "Ndjekur" : "Ndiq"}
-          </Text>
-        </Pressable>
+      <View className="flex-1">
+        <Text className="font-bodySemibold text-sm text-ink">Ekspertë & Grupe</Text>
+        <Text className="font-body text-xs text-ink-soft">{expertsCount} ekspertë t'verifikuem · {groupsCount} grupe</Text>
       </View>
-    </View>
-  );
-}
-
-function GroupCard({ group }: { group: Group }) {
-  const { toggleJoinGroup, isGroupJoined } = useAppState();
-  const joined = isGroupJoined(group.id);
-  const bg = group.accent === "olive" ? "bg-olive-bg" : "bg-orange-bg";
-  const fg = group.accent === "olive" ? "#6E7452" : "#C9702E";
-  return (
-    <View style={shadows.soft} className="w-48 bg-surface rounded-xl2 p-4 mr-3">
-      <View className={`w-11 h-11 rounded-full items-center justify-center mb-2 ${bg}`}>
-        <Icon name={group.icon} size={20} color={fg} />
-      </View>
-      <Text className="font-bodySemibold text-xs text-ink mb-1" numberOfLines={2}>{group.name}</Text>
-      <Text className="font-body text-[10px] text-ink-faint mb-3">{group.memberCount.toLocaleString()} anëtarë</Text>
-      <Pressable onPress={() => toggleJoinGroup(group.id)} className={`py-1.5 rounded-full items-center ${joined ? "bg-cream-soft" : "bg-olive"}`}>
-        <Text className={`font-bodySemibold text-[11px] ${joined ? "text-ink-soft" : "text-white"}`}>
-          {joined ? "Anëtar ✓" : "Bashkohu"}
-        </Text>
-      </Pressable>
-    </View>
-  );
-}
-
-function PostCard({ post, onOpen }: { post: Post; onOpen: () => void }) {
-  const { toggleLikePost, isPostLiked, toggleSavePost, isPostSaved } = useAppState();
-  const liked = isPostLiked(post.id);
-  const saved = isPostSaved(post.id);
-  const bg = post.accent === "olive" ? "bg-olive-bg" : "bg-orange-bg";
-
-  return (
-    <Pressable onPress={onOpen} style={shadows.soft} className="bg-surface rounded-xl2 p-4 mb-4 mx-5">
-      <View className="flex-row items-center mb-3">
-        <Avatar initial={post.authorInitial} accent={post.accent} />
-        <View className="flex-1 ml-2.5">
-          <View className="flex-row items-center">
-            <Text className="font-bodySemibold text-sm text-ink" numberOfLines={1}>{post.authorName}</Text>
-            {post.authorIsExpert && <Icon name="check" size={12} color="#6E7452" />}
-          </View>
-          <Text className="font-body text-[11px] text-ink-faint">
-            {timeAgoLabel(post.at)} {post.groupName ? `· ${post.groupName}` : ""}
-          </Text>
-        </View>
-        <View className={`w-8 h-8 rounded-full items-center justify-center ${bg}`}>
-          <Icon name={post.icon} size={16} color={post.accent === "olive" ? "#6E7452" : "#C9702E"} />
-        </View>
-      </View>
-
-      <Text className="font-body text-sm text-ink leading-5 mb-1">{post.text}</Text>
-      {post.tag && <Text className="font-bodyMedium text-xs text-olive mb-3">{post.tag}</Text>}
-
-      <View className="flex-row items-center justify-between mt-2 pt-3 border-t border-cream-line">
-        <Pressable onPress={() => toggleLikePost(post.id)} className="flex-row items-center">
-          <Icon name="heart" size={16} color={liked ? "#C9702E" : "#A79D8A"} />
-          <Text className="font-body text-xs text-ink-soft ml-1.5">{post.likeCount + (liked ? 1 : 0)}</Text>
-        </Pressable>
-        <Pressable onPress={onOpen} className="flex-row items-center">
-          <Icon name="comment" size={16} color="#A79D8A" />
-          <Text className="font-body text-xs text-ink-soft ml-1.5">{post.commentCount}</Text>
-        </Pressable>
-        <Pressable className="flex-row items-center">
-          <Icon name="share" size={16} color="#A79D8A" />
-          <Text className="font-body text-xs text-ink-soft ml-1.5">{post.shareCount}</Text>
-        </Pressable>
-        <Pressable onPress={() => toggleSavePost(post.id)}>
-          <Icon name="bookmark" size={16} color={saved ? "#6E7452" : "#A79D8A"} />
-        </Pressable>
-      </View>
+      <Text className="font-bodySemibold text-base text-ink-faint">›</Text>
     </Pressable>
   );
+}
+
+function tipOfDay(tips: CommunityTip[]): CommunityTip | null {
+  if (tips.length === 0) return null;
+  const dayIndex = Math.floor(Date.now() / 86400000);
+  return tips[dayIndex % tips.length];
 }
 
 export default function CommunityScreen() {
   const router = useRouter();
+  const { state } = useAppState();
   const [query, setQuery] = useState("");
 
-  const filteredPosts = useMemo(() => {
-    if (!query.trim()) return postCatalog;
-    const q = query.toLowerCase();
-    return postCatalog.filter((p) => p.text.toLowerCase().includes(q) || p.tag?.toLowerCase().includes(q) || p.authorName.toLowerCase().includes(q));
-  }, [query]);
+  const [loading, setLoading] = useState(true);
+  const [groups, setGroups] = useState<CommunityGroup[]>([]);
+  const [experts, setExperts] = useState<CommunityExpert[]>([]);
+  const [topics, setTopics] = useState<CommunityTopic[]>([]);
+  const [tips, setTips] = useState<CommunityTip[]>([]);
+  const [posts, setPosts] = useState<CommunityPost[]>([]);
 
-  // "AI Recommended" — për tani, thjesht postimet me më shumë engagement;
-  // rekomandim real do të kërkojë interesat/aktivitetin e ruajtur në backend.
-  const aiRecommended = useMemo(() => postCatalog.slice().sort((a, b) => b.likeCount - a.likeCount).slice(0, 3), []);
+  const [games, setGames] = useState<GameSuggestion[]>([]);
+  const [gamesLoading, setGamesLoading] = useState(false);
+  const [gamesError, setGamesError] = useState<string | null>(null);
+  const babyAgeMonths = useMemo(() => ageInMonths(state.profile.babyDob), [state.profile.babyDob]);
+
+  const loadAll = useCallback(async () => {
+    try {
+      const [g, e, t, ti, p] = await Promise.all([
+        fetchGroups(), fetchExperts(), fetchTopics(), fetchTips(), fetchFeed(),
+      ]);
+      setGroups(g); setExperts(e); setTopics(t); setTips(ti); setPosts(p);
+    } catch (err) {
+      console.warn("Community load error:", err);
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
+  const loadGames = useCallback(async () => {
+    if (babyAgeMonths === null) return;
+    setGamesLoading(true);
+    setGamesError(null);
+    try {
+      setGames(await fetchGameRecommendations(babyAgeMonths));
+    } catch (err: any) {
+      setGamesError(err.message ?? "S'u arrit me marrë rekomandime.");
+    } finally {
+      setGamesLoading(false);
+    }
+  }, [babyAgeMonths]);
+
+  useFocusEffect(useCallback(() => { loadAll(); }, [loadAll]));
+
+  useFocusEffect(
+    useCallback(() => {
+      if (games.length === 0 && babyAgeMonths !== null) loadGames();
+      // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [babyAgeMonths])
+  );
+
+  const filteredPosts = useMemo(() => {
+    if (!query.trim()) return posts;
+    const q = query.toLowerCase();
+    return posts.filter((p) => p.text.toLowerCase().includes(q) || p.tag?.toLowerCase().includes(q) || p.authorName.toLowerCase().includes(q));
+  }, [posts, query]);
+
+  const aiRecommendedPosts = useMemo(() => posts.slice().sort((a, b) => b.likeCount - a.likeCount).slice(0, 3), [posts]);
+  const todayTip = useMemo(() => tipOfDay(tips), [tips]);
+
+  if (loading) {
+    return (
+      <SafeAreaView className="flex-1 bg-cream items-center justify-center">
+        <ActivityIndicator color="#6E7452" />
+      </SafeAreaView>
+    );
+  }
 
   return (
     <SafeAreaView className="flex-1 bg-cream" edges={["top"]}>
       <View className="flex-row items-center justify-between px-5 pt-2 mb-4">
+        <Pressable
+          onPress={() => router.push("/community/profile")}
+          style={shadows.soft}
+          className="w-10 h-10 rounded-full bg-olive-bg items-center justify-center"
+        >
+          <Text className="font-bodySemibold text-sm text-olive">
+            {(state.profile.parentName || "T").trim().charAt(0).toUpperCase()}
+          </Text>
+        </Pressable>
         <Text className="font-display text-2xl text-ink">Komuniteti</Text>
         <Pressable
           onPress={() => router.push("/community/saved")}
@@ -207,9 +142,9 @@ export default function CommunityScreen() {
         </Pressable>
       </View>
 
-      {/* Search */}
-      <View className="px-5 mb-4">
-        <View style={shadows.soft} className="flex-row items-center bg-surface rounded-xl2 px-4 py-3">
+      {/* Search + Topics — bashkue n'nji blloke t'ngjeshun */}
+      <View className="px-5 mb-3">
+        <View style={shadows.soft} className="flex-row items-center bg-surface rounded-xl2 px-4 py-3 mb-2.5">
           <Icon name="search" size={18} color="#A79D8A" />
           <TextInput
             value={query}
@@ -221,74 +156,72 @@ export default function CommunityScreen() {
         </View>
       </View>
 
+      {topics.length > 0 && (
+        <ScrollView
+          horizontal
+          showsHorizontalScrollIndicator={false}
+          contentContainerStyle={{ paddingHorizontal: 20, alignItems: "center" }}
+          style={{ flexGrow: 0 }}
+          className="mb-1"
+        >
+          {topics.map((t) => (
+            <TopicChip key={t.id} label={t.label} count={t.postCount} onPress={() => setQuery(t.label)} />
+          ))}
+        </ScrollView>
+      )}
+
       <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={{ paddingBottom: 40 }}>
-        {/* Stories */}
-        <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ paddingHorizontal: 20 }}>
-          {storyCatalog.map((s) => (
-            <StoryBubble key={s.id} {...s} onPress={() => {}} />
-          ))}
-        </ScrollView>
+        <TodayCard
+          tip={todayTip}
+          games={games}
+          gamesLoading={gamesLoading}
+          gamesError={gamesError}
+          hasAge={babyAgeMonths !== null}
+          onRetryGames={loadGames}
+        />
 
-        {/* Trending topics */}
-        <SectionHeader title="Në trend" />
-        <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ paddingHorizontal: 20 }}>
-          {topicCatalog.map((t) => (
-            <TopicChip key={t.id} label={t.label} count={t.postCount} />
-          ))}
-        </ScrollView>
+        <ExploreBanner
+          expertsCount={experts.length}
+          groupsCount={groups.length}
+          onPress={() => router.push("/community/explore")}
+        />
 
-        {/* Parenting tips */}
-        <SectionHeader title="Këshilla për prindër" />
-        <View className="px-5">
-          {communityTipCatalog.map((tip) => (
-            <View key={tip.id} style={shadows.soft} className="flex-row bg-olive-bg rounded-xl2 p-4 mb-3">
-              <View className="w-9 h-9 rounded-full bg-surface items-center justify-center mr-3">
-                <Icon name={tip.icon} size={16} color="#6E7452" />
-              </View>
-              <View className="flex-1">
-                <Text className="font-bodySemibold text-xs text-ink mb-1">{tip.title}</Text>
-                <Text className="font-body text-xs text-ink-soft leading-5">{tip.body}</Text>
-              </View>
-            </View>
-          ))}
-        </View>
+        {aiRecommendedPosts.length > 0 && (
+          <>
+            <SectionHeader title="✨ Rekomanduar për ty" />
+            {aiRecommendedPosts.map((p) => (
+              <PostCard key={p.id} post={p} onOpen={() => router.push(`/community/post/${p.id}`)} />
+            ))}
+          </>
+        )}
 
-        {/* Featured experts */}
-        <SectionHeader title="Ekspertë të Verifikuar" />
-        <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ paddingHorizontal: 20 }}>
-          {expertCatalog.map((e) => (
-            <ExpertCard key={e.id} expert={e} />
-          ))}
-        </ScrollView>
-
-        {/* Featured / suggested groups */}
-        <SectionHeader title="Grupe të Sugjeruara" />
-        <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ paddingHorizontal: 20 }}>
-          {groupCatalog.map((g) => (
-            <GroupCard key={g.id} group={g} />
-          ))}
-        </ScrollView>
-
-        {/* AI recommended posts */}
-        <SectionHeader title="✨ Rekomanduar për ty" />
-        {aiRecommended.map((p) => (
-          <PostCard key={p.id} post={p} onOpen={() => router.push(`/community/post/${p.id}`)} />
-        ))}
-
-        {/* Main feed */}
         <SectionHeader title={query.trim() ? "Rezultatet" : "Feed"} />
         {filteredPosts.length === 0 ? (
-          <Text className="font-body text-sm text-ink-soft px-5">S'u gjet asgjë.</Text>
+          query.trim() ? (
+            <Text className="font-body text-sm text-ink-soft px-5">S'u gjet asgjë për "{query}".</Text>
+          ) : (
+            <View className="items-center px-10 py-8">
+              <View className="w-14 h-14 rounded-full bg-olive-bg items-center justify-center mb-3">
+                <Icon name="comment" size={24} color="#6E7452" />
+              </View>
+              <Text className="font-bodySemibold text-sm text-ink mb-1">Ende s'ka postime</Text>
+              <Text className="font-body text-xs text-ink-soft text-center leading-5 mb-4">
+                Bâhu i pari qi ndan një përvojë a pyetje me komunitetin.
+              </Text>
+              <Pressable onPress={() => router.push("/community/new")} className="bg-olive px-5 py-2.5 rounded-full">
+                <Text className="font-bodySemibold text-xs text-white">Posto diçka</Text>
+              </Pressable>
+            </View>
+          )
         ) : (
           filteredPosts.map((p) => <PostCard key={p.id} post={p} onOpen={() => router.push(`/community/post/${p.id}`)} />)
         )}
       </ScrollView>
 
-      {/* Floating "new post" button */}
       <Pressable
         onPress={() => router.push("/community/new")}
         style={shadows.softLg}
-        className="absolute bottom-6 right-6 w-14 h-14 rounded-full bg-olive items-center justify-center"
+        className="absolute bottom-28 right-6 w-14 h-14 rounded-full bg-olive items-center justify-center"
       >
         <Icon name="plus" size={24} color="#FFFFFF" />
       </Pressable>

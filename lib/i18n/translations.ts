@@ -47,6 +47,7 @@ export const translations = {
     qa_bath: "Banja",
     qa_medicine: "Ilaçet",
     qa_play: "Aktiviteti",
+    cat_toys: "Lodra",
 
     baby_blood_type: "Grupi i gjakut",
     baby_allergies: "Alergjitë",
@@ -302,6 +303,7 @@ export const translations = {
     qa_bath: "Bath",
     qa_medicine: "Medicine",
     qa_play: "Playtime",
+    cat_toys: "Toys",
 
     baby_blood_type: "Blood type",
     baby_allergies: "Allergies",

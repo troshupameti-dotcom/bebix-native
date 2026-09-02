@@ -1,6 +1,6 @@
 import { useToast } from "@/lib/toast/ToastContext";
 import { useEffect, useMemo, useState } from "react";
-import { View, Text, ScrollView, Pressable, Dimensions, Image, ActivityIndicator } from "react-native";
+import { View, Text, ScrollView, Pressable, Dimensions, Image, ActivityIndicator, FlatList } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import { useAppState } from "@/lib/state/AppStateContext";
@@ -113,7 +113,12 @@ export default function ProductDetailsScreen() {
   const bg = product.accent === "olive" ? "bg-olive-bg" : "bg-orange-bg";
   const fg = product.accent === "olive" ? "#6E7452" : "#C9702E";
   const fav = isFavorite(product.id);
-  const gallerySlides = [product.imageUrl, product.imageUrl, product.imageUrl]; // vetëm 1 foto ende — galeri e vërtetë vjen kur admin panel mbështet disa foto
+
+  // Galeria reale — foto kryesore + fotot shtesë të ngarkuara nga admin
+  // panel. Nëse s'ka foto shtesë, mbetet vetëm 1 slide (foto kryesore).
+  const gallerySlides = product.imageUrl
+    ? [product.imageUrl, ...(product.galleryUrls ?? [])]
+    : (product.galleryUrls ?? []);
 
   return (
     <SafeAreaView className="flex-1 bg-cream" edges={["top"]}>
@@ -131,10 +136,36 @@ export default function ProductDetailsScreen() {
       </View>
 
       <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={{ paddingBottom: 130 }}>
-        {/* Gallery */}
+        {/* Gallery — swipe-able nëse ka më shumë se 1 foto */}
         <View>
-          {product.imageUrl ? (
-            <Image source={{ uri: product.imageUrl }} style={{ width, height: 288 }} resizeMode="cover" />
+          {gallerySlides.length > 0 ? (
+            <>
+              <FlatList
+                data={gallerySlides}
+                horizontal
+                pagingEnabled
+                showsHorizontalScrollIndicator={false}
+                keyExtractor={(uri, i) => `${uri}-${i}`}
+                onScroll={(e) => {
+                  const i = Math.round(e.nativeEvent.contentOffset.x / width);
+                  setSlide(i);
+                }}
+                scrollEventThrottle={16}
+                renderItem={({ item }) => (
+                  <Image source={{ uri: item }} style={{ width, height: 288 }} resizeMode="cover" />
+                )}
+              />
+              {gallerySlides.length > 1 && (
+                <View className="absolute bottom-3 left-0 right-0 flex-row items-center justify-center">
+                  {gallerySlides.map((_, i) => (
+                    <View
+                      key={i}
+                      className={`w-1.5 h-1.5 rounded-full mx-1 ${i === slide ? "bg-white" : "bg-white/50"}`}
+                    />
+                  ))}
+                </View>
+              )}
+            </>
           ) : (
             <View style={{ width, height: 288 }} className={`items-center justify-center ${bg}`}>
               <Icon name={product.icon} size={72} color={fg} />
@@ -167,12 +198,9 @@ export default function ProductDetailsScreen() {
           </View>
         </View>
 
-        {/* AI explanation */}
-        <View className="mx-5 mt-5 bg-olive-bg rounded-xl3 p-4 flex-row" style={shadows.soft}>
-          <View className="w-9 h-9 rounded-full bg-surface items-center justify-center mr-3">
-            <Icon name="sparkle" size={18} color="#6E7452" />
-          </View>
-          <Text className="font-body text-sm text-ink flex-1 leading-5">{aiExplanation}</Text>
+        {/* Përshkrimi i produktit — tekst i pastër, pa kornizë, pa ikonë */}
+        <View className="px-5 mt-5">
+          <Text className="font-body text-sm text-ink-soft leading-6">{aiExplanation}</Text>
         </View>
 
         {/* Related products */}

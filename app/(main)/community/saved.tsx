@@ -1,49 +1,63 @@
-import { View, Text, ScrollView, Pressable } from "react-native";
+import { useCallback, useState } from "react";
+import { View, Text, ScrollView, Pressable, ActivityIndicator } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
-import { useRouter } from "expo-router";
-import { useAppState } from "@/lib/state/AppStateContext";
+import { useRouter, useFocusEffect } from "expo-router";
 import { Icon } from "@/components/ui/Icon";
-import { shadows } from "@/lib/shadows";
-import { postCatalog } from "@/lib/communityContent";
+import { PostCard } from "@/components/community/PostCard";
+import { fetchSavedPosts, CommunityPost } from "@/lib/communityData";
 
 export default function SavedPostsScreen() {
   const router = useRouter();
-  const { state } = useAppState();
-  const saved = postCatalog.filter((p) => state.community.savedPostIds.includes(p.id));
+  const [loading, setLoading] = useState(true);
+  const [posts, setPosts] = useState<CommunityPost[]>([]);
+
+  const load = useCallback(async () => {
+    setLoading(true);
+    try {
+      setPosts(await fetchSavedPosts());
+    } catch (err) {
+      console.warn("Saved posts load error:", err);
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
+  useFocusEffect(useCallback(() => { load(); }, [load]));
+
+  if (loading) {
+    return (
+      <SafeAreaView className="flex-1 bg-cream items-center justify-center">
+        <ActivityIndicator color="#6E7452" />
+      </SafeAreaView>
+    );
+  }
 
   return (
     <SafeAreaView className="flex-1 bg-cream" edges={["top"]}>
       <View className="flex-row items-center px-5 pt-2 mb-4">
-        <Pressable onPress={() => router.back()} style={shadows.soft} className="w-10 h-10 rounded-full bg-surface items-center justify-center mr-3">
-          <Icon name="chevronLeft" size={18} color="#2C271F" />
+        <Pressable onPress={() => router.back()} className="w-9 h-9 items-center justify-center -ml-2">
+          <Text className="font-bodySemibold text-xl text-ink">←</Text>
         </Pressable>
-        <Text className="font-display text-2xl text-ink">Ruajtura</Text>
+        <Text className="font-display text-2xl text-ink ml-1">Postime të Ruajtura</Text>
       </View>
 
-      <ScrollView contentContainerStyle={{ paddingBottom: 40 }}>
-        {saved.length === 0 ? (
-          <View className="items-center mt-16 px-8">
-            <Icon name="bookmark" size={28} color="#A79D8A" />
-            <Text className="font-body text-sm text-ink-soft mt-3 text-center">
-              Ende s'ke ruajtur asnjë postim. Shtyp ikonën e "bookmark" te ndonjë postim për ta parë këtu.
-            </Text>
+      {posts.length === 0 ? (
+        <View className="flex-1 items-center justify-center px-10">
+          <View className="w-16 h-16 rounded-full bg-olive-bg items-center justify-center mb-4">
+            <Icon name="bookmark" size={26} color="#6E7452" />
           </View>
-        ) : (
-          <View className="px-5">
-            {saved.map((p) => (
-              <Pressable
-                key={p.id}
-                onPress={() => router.push(`/community/post/${p.id}`)}
-                style={shadows.soft}
-                className="bg-surface rounded-xl2 p-4 mb-3"
-              >
-                <Text className="font-bodySemibold text-xs text-ink mb-1">{p.authorName}</Text>
-                <Text className="font-body text-sm text-ink-soft" numberOfLines={2}>{p.text}</Text>
-              </Pressable>
-            ))}
-          </View>
-        )}
-      </ScrollView>
+          <Text className="font-bodySemibold text-sm text-ink mb-1">Ende s'ke ruajtë asgjë</Text>
+          <Text className="font-body text-xs text-ink-soft text-center leading-5">
+            Kur shef një postim interesant, shtyp ikonën e bookmark-ut me e ruejt këtu.
+          </Text>
+        </View>
+      ) : (
+        <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={{ paddingTop: 4, paddingBottom: 40 }}>
+          {posts.map((p) => (
+            <PostCard key={p.id} post={p} onOpen={() => router.push(`/community/post/${p.id}`)} />
+          ))}
+        </ScrollView>
+      )}
     </SafeAreaView>
   );
 }

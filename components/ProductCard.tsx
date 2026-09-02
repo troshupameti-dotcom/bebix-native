@@ -28,8 +28,8 @@ export function ProductCard({ product, onPress, cardWidth }: Props) {
   const scale = useRef(new Animated.Value(1)).current;
   const heartScale = useRef(new Animated.Value(1)).current;
 
-  const bg = "bg-cream-soft"; // background neutral gri për krejt produktet — konsistencë si ecommerce real
-  const fg = "#B5A78F"; // ikonë placeholder diskrete, jo ngjyrë brand-i
+  const bg = "bg-cream-soft";
+  const fg = "#B5A78F";
   const discount = discountPercent(product);
   const savings = product.compareAtPrice != null && product.compareAtPrice > product.price
     ? product.compareAtPrice - product.price
@@ -52,22 +52,19 @@ export function ProductCard({ product, onPress, cardWidth }: Props) {
 
   return (
     <Animated.View style={[cardWidth ? { width: cardWidth } : { width: "47%" }, { transform: [{ scale }] }]}>
-      <Pressable
-        onPress={onPress}
-        onPressIn={pressIn}
-        onPressOut={pressOut}
-        style={shadows.soft}
-        className="bg-surface rounded-xl2 overflow-hidden mb-4"
-      >
-        {/* A. Image area */}
-        <View className={`w-full aspect-square items-center justify-center relative ${bg}`}>
+      <Pressable onPress={onPress} onPressIn={pressIn} onPressOut={pressOut} className="mb-4">
+        {/* A. Image area — VETËM kjo pjesë ka shadow/rounded/background si "card" */}
+        <View
+          style={shadows.soft}
+          className={`w-full aspect-square items-center justify-center relative rounded-xl2 overflow-hidden ${bg}`}
+        >
           {product.imageUrl ? (
             <Image source={{ uri: product.imageUrl }} className="w-full h-full" resizeMode="contain" />
           ) : (
             <Icon name={product.icon} size={36} color={fg} />
           )}
 
-          {/* Top-left: delivery + status badges, stack vertikal nëse të dyja ekzistojnë */}
+          {/* Top-left: delivery + status badges */}
           <View className="absolute top-2 left-2" style={{ gap: 4 }}>
             {product.freeDelivery && (
               <View className="bg-surface rounded-full px-2 py-1 flex-row items-center self-start" style={shadows.soft}>
@@ -104,35 +101,35 @@ export function ProductCard({ product, onPress, cardWidth }: Props) {
           </Pressable>
         </View>
 
-        {/* Brand / Title / Price */}
-        <View className="p-3">
-          <Text className="font-body text-[10px] text-ink-faint mb-0.5" numberOfLines={1}>
+        {/* B. Brand / Title / Price — JASHTË kornizës, direkt mbi background, pa shadow/card */}
+        <View className="pt-2.5 px-0.5">
+          <Text className="font-body text-xs text-ink-faint mb-1" numberOfLines={1}>
             {product.brand}
             {product.merchant && product.merchant !== product.brand ? ` · ${product.merchant}` : ""}
           </Text>
-          <Text className="font-bodyMedium text-xs text-ink mb-2 leading-4" numberOfLines={2}>
+          <Text className="font-bodyMedium text-sm text-ink mb-2 leading-5" numberOfLines={2}>
             {product.name}
           </Text>
           <View className="flex-row items-baseline flex-wrap">
-            <Text className="font-bodySemibold text-sm text-ink mr-1.5">€{product.price.toFixed(2)}</Text>
+            <Text className="font-bodySemibold text-base text-ink mr-2">€{product.price.toFixed(2)}</Text>
             {product.compareAtPrice != null && (
-              <Text className="font-body text-[10px] text-ink-faint line-through">
+              <Text className="font-body text-xs text-ink-faint line-through">
                 €{product.compareAtPrice.toFixed(2)}
               </Text>
             )}
           </View>
           {savings != null && (
-            <Text className="font-bodyMedium text-[9px] text-olive mt-0.5">
+            <Text className="font-bodyMedium text-xs text-olive mt-1">
               Kurse €{savings.toFixed(2)}
             </Text>
           )}
           {product.stock != null && product.stock > 0 && product.stock <= 5 && (
-            <Text className="font-bodyMedium text-[10px] text-orange mt-1">
+            <Text className="font-bodyMedium text-xs text-orange mt-1">
               Vetëm {product.stock} mbeten
             </Text>
           )}
           {product.stock === 0 && (
-            <Text className="font-bodyMedium text-[10px] text-ink-faint mt-1">
+            <Text className="font-bodyMedium text-xs text-ink-faint mt-1">
               Jashtë stokut
             </Text>
           )}
@@ -145,16 +142,13 @@ export function ProductCard({ product, onPress, cardWidth }: Props) {
 /** Skeleton — e njëjta strukturë/madhësi si karta reale. */
 export function ProductCardSkeleton({ cardWidth }: { cardWidth?: number }) {
   return (
-    <View
-      style={cardWidth ? { width: cardWidth } : { width: "47%" }}
-      className="bg-surface rounded-xl2 overflow-hidden mb-4"
-    >
-      <View className="w-full aspect-square bg-cream-soft" />
-      <View className="p-3">
-        <View className="w-1/2 h-2.5 bg-cream-soft rounded mb-2" />
-        <View className="w-full h-3 bg-cream-soft rounded mb-1" />
-        <View className="w-3/4 h-3 bg-cream-soft rounded mb-3" />
-        <View className="w-1/3 h-4 bg-cream-soft rounded" />
+    <View style={cardWidth ? { width: cardWidth } : { width: "47%" }} className="mb-4">
+      <View className="w-full aspect-square bg-cream-soft rounded-xl2" />
+      <View className="pt-2.5 px-0.5">
+        <View className="w-1/2 h-3 bg-cream-soft rounded mb-2" />
+        <View className="w-full h-3.5 bg-cream-soft rounded mb-1.5" />
+        <View className="w-3/4 h-3.5 bg-cream-soft rounded mb-3" />
+        <View className="w-1/3 h-5 bg-cream-soft rounded" />
       </View>
     </View>
   );

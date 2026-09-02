@@ -3,6 +3,7 @@ import Svg, { Path, Circle, Rect, Line } from "react-native-svg";
 export type IconName =
   | "home"
   | "baby"
+  | "diaper"
   | "shop"
   | "community"
   | "more"
@@ -89,6 +90,13 @@ const GLYPHS: Record<IconName, (p: CommonProps) => React.ReactNode> = {
     <>
       <Circle cx="12" cy="9" r="4" {...p} />
       <Path d="M6 21c0-4 3-6 6-6s6 2 6 6" {...p} />
+    </>
+  ),
+  // Pelenë e palosur, me dy "krahë" anësorë — jo më figura e përgjithshme "baby".
+  diaper: (p) => (
+    <>
+      <Path d="M5 8.2h14a1 1 0 0 1 1 1v1.6c0 4.6-3.1 8.7-8 9.7-4.9-1-8-5.1-8-9.7V9.2a1 1 0 0 1 1-1Z" {...p} />
+      <Path d="M5.5 8.2V6.4a1.8 1.8 0 0 1 1.8-1.8h1.4M18.5 8.2V6.4a1.8 1.8 0 0 0-1.8-1.8h-1.4" {...p} />
     </>
   ),
   shop: (p) => (
@@ -187,10 +195,14 @@ const GLYPHS: Record<IconName, (p: CommonProps) => React.ReactNode> = {
   shield: (p) => <Path d="M12 3.5 19 6v6c0 4.5-3 7-7 8.5-4-1.5-7-4-7-8.5V6l7-2.5Z" {...p} />,
   repeat: (p) => <Path d="M4 7h13l-3-3M20 17H7l3 3" {...p} />,
   droplet: (p) => <Path d="M12 3s6.5 7 6.5 11.5A6.5 6.5 0 0 1 5.5 14.5C5.5 10 12 3 12 3Z" {...p} />,
+  // Shishe ushqyerjeje — jo më "lugë" e paqartë.
   spoon: (p) => (
     <>
-      <Path d="M9 3c-2 0-3.5 2-3.5 5s1.5 5 3.5 5 3.5-2 3.5-5-1.5-5-3.5-5Z" {...p} />
-      <Path d="M9 13v8" {...p} />
+      <Rect x="10.8" y="2.4" width="2.4" height="2.3" rx="1" {...p} />
+      <Path d="M12 4.7v1.8" {...p} />
+      <Line x1="9.8" y1="4.9" x2="14.2" y2="4.9" {...p} />
+      <Rect x="7" y="7.2" width="10" height="12.6" rx="3.4" {...p} />
+      <Line x1="7" y1="13.2" x2="17" y2="13.2" {...p} />
     </>
   ),
   chart: (p) => <Path d="M4 20V10M11 20V4M18 20v-7" {...p} />,

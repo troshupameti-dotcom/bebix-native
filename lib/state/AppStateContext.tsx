@@ -139,7 +139,10 @@ type Action =
   | { type: "TOGGLE_LIKE_POST"; id: string }
   | { type: "TOGGLE_SAVE_POST"; id: string }
   | { type: "TOGGLE_JOIN_GROUP"; id: string }
-  | { type: "TOGGLE_FOLLOW_EXPERT"; id: string }
+    | { type: "TOGGLE_FOLLOW_EXPERT"; id: string }
+  | { type: "ADD_POST"; post: Post }
+  | { type: "DELETE_MY_POST"; id: string }
+  | { type: "ADD_COMMENT"; comment: Comment }
   | { type: "SET_NOTIFICATION_PREF"; key: keyof NotificationPrefs; value: boolean }
   | { type: "HYDRATE"; state: AppState };
 
@@ -193,6 +196,12 @@ function reducer(state: AppState, action: Action): AppState {
       return { ...state, community: { ...state.community, joinedGroupIds: toggleId(state.community.joinedGroupIds, action.id) } };
     case "TOGGLE_FOLLOW_EXPERT":
       return { ...state, community: { ...state.community, followedExpertIds: toggleId(state.community.followedExpertIds, action.id) } };
+    case "ADD_POST":
+      return { ...state, community: { ...state.community, myPosts: [action.post, ...state.community.myPosts] } };
+    case "DELETE_MY_POST":
+      return { ...state, community: { ...state.community, myPosts: state.community.myPosts.filter((p) => p.id !== action.id) } };
+    case "ADD_COMMENT":
+      return { ...state, community: { ...state.community, myComments: [...state.community.myComments, action.comment] } };
     case "SET_NOTIFICATION_PREF":
       return { ...state, notificationPrefs: { ...state.notificationPrefs, [action.key]: action.value } };
     case "HYDRATE":
@@ -280,6 +289,41 @@ function buildValue(state: AppState, dispatch: React.Dispatch<Action>) {
     isGroupJoined: (id: string) => state.community.joinedGroupIds.includes(id),
     toggleFollowExpert: (id: string) => dispatch({ type: "TOGGLE_FOLLOW_EXPERT", id }),
     isExpertFollowed: (id: string) => state.community.followedExpertIds.includes(id),
+
+    // ---- Postime & komente lokale (deri sa te vjen backend-i real) ----
+    addPost: (input: { text: string; tag?: string | null; groupName?: string | null }) => {
+      const post: Post = {
+        id: `local:${uid()}`,
+        authorName: state.profile.parentName ?? "Ti",
+        authorInitial: (state.profile.parentName ?? "T").trim().charAt(0).toUpperCase() || "T",
+        authorIsExpert: false,
+        accent: "olive",
+        kind: "text",
+        text: input.text,
+        tag: input.tag ?? null,
+        icon: "sparkle",
+        at: nowIso(),
+        likeCount: 0,
+        commentCount: 0,
+        shareCount: 0,
+        groupName: input.groupName ?? null,
+      };
+      dispatch({ type: "ADD_POST", post });
+      return post.id;
+    },
+    deleteMyPost: (id: string) => dispatch({ type: "DELETE_MY_POST", id }),
+    isMyPost: (id: string) => state.community.myPosts.some((p) => p.id === id),
+    addComment: (postId: string, text: string, parentId: string | null = null) => {
+      const comment: Comment = {
+        id: `local:${uid()}`,
+        postId,
+        author: state.profile.parentName ?? "Ti",
+        text,
+        at: nowIso(),
+        parentId,
+      };
+      dispatch({ type: "ADD_COMMENT", comment });
+    },
 
     // ---- Notification preferences ----
     setNotificationPref: (key: keyof NotificationPrefs, value: boolean) =>

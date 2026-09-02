@@ -40,20 +40,6 @@ export type CartItem = {
   qty: number;
 };
 
-export type CommunityState = {
-  likedPostIds: string[];
-  savedPostIds: string[];
-  joinedGroupIds: string[];
-  followedExpertIds: string[];
-};
-
-export const initialCommunityState: CommunityState = {
-  likedPostIds: [],
-  savedPostIds: [],
-  joinedGroupIds: [],
-  followedExpertIds: [],
-};
-
 export type NotificationPrefs = {
   pushEnabled: boolean;
   emailEnabled: boolean;
@@ -98,7 +84,6 @@ export type AppState = {
   cartItems: CartItem[];
   memories: MemoryPhoto[];
   baby: BabyModuleState;
-  community: CommunityState;
   notificationPrefs: NotificationPrefs;
 };
 
@@ -126,7 +111,6 @@ export const initialAppState: AppState = {
   cartItems: [],
   memories: [],
   baby: initialBabyState,
-  community: initialCommunityState,
   notificationPrefs: initialNotificationPrefs,
 };
 

@@ -29,6 +29,7 @@ export type Product = {
   freeDelivery?: boolean;
   merchant?: string | null;
   stock?: number;
+  galleryUrls?: string[];
 };
 
 export type Review = {
@@ -81,9 +82,9 @@ export const CATEGORY_META: Record<ProductCategory, { icon: IconName; labelKey: 
   feeding: { icon: "spoon", labelKey: "tile_feeding" },
   diapering: { icon: "baby", labelKey: "diaper_title" },
   sleep: { icon: "moon", labelKey: "tile_sleep" },
+  health: { icon: "shield", labelKey: "medical_screen_title" },
   bath: { icon: "bath", labelKey: "qa_bath" },
   toys: { icon: "play", labelKey: "cat_toys" },
-  health: { icon: "shield", labelKey: "medical_screen_title" },
 };
 
 export const productCatalog: Product[] = [
