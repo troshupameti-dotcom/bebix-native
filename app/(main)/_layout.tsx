@@ -1,10 +1,12 @@
 import { useEffect } from "react";
-import { Tabs, router, usePathname } from "expo-router";
+import { Tabs, router } from "expo-router";
 import { View, Pressable } from "react-native";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { Icon, IconName } from "@/components/ui/Icon";
 import { useTranslation } from "@/lib/i18n/LanguageContext";
 import { TranslationKey } from "@/lib/i18n/translations";
 import { useOnboardingStatus } from "@/lib/hooks/useOnboardingStatus";
+import { useAppState } from "@/lib/state/AppStateContext";
 import { shadows } from "@/lib/shadows";
 
 const TABS: { name: string; icon: IconName; labelKey: TranslationKey }[] = [
@@ -15,49 +17,83 @@ const TABS: { name: string; icon: IconName; labelKey: TranslationKey }[] = [
   { name: "more", icon: "more", labelKey: "nav_more" },
 ];
 
-// Rrugët ku butoni flotues i AI DUHET të shfaqet — vetëm 4 tab-et kryesore,
-// jo "more" dhe jo faqet e brendshme (product details, cart, etj.).
-const AI_BUTTON_KEYWORDS = ["home", "baby", "shop", "community"];
+// Tabet që s'kërkojnë profil — një guest mund t'i shohë pa login.
+// Të gjitha tabet e tjera kërkojnë profil (varen nga të dhëna personale).
+const GUEST_ALLOWED_TABS = new Set(["shop"]);
+
+const TAB_COLORS = {
+  light: { background: "#FFFFFF", border: "#E9DFCC", active: "#2C271F", inactive: "#A79D8A" },
+  dark: { background: "#211D17", border: "#3A342A", active: "#F7F1E4", inactive: "#9C927E" },
+};
+
+const AI_BUTTON_SIZE = 56;
+const AI_OVERLAP = 16;
 
 /**
- * Bottom tab bar for the signed-in app.
+ * Bottom tab bar for the app.
  *
- * Expo Router has no server-side middleware equivalent, so route
- * protection happens here instead: this layout wraps every tab, checks
- * for a live Supabase session on mount, and bounces to /login if there
- * isn't one. Simpler than guarding each of the 5 screens individually.
+ * Që kur u shtua "Vazhdo te Dyqani pa Login", ky layout s'e bllokon më
+ * TËRË app-in kur s'ka session — vetëm redirekton në /login nëse
+ * përdoruesi s'ka as session, as e ka zgjedhur guest mode (`canBrowse`).
+ * Tabet private (home/baby/community/more) dhe butoni i AI-së gatuhen
+ * individualisht më poshtë (`guardTabPress` / `handleAiPress`): një guest
+ * shfleton lirshëm te Shop, por çdo tentativë tjetër e çon te
+ * "require-account", i cili e kthen te funksioni origjinal pas login-it.
  */
 export default function MainLayout() {
   const { t } = useTranslation();
-  const { loading, isAuthenticated } = useOnboardingStatus();
-  const pathname = usePathname();
+  const { state } = useAppState();
+  const { loading, isAuthenticated, isGuest } = useOnboardingStatus();
+  const insets = useSafeAreaInsets();
+
+  const canBrowse = isAuthenticated || isGuest;
 
   useEffect(() => {
-    if (!loading && !isAuthenticated) {
+    if (!loading && !canBrowse) {
       router.replace("/(auth)/login");
     }
-  }, [loading, isAuthenticated]);
+  }, [loading, canBrowse]);
 
-  if (loading || !isAuthenticated) return null;
+  if (loading || !canBrowse) return null;
 
-  console.log("PATHNAME AKTUAL:", pathname);
-  const showAiButton = AI_BUTTON_KEYWORDS.some((keyword) => pathname.includes(keyword)) && !pathname.includes("more");
+  const colors = state.darkMode ? TAB_COLORS.dark : TAB_COLORS.light;
+  const tabBarHeight = 58 + insets.bottom;
+  const tabBarPaddingBottom = Math.max(insets.bottom, 10);
+
+  function guardTabPress(tabName: string, e: { preventDefault: () => void }) {
+    if (isAuthenticated || GUEST_ALLOWED_TABS.has(tabName)) return;
+    e.preventDefault();
+    router.push({
+      pathname: "/(auth)/require-account",
+      params: { redirect: `/(main)/${tabName}` },
+    });
+  }
+
+  function handleAiPress() {
+    if (!isAuthenticated) {
+      router.push({ pathname: "/(auth)/require-account", params: { redirect: "/ai-chat" } });
+      return;
+    }
+    router.push("/ai-chat");
+  }
 
   return (
     <View style={{ flex: 1 }}>
       <Tabs
+        initialRouteName={isAuthenticated ? "home" : "shop"}
         screenOptions={{
           headerShown: false,
-          tabBarActiveTintColor: "#2C271F",
-          tabBarInactiveTintColor: "#A79D8A",
+          tabBarActiveTintColor: colors.active,
+          tabBarInactiveTintColor: colors.inactive,
           tabBarStyle: {
-            backgroundColor: "#FFFFFF",
-            borderTopColor: "#E9DFCC",
-            height: 84,
+            backgroundColor: colors.background,
+            borderTopColor: colors.border,
+            borderTopWidth: 1,
+            height: tabBarHeight,
             paddingTop: 8,
-            paddingBottom: 24,
+            paddingBottom: tabBarPaddingBottom,
           },
-          tabBarLabelStyle: { fontSize: 10.5, fontFamily: "Inter_500Medium" },
+          tabBarLabelStyle: { fontSize: 10.5, fontFamily: "Inter_500Medium", includeFontPadding: false },
         }}
       >
         {TABS.map((tab) => (
@@ -67,22 +103,38 @@ export default function MainLayout() {
             options={{
               title: t(tab.labelKey),
               tabBarIcon: ({ color, focused }) => (
-                <Icon name={tab.icon} size={22} color={focused ? "#2C271F" : color} />
+                <Icon name={tab.icon} size={22} color={focused ? colors.active : color} />
               ),
+            }}
+            listeners={{
+              tabPress: (e) => guardTabPress(tab.name, e),
             }}
           />
         ))}
+
+        <Tabs.Screen name="ai-chat" options={{ href: null }} />
       </Tabs>
 
-      {showAiButton && (
-        <Pressable
-          onPress={() => router.push("/ai-chat")}
-          style={shadows.softLg}
-          className="absolute bottom-24 right-5 w-14 h-14 rounded-full bg-olive items-center justify-center"
-        >
-          <Icon name="sparkle" size={24} color="#FFFFFF" />
-        </Pressable>
-      )}
+      <Pressable
+        onPress={handleAiPress}
+        style={[
+          shadows.softLg,
+          {
+            position: "absolute",
+            bottom: tabBarHeight - AI_OVERLAP,
+            left: "50%",
+            marginLeft: -AI_BUTTON_SIZE / 2,
+            width: AI_BUTTON_SIZE,
+            height: AI_BUTTON_SIZE,
+            borderRadius: AI_BUTTON_SIZE / 2,
+            borderWidth: 4,
+            borderColor: colors.background,
+          },
+        ]}
+        className="bg-olive items-center justify-center"
+      >
+        <Icon name="sparkle" size={24} color="#FFFFFF" />
+      </Pressable>
     </View>
   );
 }

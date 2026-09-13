@@ -1,100 +1,141 @@
-import { View, Text, ScrollView, Pressable, Switch } from "react-native";
+import { View, Text, ScrollView, Switch } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
-import { useRouter } from "expo-router";
+import { Stack } from "expo-router";
 import { useAppState } from "@/lib/state/AppStateContext";
-import { NotificationPrefs } from "@/lib/state/types";
-import { Icon } from "@/components/ui/Icon";
+import { useLanguage } from "@/lib/i18n/LanguageContext";
+import { Icon, IconName } from "@/components/ui/Icon";
 import { shadows } from "@/lib/shadows";
+import type { NotificationPrefs } from "@/lib/state/types";
+import type { TranslationKey } from "@/lib/i18n/translations";
 
-const GROUPS: { title: string; rows: { key: keyof NotificationPrefs; label: string }[] }[] = [
-  {
-    title: "Kanalet",
-    rows: [
-      { key: "pushEnabled", label: "Njoftime Push" },
-      { key: "emailEnabled", label: "Njoftime me Email" },
-      { key: "smsEnabled", label: "Njoftime me SMS" },
-    ],
-  },
-  {
-    title: "Kujtesat e Bebit",
-    rows: [
-      { key: "feedingReminders", label: "Ushqyerje" },
-      { key: "sleepReminders", label: "Gjumë" },
-      { key: "medicineReminders", label: "Ilaçe" },
-      { key: "vaccinationReminders", label: "Vaksina" },
-    ],
-  },
-  {
-    title: "Dyqani",
-    rows: [
-      { key: "shoppingNotifications", label: "Oferta & Njoftime Dyqani" },
-      { key: "deliveryUpdates", label: "Përditësime Dërgese" },
-    ],
-  },
-  {
-    title: "Komuniteti & AI",
-    rows: [
-      { key: "communityNotifications", label: "Aktiviteti i Komunitetit" },
-      { key: "aiRecommendations", label: "Rekomandime AI" },
-    ],
-  },
-  {
-    title: "Raporte",
-    rows: [
-      { key: "weeklyReports", label: "Raport Javor" },
-      { key: "monthlyReports", label: "Raport Mujor" },
-    ],
-  },
-  {
-    title: "Të Tjera",
-    rows: [
-      { key: "marketing", label: "Marketing & Promocione" },
-      { key: "emergencyAlerts", label: "Alarme Urgjente" },
-    ],
-  },
-];
+type ToggleRow = {
+  key: keyof NotificationPrefs;
+  icon: IconName;
+  labelKey: TranslationKey;
+};
 
-export default function NotificationsScreen() {
-  const router = useRouter();
-  const { state, setNotificationPref } = useAppState();
-
+function ToggleGroup({
+  title,
+  rows,
+  prefs,
+  onToggle,
+  t,
+  isLast,
+}: {
+  title: string;
+  rows: ToggleRow[];
+  prefs: NotificationPrefs;
+  onToggle: (key: keyof NotificationPrefs, value: boolean) => void;
+  t: (k: TranslationKey) => string;
+  isLast?: boolean;
+}) {
   return (
-    <SafeAreaView className="flex-1 bg-cream" edges={["top"]}>
-      <View className="flex-row items-center px-5 pt-2 mb-4">
-        <Pressable onPress={() => router.back()} style={shadows.soft} className="w-10 h-10 rounded-full bg-surface items-center justify-center mr-3">
-          <Icon name="chevronLeft" size={18} color="#2C271F" />
-        </Pressable>
-        <Text className="font-display text-xl text-ink">Njoftimet</Text>
-      </View>
-
-      <View className="mx-5 mb-4 bg-olive-bg rounded-xl2 p-3" style={shadows.soft}>
-        <Text className="font-body text-xs text-ink-soft leading-5">
-          Preferencat këtu ruhen realisht. Dërgimi aktual i push/email/SMS ende s'është lidhur (kërkon backend) — kur të lidhet, do ta respektojë saktësisht çfarë zgjedh këtu.
-        </Text>
-      </View>
-
-      <ScrollView contentContainerStyle={{ paddingBottom: 40 }}>
-        {GROUPS.map((group) => (
-          <View key={group.title} className="mb-5">
-            <Text className="font-bodyMedium text-xs text-ink-faint uppercase px-5 mb-2">{group.title}</Text>
-            <View style={shadows.soft} className="mx-5 bg-surface rounded-xl2 overflow-hidden">
-              {group.rows.map((row, i) => (
-                <View
-                  key={row.key}
-                  className={`flex-row items-center justify-between px-4 py-3 ${i < group.rows.length - 1 ? "border-b border-cream-line" : ""}`}
-                >
-                  <Text className="font-bodyMedium text-sm text-ink">{row.label}</Text>
-                  <Switch
-                    value={state.notificationPrefs[row.key]}
-                    onValueChange={(v) => setNotificationPref(row.key, v)}
-                    trackColor={{ false: "#E9DFCC", true: "#6E7452" }}
-                    thumbColor="#FFFFFF"
-                  />
-                </View>
-              ))}
+    <View className={isLast ? "mb-2" : "mb-6"}>
+      <Text className="font-bodyMedium text-xs text-ink-faint dark:text-cream/50 uppercase px-5 mb-2">{title}</Text>
+      <View className="mx-5 bg-surface dark:bg-ink/40 rounded-xl2 overflow-hidden" style={shadows.soft}>
+        {rows.map((r, i) => (
+          <View
+            key={r.key}
+            className={`flex-row items-center px-4 py-3.5 ${
+              i < rows.length - 1 ? "border-b border-cream-line dark:border-cream/10" : ""
+            }`}
+          >
+            <View className="w-8 h-8 rounded-full bg-cream-soft dark:bg-cream/10 items-center justify-center mr-3">
+              <Icon name={r.icon} size={16} color="#6E7452" />
             </View>
+            <Text className="font-bodyMedium text-sm text-ink dark:text-cream flex-1">{t(r.labelKey)}</Text>
+            <Switch
+              value={prefs[r.key]}
+              onValueChange={(value) => onToggle(r.key, value)}
+              trackColor={{ false: "#E4DFD3", true: "#8A9160" }}
+              thumbColor="#FFFFFF"
+              ios_backgroundColor="#E4DFD3"
+            />
           </View>
         ))}
+      </View>
+    </View>
+  );
+}
+
+export default function NotificationsScreen() {
+  const { state, setNotificationPref } = useAppState();
+  const { t } = useLanguage();
+  const prefs = state.notificationPrefs;
+
+  return (
+    <SafeAreaView className="flex-1 bg-cream dark:bg-ink" edges={["top"]}>
+      <Stack.Screen options={{ title: t("notif_title") }} />
+      <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={{ paddingTop: 16, paddingBottom: 40 }}>
+        <ToggleGroup
+          title={t("notif_channels")}
+          t={t}
+          prefs={prefs}
+          onToggle={setNotificationPref}
+          rows={[
+            { key: "pushEnabled", icon: "bell", labelKey: "notif_push" },
+            { key: "emailEnabled", icon: "comment", labelKey: "notif_email" },
+            { key: "smsEnabled", icon: "comment", labelKey: "notif_sms" },
+          ]}
+        />
+
+        <ToggleGroup
+          title={t("notif_baby")}
+          t={t}
+          prefs={prefs}
+          onToggle={setNotificationPref}
+          rows={[
+            { key: "medicineReminders", icon: "shield", labelKey: "notif_medicine" },
+            { key: "vaccinationReminders", icon: "syringe", labelKey: "notif_vaccination" },
+            { key: "sleepReminders", icon: "moon", labelKey: "notif_sleep" },
+            { key: "feedingReminders", icon: "sparkle", labelKey: "notif_feeding" },
+          ]}
+        />
+
+        <ToggleGroup
+          title={t("notif_shopping")}
+          t={t}
+          prefs={prefs}
+          onToggle={setNotificationPref}
+          rows={[
+            { key: "shoppingNotifications", icon: "cube", labelKey: "notif_shopping_updates" },
+            { key: "deliveryUpdates", icon: "cube", labelKey: "notif_delivery" },
+          ]}
+        />
+
+        <ToggleGroup
+          title={t("notif_community")}
+          t={t}
+          prefs={prefs}
+          onToggle={setNotificationPref}
+          rows={[
+            { key: "communityNotifications", icon: "family", labelKey: "notif_community_notif" },
+            { key: "aiRecommendations", icon: "sparkle", labelKey: "notif_ai" },
+          ]}
+        />
+
+        <ToggleGroup
+          title={t("notif_reports")}
+          t={t}
+          prefs={prefs}
+          onToggle={setNotificationPref}
+          rows={[
+            { key: "weeklyReports", icon: "chart", labelKey: "notif_weekly" },
+            { key: "monthlyReports", icon: "chart", labelKey: "notif_monthly" },
+          ]}
+        />
+
+        <ToggleGroup
+          title={t("notif_other")}
+          t={t}
+          prefs={prefs}
+          onToggle={setNotificationPref}
+          isLast
+          rows={[
+            { key: "marketing", icon: "flame", labelKey: "notif_marketing" },
+            { key: "emergencyAlerts", icon: "shield", labelKey: "notif_emergency" },
+          ]}
+        />
       </ScrollView>
     </SafeAreaView>
   );

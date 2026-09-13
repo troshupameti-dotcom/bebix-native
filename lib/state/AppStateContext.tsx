@@ -1,5 +1,6 @@
 import { createContext, useContext, useEffect, useReducer, ReactNode } from "react";
 import { useColorScheme } from "react-native";
+import { useColorScheme as useNativeWindColorScheme } from "nativewind";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import {
   AppState,
@@ -225,6 +226,7 @@ const AppStateContext = createContext<ReturnType<typeof buildValue> | null>(null
 export function AppStateProvider({ children }: { children: ReactNode }) {
   const [state, dispatch] = useReducer(reducer, initialAppState);
   const systemScheme = useColorScheme();
+  const { setColorScheme } = useNativeWindColorScheme();
 
   useEffect(() => {
     AsyncStorage.getItem(STORAGE_KEY).then((raw) => {
@@ -244,6 +246,14 @@ export function AppStateProvider({ children }: { children: ReactNode }) {
   useEffect(() => {
     AsyncStorage.setItem(STORAGE_KEY, JSON.stringify(state));
   }, [state]);
+
+  // Real dark mode: whenever the user's chosen darkMode value changes,
+  // sync NativeWind's color scheme so every `dark:` class in the app
+  // (not just this screen) updates automatically.
+  // Requires `darkMode: "class"` in tailwind.config.js.
+  useEffect(() => {
+    setColorScheme(state.darkMode ? "dark" : "light");
+  }, [state.darkMode]);
 
   const value = buildValue(state, dispatch);
   return <AppStateContext.Provider value={value}>{children}</AppStateContext.Provider>;

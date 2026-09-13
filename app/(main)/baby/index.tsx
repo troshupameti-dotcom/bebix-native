@@ -47,6 +47,7 @@ export default function BabyProfileScreen() {
   const { showToast } = useToast();
   const { profile } = state;
   const b = state.baby;
+  const isDark = state.darkMode;
 
   const [activeTab, setActiveTab] = useState<TabKey>("today");
   const [editGrowth, setEditGrowth] = useState(false);
@@ -292,25 +293,25 @@ export default function BabyProfileScreen() {
   });
 
   return (
-    <SafeAreaView className="flex-1 bg-cream" edges={["top"]}>
+    <SafeAreaView className="flex-1 bg-cream dark:bg-ink" edges={["top"]}>
       <View className="flex-row items-center justify-between px-5 pb-2 pt-2">
-        <Text className="font-display text-2xl text-ink">{babyName}</Text>
+        <Text className="font-display text-2xl text-ink dark:text-cream">{babyName}</Text>
         <View className="flex-row gap-2">
-          <Pressable className="h-9 w-9 items-center justify-center rounded-full bg-white" style={shadows.press}>
-            <Icon name="share" size={16} color="#2C271F" />
+          <Pressable className="h-9 w-9 items-center justify-center rounded-full bg-white dark:bg-ink/40" style={shadows.press}>
+            <Icon name="share" size={16} color={isDark ? "#F7F1E4" : "#2C271F"} />
           </Pressable>
           <Pressable
             onPress={() => router.push("/(main)/baby/settings")}
-            className="h-9 w-9 items-center justify-center rounded-full bg-white"
+            className="h-9 w-9 items-center justify-center rounded-full bg-white dark:bg-ink/40"
             style={shadows.press}
           >
-            <Icon name="edit" size={16} color="#2C271F" />
+            <Icon name="edit" size={16} color={isDark ? "#F7F1E4" : "#2C271F"} />
           </Pressable>
         </View>
       </View>
 
       {/* Segmented tab control — tash vetëm 2 tabe */}
-      <View className="mx-5 mb-2 flex-row rounded-2xl bg-cream-soft p-1">
+      <View className="mx-5 mb-2 flex-row rounded-2xl bg-cream-soft dark:bg-cream/10 p-1">
         {TABS.map((tab) => {
           const isActive = activeTab === tab;
           return (
@@ -327,10 +328,13 @@ export default function BabyProfileScreen() {
                   from={{ opacity: 0, scale: 0.9 }}
                   animate={{ opacity: 1, scale: 1 }}
                   transition={{ type: "timing", duration: 180 }}
-                  style={[shadows.press, { position: "absolute", inset: 2, borderRadius: 14, backgroundColor: "#fff" }]}
+                  style={[
+                    shadows.press,
+                    { position: "absolute", inset: 2, borderRadius: 14, backgroundColor: isDark ? "#2C271F" : "#fff" },
+                  ]}
                 />
               )}
-              <Text className={`text-center font-bodyMedium text-[13px] ${isActive ? "text-ink" : "text-ink-faint"}`}>
+              <Text className={`text-center font-bodyMedium text-[13px] ${isActive ? "text-ink dark:text-cream" : "text-ink-faint dark:text-cream/50"}`}>
                 {tab === "today" ? "Sot" : "Ditari"}
               </Text>
             </Pressable>
@@ -338,7 +342,7 @@ export default function BabyProfileScreen() {
         })}
       </View>
 
-      <ScrollView className="flex-1 px-5" contentContainerStyle={{ paddingBottom: 24 }} showsVerticalScrollIndicator={false}>
+      <ScrollView className="flex-1 px-5" contentContainerStyle={{ paddingBottom: 120 }} showsVerticalScrollIndicator={false}>
         {activeTab === "today" && (
           <MotiView from={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ type: "timing", duration: 200 }}>
             {/* Hero — foto e madhe, jo ikonë e vogël. Kjo âsht qendra
@@ -349,15 +353,15 @@ export default function BabyProfileScreen() {
               ) : (
                 <View
                   style={{ width: "100%", aspectRatio: 1.3, borderRadius: 28 }}
-                  className="items-center justify-center bg-cream-soft"
+                  className="items-center justify-center bg-cream-soft dark:bg-cream/10"
                 >
                   <Icon name="baby" size={44} color="#A79D8A" />
                 </View>
               )}
-              <Text className="mt-4 font-display text-[26px] text-ink">{babyName}</Text>
-              {ageText ? <Text className="mt-0.5 font-body text-[14px] text-ink-soft">{ageText}</Text> : null}
+              <Text className="mt-4 font-display text-[26px] text-ink dark:text-cream">{babyName}</Text>
+              {ageText ? <Text className="mt-0.5 font-body text-[14px] text-ink-soft dark:text-cream/60">{ageText}</Text> : null}
               {profile.babyDob && (
-                <Text className="mt-0.5 font-body text-[12px] text-ink-faint">
+                <Text className="mt-0.5 font-body text-[12px] text-ink-faint dark:text-cream/50">
                   {t("baby_born")} {formatDate(profile.babyDob, lang)}
                 </Text>
               )}
@@ -383,14 +387,14 @@ export default function BabyProfileScreen() {
               <Pressable
                 onPress={() => router.push("/(main)/baby/vaccinations")}
                 style={shadows.soft}
-                className="flex-1 flex-row items-center gap-2.5 rounded-xl2 border border-ink/10 bg-white p-3.5"
+                className="flex-1 flex-row items-center gap-2.5 rounded-xl2 border border-ink/10 dark:border-cream/10 bg-white dark:bg-ink/40 p-3.5"
               >
                 <View className="h-9 w-9 items-center justify-center rounded-xl bg-olive-bg">
                   <Icon name="syringe" size={16} color="#6E7452" />
                 </View>
                 <View className="flex-1">
-                  <Text className="font-bodySemibold text-[13px] text-ink">{t("vaccine_screen_title")}</Text>
-                  <Text className="font-body text-[10.5px] text-ink-soft">
+                  <Text className="font-bodySemibold text-[13px] text-ink dark:text-cream">{t("vaccine_screen_title")}</Text>
+                  <Text className="font-body text-[10.5px] text-ink-soft dark:text-cream/60">
                     {upcomingVaccineCount} {t("vaccine_status_upcoming").toLowerCase()}
                   </Text>
                 </View>
@@ -398,14 +402,14 @@ export default function BabyProfileScreen() {
               <Pressable
                 onPress={() => router.push("/(main)/baby/medical")}
                 style={shadows.soft}
-                className="flex-1 flex-row items-center gap-2.5 rounded-xl2 border border-ink/10 bg-white p-3.5"
+                className="flex-1 flex-row items-center gap-2.5 rounded-xl2 border border-ink/10 dark:border-cream/10 bg-white dark:bg-ink/40 p-3.5"
               >
                 <View className="h-9 w-9 items-center justify-center rounded-xl bg-orange-bg">
                   <Icon name="shield" size={16} color="#C9702E" />
                 </View>
                 <View className="flex-1">
-                  <Text className="font-bodySemibold text-[13px] text-ink">{t("medical_screen_title")}</Text>
-                  <Text className="font-body text-[10.5px] text-ink-soft">{active(b.medicalRecords).length}</Text>
+                  <Text className="font-bodySemibold text-[13px] text-ink dark:text-cream">{t("medical_screen_title")}</Text>
+                  <Text className="font-body text-[10.5px] text-ink-soft dark:text-cream/60">{active(b.medicalRecords).length}</Text>
                 </View>
               </Pressable>
             </View>
@@ -443,7 +447,7 @@ export default function BabyProfileScreen() {
           <MotiView from={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ type: "timing", duration: 200 }}>
             {/* Milestones — tash kompakte, lart te Ditari, jo tab e vet */}
             <View className="mt-2 flex-row items-center justify-between">
-              <Text className="font-bodySemibold text-[15px] text-ink">{t("baby_tab_milestones")}</Text>
+              <Text className="font-bodySemibold text-[15px] text-ink dark:text-cream">{t("baby_tab_milestones")}</Text>
               <Pressable onPress={() => toggleEdit(setEditMilestones)} hitSlop={8}>
                 <Text className="font-bodySemibold text-[12.5px] text-orange">{editMilestones ? t("done_action") : t("edit_action")}</Text>
               </Pressable>
@@ -471,7 +475,7 @@ export default function BabyProfileScreen() {
                   setTimelineSheetPurpose("milestone");
                   setSheet("timeline");
                 }}
-                className="items-center justify-center rounded-2xl border border-dashed border-cream-line px-4 py-2"
+                className="items-center justify-center rounded-2xl border border-dashed border-cream-line dark:border-cream/20 px-4 py-2"
               >
                 <Icon name="plus" size={16} color="#A79D8A" />
               </Pressable>
@@ -480,7 +484,7 @@ export default function BabyProfileScreen() {
             {/* Rryma kronologjike — kontrollet tash ma kompakte */}
             <View className="mt-6 flex-row items-center gap-2">
               {showSearch ? (
-                <View className="flex-1 flex-row items-center gap-2 rounded-2xl bg-white border border-ink/10 px-3.5 py-2.5">
+                <View className="flex-1 flex-row items-center gap-2 rounded-2xl bg-white dark:bg-ink/40 border border-ink/10 dark:border-cream/10 px-3.5 py-2.5">
                   <Icon name="search" size={15} color="#A79D8A" />
                   <TextInput
                     autoFocus
@@ -488,7 +492,7 @@ export default function BabyProfileScreen() {
                     onChangeText={setSearch}
                     placeholder={t("timeline_search_ph")}
                     placeholderTextColor="#A79D8A"
-                    className="flex-1 font-body text-[13.5px] text-ink"
+                    className="flex-1 font-body text-[13.5px] text-ink dark:text-cream"
                   />
                   <Pressable onPress={() => { setShowSearch(false); setSearch(""); }} hitSlop={8}>
                     <Icon name="close" size={14} color="#A79D8A" />
@@ -496,9 +500,9 @@ export default function BabyProfileScreen() {
                 </View>
               ) : (
                 <>
-                  <Text className="flex-1 font-bodySemibold text-[15px] text-ink">{t("baby_tab_timeline")}</Text>
-                  <Pressable onPress={() => setShowSearch(true)} hitSlop={8} className="h-9 w-9 items-center justify-center rounded-full bg-white border border-ink/10">
-                    <Icon name="search" size={15} color="#2C271F" />
+                  <Text className="flex-1 font-bodySemibold text-[15px] text-ink dark:text-cream">{t("baby_tab_timeline")}</Text>
+                  <Pressable onPress={() => setShowSearch(true)} hitSlop={8} className="h-9 w-9 items-center justify-center rounded-full bg-white dark:bg-ink/40 border border-ink/10 dark:border-cream/10">
+                    <Icon name="search" size={15} color={isDark ? "#F7F1E4" : "#2C271F"} />
                   </Pressable>
                 </>
               )}
@@ -508,9 +512,9 @@ export default function BabyProfileScreen() {
                   if (selectMode) exitSelectMode();
                   else setSelectMode(true);
                 }}
-                className={`rounded-2xl px-3.5 py-2.5 ${selectMode ? "bg-ink" : "bg-white border border-ink/10"}`}
+                className={`rounded-2xl px-3.5 py-2.5 ${selectMode ? "bg-ink" : "bg-white dark:bg-ink/40 border border-ink/10 dark:border-cream/10"}`}
               >
-                <Text className={`font-bodyMedium text-[12px] ${selectMode ? "text-cream" : "text-ink"}`}>
+                <Text className={`font-bodyMedium text-[12px] ${selectMode ? "text-cream" : "text-ink dark:text-cream"}`}>
                   {selectMode ? t("bulk_cancel") : t("bulk_select_action")}
                 </Text>
               </Pressable>
@@ -527,9 +531,9 @@ export default function BabyProfileScreen() {
                       haptics.select();
                       setKindFilter(k);
                     }}
-                    className={`rounded-full border px-3.5 py-2 ${isActive ? "border-ink bg-ink" : "border-ink/10 bg-white"}`}
+                    className={`rounded-full border px-3.5 py-2 ${isActive ? "border-ink bg-ink dark:border-cream dark:bg-cream/90" : "border-ink/10 dark:border-cream/10 bg-white dark:bg-ink/40"}`}
                   >
-                    <Text className={`font-bodyMedium text-[12px] ${isActive ? "text-cream" : "text-ink"}`}>{t(labelKey as never)}</Text>
+                    <Text className={`font-bodyMedium text-[12px] ${isActive ? "text-cream dark:text-ink" : "text-ink dark:text-cream"}`}>{t(labelKey as never)}</Text>
                   </Pressable>
                 );
               })}
@@ -539,7 +543,7 @@ export default function BabyProfileScreen() {
               {filteredFeed.length === 0 ? (
                 <View className="items-center gap-2 py-14">
                   <Icon name="sparkle" size={24} color="#E9DFCC" />
-                  <Text className="font-body text-sm text-ink-soft">{t("timeline_empty")}</Text>
+                  <Text className="font-body text-sm text-ink-soft dark:text-cream/60">{t("timeline_empty")}</Text>
                 </View>
               ) : (
                 filteredFeed.map((item, i) => {
@@ -549,18 +553,18 @@ export default function BabyProfileScreen() {
                     <Pressable key={key} onPress={() => (selectMode ? toggleSelect(item.kind, item.id) : undefined)} className="flex-row gap-3">
                       <View className="items-center">
                         {selectMode ? (
-                          <View className={`mt-0.5 h-4 w-4 items-center justify-center rounded-full border ${isSelected ? "border-ink bg-ink" : "border-ink/25 bg-white"}`}>
-                            {isSelected && <Icon name="check" size={9} color="#FBF6EE" />}
+                          <View className={`mt-0.5 h-4 w-4 items-center justify-center rounded-full border ${isSelected ? "border-ink bg-ink dark:border-cream dark:bg-cream" : "border-ink/25 dark:border-cream/25 bg-white dark:bg-ink/40"}`}>
+                            {isSelected && <Icon name="check" size={9} color={isDark ? "#211D17" : "#FBF6EE"} />}
                           </View>
                         ) : (
                           <View style={{ backgroundColor: item.tint === "orange" ? "#C9702E" : "#6E7452" }} className="mt-1.5 h-2.5 w-2.5 rounded-full" />
                         )}
-                        {i < filteredFeed.length - 1 && <View className="w-px flex-1 bg-ink/10" />}
+                        {i < filteredFeed.length - 1 && <View className="w-px flex-1 bg-ink/10 dark:bg-cream/10" />}
                       </View>
                       <View className="flex-1 flex-row items-center justify-between pb-5">
                         <View>
-                          <Text className="font-bodySemibold text-[14px] text-ink">{item.title}</Text>
-                          <Text className="font-body text-xs text-ink-soft">{item.subtitle}</Text>
+                          <Text className="font-bodySemibold text-[14px] text-ink dark:text-cream">{item.title}</Text>
+                          <Text className="font-body text-xs text-ink-soft dark:text-cream/60">{item.subtitle}</Text>
                         </View>
                         {!selectMode && item.kind === "event" && (
                           <Pressable
@@ -616,7 +620,7 @@ export default function BabyProfileScreen() {
 
             {/* Info mjekësore — dikur ishte tab "Shëndeti", tash pjesë kompakte e Ditarit */}
             <SectionHeader title={t("baby_medical_info")} editable editing={editMedical} onToggleEdit={() => toggleEdit(setEditMedical)} />
-            <View style={shadows.soft} className="rounded-xl2 border border-ink/10 bg-white px-4">
+            <View style={shadows.soft} className="rounded-xl2 border border-ink/10 dark:border-cream/10 bg-white dark:bg-ink/40 px-4">
               {b.medicalInfo
                 .filter((m) => b.medicalActiveKeys.includes(m.key))
                 .map((m) => (
@@ -684,7 +688,7 @@ export default function BabyProfileScreen() {
 
       <BottomSheet visible={sheet === "statEdit"} onClose={closeSheet}>
         <View className="gap-4">
-          <Text className="font-bodySemibold text-base text-ink">
+          <Text className="font-bodySemibold text-base text-ink dark:text-cream">
             {editingStat?.isCustom ? editingStat.label ?? "" : editingStat ? t(editingStat.labelKey as never) : ""}
           </Text>
           <DateTimeField label={t("date_field")} mode="date" value={statDate} onChange={setStatDate} />

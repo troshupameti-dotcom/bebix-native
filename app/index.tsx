@@ -5,9 +5,9 @@ import { Logo } from "@/components/auth/Logo";
 import { useOnboardingStatus } from "@/lib/hooks/useOnboardingStatus";
 
 export default function Index() {
-  const { loading, hasSeenOnboarding, isAuthenticated } = useOnboardingStatus();
+  const { loading, hasSeenOnboarding, isAuthenticated, isGuest } = useOnboardingStatus();
 
-  // 1. While reading storage/auth state, show the splash loading state
+  // 1. Sa kohë po lexohet storage/auth state, shfaq ekranin e ngarkimit
   if (loading) {
     return (
       <View className="flex-1 items-center justify-center bg-cream">
@@ -22,9 +22,13 @@ export default function Index() {
     );
   }
 
-  // 2. Perform safe, declarative redirects once loaded
+  // 2. Redirects të sigurta, deklarative, pasi u ngarkua statusi
   if (isAuthenticated) {
     return <Redirect href="/(main)/home" />;
+  }
+
+  if (isGuest) {
+    return <Redirect href="/(main)/shop" />;
   }
 
   if (hasSeenOnboarding) {

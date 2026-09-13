@@ -11,6 +11,8 @@ import {
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useRouter } from "expo-router";
 import { Icon } from "@/components/ui/Icon";
+import { useAppState } from "@/lib/state/AppStateContext";
+import { useTranslation } from "@/lib/i18n/LanguageContext";
 import { shadows } from "@/lib/shadows";
 
 type ChatMessage = {
@@ -19,23 +21,23 @@ type ChatMessage = {
   text: string;
 };
 
-// ⚠️ Kjo është përgjigje placeholder — s'është lidhje reale me AI ende.
-// Kur të vendoset backend real, kjo funksion zëvendësohet me thirrje API.
-function getPlaceholderReply(question: string): string {
-  return "Faleminderit për pyetjen! Lidhja e vërtetë me AI ende s'është aktivizuar — kjo është vetëm një përgjigje shembull për tani.";
-}
-
 export default function AiChatScreen() {
   const router = useRouter();
   const scrollRef = useRef<ScrollView>(null);
+  const { state } = useAppState();
+  const { t } = useTranslation();
+  const isDark = state.darkMode;
+
   const [input, setInput] = useState("");
   const [messages, setMessages] = useState<ChatMessage[]>([
-    {
-      id: "welcome",
-      role: "ai",
-      text: "Përshëndetje! Më pyet çdo gjë rreth bebit tënd — ushqyerje, gjumë, zhvillim, apo çfarëdo shqetësimi.",
-    },
+    { id: "welcome", role: "ai", text: t("ai_chat_welcome") },
   ]);
+
+  // ⚠️ Kjo është përgjigje placeholder — s'është lidhje reale me AI ende.
+  // Kur të vendoset backend real, kjo funksion zëvendësohet me thirrje API.
+  function getPlaceholderReply(_question: string): string {
+    return t("ai_chat_placeholder_reply");
+  }
 
   function handleSend() {
     const trimmed = input.trim();
@@ -54,19 +56,19 @@ export default function AiChatScreen() {
   }
 
   return (
-    <SafeAreaView className="flex-1 bg-cream" edges={["top"]}>
+    <SafeAreaView className="flex-1 bg-cream dark:bg-ink" edges={["top"]}>
       {/* Header */}
       <View className="flex-row items-center px-5 pt-2 pb-4">
         <Pressable
           onPress={() => router.back()}
           style={shadows.soft}
-          className="w-10 h-10 rounded-full bg-surface items-center justify-center mr-3"
+          className="w-10 h-10 rounded-full bg-surface dark:bg-ink/40 items-center justify-center mr-3"
         >
-          <Icon name="chevronLeft" size={20} color="#2C271F" />
+          <Icon name="chevronLeft" size={20} color={isDark ? "#F7F1E4" : "#2C271F"} />
         </Pressable>
         <View className="flex-1">
-          <Text className="font-bodySemibold text-lg text-ink">Asistenti AI</Text>
-          <Text className="font-body text-xs text-ink-soft">Gjithmonë gati me ndihmë</Text>
+          <Text className="font-bodySemibold text-lg text-ink dark:text-cream">{t("ai_chat_title")}</Text>
+          <Text className="font-body text-xs text-ink-soft dark:text-cream/60">{t("ai_chat_subtitle")}</Text>
         </View>
         <View className="w-10 h-10 rounded-full bg-olive-bg items-center justify-center">
           <Icon name="sparkle" size={18} color="#6E7452" />
@@ -98,12 +100,12 @@ export default function AiChatScreen() {
               <View
                 style={shadows.soft}
                 className={`max-w-[75%] rounded-xl2 p-3 ${
-                  m.role === "user" ? "bg-orange" : "bg-surface"
+                  m.role === "user" ? "bg-orange" : "bg-surface dark:bg-ink/40"
                 }`}
               >
                 <Text
                   className={`font-body text-sm leading-5 ${
-                    m.role === "user" ? "text-white" : "text-ink"
+                    m.role === "user" ? "text-white" : "text-ink dark:text-cream"
                   }`}
                 >
                   {m.text}
@@ -114,13 +116,13 @@ export default function AiChatScreen() {
         </ScrollView>
 
         {/* Input bar */}
-        <View className="flex-row items-center px-5 py-3 border-t border-cream-soft">
+        <View className="flex-row items-center px-5 py-3 border-t border-cream-soft dark:border-cream/10">
           <TextInput
             value={input}
             onChangeText={setInput}
-            placeholder="Shkruaj një pyetje..."
+            placeholder={t("ai_chat_input_ph")}
             placeholderTextColor="#A79D8A"
-            className="flex-1 bg-surface rounded-full px-4 py-3 mr-3 font-body text-sm text-ink"
+            className="flex-1 bg-surface dark:bg-ink/40 rounded-full px-4 py-3 mr-3 font-body text-sm text-ink dark:text-cream"
             style={shadows.soft}
             multiline
             onSubmitEditing={handleSend}
@@ -130,7 +132,7 @@ export default function AiChatScreen() {
             disabled={!input.trim()}
             style={shadows.soft}
             className={`w-11 h-11 rounded-full items-center justify-center ${
-              input.trim() ? "bg-orange" : "bg-surface"
+              input.trim() ? "bg-orange" : "bg-surface dark:bg-ink/40"
             }`}
           >
             <Icon name="send" size={18} color={input.trim() ? "#FFFFFF" : "#A79D8A"} />

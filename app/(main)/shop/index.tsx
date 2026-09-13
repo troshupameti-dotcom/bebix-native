@@ -27,10 +27,10 @@ function Chip({ label, active, onPress }: { label: string; active: boolean; onPr
   return (
     <Pressable
       onPress={onPress}
-      className={`px-4 py-2 rounded-full mr-2 ${active ? "bg-olive" : "bg-surface"}`}
+      className={`px-4 py-2 rounded-full mr-2 ${active ? "bg-olive" : "bg-surface dark:bg-ink/40"}`}
       style={!active ? shadows.soft : undefined}
     >
-      <Text className={`font-bodyMedium text-xs ${active ? "text-white" : "text-ink-soft"}`}>{label}</Text>
+      <Text className={`font-bodyMedium text-xs ${active ? "text-white" : "text-ink-soft dark:text-cream/60"}`}>{label}</Text>
     </Pressable>
   );
 }
@@ -51,10 +51,10 @@ function CategoryTile({
     <Pressable
       onPress={onPress}
       style={!active ? shadows.soft : undefined}
-      className={`flex-1 items-center py-4 rounded-xl2 ${active ? "bg-olive" : "bg-surface"}`}
+      className={`flex-1 items-center py-4 rounded-xl2 ${active ? "bg-olive" : "bg-surface dark:bg-ink/40"}`}
     >
       <Icon name={icon} size={22} color={active ? "#FFFFFF" : "#6E7452"} />
-      <Text className={`font-bodyMedium text-xs mt-2 text-center ${active ? "text-white" : "text-ink"}`} numberOfLines={1}>
+      <Text className={`font-bodyMedium text-xs mt-2 text-center ${active ? "text-white" : "text-ink dark:text-cream"}`} numberOfLines={1}>
         {label}
       </Text>
     </Pressable>
@@ -65,6 +65,7 @@ export default function ShopScreen() {
   const router = useRouter();
   const { t } = useTranslation();
   const { state } = useAppState();
+  const isDark = state.darkMode;
   const { width } = useWindowDimensions();
   const columns = useGridColumns();
   const cardWidth = (width - PADDING_X * 2 - GRID_GAP * (columns - 1)) / columns;
@@ -143,14 +144,14 @@ export default function ShopScreen() {
   }
 
   return (
-    <SafeAreaView className="flex-1 bg-cream" edges={["top"]}>
+    <SafeAreaView className="flex-1 bg-cream dark:bg-ink" edges={["top"]}>
       {/* Header */}
       <View className="flex-row items-center justify-between px-5 pt-2 mb-4">
         <View>
-          <Text className="font-display text-2xl text-ink">Dyqani</Text>
+          <Text className="font-display text-2xl text-ink dark:text-cream">{t("shop_title")}</Text>
           {state.profile.parentName && (
-            <Text className="font-body text-xs text-ink-faint mt-0.5">
-              Mirë se erdhe, {state.profile.parentName.split(" ")[0]}
+            <Text className="font-body text-xs text-ink-faint dark:text-cream/50 mt-0.5">
+              {t("shop_welcome", { name: state.profile.parentName.split(" ")[0] })}
             </Text>
           )}
         </View>
@@ -158,16 +159,16 @@ export default function ShopScreen() {
           <Pressable
             onPress={() => router.push("/shop/wishlist")}
             style={shadows.soft}
-            className="w-10 h-10 rounded-full bg-surface items-center justify-center mr-2"
+            className="w-10 h-10 rounded-full bg-surface dark:bg-ink/40 items-center justify-center mr-2"
           >
-            <Icon name="heart" size={18} color="#2C271F" />
+            <Icon name="heart" size={18} color={isDark ? "#F7F1E4" : "#2C271F"} />
           </Pressable>
           <Pressable
             onPress={() => router.push("/shop/cart")}
             style={shadows.soft}
-            className="w-10 h-10 rounded-full bg-surface items-center justify-center"
+            className="w-10 h-10 rounded-full bg-surface dark:bg-ink/40 items-center justify-center"
           >
-            <Icon name="cart" size={18} color="#2C271F" />
+            <Icon name="cart" size={18} color={isDark ? "#F7F1E4" : "#2C271F"} />
             {state.cartCount > 0 && (
               <View className="absolute -top-1 -right-1 w-4 h-4 rounded-full bg-orange items-center justify-center">
                 <Text className="text-white text-[10px] font-bodySemibold">{state.cartCount}</Text>
@@ -179,14 +180,14 @@ export default function ShopScreen() {
 
       {/* Search */}
       <View className="px-5 mb-4">
-        <View style={shadows.soft} className="flex-row items-center bg-surface rounded-xl2 px-4 py-3">
+        <View style={shadows.soft} className="flex-row items-center bg-surface dark:bg-ink/40 rounded-xl2 px-4 py-3">
           <Icon name="search" size={18} color="#A79D8A" />
           <TextInput
             value={query}
             onChangeText={setQuery}
-            placeholder="Kërko produkte ose marka..."
+            placeholder={t("shop_search_ph")}
             placeholderTextColor="#A79D8A"
-            className="flex-1 ml-2 font-body text-sm text-ink"
+            className="flex-1 ml-2 font-body text-sm text-ink dark:text-cream"
           />
           <Pressable onPress={() => setShowFilters((v) => !v)}>
             <Icon name="chart" size={18} color={showFilters ? "#C9702E" : "#A79D8A"} />
@@ -196,12 +197,12 @@ export default function ShopScreen() {
 
       {showFilters && (
         <View className="px-5 mb-4">
-          <Text className="font-bodyMedium text-xs text-ink-soft mb-2">Rendit sipas</Text>
+          <Text className="font-bodyMedium text-xs text-ink-soft dark:text-cream/60 mb-2">{t("shop_sort_by")}</Text>
           <View className="flex-row mb-3">
-            <Chip label="Relevante" active={sort === "relevant"} onPress={() => setSort("relevant")} />
-            <Chip label="Çmimi ↑" active={sort === "priceAsc"} onPress={() => setSort("priceAsc")} />
-            <Chip label="Çmimi ↓" active={sort === "priceDesc"} onPress={() => setSort("priceDesc")} />
-            <Chip label="Vlerësimi" active={sort === "rating"} onPress={() => setSort("rating")} />
+            <Chip label={t("sort_relevant")} active={sort === "relevant"} onPress={() => setSort("relevant")} />
+            <Chip label={t("sort_price_asc")} active={sort === "priceAsc"} onPress={() => setSort("priceAsc")} />
+            <Chip label={t("sort_price_desc")} active={sort === "priceDesc"} onPress={() => setSort("priceDesc")} />
+            <Chip label={t("sort_rating")} active={sort === "rating"} onPress={() => setSort("rating")} />
           </View>
         </View>
       )}
@@ -213,25 +214,25 @@ export default function ShopScreen() {
       ) : loadError ? (
         <View className="flex-1 items-center justify-center px-8">
           <Icon name="close" size={24} color="#C9702E" />
-          <Text className="font-bodyMedium text-sm text-ink mt-3 text-center">S'u ngarkuan produktet.</Text>
-          <Text className="font-body text-xs text-ink-faint mt-1 text-center">{loadError}</Text>
+          <Text className="font-bodyMedium text-sm text-ink dark:text-cream mt-3 text-center">{t("shop_load_error_title")}</Text>
+          <Text className="font-body text-xs text-ink-faint dark:text-cream/50 mt-1 text-center">{loadError}</Text>
           <Pressable onPress={load} className="mt-4 bg-olive rounded-full px-5 py-2.5">
-            <Text className="font-bodyMedium text-xs text-white">Provo Përsëri</Text>
+            <Text className="font-bodyMedium text-xs text-white">{t("shop_retry")}</Text>
           </Pressable>
         </View>
       ) : products.length === 0 ? (
         // 14. Empty state
         <View className="flex-1 items-center justify-center px-8">
           <Icon name="cube" size={24} color="#A79D8A" />
-          <Text className="font-bodyMedium text-sm text-ink mt-3 text-center">Ende s'ka produkte.</Text>
-          <Text className="font-body text-xs text-ink-faint mt-1 text-center">Shtoi te admin panel: bebix-admin.html</Text>
+          <Text className="font-bodyMedium text-sm text-ink dark:text-cream mt-3 text-center">{t("shop_empty_title")}</Text>
+          <Text className="font-body text-xs text-ink-faint dark:text-cream/50 mt-1 text-center">{t("shop_empty_sub")}</Text>
         </View>
       ) : (
-        <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={{ paddingBottom: 40 }}>
+        <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={{ paddingBottom: 120 }}>
           {/* Kategoritë — grid 2×3, krejt të dukshme pa scroll */}
           <View className="px-5 mb-2">
             <View className="flex-row justify-between mb-2">
-              <Chip label="Të gjitha" active={category === "all"} onPress={() => setCategory("all")} />
+              <Chip label={t("shop_all_chip")} active={category === "all"} onPress={() => setCategory("all")} />
             </View>
             <View style={{ gap: GRID_GAP }}>
               {[0, 1].map((row) => (
@@ -255,7 +256,7 @@ export default function ShopScreen() {
               // 14. Empty state kur s'ka rezultate
               <View className="items-center justify-center px-8 mt-10">
                 <Icon name="search" size={24} color="#A79D8A" />
-                <Text className="font-bodyMedium text-sm text-ink mt-3 text-center">S'u gjet asnjë produkt.</Text>
+                <Text className="font-bodyMedium text-sm text-ink dark:text-cream mt-3 text-center">{t("shop_no_results_title")}</Text>
                 <Pressable
                   onPress={() => {
                     setQuery("");
@@ -264,7 +265,7 @@ export default function ShopScreen() {
                   }}
                   className="mt-4 bg-olive rounded-full px-5 py-2.5"
                 >
-                  <Text className="font-bodyMedium text-xs text-white">Shiko të gjitha produktet</Text>
+                  <Text className="font-bodyMedium text-xs text-white">{t("shop_view_all")}</Text>
                 </Pressable>
               </View>
             ) : (
@@ -275,7 +276,7 @@ export default function ShopScreen() {
               {/* 9. Section header — Markat */}
               {brands.length > 0 && (
                 <>
-                  <Text className="font-bodySemibold text-lg text-ink px-5 mt-5 mb-3">Markat</Text>
+                  <Text className="font-bodySemibold text-lg text-ink dark:text-cream px-5 mt-5 mb-3">{t("shop_brands")}</Text>
                   <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ paddingHorizontal: 20 }}>
                     {brands.map((b) => {
                       const bg = b.accent === "olive" ? "bg-olive-bg" : "bg-orange-bg";
@@ -288,7 +289,7 @@ export default function ShopScreen() {
                         >
                           <View
                             style={shadows.soft}
-                            className="w-20 h-20 rounded-2xl bg-surface items-center justify-center overflow-hidden"
+                            className="w-20 h-20 rounded-2xl bg-surface dark:bg-ink/40 items-center justify-center overflow-hidden"
                           >
                             {b.logoUrl ? (
                               <Image source={{ uri: b.logoUrl }} className="w-full h-full" resizeMode="cover" />
@@ -298,7 +299,7 @@ export default function ShopScreen() {
                               </View>
                             )}
                           </View>
-                          <Text className="font-bodyMedium text-[11px] text-ink text-center mt-2" numberOfLines={1}>
+                          <Text className="font-bodyMedium text-[11px] text-ink dark:text-cream text-center mt-2" numberOfLines={1}>
                             {b.name}
                           </Text>
                         </Pressable>
@@ -311,7 +312,7 @@ export default function ShopScreen() {
               {flashDeals.length > 0 && (
                 <>
                   <View className="flex-row items-center justify-between px-5 mt-6 mb-3">
-                    <Text className="font-bodySemibold text-lg text-ink">⚡ Oferta të Menjëhershme</Text>
+                    <Text className="font-bodySemibold text-lg text-ink dark:text-cream">{t("shop_flash_deals")}</Text>
                   </View>
                   <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ paddingHorizontal: 20 }}>
                     {flashDeals.map((p) => (
@@ -325,7 +326,7 @@ export default function ShopScreen() {
 
               {trending.length > 0 && (
                 <>
-                  <Text className="font-bodySemibold text-lg text-ink px-5 mt-6 mb-3">Në Modë</Text>
+                  <Text className="font-bodySemibold text-lg text-ink dark:text-cream px-5 mt-6 mb-3">{t("shop_trending")}</Text>
                   <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ paddingHorizontal: 20 }}>
                     {trending.map((p) => (
                       <View key={p.id} className="mr-3">
@@ -338,7 +339,7 @@ export default function ShopScreen() {
 
               {/* 9. Section header — grid kryesor, me "Shiko të gjitha" */}
               <View className="flex-row items-center justify-between px-5 mt-6 mb-1">
-                <Text className="font-bodySemibold text-lg text-ink">Të Gjitha Produktet</Text>
+                <Text className="font-bodySemibold text-lg text-ink dark:text-cream">{t("shop_all_products")}</Text>
               </View>
               <ProductGrid items={products} />
             </>

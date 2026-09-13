@@ -1,4 +1,4 @@
-import { Pressable, View } from "react-native";
+import { Pressable, View, Alert } from "react-native";
 import { MotiView } from "moti";
 import { useState } from "react";
 import * as WebBrowser from "expo-web-browser";
@@ -28,23 +28,79 @@ const buttonClass =
 export function SocialAuthRow({ onEmailSelect }: SocialAuthRowProps) {
   const [pressedKey, setPressedKey] = useState<string | null>(null);
 
+  // Supabase's OAuth redirect returns tokens in the URL FRAGMENT (after #),
+  // not as query params (after ?) — new URL().searchParams misses them entirely.
+  function parseAuthParams(url: string): Record<string, string> {
+    const hashIndex = url.indexOf("#");
+    const queryIndex = url.indexOf("?");
+    const paramsString =
+      hashIndex !== -1
+        ? url.substring(hashIndex + 1)
+        : queryIndex !== -1
+        ? url.substring(queryIndex + 1)
+        : "";
+
+    const params: Record<string, string> = {};
+    paramsString.split("&").forEach((pair) => {
+      if (!pair) return;
+      const [key, value] = pair.split("=");
+      if (key) params[decodeURIComponent(key)] = decodeURIComponent(value ?? "");
+    });
+    return params;
+  }
+
   async function handleOAuth(provider: "apple" | "google") {
     const redirectTo = Linking.createURL("auth/callback");
     const { data, error } = await supabase.auth.signInWithOAuth({
       provider,
       options: { redirectTo, skipBrowserRedirect: true },
     });
-    if (error || !data?.url) return;
+
+    if (error || !data?.url) {
+      Alert.alert("Gabim", error?.message ?? "S'u krijua dot lidhja e login-it.");
+      return;
+    }
 
     const result = await WebBrowser.openAuthSessionAsync(data.url, redirectTo);
-    if (result.type === "success" && result.url) {
-      const { url } = result;
-      const params = new URL(url).searchParams;
-      const access_token = params.get("access_token");
-      const refresh_token = params.get("refresh_token");
-      if (access_token && refresh_token) {
-        await supabase.auth.setSession({ access_token, refresh_token });
+
+    if (result.type !== "success" || !result.url) {
+      // User cancelled or dismissed — no error needed
+      return;
+    }
+
+    // Modern Supabase-js defaults to PKCE flow: the redirect URL carries
+    // ?code=... which must be exchanged for a session.
+    const codeMatch = result.url.match(/[?&]code=([^&]+)/);
+    if (codeMatch) {
+      const code = decodeURIComponent(codeMatch[1]);
+      const { error: exchangeError } = await supabase.auth.exchangeCodeForSession(code);
+      if (exchangeError) {
+        Alert.alert("Gabim", exchangeError.message);
       }
+      return;
+    }
+
+    // Fallback: older/implicit flow returns tokens in the URL fragment (#...)
+    const params = parseAuthParams(result.url);
+
+    if (params.error) {
+      Alert.alert("Gabim", params.error_description ?? params.error);
+      return;
+    }
+
+    const access_token = params.access_token;
+    const refresh_token = params.refresh_token;
+
+    if (access_token && refresh_token) {
+      const { error: sessionError } = await supabase.auth.setSession({
+        access_token,
+        refresh_token,
+      });
+      if (sessionError) {
+        Alert.alert("Gabim", sessionError.message);
+      }
+    } else {
+      Alert.alert("Gabim", "Nuk u morën tokenat e sesionit nga serveri.");
     }
   }
 
