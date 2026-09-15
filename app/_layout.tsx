@@ -1,6 +1,5 @@
 import "../global.css";
 import { useEffect } from "react";
-import { View } from "react-native";
 import { Stack } from "expo-router";
 import { GestureHandlerRootView } from "react-native-gesture-handler";
 import * as SplashScreen from "expo-splash-screen";
@@ -9,7 +8,6 @@ import { Poppins_700Bold } from "@expo-google-fonts/poppins";
 import { LanguageProvider } from "@/lib/i18n/LanguageContext";
 import { AppStateProvider } from "@/lib/state/AppStateContext";
 import { ToastProvider } from "@/lib/toast/ToastContext";
-import { LanguageToggle } from "@/components/ui/LanguageToggle";
 
 SplashScreen.preventAutoHideAsync();
 
@@ -33,10 +31,7 @@ export default function RootLayout() {
       <LanguageProvider>
         <AppStateProvider>
           <ToastProvider>
-            <View style={{ flex: 1 }}>
-              <Stack screenOptions={{ headerShown: false, animation: "fade" }} />
-              <LanguageToggle />
-            </View>
+            <Stack screenOptions={{ headerShown: false, animation: "fade" }} />
           </ToastProvider>
         </AppStateProvider>
       </LanguageProvider>

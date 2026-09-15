@@ -5,6 +5,8 @@ import { MotiView } from "moti";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { AuthInput } from "@/components/auth/AuthInput";
 import { PrimaryButton } from "@/components/auth/PrimaryButton";
+import { AuthDivider } from "@/components/auth/AuthDivider";
+import { SocialAuthRow } from "@/components/auth/SocialAuthRow";
 import { Icon } from "@/components/ui/Icon";
 import { supabase } from "@/lib/supabase/client";
 import { markOnboardingSeen } from "@/lib/hooks/useOnboardingStatus";
@@ -65,11 +67,26 @@ export default function SignupScreen() {
       return;
     }
 
-    if (data.session && data.user) {
-      await syncPendingProfileToSupabase(data.user.id);
-    }
-
     setLoading(false);
+    await finishSignIn(data.session ? data.user?.id : undefined);
+  }
+
+  // Google/Apple kërkojnë po ashtu pranimin e Kushteve, si regjistrimi me email.
+  function checkTermsForSocial(): boolean {
+    if (values.acceptedTerms) {
+      setErrors((e) => ({ ...e, acceptedTerms: undefined }));
+      return true;
+    }
+    setErrors((e) => ({ ...e, acceptedTerms: t("signup_error_terms") }));
+    return false;
+  }
+
+  // E përbashkët për email-in dhe Google/Apple: sinkronizon profilin e
+  // pritshëm (nga create-profile), shënon onboarding-un, dhe kthen te `redirect`.
+  async function finishSignIn(userId: string | undefined) {
+    if (userId) {
+      await syncPendingProfileToSupabase(userId);
+    }
     await markOnboardingSeen();
     router.replace((redirect as string | undefined) ?? "/(main)/home");
   }
@@ -145,8 +162,10 @@ export default function SignupScreen() {
 
             {submitError ? <Text className="mt-4 font-body text-sm text-red-500">{submitError}</Text> : null}
 
-            <View className="mt-6">
+            <View className="mt-6 gap-5">
               <PrimaryButton label={t("signup_submit")} loading={loading} onPress={handleSubmit} />
+              <AuthDivider label={t("login_or_continue")} />
+              <SocialAuthRow onSignedIn={finishSignIn} beforeStart={checkTermsForSocial} />
             </View>
 
             <View className="mt-6 mb-8 flex-row justify-center gap-1">

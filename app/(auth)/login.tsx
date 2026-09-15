@@ -48,11 +48,16 @@ export default function LoginScreen() {
       return;
     }
 
-    if (data.user) {
-      await syncPendingProfileToSupabase(data.user.id);
-    }
-
     setLoading(false);
+    await finishSignIn(data.user?.id);
+  }
+
+  // E përbashkët për email-in dhe Google/Apple: sinkronizon profilin e
+  // pritshëm, shënon onboarding-un, dhe kthen te `redirect` (ose Home).
+  async function finishSignIn(userId: string | undefined) {
+    if (userId) {
+      await syncPendingProfileToSupabase(userId);
+    }
     await markOnboardingSeen();
     router.replace((redirect as string | undefined) ?? "/(main)/home");
   }
@@ -116,7 +121,7 @@ export default function LoginScreen() {
             <View className="mt-6 gap-5">
               <PrimaryButton label={t("login_submit")} loading={loading} onPress={handleSubmit} />
               <AuthDivider label={t("login_or_continue")} />
-              <SocialAuthRow />
+              <SocialAuthRow onSignedIn={finishSignIn} />
             </View>
 
             <View className="mt-6 mb-8 flex-row justify-center gap-1">

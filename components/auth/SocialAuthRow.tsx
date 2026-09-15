@@ -1,15 +1,21 @@
 import { Pressable, View, Alert } from "react-native";
 import { MotiView } from "moti";
-import { useState } from "react";
+import { useRef, useState } from "react";
 import * as WebBrowser from "expo-web-browser";
 import * as Linking from "expo-linking";
 import Svg, { Path } from "react-native-svg";
 import { supabase } from "@/lib/supabase/client";
+import { parseOAuthRedirect } from "@/lib/auth/oauthRedirect";
 
+// Nevojitet vetëm në web (mbyll popup-in e OAuth-it); në native s'bën asgjë.
 WebBrowser.maybeCompleteAuthSession();
 
 type SocialAuthRowProps = {
   onEmailSelect?: () => void;
+  /** Thirret pasi sesioni u krijua me sukses — ekrani vendos ku të navigojë. */
+  onSignedIn?: (userId: string) => void | Promise<void>;
+  /** Kontroll para hapjes së OAuth-it (p.sh. pranimi i Kushteve) — `false` e ndalon. */
+  beforeStart?: () => boolean;
 };
 
 const buttonClass =
@@ -25,82 +31,73 @@ const buttonClass =
  * `expo-apple-authentication` button (a closer-to-native alternative to
  * this generic OAuth flow) — swap the Apple handler for that when ready.
  */
-export function SocialAuthRow({ onEmailSelect }: SocialAuthRowProps) {
+export function SocialAuthRow({ onEmailSelect, onSignedIn, beforeStart }: SocialAuthRowProps) {
   const [pressedKey, setPressedKey] = useState<string | null>(null);
-
-  // Supabase's OAuth redirect returns tokens in the URL FRAGMENT (after #),
-  // not as query params (after ?) — new URL().searchParams misses them entirely.
-  function parseAuthParams(url: string): Record<string, string> {
-    const hashIndex = url.indexOf("#");
-    const queryIndex = url.indexOf("?");
-    const paramsString =
-      hashIndex !== -1
-        ? url.substring(hashIndex + 1)
-        : queryIndex !== -1
-        ? url.substring(queryIndex + 1)
-        : "";
-
-    const params: Record<string, string> = {};
-    paramsString.split("&").forEach((pair) => {
-      if (!pair) return;
-      const [key, value] = pair.split("=");
-      if (key) params[decodeURIComponent(key)] = decodeURIComponent(value ?? "");
-    });
-    return params;
-  }
+  // Ref (jo state) që dy shtypje të shpejta të mos hapin dy sesione OAuth.
+  const inFlight = useRef(false);
 
   async function handleOAuth(provider: "apple" | "google") {
-    const redirectTo = Linking.createURL("auth/callback");
-    const { data, error } = await supabase.auth.signInWithOAuth({
-      provider,
-      options: { redirectTo, skipBrowserRedirect: true },
-    });
+    if (inFlight.current) return;
+    if (beforeStart && !beforeStart()) return;
+    inFlight.current = true;
 
-    if (error || !data?.url) {
-      Alert.alert("Gabim", error?.message ?? "S'u krijua dot lidhja e login-it.");
-      return;
-    }
-
-    const result = await WebBrowser.openAuthSessionAsync(data.url, redirectTo);
-
-    if (result.type !== "success" || !result.url) {
-      // User cancelled or dismissed — no error needed
-      return;
-    }
-
-    // Modern Supabase-js defaults to PKCE flow: the redirect URL carries
-    // ?code=... which must be exchanged for a session.
-    const codeMatch = result.url.match(/[?&]code=([^&]+)/);
-    if (codeMatch) {
-      const code = decodeURIComponent(codeMatch[1]);
-      const { error: exchangeError } = await supabase.auth.exchangeCodeForSession(code);
-      if (exchangeError) {
-        Alert.alert("Gabim", exchangeError.message);
-      }
-      return;
-    }
-
-    // Fallback: older/implicit flow returns tokens in the URL fragment (#...)
-    const params = parseAuthParams(result.url);
-
-    if (params.error) {
-      Alert.alert("Gabim", params.error_description ?? params.error);
-      return;
-    }
-
-    const access_token = params.access_token;
-    const refresh_token = params.refresh_token;
-
-    if (access_token && refresh_token) {
-      const { error: sessionError } = await supabase.auth.setSession({
-        access_token,
-        refresh_token,
+    try {
+      // Dev/prod build: bebix://auth/callback — Expo Go: exp://<IP>:8081/--/auth/callback.
+      // Të dyja duhet të jenë te Supabase → Auth → URL Configuration → Redirect URLs.
+      const redirectTo = Linking.createURL("auth/callback");
+      const { data, error } = await supabase.auth.signInWithOAuth({
+        provider,
+        options: { redirectTo, skipBrowserRedirect: true },
       });
-      if (sessionError) {
-        Alert.alert("Gabim", sessionError.message);
+
+      if (error || !data?.url) {
+        Alert.alert("Gabim", error?.message ?? "S'u krijua dot lidhja e login-it.");
+        return;
       }
-    } else {
-      Alert.alert("Gabim", "Nuk u morën tokenat e sesionit nga serveri.");
+
+      const result = await WebBrowser.openAuthSessionAsync(data.url, redirectTo);
+
+      if (result.type !== "success" || !result.url) {
+        // Përdoruesi e anuloi/mbylli browser-in — s'ka nevojë për gabim.
+        return;
+      }
+
+      const parsed = parseOAuthRedirect(result.url);
+      let userId: string | undefined;
+
+      if (parsed.type === "error") {
+        Alert.alert("Gabim", parsed.message);
+        return;
+      } else if (parsed.type === "code") {
+        const { data: exchanged, error: exchangeError } =
+          await supabase.auth.exchangeCodeForSession(parsed.code);
+        if (exchangeError) {
+          Alert.alert("Gabim", exchangeError.message);
+          return;
+        }
+        userId = exchanged.user?.id;
+      } else if (parsed.type === "tokens") {
+        const { data: sessionData, error: sessionError } = await supabase.auth.setSession({
+          access_token: parsed.accessToken,
+          refresh_token: parsed.refreshToken,
+        });
+        if (sessionError) {
+          Alert.alert("Gabim", sessionError.message);
+          return;
+        }
+        userId = sessionData.user?.id;
+      } else {
+        Alert.alert("Gabim", "Nuk u morën tokenat e sesionit nga serveri.");
+        return;
+      }
+
+      if (userId) {
+        await onSignedIn?.(userId);
+      }
+    } catch (e) {
+      Alert.alert("Gabim", e instanceof Error ? e.message : "Login-i dështoi. Provo përsëri.");
+    } finally {
+      inFlight.current = false;
     }
   }
 
