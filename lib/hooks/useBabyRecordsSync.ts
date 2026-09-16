@@ -13,8 +13,11 @@ import { syncBabyRecords } from "@/lib/baby/babyRecordsSync";
 export function useBabyRecordsSync(isAuthenticated: boolean) {
   const { state, hydrated, applyBabyRecordsPatch } = useAppState();
 
+  // Shkrimi te ref-i behet ne efekt, jo gjate render-it (react-hooks/refs).
   const latestBaby = useRef(state.baby);
-  latestBaby.current = state.baby;
+  useEffect(() => {
+    latestBaby.current = state.baby;
+  }, [state.baby]);
 
   const hasRun = useRef(false);
 
