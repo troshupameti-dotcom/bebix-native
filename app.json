@@ -7,7 +7,6 @@
     "orientation": "portrait",
     "userInterfaceStyle": "automatic",
     "icon": "./assets/icon.png",
-    "newArchEnabled": true,
     "assetBundlePatterns": [
       "**/*"
     ],
@@ -36,7 +35,7 @@
       [
         "expo-notifications",
         {
-          "icon": "./assets/images/adaptive-icon.png",
+          "icon": "./assets/adaptive-icon.png",
           "color": "#6E7452"
         }
       ],
