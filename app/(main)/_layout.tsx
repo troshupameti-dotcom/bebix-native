@@ -9,6 +9,7 @@ import { useOnboardingStatus } from "@/lib/hooks/useOnboardingStatus";
 import { useAppState } from "@/lib/state/AppStateContext";
 import { shadows } from "@/lib/shadows";
 import { registerForPushNotificationsAsync } from "@/lib/notifications";
+import { useBabyRecordsSync } from "@/lib/hooks/useBabyRecordsSync";
 
 const TABS: { name: string; icon: IconName; labelKey: TranslationKey }[] = [
   { name: "home", icon: "home", labelKey: "nav_home" },
@@ -54,6 +55,10 @@ export default function MainLayout() {
       router.replace("/(auth)/login");
     }
   }, [loading, canBrowse]);
+
+  // Historiku i baby-t sinkronizohet me Supabase (offline-first: AsyncStorage
+  // mbetet burimi per UI-n, sync-u punon ne sfond).
+  useBabyRecordsSync(isAuthenticated);
 
   // Push token merret vetem per perdorues te kycur (jo per guest-at) dhe
   // vetem nje here per session — ref-i e ndal perseritjen ne re-render.

@@ -1,4 +1,4 @@
-import { createContext, useContext, useEffect, useReducer, ReactNode } from "react";
+import { createContext, useContext, useEffect, useReducer, useState, ReactNode } from "react";
 import { useColorScheme } from "react-native";
 import { useColorScheme as useNativeWindColorScheme } from "nativewind";
 import AsyncStorage from "@react-native-async-storage/async-storage";
@@ -221,10 +221,16 @@ function reducer(state: AppState, action: Action): AppState {
   }
 }
 
-const AppStateContext = createContext<ReturnType<typeof buildValue> | null>(null);
+/** Vlera e kontekstit: buildValue plus flag-u i ngarkimit nga AsyncStorage. */
+type AppStateValue = ReturnType<typeof buildValue> & { hydrated: boolean };
+
+const AppStateContext = createContext<AppStateValue | null>(null);
 
 export function AppStateProvider({ children }: { children: ReactNode }) {
   const [state, dispatch] = useReducer(reducer, initialAppState);
+  // Sync-u me Supabase s'duhet te nise para ngarkimit nga AsyncStorage:
+  // state-i bosh do e shenonte migrimin si te kryer pa derguar asgje.
+  const [hydrated, setHydrated] = useState(false);
   const systemScheme = useColorScheme();
   const { setColorScheme } = useNativeWindColorScheme();
 
@@ -233,12 +239,14 @@ export function AppStateProvider({ children }: { children: ReactNode }) {
       if (raw) {
         try {
           dispatch({ type: "HYDRATE", state: JSON.parse(raw) });
+          setHydrated(true);
           return;
         } catch {
           // Corrupt/old shape — fall through to system-theme default.
         }
       }
       if (systemScheme === "dark") dispatch({ type: "SET_DARK_MODE", value: true });
+      setHydrated(true);
     });
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
@@ -255,7 +263,7 @@ export function AppStateProvider({ children }: { children: ReactNode }) {
     setColorScheme(state.darkMode ? "dark" : "light");
   }, [state.darkMode]);
 
-  const value = buildValue(state, dispatch);
+  const value = { ...buildValue(state, dispatch), hydrated };
   return <AppStateContext.Provider value={value}>{children}</AppStateContext.Provider>;
 }
 
@@ -273,6 +281,8 @@ function buildValue(state: AppState, dispatch: React.Dispatch<Action>) {
 
   return {
     state,
+    /** Aplikon listat e shkrira nga sync-u i baby_records. */
+    applyBabyRecordsPatch: (patch: Partial<BabyModuleState>) => setBaby(patch),
     setDarkMode: (value: boolean) => dispatch({ type: "SET_DARK_MODE", value }),
     updateProfile: (value: Partial<BabyProfile>) => dispatch({ type: "UPDATE_PROFILE", value }),
     toggleFavorite: (item: FavoriteItem) => dispatch({ type: "TOGGLE_FAVORITE", item }),
