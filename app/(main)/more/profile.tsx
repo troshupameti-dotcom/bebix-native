@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { View, Text, Pressable, TextInput, Image, ScrollView } from "react-native";
+import { View, Text, Pressable, TextInput, Image, ScrollView, Alert, ActivityIndicator } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useRouter } from "expo-router";
 import * as ImagePicker from "expo-image-picker";
@@ -7,6 +7,8 @@ import { useAppState } from "@/lib/state/AppStateContext";
 import { ParentRelation } from "@/lib/state/types";
 import { Icon } from "@/components/ui/Icon";
 import { shadows } from "@/lib/shadows";
+import { useAuthUser } from "@/lib/hooks/useAuthUser";
+import { supabase } from "@/lib/supabase/client";
 
 const RELATIONS: { value: ParentRelation; label: string }[] = [
   { value: "mom", label: "Mama" },
@@ -14,12 +16,24 @@ const RELATIONS: { value: ParentRelation; label: string }[] = [
   { value: "guardian", label: "Kujdestar/e" },
 ];
 
+const PROVIDER_LABELS: Record<string, string> = {
+  google: "Kyçur me Google",
+  apple: "Kyçur me Apple",
+  email: "Kyçur me email dhe fjalëkalim",
+};
+
 export default function ProfileScreen() {
   const router = useRouter();
   const { state, updateProfile } = useAppState();
+  const { email, provider, loading: authLoading } = useAuthUser();
   const [name, setName] = useState(state.profile.parentName || "");
   const [relation, setRelation] = useState<ParentRelation>(state.profile.relation);
   const [photo, setPhoto] = useState(state.profile.parentPhoto);
+
+  const [password, setPassword] = useState("");
+  const [confirmPassword, setConfirmPassword] = useState("");
+  const [savingPassword, setSavingPassword] = useState(false);
+  const [passwordError, setPasswordError] = useState<string | null>(null);
 
   const pickPhoto = async () => {
     const perm = await ImagePicker.requestMediaLibraryPermissionsAsync();
@@ -31,6 +45,37 @@ export default function ProfileScreen() {
   const save = () => {
     updateProfile({ parentName: name.trim() || null, relation, parentPhoto: photo });
     router.back();
+  };
+
+  // Llogaritë e krijuara me Google/Apple s'kanë fjalëkalim derisa të caktojnë një.
+  const isSocial = provider === "google" || provider === "apple";
+
+  const savePassword = async () => {
+    setPasswordError(null);
+    if (password.length < 8) {
+      setPasswordError("Përdor së paku 8 karaktere.");
+      return;
+    }
+    if (password !== confirmPassword) {
+      setPasswordError("Fjalëkalimet s'përputhen.");
+      return;
+    }
+
+    setSavingPassword(true);
+    const { error } = await supabase.auth.updateUser({ password });
+    setSavingPassword(false);
+
+    if (error) {
+      setPasswordError(error.message);
+      return;
+    }
+
+    setPassword("");
+    setConfirmPassword("");
+    Alert.alert(
+      isSocial ? "Fjalëkalimi u caktua" : "Fjalëkalimi u ndryshua",
+      "Tani mund të hysh edhe me email dhe fjalëkalim.",
+    );
   };
 
   return (
@@ -45,7 +90,7 @@ export default function ProfileScreen() {
         </Pressable>
       </View>
 
-      <ScrollView contentContainerStyle={{ paddingBottom: 40 }}>
+      <ScrollView contentContainerStyle={{ paddingBottom: 40 }} keyboardShouldPersistTaps="handled">
         <View className="items-center mb-6">
           <Pressable onPress={pickPhoto} className="w-24 h-24 rounded-full bg-olive-bg items-center justify-center overflow-hidden mb-2">
             {photo ? <Image source={{ uri: photo }} className="w-24 h-24" /> : <Icon name="camera" size={28} color="#6E7452" />}
@@ -75,11 +120,68 @@ export default function ProfileScreen() {
             ))}
           </View>
 
-          <View style={shadows.soft} className="bg-olive-bg rounded-xl2 p-4">
-            <Text className="font-bodySemibold text-xs text-ink mb-1">Email dhe fjalëkalimi</Text>
-            <Text className="font-body text-xs text-ink-soft leading-5">
-              Këto menaxhohen nga llogaria jote Supabase (të njëjtat që përdor për kyçje) — do t'i shtojmë këtu si opsione editimi kur të lidhim ekranin me `supabase.auth.updateUser()`.
-            </Text>
+          <Text className="font-bodySemibold text-xs text-ink-soft mb-2">Llogaria</Text>
+          <View style={shadows.soft} className="bg-surface rounded-xl2 px-4 py-3 mb-5">
+            {authLoading ? (
+              <ActivityIndicator color="#6E7452" />
+            ) : (
+              <>
+                <Text className="font-bodySemibold text-sm text-ink">{email ?? "S'ka email të lidhur"}</Text>
+                {provider ? (
+                  <Text className="font-body text-xs text-ink-soft mt-1">
+                    {PROVIDER_LABELS[provider] ?? `Kyçur me ${provider}`}
+                  </Text>
+                ) : null}
+              </>
+            )}
+          </View>
+
+          <Text className="font-bodySemibold text-xs text-ink-soft mb-2">
+            {isSocial ? "Cakto fjalëkalim" : "Ndrysho fjalëkalimin"}
+          </Text>
+          <View style={shadows.soft} className="bg-surface rounded-xl2 px-4 py-3">
+            {isSocial ? (
+              <Text className="font-body text-xs text-ink-soft mb-3 leading-5">
+                Hyre me {provider === "google" ? "Google" : "Apple"}. Nëse cakton një fjalëkalim, do të mund të hysh edhe me email.
+              </Text>
+            ) : null}
+
+            <TextInput
+              value={password}
+              onChangeText={setPassword}
+              placeholder="Fjalëkalimi i ri"
+              placeholderTextColor="#A79D8A"
+              secureTextEntry
+              autoComplete="new-password"
+              className="font-body text-sm text-ink border-b border-cream-line pb-2 mb-3"
+            />
+            <TextInput
+              value={confirmPassword}
+              onChangeText={setConfirmPassword}
+              placeholder="Konfirmo fjalëkalimin"
+              placeholderTextColor="#A79D8A"
+              secureTextEntry
+              autoComplete="new-password"
+              className="font-body text-sm text-ink border-b border-cream-line pb-2"
+            />
+
+            {passwordError ? (
+              <Text className="font-body text-xs text-red-500 mt-3">{passwordError}</Text>
+            ) : null}
+
+            <Pressable
+              onPress={savePassword}
+              disabled={savingPassword}
+              className={`mt-4 py-2.5 rounded-full items-center ${savingPassword ? "bg-olive/50" : "bg-olive"}`}
+            >
+              {savingPassword ? (
+                <ActivityIndicator color="#FFFFFF" />
+              ) : (
+                <Text className="font-bodySemibold text-xs text-white">
+                  {isSocial ? "Cakto fjalëkalimin" : "Ruaj fjalëkalimin"}
+                </Text>
+              )}
+            </Pressable>
           </View>
         </View>
       </ScrollView>

@@ -47,7 +47,12 @@ export function SocialAuthRow({ onEmailSelect, onSignedIn, beforeStart }: Social
       const redirectTo = Linking.createURL("auth/callback");
       const { data, error } = await supabase.auth.signInWithOAuth({
         provider,
-        options: { redirectTo, skipBrowserRedirect: true },
+        options: {
+          redirectTo,
+          skipBrowserRedirect: true,
+          // Pa këtë, Google e rikyç heshturazi llogarinë e fundit pa pyetur.
+          queryParams: provider === "google" ? { prompt: "select_account" } : undefined,
+        },
       });
 
       if (error || !data?.url) {

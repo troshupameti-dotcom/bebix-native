@@ -6,6 +6,7 @@ import { useLanguage } from "@/lib/i18n/LanguageContext";
 import { Icon, IconName } from "@/components/ui/Icon";
 import { shadows } from "@/lib/shadows";
 import { supabase } from "@/lib/supabase/client";
+import { useAuthUser } from "@/lib/hooks/useAuthUser";
 
 type Row = {
   icon: IconName;
@@ -47,6 +48,7 @@ export default function MoreScreen() {
   const { state } = useAppState();
   const { profile } = state;
   const { t, language } = useLanguage();
+  const { email } = useAuthUser();
 
   return (
     <SafeAreaView className="flex-1 bg-cream dark:bg-ink" edges={["top"]}>
@@ -68,7 +70,9 @@ export default function MoreScreen() {
             <Text className="font-bodySemibold text-base text-ink dark:text-cream">
               {profile.parentName || t("add_your_name")}
             </Text>
-            <Text className="font-body text-xs text-ink-soft dark:text-cream/60">{t("profile_hint")}</Text>
+            <Text className="font-body text-xs text-ink-soft dark:text-cream/60" numberOfLines={1}>
+              {email ?? t("profile_hint")}
+            </Text>
           </View>
           <Icon name="chevronRight" size={18} color="#A79D8A" />
         </Pressable>
