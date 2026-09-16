@@ -1,10 +1,10 @@
 import * as Notifications from "expo-notifications";
 import * as Device from "expo-device";
-import Constants from "expo-constants";
+import Constants, { ExecutionEnvironment } from "expo-constants";
 import { Platform } from "react-native";
 import { supabase } from "@/lib/supabase/client";
 
-// Si duket notification-i kur app-i âsht i hapun (foreground)
+// Si duket njoftimi kur app-i është i hapur (foreground)
 Notifications.setNotificationHandler({
   handleNotification: async () => ({
     shouldShowAlert: true,
@@ -27,6 +27,13 @@ export async function registerForPushNotificationsAsync(): Promise<string | null
     return null;
   }
 
+  // Nga SDK 53, Expo Go s'i mban push notifications ne Android. Duhet
+  // development build; ne Expo Go dalim heret, pa provuar token.
+  if (Constants.executionEnvironment === ExecutionEnvironment.StoreClient) {
+    console.log("Push notifications kërkojnë development build, jo Expo Go.");
+    return null;
+  }
+
   const { status: existingStatus } = await Notifications.getPermissionsAsync();
   let finalStatus = existingStatus;
 
@@ -36,7 +43,7 @@ export async function registerForPushNotificationsAsync(): Promise<string | null
   }
 
   if (finalStatus !== "granted") {
-    console.log("Leja e notifications u refuzue.");
+    console.log("Leja e njoftimeve u refuzua.");
     return null;
   }
 
