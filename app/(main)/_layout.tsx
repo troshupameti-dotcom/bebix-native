@@ -1,4 +1,4 @@
-import { useEffect } from "react";
+import { useEffect, useRef } from "react";
 import { Tabs, router } from "expo-router";
 import { View, Pressable } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
@@ -8,6 +8,7 @@ import { TranslationKey } from "@/lib/i18n/translations";
 import { useOnboardingStatus } from "@/lib/hooks/useOnboardingStatus";
 import { useAppState } from "@/lib/state/AppStateContext";
 import { shadows } from "@/lib/shadows";
+import { registerForPushNotificationsAsync } from "@/lib/notifications";
 
 const TABS: { name: string; icon: IconName; labelKey: TranslationKey }[] = [
   { name: "home", icon: "home", labelKey: "nav_home" },
@@ -53,6 +54,23 @@ export default function MainLayout() {
       router.replace("/(auth)/login");
     }
   }, [loading, canBrowse]);
+
+  // Push token merret vetem per perdorues te kycur (jo per guest-at) dhe
+  // vetem nje here per session — ref-i e ndal perseritjen ne re-render.
+  const pushRegistered = useRef(false);
+  useEffect(() => {
+    if (!isAuthenticated) {
+      // Dalje nga llogaria: lejo regjistrimin perseri per perdoruesin e radhes.
+      pushRegistered.current = false;
+      return;
+    }
+    if (pushRegistered.current) return;
+    pushRegistered.current = true;
+
+    registerForPushNotificationsAsync().catch((e) => {
+      console.log("Regjistrimi i push notifications deshtoi:", e);
+    });
+  }, [isAuthenticated]);
 
   if (loading || !canBrowse) return null;
 
