@@ -17,9 +17,9 @@ const RELATIONS: { value: ParentRelation; label: string }[] = [
 ];
 
 const PROVIDER_LABELS: Record<string, string> = {
-  google: "Kyçur me Google",
-  apple: "Kyçur me Apple",
-  email: "Kyçur me email dhe fjalëkalim",
+  google: "Hyrje me Google",
+  apple: "Hyrje me Apple",
+  email: "Hyrje me email",
 };
 
 export default function ProfileScreen() {
@@ -53,11 +53,11 @@ export default function ProfileScreen() {
   const savePassword = async () => {
     setPasswordError(null);
     if (password.length < 8) {
-      setPasswordError("Përdor së paku 8 karaktere.");
+      setPasswordError("Të paktën 8 karaktere.");
       return;
     }
     if (password !== confirmPassword) {
-      setPasswordError("Fjalëkalimet s'përputhen.");
+      setPasswordError("Fjalëkalimet nuk përputhen.");
       return;
     }
 
@@ -74,7 +74,7 @@ export default function ProfileScreen() {
     setConfirmPassword("");
     Alert.alert(
       isSocial ? "Fjalëkalimi u caktua" : "Fjalëkalimi u ndryshua",
-      "Tani mund të hysh edhe me email dhe fjalëkalim.",
+      "Tani mund të hysh edhe me email.",
     );
   };
 
@@ -84,7 +84,7 @@ export default function ProfileScreen() {
         <Pressable onPress={() => router.back()} style={shadows.soft} className="w-10 h-10 rounded-full bg-surface items-center justify-center">
           <Icon name="chevronLeft" size={18} color="#2C271F" />
         </Pressable>
-        <Text className="font-bodyMedium text-lg text-ink">Profili Im</Text>
+        <Text className="font-bodyMedium text-lg text-ink">Profili im</Text>
         <Pressable onPress={save} className="px-4 py-2 rounded-full bg-olive">
           <Text className="font-bodySemibold text-xs text-white">Ruaj</Text>
         </Pressable>
@@ -106,7 +106,7 @@ export default function ProfileScreen() {
             <TextInput value={name} onChangeText={setName} placeholder="Emri yt" placeholderTextColor="#A79D8A" className="font-body text-sm text-ink" />
           </View>
 
-          <Text className="font-bodySemibold text-xs text-ink-soft mb-2">Marrëdhënia me bebin</Text>
+          <Text className="font-bodySemibold text-xs text-ink-soft mb-2">Lidhja me bebin</Text>
           <View className="flex-row mb-5">
             {RELATIONS.map((r) => (
               <Pressable
@@ -126,10 +126,10 @@ export default function ProfileScreen() {
               <ActivityIndicator color="#6E7452" />
             ) : (
               <>
-                <Text className="font-bodySemibold text-sm text-ink">{email ?? "S'ka email të lidhur"}</Text>
+                <Text className="font-bodySemibold text-sm text-ink">{email ?? "Pa email"}</Text>
                 {provider ? (
                   <Text className="font-body text-xs text-ink-soft mt-1">
-                    {PROVIDER_LABELS[provider] ?? `Kyçur me ${provider}`}
+                    {PROVIDER_LABELS[provider] ?? `Hyrje me ${provider}`}
                   </Text>
                 ) : null}
               </>
@@ -142,7 +142,7 @@ export default function ProfileScreen() {
           <View style={shadows.soft} className="bg-surface rounded-xl2 px-4 py-3">
             {isSocial ? (
               <Text className="font-body text-xs text-ink-soft mb-3 leading-5">
-                Hyre me {provider === "google" ? "Google" : "Apple"}. Nëse cakton një fjalëkalim, do të mund të hysh edhe me email.
+                Hyre me {provider === "google" ? "Google" : "Apple"}. Cakto një fjalëkalim për të hyrë edhe me email.
               </Text>
             ) : null}
 
@@ -158,7 +158,7 @@ export default function ProfileScreen() {
             <TextInput
               value={confirmPassword}
               onChangeText={setConfirmPassword}
-              placeholder="Konfirmo fjalëkalimin"
+              placeholder="Shkruaje përsëri"
               placeholderTextColor="#A79D8A"
               secureTextEntry
               autoComplete="new-password"

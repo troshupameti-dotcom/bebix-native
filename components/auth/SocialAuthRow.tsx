@@ -56,7 +56,7 @@ export function SocialAuthRow({ onEmailSelect, onSignedIn, beforeStart }: Social
       });
 
       if (error || !data?.url) {
-        Alert.alert("Gabim", error?.message ?? "S'u krijua dot lidhja e login-it.");
+        Alert.alert("Gabim", error?.message ?? "Nuk u hap dot login-i.");
         return;
       }
 
@@ -92,7 +92,7 @@ export function SocialAuthRow({ onEmailSelect, onSignedIn, beforeStart }: Social
         }
         userId = sessionData.user?.id;
       } else {
-        Alert.alert("Gabim", "Nuk u morën tokenat e sesionit nga serveri.");
+        Alert.alert("Gabim", "Serveri nuk e ktheu sesionin.");
         return;
       }
 
