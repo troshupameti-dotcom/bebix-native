@@ -195,7 +195,10 @@ export type MomentType = "photo" | "video" | "note" | "milestone";
 export type Moment = Lifecycle & {
   id: string;
   type: MomentType;
+  /** URI lokale e pajisjes, ose URL e nenshkruar kur vjen nga serveri. */
   uri: string | null;
+  /** Rruga ne bucket-in privat baby-moments (sync me Supabase Storage). */
+  storagePath?: string | null;
   title: string;
   description: string;
   date: string;
