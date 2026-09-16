@@ -1,4 +1,4 @@
-import { View, Text, ScrollView, Pressable, Share, Linking } from "react-native";
+import { View, Text, ScrollView, Pressable, Share } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useRouter } from "expo-router";
 import { Icon, IconName } from "@/components/ui/Icon";
@@ -37,7 +37,7 @@ export default function AboutScreen() {
           <View style={shadows.soft} className="bg-olive-bg rounded-xl2 p-5">
             <Text className="font-bodySemibold text-lg text-ink mb-2">Misioni Ynë</Text>
             <Text className="font-body text-sm text-ink-soft leading-6 mb-4">
-              Bebix ekziston për t'i ndihmuar prindërit të ndjekin çdo hap të rritjes së bebit të tyre me qetësi mendore — nga ushqyerja dhe gjumi, te vaksinat dhe momentet e para — të gjitha në një vend të vetëm, të krijuar me kujdes.
+              Bebix ekziston për t’i ndihmuar prindërit të ndjekin çdo hap të rritjes së bebit të tyre me qetësi mendore — nga ushqyerja dhe gjumi, te vaksinat dhe momentet e para — të gjitha në një vend të vetëm, të krijuar me kujdes.
             </Text>
             <Text className="font-bodySemibold text-lg text-ink mb-2">Vizioni Ynë</Text>
             <Text className="font-body text-sm text-ink-soft leading-6">

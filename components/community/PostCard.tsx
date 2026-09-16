@@ -87,7 +87,7 @@ export function PostCard({ post, onOpen }: { post: CommunityPost; onOpen: () => 
         >
           <Icon name="heart" size={14} color={liked ? "#6E7452" : "#A79D8A"} />
           <Text className={`font-bodySemibold text-[11px] ml-1.5 ${liked ? "text-olive" : "text-ink-soft"}`}>
-            M'ndihmoi{likeCount > 0 ? ` · ${likeCount}` : ""}
+            M’ndihmoi{likeCount > 0 ? ` · ${likeCount}` : ""}
           </Text>
         </Pressable>
 

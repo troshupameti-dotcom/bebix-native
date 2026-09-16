@@ -58,7 +58,7 @@ export default function HelpCenterScreen() {
             <Icon name="chevronRight" size={16} color="#A79D8A" />
           </Pressable>
           <Text className="font-body text-xs text-ink-faint px-1">
-            (Rregullo adresën "support@bebix.app" me email-in real që do të përdorësh)
+            (Rregullo adresën “support@bebix.app” me email-in real që do të përdorësh)
           </Text>
         </View>
       </ScrollView>

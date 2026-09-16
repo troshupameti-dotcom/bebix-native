@@ -119,14 +119,14 @@ export default function ExploreScreen() {
       <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={{ paddingHorizontal: 20, paddingBottom: 40 }}>
         {tab === "experts" ? (
           experts.length === 0 ? (
-            <Text className="font-body text-xs text-ink-faint">Ende s'ka ekspertë.</Text>
+            <Text className="font-body text-xs text-ink-faint">Ende s’ka ekspertë.</Text>
           ) : (
             experts.map((e) => (
               <ExpertRow key={e.id} expert={e} onOpen={() => router.push(`/community/expert/${e.id}`)} onToggleFollow={() => handleFollow(e)} />
             ))
           )
         ) : groups.length === 0 ? (
-          <Text className="font-body text-xs text-ink-faint">Ende s'ka grupe.</Text>
+          <Text className="font-body text-xs text-ink-faint">Ende s’ka grupe.</Text>
         ) : (
           groups.map((g) => (
             <GroupRow key={g.id} group={g} onOpen={() => router.push(`/community/group/${g.id}`)} onToggleJoin={() => handleJoin(g)} />

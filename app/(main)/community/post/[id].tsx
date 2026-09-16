@@ -106,7 +106,7 @@ export default function PostDetailScreen() {
   if (!post) {
     return (
       <SafeAreaView className="flex-1 bg-cream items-center justify-center px-8">
-        <Text className="font-bodySemibold text-base text-ink mb-2">Postimi s'u gjet</Text>
+        <Text className="font-bodySemibold text-base text-ink mb-2">Postimi s’u gjet</Text>
         <Text className="font-body text-sm text-ink-soft text-center mb-6">Ndoshta âsht fshi ose linku âsht i gabuem.</Text>
         <Pressable onPress={() => router.back()} className="bg-olive px-5 py-3 rounded-full">
           <Text className="font-bodySemibold text-sm text-white">Kthehu</Text>

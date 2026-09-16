@@ -1,5 +1,4 @@
 import { Image } from "expo-image";
-import { View } from "react-native";
 import { MotiView } from "moti";
 
 type LogoProps = {

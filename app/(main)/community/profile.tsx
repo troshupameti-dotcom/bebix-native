@@ -100,7 +100,7 @@ export default function MyProfileScreen() {
             </View>
             <View className="items-center mx-4">
               <Text className="font-bodySemibold text-base text-ink">{totalLikes}</Text>
-              <Text className="font-body text-[11px] text-ink-faint">M'ndihmoi</Text>
+              <Text className="font-body text-[11px] text-ink-faint">M’ndihmoi</Text>
             </View>
             <View className="items-center mx-4">
               <Text className="font-bodySemibold text-base text-ink">{totalComments}</Text>

@@ -6,7 +6,7 @@ import { Icon } from "@/components/ui/Icon";
 import { shadows } from "@/lib/shadows";
 import { Product, Brand } from "@/lib/homeContent";
 import { fetchBrandById, fetchProductsByBrand } from "@/lib/shopData";
-import { ProductCard, ProductCardSkeleton } from "@/components/ProductCard";
+import { ProductCard } from "@/components/ProductCard";
 
 const PADDING_X = 20;
 const GRID_GAP = 12;
@@ -67,13 +67,13 @@ export default function BrandProductsScreen() {
       ) : loadError ? (
         <View className="flex-1 items-center justify-center px-8">
           <Icon name="close" size={24} color="#C9702E" />
-          <Text className="font-bodyMedium text-sm text-ink mt-3 text-center">S'u ngarkuan produktet.</Text>
+          <Text className="font-bodyMedium text-sm text-ink mt-3 text-center">S’u ngarkuan produktet.</Text>
         </View>
       ) : products.length === 0 ? (
         <View className="flex-1 items-center justify-center px-8">
           <Icon name="cube" size={24} color="#A79D8A" />
           <Text className="font-bodyMedium text-sm text-ink mt-3 text-center">
-            Ende s'ka produkte për këtë markë.
+            Ende s’ka produkte për këtë markë.
           </Text>
         </View>
       ) : (

@@ -1,4 +1,4 @@
-import { useEffect, useRef, ReactNode } from "react";
+import { useEffect, useState, ReactNode } from "react";
 import { Animated, ViewStyle } from "react-native";
 
 type Props = {
@@ -12,8 +12,8 @@ type Props = {
  * plotësisht i dukshëm.
  */
 export function ZoomScreen({ children, style }: Props) {
-  const scale = useRef(new Animated.Value(0.7)).current;
-  const opacity = useRef(new Animated.Value(0)).current;
+  const [scale] = useState(() => new Animated.Value(0.7));
+  const [opacity] = useState(() => new Animated.Value(0));
 
   useEffect(() => {
     Animated.parallel([
@@ -29,7 +29,7 @@ export function ZoomScreen({ children, style }: Props) {
         useNativeDriver: true,
       }),
     ]).start();
-  }, []);
+  }, [scale, opacity]);
 
   return (
     <Animated.View

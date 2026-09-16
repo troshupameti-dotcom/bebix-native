@@ -51,7 +51,7 @@ export default function ExpertProfileScreen() {
   if (!expert) {
     return (
       <SafeAreaView className="flex-1 bg-cream items-center justify-center px-8">
-        <Text className="font-bodySemibold text-sm text-ink mb-2">Eksperti s'u gjet</Text>
+        <Text className="font-bodySemibold text-sm text-ink mb-2">Eksperti s’u gjet</Text>
         <Pressable onPress={() => router.back()} className="bg-olive px-5 py-3 rounded-full mt-2">
           <Text className="font-bodySemibold text-sm text-white">Kthehu</Text>
         </Pressable>
@@ -96,7 +96,7 @@ export default function ExpertProfileScreen() {
           <Text className="font-bodySemibold text-sm text-ink">Postimet ({posts.length})</Text>
         </View>
         {posts.length === 0 ? (
-          <Text className="font-body text-xs text-ink-faint px-5">Ende s'ka postime.</Text>
+          <Text className="font-body text-xs text-ink-faint px-5">Ende s’ka postime.</Text>
         ) : (
           posts.map((p) => <PostCard key={p.id} post={p} onOpen={() => router.push(`/community/post/${p.id}`)} />)
         )}

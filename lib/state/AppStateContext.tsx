@@ -234,7 +234,7 @@ export function AppStateProvider({ children }: { children: ReactNode }) {
   // Requires `darkMode: "class"` in tailwind.config.js.
   useEffect(() => {
     setColorScheme(state.darkMode ? "dark" : "light");
-  }, [state.darkMode]);
+  }, [state.darkMode, setColorScheme]);
 
   const value = { ...buildValue(state, dispatch), hydrated };
   return <AppStateContext.Provider value={value}>{children}</AppStateContext.Provider>;

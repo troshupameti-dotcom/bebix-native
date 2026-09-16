@@ -219,7 +219,7 @@ export default function ProductDetailsScreen() {
         <Text className="font-bodySemibold text-lg text-ink px-5 mt-7 mb-3">Vlerësime</Text>
         <View className="px-5">
           <Text className="font-body text-sm text-ink-soft">
-            Ende s'ka vlerësime reale për këtë produkt (kërkon tabelë `reviews` shtesë te Supabase — hap tjetër i mundshëm).
+            Ende s’ka vlerësime reale për këtë produkt (kërkon tabelë `reviews` shtesë te Supabase — hap tjetër i mundshëm).
           </Text>
         </View>
       </ScrollView>

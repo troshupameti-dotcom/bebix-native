@@ -6,7 +6,6 @@ import * as ImagePicker from "expo-image-picker";
 import DateTimePicker, { DateTimePickerAndroid } from "@react-native-community/datetimepicker";
 import { Icon } from "@/components/ui/Icon";
 import { FormField } from "@/components/baby/FormField";
-import { SegmentedField } from "@/components/baby/SegmentedField";
 import { useAppState } from "@/lib/state/AppStateContext";
 import { useTranslation } from "@/lib/i18n/LanguageContext";
 import { haptics } from "@/lib/haptics";

@@ -46,7 +46,7 @@ export default function SavedPostsScreen() {
           <View className="w-16 h-16 rounded-full bg-olive-bg items-center justify-center mb-4">
             <Icon name="bookmark" size={26} color="#6E7452" />
           </View>
-          <Text className="font-bodySemibold text-sm text-ink mb-1">Ende s'ke ruajtë asgjë</Text>
+          <Text className="font-bodySemibold text-sm text-ink mb-1">Ende s’ke ruajtë asgjë</Text>
           <Text className="font-body text-xs text-ink-soft text-center leading-5">
             Kur shef një postim interesant, shtyp ikonën e bookmark-ut me e ruejt këtu.
           </Text>

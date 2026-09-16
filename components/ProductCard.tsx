@@ -1,4 +1,4 @@
-import { useRef } from "react";
+import { useState } from "react";
 import { View, Text, Pressable, Image, Animated } from "react-native";
 import { useAppState } from "@/lib/state/AppStateContext";
 import { Icon } from "@/components/ui/Icon";
@@ -25,8 +25,10 @@ function discountPercent(product: Product): number | null {
 export function ProductCard({ product, onPress, cardWidth }: Props) {
   const { toggleFavorite, isFavorite } = useAppState();
   const fav = isFavorite(product.id);
-  const scale = useRef(new Animated.Value(1)).current;
-  const heartScale = useRef(new Animated.Value(1)).current;
+  // Inicializues dembel: nje Animated.Value e vetme per gjithe jeten e
+  // komponentit, pa lexim ref-i gjate render-it.
+  const [scale] = useState(() => new Animated.Value(1));
+  const [heartScale] = useState(() => new Animated.Value(1));
 
   const bg = "bg-cream-soft";
   const fg = "#B5A78F";

@@ -34,9 +34,11 @@ export default function SignupScreen() {
 
   useEffect(() => {
     if (state.profile.parentName) {
+      // State-i fillestar varet nga te dhena asinkrone (AsyncStorage / rrjeti),
+      // prandaj mbushja behet ne efekt pas montimit.
+      // eslint-disable-next-line react-hooks/set-state-in-effect
       setValues((v) => (v.fullName ? v : { ...v, fullName: state.profile.parentName ?? "" }));
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [state.profile.parentName]);
 
   function validate(): boolean {

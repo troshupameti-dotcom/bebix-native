@@ -45,6 +45,9 @@ export default function SleepScreen() {
     const startOfToday = new Date(now.getFullYear(), now.getMonth(), now.getDate()).getTime();
     const startOfWeek = now.getTime() - 6 * 86400000;
     const withDuration = (e: SleepEntry) => {
+      // Date.now() ne render: keto jane shfaqje relative ndaj kohes (sa ore nga
+      // ushqyerja/pelena e fundit) dhe duhet te rillogariten ne cdo render.
+      // eslint-disable-next-line react-hooks/purity
       const end = e.endAt ? new Date(e.endAt).getTime() : Date.now();
       return Math.max(0, (end - new Date(e.startAt).getTime()) / 60000 - e.pausedIntervalsMin);
     };

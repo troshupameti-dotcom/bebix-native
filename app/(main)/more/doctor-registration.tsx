@@ -101,7 +101,7 @@ export default function DoctorRegistrationScreen() {
               {existing?.status === "rejected" && <StatusBanner app={existing} />}
 
               <Text className="font-body text-xs text-ink-soft mb-5 leading-5">
-                Plotëso të dhënat e sakta — aplikimi shqyrtohet manualisht nga ekipi ynë para se me u shfaq si "ekspert i verifikuar" në Komunitet.
+                Plotëso të dhënat e sakta — aplikimi shqyrtohet manualisht nga ekipi ynë para se me u shfaq si “ekspert i verifikuar” në Komunitet.
               </Text>
 
               <Text className="font-bodySemibold text-xs text-ink-soft mb-1.5">Emri i plotë</Text>

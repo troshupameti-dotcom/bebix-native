@@ -60,7 +60,7 @@ export default function LegalScreen() {
       <View className="mx-5 mb-4 bg-orange-bg rounded-xl2 p-3" style={shadows.soft}>
         <Text className="font-bodySemibold text-xs text-ink mb-1">⚠️ Draft — jo këshillë ligjore</Text>
         <Text className="font-body text-xs text-ink-soft leading-5">
-          Tekstet më poshtë janë draft fillestar për t'u parë si strukturë. Përpara se t'i publikosh (App Store/Play Store), duhen shqyrtuar nga një jurist, sepse kërkesat ligjore ndryshojnë sipas vendit dhe llojit të të dhënave që përpunon.
+          Tekstet më poshtë janë draft fillestar për t’u parë si strukturë. Përpara se t’i publikosh (App Store/Play Store), duhen shqyrtuar nga një jurist, sepse kërkesat ligjore ndryshojnë sipas vendit dhe llojit të të dhënave që përpunon.
         </Text>
       </View>
 

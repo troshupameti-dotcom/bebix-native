@@ -25,7 +25,7 @@ export default function WishlistScreen() {
             <View className="items-center mt-16 px-8">
               <Icon name="heart" size={28} color="#A79D8A" />
               <Text className="font-body text-sm text-ink-soft mt-3 text-center">
-                Ende s'ke shtuar produkte te të preferuarat. Shtyp ikonën e zemrës te ndonjë produkt për ta ruajtur këtu.
+                Ende s’ke shtuar produkte te të preferuarat. Shtyp ikonën e zemrës te ndonjë produkt për ta ruajtur këtu.
               </Text>
             </View>
           ) : (

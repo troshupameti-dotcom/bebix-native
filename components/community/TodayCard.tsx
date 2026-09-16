@@ -50,10 +50,10 @@ export function TodayCard({
             </View>
           </View>
         ) : (
-          <Text className="font-body text-xs text-ink-faint">Ende s'ka këshilla.</Text>
+          <Text className="font-body text-xs text-ink-faint">Ende s’ka këshilla.</Text>
         )
       ) : !hasAge ? (
-        <Text className="font-body text-xs text-ink-faint">Shto datëlindjen e bebit n'Profil me marrë lojra t'personalizueme.</Text>
+        <Text className="font-body text-xs text-ink-faint">Shto datëlindjen e bebit n’Profil me marrë lojra t’personalizueme.</Text>
       ) : gamesLoading ? (
         <ActivityIndicator color="#6E7452" />
       ) : gamesError ? (
@@ -62,7 +62,7 @@ export function TodayCard({
           <Pressable onPress={onRetryGames}><Text className="font-bodyMedium text-xs text-olive">Provo prap</Text></Pressable>
         </View>
       ) : games.length === 0 ? (
-        <Text className="font-body text-xs text-ink-faint">S'ka lojra ende.</Text>
+        <Text className="font-body text-xs text-ink-faint">S’ka lojra ende.</Text>
       ) : (
         <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ paddingRight: 8 }}>
           {games.map((g, i) => (

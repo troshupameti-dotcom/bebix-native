@@ -39,7 +39,7 @@ type FeedEntry = {
   tint: "olive" | "orange";
 };
 
-const RANGE_KEYS = ["day", "week", "month"] as const;
+type RangeKey = "day" | "week" | "month";
 
 export default function BabyProfileScreen() {
   const { t, lang } = useTranslation();
@@ -62,7 +62,7 @@ export default function BabyProfileScreen() {
   const [showSearch, setShowSearch] = useState(false);
   const [search, setSearch] = useState("");
   const [kindFilter, setKindFilter] = useState<FeedKind | "all">("all");
-  const [rangeView, setRangeView] = useState<(typeof RANGE_KEYS)[number]>("week");
+  const [rangeView] = useState<RangeKey>("week");
   const [selectMode, setSelectMode] = useState(false);
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
 
@@ -178,10 +178,16 @@ export default function BabyProfileScreen() {
     const lastDiaper = active(b.diaperLog)[0];
     const candidates: { label: string; hrs: number; icon: IconName; route: "/(main)/baby/feeding" | "/(main)/baby/diaper" }[] = [];
     if (lastFeeding) {
+      // Date.now() ne render: keto jane shfaqje relative ndaj kohes (sa ore nga
+      // ushqyerja/pelena e fundit) dhe duhet te rillogariten ne cdo render.
+      // eslint-disable-next-line react-hooks/purity
       const hrs = (Date.now() - new Date(lastFeeding.at).getTime()) / 3600000;
       candidates.push({ label: "ushqyerjes", hrs, icon: "spoon", route: "/(main)/baby/feeding" });
     }
     if (lastDiaper) {
+      // Date.now() ne render: keto jane shfaqje relative ndaj kohes (sa ore nga
+      // ushqyerja/pelena e fundit) dhe duhet te rillogariten ne cdo render.
+      // eslint-disable-next-line react-hooks/purity
       const hrs = (Date.now() - new Date(lastDiaper.at).getTime()) / 3600000;
       candidates.push({ label: "pelenës", hrs, icon: "baby", route: "/(main)/baby/diaper" });
     }
@@ -202,6 +208,9 @@ export default function BabyProfileScreen() {
         kind: "event",
         title: ev.title,
         subtitle: isNaN(ms) ? ev.date : formatDate(ev.date, lang),
+        // Date.now() ne render: keto jane shfaqje relative ndaj kohes (sa ore nga
+        // ushqyerja/pelena e fundit) dhe duhet te rillogariten ne cdo render.
+        // eslint-disable-next-line react-hooks/purity
         sortTime: isNaN(ms) ? Date.now() : ms,
         icon: "sparkle",
         tint: ev.color,
@@ -279,6 +288,9 @@ export default function BabyProfileScreen() {
   }, [b, lang, t]);
 
   const rangeStart = useMemo(() => {
+    // Date.now() ne render: keto jane shfaqje relative ndaj kohes (sa ore nga
+    // ushqyerja/pelena e fundit) dhe duhet te rillogariten ne cdo render.
+    // eslint-disable-next-line react-hooks/purity
     const now = Date.now();
     if (rangeView === "day") return now - 86400000;
     if (rangeView === "week") return now - 7 * 86400000;

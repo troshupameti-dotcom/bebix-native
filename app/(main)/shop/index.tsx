@@ -61,6 +61,32 @@ function CategoryTile({
   );
 }
 
+function ProductGrid({ items, cardWidth, onOpen }: { items: Product[]; cardWidth: number; onOpen: (id: string) => void }) {
+  return (
+    <View
+      className="px-5 mt-4 flex-row flex-wrap"
+      style={{ columnGap: GRID_GAP, rowGap: GRID_GAP, paddingHorizontal: PADDING_X }}
+    >
+      {items.map((p) => (
+        <ProductCard key={p.id} product={p} cardWidth={cardWidth} onPress={() => onOpen(p.id)} />
+      ))}
+    </View>
+  );
+}
+
+function SkeletonGrid({ columns, cardWidth }: { columns: number; cardWidth: number }) {
+  return (
+    <View
+      className="flex-row flex-wrap"
+      style={{ columnGap: GRID_GAP, rowGap: GRID_GAP, paddingHorizontal: PADDING_X, paddingTop: 16 }}
+    >
+      {Array.from({ length: columns * 3 }).map((_, i) => (
+        <ProductCardSkeleton key={i} cardWidth={cardWidth} />
+      ))}
+    </View>
+  );
+}
+
 export default function ShopScreen() {
   const router = useRouter();
   const { t } = useTranslation();
@@ -95,6 +121,9 @@ export default function ShopScreen() {
   }
 
   useEffect(() => {
+    // State-i fillestar varet nga te dhena asinkrone (AsyncStorage / rrjeti),
+    // prandaj mbushja behet ne efekt pas montimit.
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     load();
   }, []);
 
@@ -117,31 +146,7 @@ export default function ShopScreen() {
   const isSearching = query.trim().length > 0 || category !== "all" || sort !== "relevant";
   const categoryKeys = Object.keys(CATEGORY_META) as ProductCategory[];
 
-  function ProductGrid({ items }: { items: Product[] }) {
-    return (
-      <View
-        className="px-5 mt-4 flex-row flex-wrap"
-        style={{ columnGap: GRID_GAP, rowGap: GRID_GAP, paddingHorizontal: PADDING_X }}
-      >
-        {items.map((p) => (
-          <ProductCard key={p.id} product={p} cardWidth={cardWidth} onPress={() => router.push(`/shop/${p.id}`)} />
-        ))}
-      </View>
-    );
-  }
 
-  function SkeletonGrid() {
-    return (
-      <View
-        className="flex-row flex-wrap"
-        style={{ columnGap: GRID_GAP, rowGap: GRID_GAP, paddingHorizontal: PADDING_X, paddingTop: 16 }}
-      >
-        {Array.from({ length: columns * 3 }).map((_, i) => (
-          <ProductCardSkeleton key={i} cardWidth={cardWidth} />
-        ))}
-      </View>
-    );
-  }
 
   return (
     <SafeAreaView className="flex-1 bg-cream dark:bg-ink" edges={["top"]}>
@@ -209,7 +214,7 @@ export default function ShopScreen() {
 
       {loading ? (
         <ScrollView showsVerticalScrollIndicator={false}>
-          <SkeletonGrid />
+          <SkeletonGrid columns={columns} cardWidth={cardWidth} />
         </ScrollView>
       ) : loadError ? (
         <View className="flex-1 items-center justify-center px-8">
@@ -269,7 +274,7 @@ export default function ShopScreen() {
                 </Pressable>
               </View>
             ) : (
-              <ProductGrid items={filtered} />
+              <ProductGrid items={filtered} cardWidth={cardWidth} onOpen={(id) => router.push(`/shop/${id}`)} />
             )
           ) : (
             <>
@@ -341,7 +346,7 @@ export default function ShopScreen() {
               <View className="flex-row items-center justify-between px-5 mt-6 mb-1">
                 <Text className="font-bodySemibold text-lg text-ink dark:text-cream">{t("shop_all_products")}</Text>
               </View>
-              <ProductGrid items={products} />
+              <ProductGrid items={products} cardWidth={cardWidth} onOpen={(id) => router.push(`/shop/${id}`)} />
             </>
           )}
         </ScrollView>
