@@ -126,7 +126,9 @@ export default function MainLayout() {
             options={{
               title: t(tab.labelKey),
               tabBarIcon: ({ color, focused }) => (
-                <Icon name={tab.icon} size={22} color={focused ? colors.active : color} />
+                // react-navigation e tipizon color si ColorValue; ne praktike
+                // vjen nga TAB_COLORS, pra string hex.
+                <Icon name={tab.icon} size={22} color={focused ? colors.active : (color as string)} />
               ),
             }}
             listeners={{

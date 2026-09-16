@@ -120,11 +120,6 @@ export function archived<T extends Lifecycle>(list: T[]): T[] {
   return list.filter((item) => !item.deletedAt && !!item.archivedAt);
 }
 
-/** Toggle an id in/out of a string[] — shared by like/save/join/follow. */
-function toggleId(list: string[], id: string): string[] {
-  return list.includes(id) ? list.filter((x) => x !== id) : [...list, id];
-}
-
 type Action =
   | { type: "SET_DARK_MODE"; value: boolean }
   | { type: "UPDATE_PROFILE"; value: Partial<BabyProfile> }
@@ -137,13 +132,6 @@ type Action =
   | { type: "UPDATE_CART_QTY"; id: string; qty: number }
   | { type: "CLEAR_CART" }
   | { type: "SET_BABY"; value: Partial<BabyModuleState> }
-  | { type: "TOGGLE_LIKE_POST"; id: string }
-  | { type: "TOGGLE_SAVE_POST"; id: string }
-  | { type: "TOGGLE_JOIN_GROUP"; id: string }
-    | { type: "TOGGLE_FOLLOW_EXPERT"; id: string }
-  | { type: "ADD_POST"; post: Post }
-  | { type: "DELETE_MY_POST"; id: string }
-  | { type: "ADD_COMMENT"; comment: Comment }
   | { type: "SET_NOTIFICATION_PREF"; key: keyof NotificationPrefs; value: boolean }
   | { type: "HYDRATE"; state: AppState };
 
@@ -189,31 +177,16 @@ function reducer(state: AppState, action: Action): AppState {
       return { ...state, cartItems: [], cartCount: 0 };
     case "SET_BABY":
       return { ...state, baby: { ...state.baby, ...action.value } };
-    case "TOGGLE_LIKE_POST":
-      return { ...state, community: { ...state.community, likedPostIds: toggleId(state.community.likedPostIds, action.id) } };
-    case "TOGGLE_SAVE_POST":
-      return { ...state, community: { ...state.community, savedPostIds: toggleId(state.community.savedPostIds, action.id) } };
-    case "TOGGLE_JOIN_GROUP":
-      return { ...state, community: { ...state.community, joinedGroupIds: toggleId(state.community.joinedGroupIds, action.id) } };
-    case "TOGGLE_FOLLOW_EXPERT":
-      return { ...state, community: { ...state.community, followedExpertIds: toggleId(state.community.followedExpertIds, action.id) } };
-    case "ADD_POST":
-      return { ...state, community: { ...state.community, myPosts: [action.post, ...state.community.myPosts] } };
-    case "DELETE_MY_POST":
-      return { ...state, community: { ...state.community, myPosts: state.community.myPosts.filter((p) => p.id !== action.id) } };
-    case "ADD_COMMENT":
-      return { ...state, community: { ...state.community, myComments: [...state.community.myComments, action.comment] } };
     case "SET_NOTIFICATION_PREF":
       return { ...state, notificationPrefs: { ...state.notificationPrefs, [action.key]: action.value } };
     case "HYDRATE":
-      // Merr shtetin e ruajtur, por siguron që fusha të reja (si `community`
-      // ose `notificationPrefs`) ekzistojnë edhe nëse instalimi i vjetër i
+      // Merr shtetin e ruajtur, por siguron që fushat e reja (si
+      // `notificationPrefs`) ekzistojnë edhe nëse instalimi i vjetër i
       // ruajtur s'i ka ende (p.sh. app i instaluar përpara këtij update-i).
       return {
         ...initialAppState,
         ...action.state,
         cartItems: (action.state as AppState).cartItems ?? initialAppState.cartItems,
-        community: { ...initialAppState.community, ...(action.state as AppState).community },
         notificationPrefs: { ...initialAppState.notificationPrefs, ...(action.state as AppState).notificationPrefs },
       };
     default:
@@ -298,51 +271,6 @@ function buildValue(state: AppState, dispatch: React.Dispatch<Action>) {
     resetBabyData: () => {
       dispatch({ type: "UPDATE_PROFILE", value: initialAppState.profile });
       dispatch({ type: "SET_BABY", value: initialAppState.baby });
-    },
-
-    // ---- Community (local-only: likes/saves/joins/follows) ----
-    toggleLikePost: (id: string) => dispatch({ type: "TOGGLE_LIKE_POST", id }),
-    isPostLiked: (id: string) => state.community.likedPostIds.includes(id),
-    toggleSavePost: (id: string) => dispatch({ type: "TOGGLE_SAVE_POST", id }),
-    isPostSaved: (id: string) => state.community.savedPostIds.includes(id),
-    toggleJoinGroup: (id: string) => dispatch({ type: "TOGGLE_JOIN_GROUP", id }),
-    isGroupJoined: (id: string) => state.community.joinedGroupIds.includes(id),
-    toggleFollowExpert: (id: string) => dispatch({ type: "TOGGLE_FOLLOW_EXPERT", id }),
-    isExpertFollowed: (id: string) => state.community.followedExpertIds.includes(id),
-
-    // ---- Postime & komente lokale (deri sa te vjen backend-i real) ----
-    addPost: (input: { text: string; tag?: string | null; groupName?: string | null }) => {
-      const post: Post = {
-        id: `local:${uid()}`,
-        authorName: state.profile.parentName ?? "Ti",
-        authorInitial: (state.profile.parentName ?? "T").trim().charAt(0).toUpperCase() || "T",
-        authorIsExpert: false,
-        accent: "olive",
-        kind: "text",
-        text: input.text,
-        tag: input.tag ?? null,
-        icon: "sparkle",
-        at: nowIso(),
-        likeCount: 0,
-        commentCount: 0,
-        shareCount: 0,
-        groupName: input.groupName ?? null,
-      };
-      dispatch({ type: "ADD_POST", post });
-      return post.id;
-    },
-    deleteMyPost: (id: string) => dispatch({ type: "DELETE_MY_POST", id }),
-    isMyPost: (id: string) => state.community.myPosts.some((p) => p.id === id),
-    addComment: (postId: string, text: string, parentId: string | null = null) => {
-      const comment: Comment = {
-        id: `local:${uid()}`,
-        postId,
-        author: state.profile.parentName ?? "Ti",
-        text,
-        at: nowIso(),
-        parentId,
-      };
-      dispatch({ type: "ADD_COMMENT", comment });
     },
 
     // ---- Notification preferences ----
