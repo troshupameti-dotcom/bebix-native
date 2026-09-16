@@ -389,6 +389,26 @@ export const translations = {
     medical_value_ph: "Vlera",
     medical_doctor_ph: "Mjeku",
 
+    // ---- Celesa qe ndertohen ne kohe xhirimi (feeding_type_*, gender_* ...) ----
+    feeding_type_formula: "Formulë",
+    feeding_type_water: "Ujë",
+    feeding_side_left: "Majtas",
+    feeding_side_right: "Djathtas",
+    feeding_side_both: "Të dyja",
+    diaper_type_both: "E përzier",
+    sleep_quality_good: "I mirë",
+    sleep_quality_fair: "Mesatar",
+    sleep_quality_restless: "I shqetësuar",
+    vaccine_status_due_today: "Sot",
+    vaccine_status_overdue: "Me vonesë",
+    medical_type_symptom: "Simptomë",
+    medical_type_temperature: "Temperaturë",
+    medical_type_doctor_visit: "Vizitë te mjeku",
+    medical_type_prescription: "Recetë",
+    medical_type_document: "Dokument",
+    gender_girl: "Vajzë",
+    gender_boy: "Djalë",
+    gender_other: "Tjetër",
   },
   en: {
     // ---- Auth / Onboarding ----
@@ -773,6 +793,26 @@ export const translations = {
     medical_value_ph: "Value",
     medical_doctor_ph: "Doctor",
 
+    // ---- Celesa qe ndertohen ne kohe xhirimi (feeding_type_*, gender_* ...) ----
+    feeding_type_formula: "Formula",
+    feeding_type_water: "Water",
+    feeding_side_left: "Left",
+    feeding_side_right: "Right",
+    feeding_side_both: "Both",
+    diaper_type_both: "Mixed",
+    sleep_quality_good: "Good",
+    sleep_quality_fair: "Fair",
+    sleep_quality_restless: "Restless",
+    vaccine_status_due_today: "Due today",
+    vaccine_status_overdue: "Overdue",
+    medical_type_symptom: "Symptom",
+    medical_type_temperature: "Temperature",
+    medical_type_doctor_visit: "Doctor visit",
+    medical_type_prescription: "Prescription",
+    medical_type_document: "Document",
+    gender_girl: "Girl",
+    gender_boy: "Boy",
+    gender_other: "Other",
   },
 } as const;
 
