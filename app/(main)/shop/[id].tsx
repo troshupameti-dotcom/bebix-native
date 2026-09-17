@@ -8,6 +8,7 @@ import { Icon, IconName } from "@/components/ui/Icon";
 import { shadows } from "@/lib/shadows";
 import { Product, CATEGORY_META } from "@/lib/homeContent";
 import { fetchProductById, fetchProducts } from "@/lib/shopData";
+import { BackButton, goBackOr } from "@/components/ui/BackButton";
 
 const { width } = Dimensions.get("window");
 
@@ -103,7 +104,7 @@ export default function ProductDetailsScreen() {
       <SafeAreaView className="flex-1 bg-cream items-center justify-center px-8">
         <Icon name="close" size={28} color="#A79D8A" />
         <Text className="font-bodyMedium text-sm text-ink-soft mt-3 text-center">{loadError ?? "Produkti s'u gjet."}</Text>
-        <Pressable onPress={() => router.back()} className="mt-4">
+        <Pressable onPress={() => goBackOr("/(main)/shop")} className="mt-4">
           <Text className="font-bodyMedium text-sm text-olive">Kthehu mbrapa</Text>
         </Pressable>
       </SafeAreaView>
@@ -123,9 +124,7 @@ export default function ProductDetailsScreen() {
   return (
     <SafeAreaView className="flex-1 bg-cream" edges={["top"]}>
       <View className="flex-row items-center justify-between px-5 pt-2 mb-2">
-        <Pressable onPress={() => router.back()} style={shadows.soft} className="w-10 h-10 rounded-full bg-surface items-center justify-center">
-          <Icon name="chevronLeft" size={18} color="#2C271F" />
-        </Pressable>
+        <BackButton fallback="/(main)/shop" />
         <Pressable
           onPress={() => toggleFavorite({ id: product.id, name: product.name, price: `€${product.price.toFixed(2)}`, icon: product.icon })}
           style={shadows.soft}

@@ -4,6 +4,7 @@ import { SafeAreaView } from "react-native-safe-area-context";
 import { useRouter, useFocusEffect } from "expo-router";
 import { Icon } from "@/components/ui/Icon";
 import { shadows } from "@/lib/shadows";
+import { BackButton } from "@/components/ui/BackButton";
 import {
   fetchExperts, fetchGroups,
   toggleFollowExpert as apiToggleFollowExpert, toggleJoinGroup as apiToggleJoinGroup,
@@ -101,9 +102,7 @@ export default function ExploreScreen() {
   return (
     <SafeAreaView className="flex-1 bg-cream" edges={["top"]}>
       <View className="flex-row items-center px-5 pt-2 mb-4">
-        <Pressable onPress={() => router.back()} className="w-9 h-9 items-center justify-center -ml-2">
-          <Text className="font-bodySemibold text-xl text-ink">←</Text>
-        </Pressable>
+        <BackButton fallback="/(main)/community" />
         <Text className="font-display text-xl text-ink ml-1">Ekspertë & Grupe</Text>
       </View>
 

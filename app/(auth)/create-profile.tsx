@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { View, Text, Pressable, KeyboardAvoidingView, Platform } from "react-native";
+import { View, Text, KeyboardAvoidingView, Platform } from "react-native";
 import { router, useLocalSearchParams } from "expo-router";
 import { MotiView } from "moti";
 import { SafeAreaView } from "react-native-safe-area-context";
@@ -9,6 +9,7 @@ import { Icon } from "@/components/ui/Icon";
 import { useAppState } from "@/lib/state/AppStateContext";
 import { savePendingProfile, parseDobInput, formatDobInput } from "@/lib/babyProfile";
 import { useTranslation } from "@/lib/i18n/LanguageContext";
+import { BackButton, goBackOr } from "@/components/ui/BackButton";
 
 type Step = 0 | 1 | 2 | 3;
 
@@ -25,7 +26,7 @@ export default function CreateProfileScreen() {
 
   function goBack() {
     if (step === 0) {
-      router.back();
+      goBackOr("/(auth)/welcome");
       return;
     }
     setError(null);
@@ -88,9 +89,7 @@ export default function CreateProfileScreen() {
     <SafeAreaView className="flex-1 bg-cream" edges={["top", "bottom"]}>
       <KeyboardAvoidingView behavior={Platform.OS === "ios" ? "padding" : undefined} className="flex-1">
         <View className="flex-row items-center justify-between px-4 pt-2">
-          <Pressable onPress={goBack} hitSlop={8} className="h-10 w-10 items-center justify-center">
-            <Icon name="chevronLeft" size={20} color="#2C271F" />
-          </Pressable>
+          <BackButton onPress={goBack} />
 
           {step < 3 ? (
             <View className="flex-row gap-1.5">

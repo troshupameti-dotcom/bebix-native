@@ -1,9 +1,10 @@
 import { useCallback, useState } from "react";
 import { View, Text, ScrollView, Pressable, TextInput, ActivityIndicator, KeyboardAvoidingView, Platform } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
-import { useRouter, useFocusEffect } from "expo-router";
+import { useFocusEffect } from "expo-router";
 import { shadows } from "@/lib/shadows";
 import { fetchMyApplication, submitApplication, ExpertApplication } from "@/lib/expertApplications";
+import { BackButton } from "@/components/ui/BackButton";
 
 const SPECIALIZATIONS = ["Pediatër", "Nutricionist", "Konsulente Gjidhënieje", "Psikolog Fëmijësh", "Trajner Gjumi"];
 
@@ -26,7 +27,6 @@ function StatusBanner({ app }: { app: ExpertApplication }) {
 }
 
 export default function DoctorRegistrationScreen() {
-  const router = useRouter();
   const [loading, setLoading] = useState(true);
   const [existing, setExisting] = useState<ExpertApplication | null>(null);
   const [submitting, setSubmitting] = useState(false);
@@ -86,9 +86,7 @@ export default function DoctorRegistrationScreen() {
   return (
     <SafeAreaView className="flex-1 bg-cream" edges={["top"]}>
       <View className="flex-row items-center px-5 pt-2 mb-4">
-        <Pressable onPress={() => router.back()} className="w-9 h-9 items-center justify-center -ml-2">
-          <Text className="font-bodySemibold text-xl text-ink">←</Text>
-        </Pressable>
+        <BackButton fallback="/(main)/more" />
         <Text className="font-display text-xl text-ink ml-1">Regjistrohu si Mjek</Text>
       </View>
 

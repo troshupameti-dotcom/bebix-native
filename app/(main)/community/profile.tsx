@@ -5,6 +5,7 @@ import { useRouter, useFocusEffect } from "expo-router";
 import { useAppState } from "@/lib/state/AppStateContext";
 import { Icon } from "@/components/ui/Icon";
 import { Avatar, PostCard } from "@/components/community/PostCard";
+import { BackButton } from "@/components/ui/BackButton";
 import {
   getCurrentUserId, fetchPostsByAuthor, fetchExpertByUserId, deletePost,
   CommunityExpert, CommunityPost,
@@ -68,9 +69,7 @@ export default function MyProfileScreen() {
   return (
     <SafeAreaView className="flex-1 bg-cream" edges={["top"]}>
       <View className="flex-row items-center px-5 pt-2 mb-2">
-        <Pressable onPress={() => router.back()} className="w-9 h-9 items-center justify-center -ml-2">
-          <Text className="font-bodySemibold text-xl text-ink">←</Text>
-        </Pressable>
+        <BackButton fallback="/(main)/community" />
         <Text className="font-bodySemibold text-base text-ink">Profili Im</Text>
       </View>
 

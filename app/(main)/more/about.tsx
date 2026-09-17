@@ -1,8 +1,8 @@
 import { View, Text, ScrollView, Pressable, Share } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
-import { useRouter } from "expo-router";
 import { Icon, IconName } from "@/components/ui/Icon";
 import { shadows } from "@/lib/shadows";
+import { BackButton } from "@/components/ui/BackButton";
 
 function ActionRow({ icon, label, onPress }: { icon: IconName; label: string; onPress: () => void }) {
   return (
@@ -17,7 +17,6 @@ function ActionRow({ icon, label, onPress }: { icon: IconName; label: string; on
 }
 
 export default function AboutScreen() {
-  const router = useRouter();
 
   const shareApp = () => {
     Share.share({ message: "Provo Bebix — aplikacioni që më ndihmon të ndjek gjithçka për bebin tim! " });
@@ -26,9 +25,7 @@ export default function AboutScreen() {
   return (
     <SafeAreaView className="flex-1 bg-cream" edges={["top"]}>
       <View className="flex-row items-center px-5 pt-2 mb-5">
-        <Pressable onPress={() => router.back()} style={shadows.soft} className="w-10 h-10 rounded-full bg-surface items-center justify-center mr-3">
-          <Icon name="chevronLeft" size={18} color="#2C271F" />
-        </Pressable>
+        <BackButton fallback="/(main)/more" className="mr-3" />
         <Text className="font-display text-xl text-ink">Rreth Bebix</Text>
       </View>
 

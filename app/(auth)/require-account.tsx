@@ -5,6 +5,7 @@ import { SafeAreaView } from "react-native-safe-area-context";
 import { PrimaryButton } from "@/components/auth/PrimaryButton";
 import { Icon } from "@/components/ui/Icon";
 import { useTranslation } from "@/lib/i18n/LanguageContext";
+import { BackButton } from "@/components/ui/BackButton";
 
 export default function RequireAccountScreen() {
   const { t } = useTranslation();
@@ -21,9 +22,7 @@ export default function RequireAccountScreen() {
   return (
     <SafeAreaView className="flex-1 bg-cream" edges={["top", "bottom"]}>
       <View className="flex-row px-4 pt-2">
-        <Pressable onPress={() => router.back()} hitSlop={8} className="h-10 w-10 items-center justify-center">
-          <Icon name="chevronLeft" size={20} color="#2C271F" />
-        </Pressable>
+        <BackButton fallback="/(auth)/welcome" />
       </View>
 
       <View className="flex-1 items-center justify-center px-8">

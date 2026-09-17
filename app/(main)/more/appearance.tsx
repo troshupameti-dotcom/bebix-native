@@ -1,7 +1,7 @@
 import { View, Text } from "react-native";
 import { ThemedSwitch } from "@/components/ui/ThemedSwitch";
 import { SafeAreaView } from "react-native-safe-area-context";
-import { Stack } from "expo-router";
+import { BackButton } from "@/components/ui/BackButton";
 import { useAppState } from "@/lib/state/AppStateContext";
 import { useLanguage } from "@/lib/i18n/LanguageContext";
 import { Icon } from "@/components/ui/Icon";
@@ -13,9 +13,11 @@ export default function AppearanceScreen() {
 
   return (
     <SafeAreaView className="flex-1 bg-cream" edges={["top"]}>
-      <Stack.Screen options={{ title: t("appearance_title") }} />
-      <View className="px-5 pt-4">
-        <Text className="font-display text-2xl text-ink mb-1">{t("appearance_title")}</Text>
+      <View className="flex-row items-center px-5 pt-2 mb-4">
+        <BackButton fallback="/(main)/more" className="mr-3" />
+        <Text className="font-display text-xl text-ink">{t("appearance_title")}</Text>
+      </View>
+      <View className="px-5">
         <Text className="font-body text-sm text-ink-soft mb-6">{t("appearance_hint")}</Text>
 
         <View className="bg-surface rounded-xl2 overflow-hidden" style={shadows.soft}>

@@ -1,6 +1,5 @@
 import { useMemo, useState } from "react";
 import { View, Text, ScrollView, Pressable, Dimensions } from "react-native";
-import { router } from "expo-router";
 import { SafeAreaView } from "react-native-safe-area-context";
 import Svg, { Path, Circle, Line as SvgLine } from "react-native-svg";
 import { Icon } from "@/components/ui/Icon";
@@ -15,6 +14,7 @@ import { formatDate } from "@/lib/dateUtils";
 import { shadows } from "@/lib/shadows";
 import { useThemeColors } from "@/lib/theme/useThemeColors";
 import { GrowthHistoryEntry } from "@/lib/state/types";
+import { BackButton } from "@/components/ui/BackButton";
 
 type Metric = "weight" | "height";
 const CHART_WIDTH = Dimensions.get("window").width - 72;
@@ -133,9 +133,7 @@ export default function GrowthScreen() {
   return (
     <SafeAreaView className="flex-1 bg-cream" edges={["top"]}>
       <View className="flex-row items-center gap-3 px-4 pb-3 pt-2">
-        <Pressable onPress={() => router.back()} hitSlop={8} className="h-9 w-9 items-center justify-center">
-          <Icon name="chevronLeft" size={20} color="#2C271F" />
-        </Pressable>
+        <BackButton fallback="/(main)/baby" />
         <Text className="font-display text-xl text-ink">{t("growth_screen_title")}</Text>
       </View>
 

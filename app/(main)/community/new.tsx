@@ -1,13 +1,13 @@
 import { useCallback, useState } from "react";
 import { View, Text, ScrollView, Pressable, TextInput, KeyboardAvoidingView, Platform, ActivityIndicator } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
-import { useRouter, useFocusEffect } from "expo-router";
+import { useFocusEffect } from "expo-router";
 import { useAppState } from "@/lib/state/AppStateContext";
 import { shadows } from "@/lib/shadows";
 import { fetchTopics, fetchGroups, createPost, CommunityTopic, CommunityGroup } from "@/lib/communityData";
+import { BackButton, goBackOr } from "@/components/ui/BackButton";
 
 export default function NewPostScreen() {
-  const router = useRouter();
   const { state } = useAppState();
   const [text, setText] = useState("");
   const [selectedTag, setSelectedTag] = useState<string | null>(null);
@@ -47,7 +47,7 @@ export default function NewPostScreen() {
         groupId: selectedGroupId,
         authorName: state.profile.parentName ?? "Ti",
       });
-      router.back();
+      goBackOr("/(main)/community");
     } catch (e: any) {
       setError(e.message ?? "S'u arrit me postu. Provo prap.");
     } finally {
@@ -58,9 +58,7 @@ export default function NewPostScreen() {
   return (
     <SafeAreaView className="flex-1 bg-cream" edges={["top"]}>
       <View className="flex-row items-center justify-between px-5 pt-2 mb-4">
-        <Pressable onPress={() => router.back()} className="w-9 h-9 items-center justify-center -ml-2">
-          <Text className="font-bodySemibold text-lg text-ink">✕</Text>
-        </Pressable>
+        <BackButton fallback="/(main)/community" variant="close" />
         <Text className="font-bodySemibold text-base text-ink">Postim i Ri</Text>
         <Pressable
           onPress={handlePost}

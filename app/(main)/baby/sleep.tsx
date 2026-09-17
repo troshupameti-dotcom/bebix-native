@@ -1,6 +1,5 @@
 import { useMemo, useState } from "react";
 import { View, Text, ScrollView, Pressable } from "react-native";
-import { router } from "expo-router";
 import { MotiView } from "moti";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { Icon } from "@/components/ui/Icon";
@@ -16,6 +15,7 @@ import { haptics } from "@/lib/haptics";
 import { formatTime, formatDuration } from "@/lib/dateUtils";
 import { shadows } from "@/lib/shadows";
 import { SleepEntry, SleepQuality } from "@/lib/state/types";
+import { BackButton } from "@/components/ui/BackButton";
 
 type FormShape = {
   startAt: string;
@@ -95,9 +95,7 @@ export default function SleepScreen() {
   return (
     <SafeAreaView className="flex-1 bg-cream" edges={["top"]}>
       <View className="flex-row items-center gap-3 px-4 pb-3 pt-2">
-        <Pressable onPress={() => router.back()} hitSlop={8} className="h-9 w-9 items-center justify-center">
-          <Icon name="chevronLeft" size={20} color="#2C271F" />
-        </Pressable>
+        <BackButton fallback="/(main)/baby" />
         <Text className="font-display text-xl text-ink">{t("sleep_screen_title")}</Text>
       </View>
 

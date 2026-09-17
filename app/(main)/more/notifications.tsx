@@ -1,7 +1,7 @@
 import { View, Text, ScrollView } from "react-native";
 import { ThemedSwitch } from "@/components/ui/ThemedSwitch";
 import { SafeAreaView } from "react-native-safe-area-context";
-import { Stack } from "expo-router";
+import { BackButton } from "@/components/ui/BackButton";
 import { useAppState } from "@/lib/state/AppStateContext";
 import { useLanguage } from "@/lib/i18n/LanguageContext";
 import { Icon, IconName } from "@/components/ui/Icon";
@@ -63,8 +63,11 @@ export default function NotificationsScreen() {
 
   return (
     <SafeAreaView className="flex-1 bg-cream" edges={["top"]}>
-      <Stack.Screen options={{ title: t("notif_title") }} />
-      <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={{ paddingTop: 16, paddingBottom: 40 }}>
+      <View className="flex-row items-center px-5 pt-2 mb-2">
+        <BackButton fallback="/(main)/more" className="mr-3" />
+        <Text className="font-display text-xl text-ink">{t("notif_title")}</Text>
+      </View>
+      <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={{ paddingTop: 8, paddingBottom: 40 }}>
         <ToggleGroup
           title={t("notif_channels")}
           t={t}

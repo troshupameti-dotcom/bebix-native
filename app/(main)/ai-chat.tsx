@@ -9,11 +9,10 @@ import {
   Platform,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
-import { useRouter } from "expo-router";
 import { Icon } from "@/components/ui/Icon";
-import { useAppState } from "@/lib/state/AppStateContext";
 import { useTranslation } from "@/lib/i18n/LanguageContext";
 import { shadows } from "@/lib/shadows";
+import { BackButton } from "@/components/ui/BackButton";
 
 type ChatMessage = {
   id: string;
@@ -22,11 +21,8 @@ type ChatMessage = {
 };
 
 export default function AiChatScreen() {
-  const router = useRouter();
   const scrollRef = useRef<ScrollView>(null);
-  const { state } = useAppState();
   const { t } = useTranslation();
-  const isDark = state.darkMode;
 
   const [input, setInput] = useState("");
   const [messages, setMessages] = useState<ChatMessage[]>([
@@ -59,13 +55,7 @@ export default function AiChatScreen() {
     <SafeAreaView className="flex-1 bg-cream" edges={["top"]}>
       {/* Header */}
       <View className="flex-row items-center px-5 pt-2 pb-4">
-        <Pressable
-          onPress={() => router.back()}
-          style={shadows.soft}
-          className="w-10 h-10 rounded-full bg-surface items-center justify-center mr-3"
-        >
-          <Icon name="chevronLeft" size={20} color={isDark ? "#F7F1E4" : "#2C271F"} />
-        </Pressable>
+        <BackButton fallback="/(main)/home" className="mr-3" />
         <View className="flex-1">
           <Text className="font-bodySemibold text-lg text-ink">{t("ai_chat_title")}</Text>
           <Text className="font-body text-xs text-ink-soft">{t("ai_chat_subtitle")}</Text>

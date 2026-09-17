@@ -1,9 +1,9 @@
 import { useState } from "react";
 import { View, Text, ScrollView, Pressable, Linking } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
-import { useRouter } from "expo-router";
 import { Icon } from "@/components/ui/Icon";
 import { shadows } from "@/lib/shadows";
+import { BackButton } from "@/components/ui/BackButton";
 
 const FAQS: { q: string; a: string }[] = [
   { q: "Si shtoj bebin tim te profili?", a: "Shko te Bebi → shtyp foton/emrin lart → plotëso emrin, datëlindjen dhe detajet e tjera." },
@@ -14,15 +14,12 @@ const FAQS: { q: string; a: string }[] = [
 ];
 
 export default function HelpCenterScreen() {
-  const router = useRouter();
   const [open, setOpen] = useState<number | null>(null);
 
   return (
     <SafeAreaView className="flex-1 bg-cream" edges={["top"]}>
       <View className="flex-row items-center px-5 pt-2 mb-4">
-        <Pressable onPress={() => router.back()} style={shadows.soft} className="w-10 h-10 rounded-full bg-surface items-center justify-center mr-3">
-          <Icon name="chevronLeft" size={18} color="#2C271F" />
-        </Pressable>
+        <BackButton fallback="/(main)/more" className="mr-3" />
         <Text className="font-display text-xl text-ink">Qendra e Ndihmës</Text>
       </View>
 

@@ -8,13 +8,13 @@ import { AuthInput } from "@/components/auth/AuthInput";
 import { PrimaryButton } from "@/components/auth/PrimaryButton";
 import { AuthDivider } from "@/components/auth/AuthDivider";
 import { SocialAuthRow } from "@/components/auth/SocialAuthRow";
-import { Icon } from "@/components/ui/Icon";
 import { supabase } from "@/lib/supabase/client";
 import { markOnboardingSeen } from "@/lib/hooks/useOnboardingStatus";
 import { useAppState } from "@/lib/state/AppStateContext";
 import { syncPendingProfileToSupabase } from "@/lib/babyProfile";
 import { useTranslation } from "@/lib/i18n/LanguageContext";
 import type { SignupFormValues, FormErrors } from "@/types/auth";
+import { BackButton } from "@/components/ui/BackButton";
 
 const initialValues: SignupFormValues = {
   fullName: "",
@@ -98,9 +98,7 @@ export default function SignupScreen() {
     <SafeAreaView className="flex-1 bg-cream" edges={["top", "bottom"]}>
       <KeyboardAvoidingView behavior={Platform.OS === "ios" ? "padding" : undefined} className="flex-1">
         <View className="flex-row px-4 pt-2">
-          <Pressable onPress={() => (router.canGoBack() ? router.back() : router.replace("/(auth)/welcome"))} hitSlop={8} className="h-10 w-10 items-center justify-center">
-            <Icon name="chevronLeft" size={20} color="#2C271F" />
-          </Pressable>
+          <BackButton fallback="/(auth)/welcome" />
         </View>
 
         <ScrollView className="px-6" keyboardShouldPersistTaps="handled">

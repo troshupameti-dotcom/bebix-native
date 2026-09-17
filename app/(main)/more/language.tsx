@@ -1,7 +1,7 @@
 import { View, Text } from "react-native";
 import { ThemedSwitch } from "@/components/ui/ThemedSwitch";
 import { SafeAreaView } from "react-native-safe-area-context";
-import { Stack } from "expo-router";
+import { BackButton } from "@/components/ui/BackButton";
 import { useLanguage } from "@/lib/i18n/LanguageContext";
 import { shadows } from "@/lib/shadows";
 
@@ -11,9 +11,11 @@ export default function LanguageScreen() {
 
   return (
     <SafeAreaView className="flex-1 bg-cream" edges={["top"]}>
-      <Stack.Screen options={{ title: t("language_title") }} />
-      <View className="px-5 pt-4">
-        <Text className="font-display text-2xl text-ink mb-1">{t("language_title")}</Text>
+      <View className="flex-row items-center px-5 pt-2 mb-4">
+        <BackButton fallback="/(main)/more" className="mr-3" />
+        <Text className="font-display text-xl text-ink">{t("language_title")}</Text>
+      </View>
+      <View className="px-5">
         <Text className="font-body text-sm text-ink-soft mb-6">{t("language_hint")}</Text>
 
         <View className="bg-surface rounded-xl2 overflow-hidden flex-row items-center px-4 py-3.5" style={shadows.soft}>

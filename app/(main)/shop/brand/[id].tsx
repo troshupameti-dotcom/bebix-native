@@ -1,12 +1,12 @@
 import { useEffect, useState } from "react";
-import { View, Text, ScrollView, Pressable, ActivityIndicator, useWindowDimensions } from "react-native";
+import { View, Text, ScrollView, ActivityIndicator, useWindowDimensions } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import { Icon } from "@/components/ui/Icon";
-import { shadows } from "@/lib/shadows";
 import { Product, Brand } from "@/lib/homeContent";
 import { fetchBrandById, fetchProductsByBrand } from "@/lib/shopData";
 import { ProductCard } from "@/components/ProductCard";
+import { BackButton } from "@/components/ui/BackButton";
 
 const PADDING_X = 20;
 const GRID_GAP = 12;
@@ -54,9 +54,7 @@ export default function BrandProductsScreen() {
   return (
     <SafeAreaView className="flex-1 bg-cream" edges={["top"]}>
       <View className="flex-row items-center px-5 pt-2 mb-4">
-        <Pressable onPress={() => router.back()} style={shadows.soft} className="w-10 h-10 rounded-full bg-surface items-center justify-center mr-3">
-          <Icon name="chevronLeft" size={18} color="#2C271F" />
-        </Pressable>
+        <BackButton fallback="/(main)/shop" className="mr-3" />
         <Text className="font-display text-2xl text-ink">{brand?.name ?? "Marka"}</Text>
       </View>
 

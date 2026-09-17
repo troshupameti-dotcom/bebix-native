@@ -12,6 +12,7 @@ import { haptics } from "@/lib/haptics";
 import { shadows } from "@/lib/shadows";
 import { BabyGender, BloodType } from "@/lib/state/types";
 import { syncBabyProfileToSupabase } from "@/lib/babySync";
+import { BackButton, goBackOr } from "@/components/ui/BackButton";
 
 const GENDERS: BabyGender[] = ["girl", "boy", "other"];
 const BLOOD_TYPES: BloodType[] = ["0+", "0-", "A+", "A-", "B+", "B-", "AB+", "AB-"];
@@ -117,7 +118,7 @@ export default function BabySettingsScreen() {
     // skeduluesin e notifications të ditëlindjes (server-side).
     syncBabyProfileToSupabase(name.trim() || null, dob ? dob.toISOString() : null);
     haptics.success();
-    router.back();
+    goBackOr("/(main)/baby");
   }
 
   function addContact() {
@@ -132,16 +133,14 @@ export default function BabySettingsScreen() {
   function resetDemoData() {
     Alert.alert(t("baby_settings_reset"), t("baby_settings_reset_confirm"), [
       { text: t("cancel_action"), style: "cancel" },
-      { text: t("delete_action"), style: "destructive", onPress: () => { resetBabyData(); router.back(); } },
+      { text: t("delete_action"), style: "destructive", onPress: () => { resetBabyData(); goBackOr("/(main)/baby"); } },
     ]);
   }
 
   return (
     <SafeAreaView className="flex-1 bg-cream" edges={["top"]}>
       <View className="flex-row items-center justify-between px-4 pb-3 pt-2">
-        <Pressable onPress={() => router.back()} hitSlop={8} className="h-9 w-9 items-center justify-center">
-          <Icon name="chevronLeft" size={20} color="#2C271F" />
-        </Pressable>
+        <BackButton fallback="/(main)/baby" />
         <Text className="font-display text-xl text-ink">{t("baby_settings_title")}</Text>
         <View style={{ width: 36 }} />
       </View>

@@ -1,7 +1,6 @@
 import { useState } from "react";
 import { View, Text, Pressable, TextInput, Image, ScrollView, Alert, ActivityIndicator } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
-import { useRouter } from "expo-router";
 import * as ImagePicker from "expo-image-picker";
 import { useAppState } from "@/lib/state/AppStateContext";
 import { ParentRelation } from "@/lib/state/types";
@@ -9,6 +8,7 @@ import { Icon } from "@/components/ui/Icon";
 import { shadows } from "@/lib/shadows";
 import { useAuthUser } from "@/lib/hooks/useAuthUser";
 import { supabase } from "@/lib/supabase/client";
+import { BackButton, goBackOr } from "@/components/ui/BackButton";
 
 const RELATIONS: { value: ParentRelation; label: string }[] = [
   { value: "mom", label: "Mama" },
@@ -23,7 +23,6 @@ const PROVIDER_LABELS: Record<string, string> = {
 };
 
 export default function ProfileScreen() {
-  const router = useRouter();
   const { state, updateProfile } = useAppState();
   const { email, provider, loading: authLoading } = useAuthUser();
   const [name, setName] = useState(state.profile.parentName || "");
@@ -44,7 +43,7 @@ export default function ProfileScreen() {
 
   const save = () => {
     updateProfile({ parentName: name.trim() || null, relation, parentPhoto: photo });
-    router.back();
+    goBackOr("/(main)/more");
   };
 
   // Llogaritë e krijuara me Google/Apple s'kanë fjalëkalim derisa të caktojnë një.
@@ -81,9 +80,7 @@ export default function ProfileScreen() {
   return (
     <SafeAreaView className="flex-1 bg-cream" edges={["top"]}>
       <View className="flex-row items-center justify-between px-5 pt-2 mb-5">
-        <Pressable onPress={() => router.back()} style={shadows.soft} className="w-10 h-10 rounded-full bg-surface items-center justify-center">
-          <Icon name="chevronLeft" size={18} color="#2C271F" />
-        </Pressable>
+        <BackButton fallback="/(main)/more" />
         <Text className="font-bodyMedium text-lg text-ink">Profili im</Text>
         <Pressable onPress={save} className="px-4 py-2 rounded-full bg-olive">
           <Text className="font-bodySemibold text-xs text-on-accent">Ruaj</Text>

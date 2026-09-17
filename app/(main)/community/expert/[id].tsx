@@ -5,6 +5,7 @@ import { useLocalSearchParams, useRouter, useFocusEffect } from "expo-router";
 import { Icon } from "@/components/ui/Icon";
 import { PostCard } from "@/components/community/PostCard";
 import { fetchExpertById, fetchPostsByAuthor, toggleFollowExpert, CommunityExpert, CommunityPost } from "@/lib/communityData";
+import { BackButton, goBackOr } from "@/components/ui/BackButton";
 
 export default function ExpertProfileScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
@@ -52,7 +53,7 @@ export default function ExpertProfileScreen() {
     return (
       <SafeAreaView className="flex-1 bg-cream items-center justify-center px-8">
         <Text className="font-bodySemibold text-sm text-ink mb-2">Eksperti s’u gjet</Text>
-        <Pressable onPress={() => router.back()} className="bg-olive px-5 py-3 rounded-full mt-2">
+        <Pressable onPress={() => goBackOr("/(main)/community")} className="bg-olive px-5 py-3 rounded-full mt-2">
           <Text className="font-bodySemibold text-sm text-on-accent">Kthehu</Text>
         </Pressable>
       </SafeAreaView>
@@ -65,9 +66,7 @@ export default function ExpertProfileScreen() {
   return (
     <SafeAreaView className="flex-1 bg-cream" edges={["top"]}>
       <View className="flex-row items-center px-5 pt-2 mb-2">
-        <Pressable onPress={() => router.back()} className="w-9 h-9 items-center justify-center -ml-2">
-          <Text className="font-bodySemibold text-xl text-ink">←</Text>
-        </Pressable>
+        <BackButton fallback="/(main)/community" />
         <Text className="font-bodySemibold text-base text-ink">Profili</Text>
       </View>
 

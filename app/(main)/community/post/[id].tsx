@@ -1,10 +1,11 @@
 import { useCallback, useState } from "react";
 import { View, Text, ScrollView, Pressable, TextInput, KeyboardAvoidingView, Platform, ActivityIndicator } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
-import { useLocalSearchParams, useRouter, useFocusEffect } from "expo-router";
+import { useLocalSearchParams, useFocusEffect } from "expo-router";
 import { useAppState } from "@/lib/state/AppStateContext";
 import { shadows } from "@/lib/shadows";
 import { Avatar, PostCard, timeAgoLabel } from "@/components/community/PostCard";
+import { BackButton, goBackOr } from "@/components/ui/BackButton";
 import {
   fetchPost, fetchComments, addComment, deletePost, getCurrentUserId,
   CommunityPost, CommunityComment,
@@ -33,7 +34,6 @@ function CommentRow({ comment, isReply, onReply }: { comment: CommunityComment; 
 
 export default function PostDetailScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
-  const router = useRouter();
   const { state } = useAppState();
   const [loading, setLoading] = useState(true);
   const [post, setPost] = useState<CommunityPost | null>(null);
@@ -87,7 +87,7 @@ export default function PostDetailScreen() {
     if (!id) return;
     try {
       await deletePost(id);
-      router.back();
+      goBackOr("/(main)/community");
     } catch (err) {
       console.warn("Delete post error:", err);
     }
@@ -108,7 +108,7 @@ export default function PostDetailScreen() {
       <SafeAreaView className="flex-1 bg-cream items-center justify-center px-8">
         <Text className="font-bodySemibold text-base text-ink mb-2">Postimi s’u gjet</Text>
         <Text className="font-body text-sm text-ink-soft text-center mb-6">Ndoshta âsht fshi ose linku âsht i gabuem.</Text>
-        <Pressable onPress={() => router.back()} className="bg-olive px-5 py-3 rounded-full">
+        <Pressable onPress={() => goBackOr("/(main)/community")} className="bg-olive px-5 py-3 rounded-full">
           <Text className="font-bodySemibold text-sm text-on-accent">Kthehu</Text>
         </Pressable>
       </SafeAreaView>
@@ -118,16 +118,14 @@ export default function PostDetailScreen() {
   return (
     <SafeAreaView className="flex-1 bg-cream" edges={["top"]}>
       <View className="flex-row items-center justify-between px-5 pt-2 mb-2">
-        <Pressable onPress={() => router.back()} className="w-9 h-9 items-center justify-center -ml-2">
-          <Text className="font-bodySemibold text-xl text-ink">←</Text>
-        </Pressable>
+        <BackButton fallback="/(main)/community" />
         <Text className="font-bodySemibold text-base text-ink">Postimi</Text>
         {isMyPost ? (
-          <Pressable onPress={handleDelete} className="w-9 h-9 items-center justify-center -mr-2">
+          <Pressable onPress={handleDelete} className="h-10 min-w-10 items-center justify-center">
             <Text className="font-bodyMedium text-xs text-orange">Fshij</Text>
           </Pressable>
         ) : (
-          <View className="w-9 h-9" />
+          <View className="h-10 w-10" />
         )}
       </View>
 

@@ -1,10 +1,11 @@
 import { useCallback, useState } from "react";
-import { View, Text, ScrollView, Pressable, ActivityIndicator } from "react-native";
+import { View, Text, ScrollView, ActivityIndicator } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useRouter, useFocusEffect } from "expo-router";
 import { Icon } from "@/components/ui/Icon";
 import { PostCard } from "@/components/community/PostCard";
 import { fetchSavedPosts, CommunityPost } from "@/lib/communityData";
+import { BackButton } from "@/components/ui/BackButton";
 
 export default function SavedPostsScreen() {
   const router = useRouter();
@@ -35,9 +36,7 @@ export default function SavedPostsScreen() {
   return (
     <SafeAreaView className="flex-1 bg-cream" edges={["top"]}>
       <View className="flex-row items-center px-5 pt-2 mb-4">
-        <Pressable onPress={() => router.back()} className="w-9 h-9 items-center justify-center -ml-2">
-          <Text className="font-bodySemibold text-xl text-ink">←</Text>
-        </Pressable>
+        <BackButton fallback="/(main)/community" />
         <Text className="font-display text-2xl text-ink ml-1">Postime të Ruajtura</Text>
       </View>
 
