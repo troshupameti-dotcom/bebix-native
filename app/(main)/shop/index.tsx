@@ -162,6 +162,15 @@ export default function ShopScreen() {
         </View>
         <View className="flex-row items-center">
           <Pressable
+            onPress={() => router.push("/shop/orders")}
+            style={shadows.soft}
+            accessibilityRole="button"
+            accessibilityLabel="Porosite e mia"
+            className="w-10 h-10 rounded-full bg-surface items-center justify-center mr-2"
+          >
+            <Icon name="cube" size={18} color={isDark ? "#F7F1E4" : "#2C271F"} />
+          </Pressable>
+          <Pressable
             onPress={() => router.push("/shop/wishlist")}
             style={shadows.soft}
             className="w-10 h-10 rounded-full bg-surface items-center justify-center mr-2"

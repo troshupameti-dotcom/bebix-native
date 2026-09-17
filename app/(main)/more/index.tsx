@@ -80,6 +80,7 @@ export default function MoreScreen() {
         <Section
           title={t("section_saved")}
           rows={[
+            { icon: "cube", label: t("my_orders"), onPress: () => router.push("/shop/orders") },
             { icon: "heart", label: t("saved_products"), onPress: () => router.push("/shop/wishlist") },
             { icon: "bookmark", label: t("saved_posts"), onPress: () => router.push("/community/saved") },
           ]}

@@ -85,6 +85,7 @@ export const translations = {
     add_your_name: "Shto emrin tënd",
 
     section_saved: "Të ruajtura",
+    my_orders: "Porositë e mia",
     saved_products: "Produkte të ruajtura",
     saved_posts: "Postime të ruajtura",
 
@@ -509,6 +510,7 @@ export const translations = {
     add_your_name: "Add your name",
 
     section_saved: "Saved",
+    my_orders: "My orders",
     saved_products: "Saved Products",
     saved_posts: "Saved Posts",
 
