@@ -47,7 +47,7 @@ export default function SavedPostsScreen() {
           </View>
           <Text className="font-bodySemibold text-sm text-ink mb-1">Ende nuk ke ruajtur asgjë</Text>
           <Text className="font-body text-xs text-ink-soft text-center leading-5">
-            Kur shef një postim interesant, shtyp ikonën e bookmark-ut me e ruejt këtu.
+            Kur gjen një postim që do ta lexosh sërish, shtyp ikonën e faqeshënuesit.
           </Text>
         </View>
       ) : (

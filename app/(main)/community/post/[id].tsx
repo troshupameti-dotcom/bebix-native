@@ -31,7 +31,7 @@ function CommentRow({
   const initial = comment.authorName.trim().charAt(0).toUpperCase() || "?";
   return (
     <View className={`flex-row mb-4 ${isReply ? "ml-9 mt-3 mb-0" : ""}`}>
-      <Avatar initial={initial} accent={isReply ? "orange" : "olive"} size={isReply ? 30 : 36} />
+      <Avatar initial={initial} accent="olive" size={isReply ? 30 : 36} />
       <View className="flex-1 ml-2.5">
         <Pressable
           onLongPress={() => {
@@ -146,7 +146,7 @@ export default function PostDetailScreen() {
     <SafeAreaView className="flex-1 bg-cream" edges={["top"]}>
       <View className="flex-row items-center px-5 pt-2 mb-2">
         <BackButton fallback="/(main)/community" className="mr-3" />
-        <Text className="font-bodySemibold text-base text-ink">Postimi</Text>
+        <Text className="font-display text-xl text-ink">Postimi</Text>
       </View>
 
       <KeyboardAvoidingView className="flex-1" behavior={Platform.OS === "ios" ? "padding" : undefined} keyboardVerticalOffset={90}>

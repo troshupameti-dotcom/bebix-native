@@ -54,7 +54,6 @@ export function PostCard({ post, onOpen, onRemoved, interactiveMedia = false }: 
   const [saved, setSaved] = useState(post.saved);
   const [likeCount, setLikeCount] = useState(post.likeCount);
   const [menu, setMenu] = useState<ModerationTarget | null>(null);
-  const bg = post.accent === "olive" ? "bg-olive-bg" : "bg-orange-bg";
   const isMine = !!myId && myId === post.authorId;
 
   async function handleLike() {
@@ -107,9 +106,6 @@ export function PostCard({ post, onOpen, onRemoved, interactiveMedia = false }: 
             {timeAgoLabel(post.at)} {post.groupName ? `· ${post.groupName}` : ""}
           </Text>
         </View>
-        <View className={`w-8 h-8 rounded-full items-center justify-center ${bg}`}>
-          <Icon name={post.icon} size={16} color={post.accent === "olive" ? "#6E7452" : "#C9702E"} />
-        </View>
         <Pressable
           onPress={openMenu}
           hitSlop={10}
@@ -123,7 +119,11 @@ export function PostCard({ post, onOpen, onRemoved, interactiveMedia = false }: 
 
       {post.text.trim() ? <Text className="font-body text-sm text-ink leading-5 mb-2">{post.text}</Text> : null}
       <PostMediaGrid media={post.media} interactive={interactiveMedia} onPress={interactiveMedia ? undefined : onOpen} />
-      {post.tag && <Text className="font-bodyMedium text-xs text-olive mb-2">{post.tag}</Text>}
+      {post.tag ? (
+        <View className="self-start bg-cream-soft rounded-full px-2.5 py-1 mb-2">
+          <Text className="font-bodyMedium text-[11px] text-ink-soft">{post.tag}</Text>
+        </View>
+      ) : null}
 
       <View className="flex-row items-center justify-between mt-1 pt-3 border-t border-cream-line">
         <Pressable

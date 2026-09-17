@@ -49,7 +49,7 @@ export default function MyProfileScreen() {
     <SafeAreaView className="flex-1 bg-cream" edges={["top"]}>
       <View className="flex-row items-center px-5 pt-2 mb-2">
         <BackButton fallback="/(main)/community" />
-        <Text className="font-bodySemibold text-base text-ink">Profili im</Text>
+        <Text className="font-display text-xl text-ink ml-1">Profili im</Text>
       </View>
 
       <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={{ paddingBottom: 40 }}>

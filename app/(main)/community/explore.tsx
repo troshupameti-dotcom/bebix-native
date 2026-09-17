@@ -27,7 +27,11 @@ function ExpertRow({ expert, onOpen, onToggleFollow }: { expert: CommunityExpert
           <Icon name="check" size={12} color="#6E7452" />
         </View>
         <Text className="font-body text-xs text-ink-faint mb-0.5">{expert.kind}</Text>
-        <Text className="font-bodyMedium text-[11px] text-ink-soft">⭐ {expert.rating} ({expert.reviewCount})</Text>
+        {expert.reviewCount > 0 && (
+          <Text className="font-bodyMedium text-[11px] text-ink-soft">
+            {expert.rating.toFixed(1)} · {expert.reviewCount} vlerësime
+          </Text>
+        )}
       </View>
       <Pressable onPress={onToggleFollow} className={`px-3 py-1.5 rounded-full ${expert.followed ? "bg-cream-soft" : "bg-olive"}`}>
         <Text className={`font-bodySemibold text-[11px] ${expert.followed ? "text-ink-soft" : "text-on-accent"}`}>
@@ -52,7 +56,7 @@ function GroupRow({ group, onOpen, onToggleJoin }: { group: CommunityGroup; onOp
       </View>
       <Pressable onPress={onToggleJoin} className={`px-3 py-1.5 rounded-full ${group.joined ? "bg-cream-soft" : "bg-olive"}`}>
         <Text className={`font-bodySemibold text-[11px] ${group.joined ? "text-ink-soft" : "text-on-accent"}`}>
-          {group.joined ? "Anëtar ✓" : "Bashkohu"}
+          {group.joined ? "Anëtar" : "Bashkohu"}
         </Text>
       </Pressable>
     </Pressable>
@@ -106,26 +110,26 @@ export default function ExploreScreen() {
         <Text className="font-display text-xl text-ink ml-1">Ekspertë dhe grupe</Text>
       </View>
 
-      <View className="flex-row px-5 mb-4">
-        <Pressable onPress={() => setTab("experts")} style={shadows.soft} className={`flex-1 py-2.5 rounded-full mr-2 items-center ${tab === "experts" ? "bg-olive" : "bg-surface"}`}>
-          <Text className={`font-bodySemibold text-xs ${tab === "experts" ? "text-on-accent" : "text-ink"}`}>Ekspertë ({experts.length})</Text>
+      <View className="flex-row mx-5 mb-4 bg-cream-soft rounded-full p-1">
+        <Pressable onPress={() => setTab("experts")} className={`flex-1 py-2 rounded-full items-center ${tab === "experts" ? "bg-ink" : ""}`}>
+          <Text className={`font-bodyMedium text-xs ${tab === "experts" ? "text-on-accent" : "text-ink-soft"}`}>Ekspertë ({experts.length})</Text>
         </Pressable>
-        <Pressable onPress={() => setTab("groups")} style={shadows.soft} className={`flex-1 py-2.5 rounded-full items-center ${tab === "groups" ? "bg-olive" : "bg-surface"}`}>
-          <Text className={`font-bodySemibold text-xs ${tab === "groups" ? "text-on-accent" : "text-ink"}`}>Grupe ({groups.length})</Text>
+        <Pressable onPress={() => setTab("groups")} className={`flex-1 py-2 rounded-full items-center ${tab === "groups" ? "bg-ink" : ""}`}>
+          <Text className={`font-bodyMedium text-xs ${tab === "groups" ? "text-on-accent" : "text-ink-soft"}`}>Grupe ({groups.length})</Text>
         </Pressable>
       </View>
 
       <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={{ paddingHorizontal: 20, paddingBottom: 40 }}>
         {tab === "experts" ? (
           experts.length === 0 ? (
-            <Text className="font-body text-xs text-ink-faint">Ende s’ka ekspertë.</Text>
+            <Text className="font-body text-xs text-ink-faint">Ende nuk ka ekspertë.</Text>
           ) : (
             experts.map((e) => (
               <ExpertRow key={e.id} expert={e} onOpen={() => router.push(`/community/expert/${e.id}`)} onToggleFollow={() => handleFollow(e)} />
             ))
           )
         ) : groups.length === 0 ? (
-          <Text className="font-body text-xs text-ink-faint">Ende s’ka grupe.</Text>
+          <Text className="font-body text-xs text-ink-faint">Ende nuk ka grupe.</Text>
         ) : (
           groups.map((g) => (
             <GroupRow key={g.id} group={g} onOpen={() => router.push(`/community/group/${g.id}`)} onToggleJoin={() => handleJoin(g)} />

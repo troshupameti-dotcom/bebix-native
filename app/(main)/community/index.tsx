@@ -5,55 +5,29 @@ import { useRouter, useFocusEffect } from "expo-router";
 import { useAppState } from "@/lib/state/AppStateContext";
 import { useTranslation } from "@/lib/i18n/LanguageContext";
 import { Icon } from "@/components/ui/Icon";
+import { useThemeColors } from "@/lib/theme/useThemeColors";
 import { shadows } from "@/lib/shadows";
 import { PostCard } from "@/components/community/PostCard";
-import { TodayCard } from "@/components/community/TodayCard";
 import {
   fetchGroups, fetchExperts, fetchTopics, fetchTips, fetchFeed,
   CommunityGroup, CommunityExpert, CommunityTopic, CommunityTip, CommunityPost,
 } from "@/lib/communityData";
-import { fetchGameRecommendations, ageInMonths, GameSuggestion } from "@/lib/aiGameRecommendations";
 
-function SectionHeader({ title }: { title: string }) {
-  return (
-    <View className="mb-3 mt-6 px-5">
-      <Text className="font-bodySemibold text-lg text-ink">{title}</Text>
-    </View>
-  );
-}
+/**
+ * Ky ekran ka një punë të vetme: të lexosh çfarë shkruajnë prindërit e tjerë
+ * dhe të shkruash vetë. Gjithçka tjetër (ekspertët, grupet, të ruajturat,
+ * profili) është navigim dytësor dhe rri jashtë rrjedhës së leximit.
+ */
 
-function TopicChip({ label, count, onPress }: { label: string; count: number; onPress: () => void }) {
+function FilterChip({ label, selected, onPress }: { label: string; selected: boolean; onPress: () => void }) {
   return (
-    <Pressable onPress={onPress} style={shadows.soft} className="bg-surface rounded-full px-3.5 py-1 mr-2 flex-row items-center">
-      <Text className="font-bodyMedium text-[11px] text-ink">{label}</Text>
-      <Text className="font-body text-[10px] text-ink-faint ml-1">{count}</Text>
-    </Pressable>
-  );
-}
-
-function ExploreBanner({
-  expertsCount,
-  groupsCount,
-  onPress,
-  t,
-}: {
-  expertsCount: number;
-  groupsCount: number;
-  onPress: () => void;
-  t: (key: any, params?: Record<string, string | number>) => string;
-}) {
-  return (
-    <Pressable onPress={onPress} style={shadows.soft} className="mx-5 bg-olive-bg rounded-xl3 p-4 flex-row items-center mb-2">
-      <View className="w-11 h-11 rounded-full bg-surface items-center justify-center mr-3">
-        <Icon name="shield" size={20} color="#6E7452" />
-      </View>
-      <View className="flex-1">
-        <Text className="font-bodySemibold text-sm text-ink">{t("community_experts_groups")}</Text>
-        <Text className="font-body text-xs text-ink-soft">
-          {t("community_experts_groups_sub", { experts: expertsCount, groups: groupsCount })}
-        </Text>
-      </View>
-      <Text className="font-bodySemibold text-base text-ink-faint">›</Text>
+    <Pressable
+      onPress={onPress}
+      accessibilityRole="button"
+      accessibilityState={{ selected }}
+      className={`rounded-full px-3.5 py-1.5 mr-2 ${selected ? "bg-ink" : "bg-cream-soft"}`}
+    >
+      <Text className={`font-bodyMedium text-xs ${selected ? "text-on-accent" : "text-ink-soft"}`}>{label}</Text>
     </Pressable>
   );
 }
@@ -68,8 +42,9 @@ export default function CommunityScreen() {
   const router = useRouter();
   const { state } = useAppState();
   const { t } = useTranslation();
-  const isDark = state.darkMode;
+  const theme = useThemeColors();
   const [query, setQuery] = useState("");
+  const [topic, setTopic] = useState<string | null>(null);
 
   const [loading, setLoading] = useState(true);
   const [groups, setGroups] = useState<CommunityGroup[]>([]);
@@ -77,11 +52,6 @@ export default function CommunityScreen() {
   const [topics, setTopics] = useState<CommunityTopic[]>([]);
   const [tips, setTips] = useState<CommunityTip[]>([]);
   const [posts, setPosts] = useState<CommunityPost[]>([]);
-
-  const [games, setGames] = useState<GameSuggestion[]>([]);
-  const [gamesLoading, setGamesLoading] = useState(false);
-  const [gamesError, setGamesError] = useState<string | null>(null);
-  const babyAgeMonths = useMemo(() => ageInMonths(state.profile.babyDob), [state.profile.babyDob]);
 
   const loadAll = useCallback(async () => {
     try {
@@ -96,36 +66,29 @@ export default function CommunityScreen() {
     }
   }, []);
 
-  const loadGames = useCallback(async () => {
-    if (babyAgeMonths === null) return;
-    setGamesLoading(true);
-    setGamesError(null);
-    try {
-      setGames(await fetchGameRecommendations(babyAgeMonths));
-    } catch (err: any) {
-      setGamesError(err.message ?? t("community_games_error"));
-    } finally {
-      setGamesLoading(false);
-    }
-  }, [babyAgeMonths, t]);
-
   useFocusEffect(useCallback(() => { loadAll(); }, [loadAll]));
 
-  useFocusEffect(
-    useCallback(() => {
-      if (games.length === 0 && babyAgeMonths !== null) loadGames();
-      // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [babyAgeMonths])
-  );
+  const visiblePosts = useMemo(() => {
+    const q = query.trim().toLowerCase();
+    return posts.filter((p) => {
+      if (topic && p.tag !== topic) return false;
+      if (!q) return true;
+      return (
+        p.text.toLowerCase().includes(q) ||
+        p.tag?.toLowerCase().includes(q) ||
+        p.authorName.toLowerCase().includes(q)
+      );
+    });
+  }, [posts, query, topic]);
 
-  const filteredPosts = useMemo(() => {
-    if (!query.trim()) return posts;
-    const q = query.toLowerCase();
-    return posts.filter((p) => p.text.toLowerCase().includes(q) || p.tag?.toLowerCase().includes(q) || p.authorName.toLowerCase().includes(q));
-  }, [posts, query]);
-
-  const aiRecommendedPosts = useMemo(() => posts.slice().sort((a, b) => b.likeCount - a.likeCount).slice(0, 3), [posts]);
+  const filtering = query.trim().length > 0 || topic !== null;
   const todayTip = useMemo(() => tipOfDay(tips), [tips]);
+
+  const removePost = useCallback(
+    (id: string, reason: "deleted" | "blocked") =>
+      reason === "blocked" ? loadAll() : setPosts((prev) => prev.filter((x) => x.id !== id)),
+    [loadAll]
+  );
 
   if (loading) {
     return (
@@ -137,111 +100,134 @@ export default function CommunityScreen() {
 
   return (
     <SafeAreaView className="flex-1 bg-cream" edges={["top"]}>
-      <View className="flex-row items-center justify-between px-5 pt-2 mb-4">
-        <Pressable
-          onPress={() => router.push("/community/profile")}
-          style={shadows.soft}
-          className="w-10 h-10 rounded-full bg-olive-bg items-center justify-center"
-        >
-          <Text className="font-bodySemibold text-sm text-olive">
-            {(state.profile.parentName || "T").trim().charAt(0).toUpperCase()}
-          </Text>
-        </Pressable>
+      {/* Titulli dhe dy hyrje të qeta: të ruajturat, profili im */}
+      <View className="flex-row items-center justify-between px-5 pt-2 pb-3">
         <Text className="font-display text-2xl text-ink">{t("community_title")}</Text>
-        <Pressable
-          onPress={() => router.push("/community/saved")}
-          style={shadows.soft}
-          className="w-10 h-10 rounded-full bg-surface items-center justify-center"
-        >
-          <Icon name="bookmark" size={18} color={isDark ? "#F7F1E4" : "#2C271F"} />
-        </Pressable>
-      </View>
-
-      {/* Search + Topics — bashkue n'nji blloke t'ngjeshun */}
-      <View className="px-5 mb-3">
-        <View style={shadows.soft} className="flex-row items-center bg-surface rounded-xl2 px-4 py-3 mb-2.5">
-          <Icon name="search" size={18} color="#A79D8A" />
-          <TextInput
-            value={query}
-            onChangeText={setQuery}
-            placeholder={t("community_search_ph")}
-            placeholderClassName="text-ink-faint"
-            className="flex-1 ml-2 font-body text-sm text-ink"
-          />
+        <View className="flex-row items-center">
+          <Pressable
+            onPress={() => router.push("/community/saved")}
+            hitSlop={6}
+            accessibilityRole="button"
+            accessibilityLabel={t("community_saved_title")}
+            className="w-10 h-10 items-center justify-center"
+          >
+            <Icon name="bookmark" size={20} color={theme.inkSoft} />
+          </Pressable>
+          <Pressable
+            onPress={() => router.push("/community/profile")}
+            accessibilityRole="button"
+            accessibilityLabel={t("community_profile_title")}
+            className="w-9 h-9 rounded-full bg-olive-bg items-center justify-center ml-1"
+          >
+            <Text className="font-bodySemibold text-sm text-olive">
+              {(state.profile.parentName || "T").trim().charAt(0).toUpperCase()}
+            </Text>
+          </Pressable>
         </View>
       </View>
 
-      {topics.length > 0 && (
-        <ScrollView
-          horizontal
-          showsHorizontalScrollIndicator={false}
-          contentContainerStyle={{ paddingHorizontal: 20, alignItems: "center" }}
-          style={{ flexGrow: 0 }}
-          className="mb-1"
-        >
-          {topics.map((tp) => (
-            <TopicChip key={tp.id} label={tp.label} count={tp.postCount} onPress={() => setQuery(tp.label)} />
-          ))}
-        </ScrollView>
-      )}
-
       <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={{ paddingBottom: 120 }}>
-        <TodayCard
-          tip={todayTip}
-          games={games}
-          gamesLoading={gamesLoading}
-          gamesError={gamesError}
-          hasAge={babyAgeMonths !== null}
-          onRetryGames={loadGames}
-        />
-
-        <ExploreBanner
-          expertsCount={experts.length}
-          groupsCount={groups.length}
-          onPress={() => router.push("/community/explore")}
-          t={t}
-        />
-
-        {aiRecommendedPosts.length > 0 && (
-          <>
-            <SectionHeader title={t("community_recommended")} />
-            {aiRecommendedPosts.map((p) => (
-              <PostCard key={p.id} post={p} onOpen={() => router.push(`/community/post/${p.id}`)} onRemoved={(id, reason) => (reason === "blocked" ? loadAll() : setPosts((prev) => prev.filter((x) => x.id !== id)))} />
-            ))}
-          </>
-        )}
-
-        <SectionHeader title={query.trim() ? t("community_results") : t("community_feed")} />
-        {filteredPosts.length === 0 ? (
-          query.trim() ? (
-            <Text className="font-body text-sm text-ink-soft px-5">
-              {t("community_no_results", { query })}
-            </Text>
-          ) : (
-            <View className="items-center px-10 py-8">
-              <View className="w-14 h-14 rounded-full bg-olive-bg items-center justify-center mb-3">
-                <Icon name="comment" size={24} color="#6E7452" />
-              </View>
-              <Text className="font-bodySemibold text-sm text-ink mb-1">{t("community_empty_title")}</Text>
-              <Text className="font-body text-xs text-ink-soft text-center leading-5 mb-4">
-                {t("community_empty_sub")}
-              </Text>
-              <Pressable onPress={() => router.push("/community/new")} className="bg-olive px-5 py-2.5 rounded-full">
-                <Text className="font-bodySemibold text-xs text-on-accent">{t("community_post_btn")}</Text>
+        <View className="px-5">
+          <View className="flex-row items-center bg-surface border border-cream-line rounded-xl2 px-3.5 py-2.5">
+            <Icon name="search" size={18} color={theme.inkFaint} />
+            <TextInput
+              value={query}
+              onChangeText={setQuery}
+              placeholder={t("community_search_ph")}
+              placeholderClassName="text-ink-faint"
+              returnKeyType="search"
+              className="flex-1 ml-2 font-body text-sm text-ink"
+            />
+            {query.length > 0 && (
+              <Pressable onPress={() => setQuery("")} hitSlop={8} accessibilityLabel={t("community_clear_search")}>
+                <Icon name="close" size={16} color={theme.inkFaint} />
               </Pressable>
-            </View>
-          )
-        ) : (
-          filteredPosts.map((p) => <PostCard key={p.id} post={p} onOpen={() => router.push(`/community/post/${p.id}`)} onRemoved={(id, reason) => (reason === "blocked" ? loadAll() : setPosts((prev) => prev.filter((x) => x.id !== id)))} />)
+            )}
+          </View>
+        </View>
+
+        {topics.length > 0 && (
+          <ScrollView
+            horizontal
+            showsHorizontalScrollIndicator={false}
+            contentContainerStyle={{ paddingHorizontal: 20 }}
+            className="mt-3"
+          >
+            <FilterChip label={t("community_all")} selected={topic === null} onPress={() => setTopic(null)} />
+            {topics.map((tp) => (
+              <FilterChip
+                key={tp.id}
+                label={tp.label}
+                selected={topic === tp.label}
+                onPress={() => setTopic(topic === tp.label ? null : tp.label)}
+              />
+            ))}
+          </ScrollView>
         )}
+
+        {/* Këshilla e ditës — përmbajtje e redaksisë, jo e gjeneruar */}
+        {todayTip && !filtering && (
+          <View style={shadows.soft} className="mx-5 mt-4 bg-surface rounded-xl2 p-4">
+            <Text className="font-bodyMedium text-[10px] tracking-wide text-ink-faint mb-2">
+              {t("community_tip_label").toUpperCase()}
+            </Text>
+            <Text className="font-bodySemibold text-sm text-ink mb-1">{todayTip.title}</Text>
+            <Text className="font-body text-xs text-ink-soft leading-5">{todayTip.body}</Text>
+          </View>
+        )}
+
+        <View className="mt-5">
+          {visiblePosts.length === 0 ? (
+            filtering ? (
+              <Text className="font-body text-sm text-ink-soft px-5">
+                {t("community_no_results", { query: topic ?? query })}
+              </Text>
+            ) : (
+              <View className="items-center px-10 py-8">
+                <Text className="font-bodySemibold text-sm text-ink mb-1">{t("community_empty_title")}</Text>
+                <Text className="font-body text-xs text-ink-soft text-center leading-5 mb-4">
+                  {t("community_empty_sub")}
+                </Text>
+                <Pressable onPress={() => router.push("/community/new")} className="bg-olive px-5 py-2.5 rounded-full">
+                  <Text className="font-bodySemibold text-xs text-on-accent">{t("community_post_btn")}</Text>
+                </Pressable>
+              </View>
+            )
+          ) : (
+            visiblePosts.map((p) => (
+              <PostCard
+                key={p.id}
+                post={p}
+                onOpen={() => router.push(`/community/post/${p.id}`)}
+                onRemoved={removePost}
+              />
+            ))
+          )}
+        </View>
+
+        {/* Navigim dytësor, në fund: aty ku e kërkon kush e kërkon */}
+        <Pressable
+          onPress={() => router.push("/community/explore")}
+          className="mx-5 mt-2 py-4 border-t border-cream-line flex-row items-center"
+        >
+          <View className="flex-1">
+            <Text className="font-bodyMedium text-sm text-ink">{t("community_experts_groups")}</Text>
+            <Text className="font-body text-xs text-ink-faint mt-0.5">
+              {t("community_experts_groups_sub", { experts: experts.length, groups: groups.length })}
+            </Text>
+          </View>
+          <Icon name="chevronRight" size={18} color={theme.inkFaint} />
+        </Pressable>
       </ScrollView>
 
       <Pressable
         onPress={() => router.push("/community/new")}
         style={shadows.softLg}
+        accessibilityRole="button"
+        accessibilityLabel={t("community_post_btn")}
         className="absolute bottom-28 right-6 w-14 h-14 rounded-full bg-olive items-center justify-center"
       >
-        <Icon name="plus" size={24} color="#FFFFFF" />
+        <Icon name="plus" size={24} color={theme.onAccent} />
       </Pressable>
     </SafeAreaView>
   );

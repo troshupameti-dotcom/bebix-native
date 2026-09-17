@@ -154,7 +154,7 @@ export default function NewPostScreen() {
             <TextInput
               value={text}
               onChangeText={setText}
-              placeholder="Çfarë ke në mendje? Ndaj një përvojë, pyetje ose moment..."
+              placeholder="Çfarë do të ndash?"
               placeholderClassName="text-ink-faint"
               multiline
               autoFocus
@@ -222,10 +222,9 @@ export default function NewPostScreen() {
                     <Pressable
                       key={t.id}
                       onPress={() => setSelectedTag(active ? null : t.label)}
-                      style={shadows.soft}
-                      className={`rounded-full px-4 py-2 mr-2 ${active ? "bg-olive" : "bg-surface"}`}
+                      className={`rounded-full px-4 py-2 mr-2 ${active ? "bg-ink" : "bg-cream-soft"}`}
                     >
-                      <Text className={`font-bodyMedium text-xs ${active ? "text-on-accent" : "text-ink"}`}>{t.label}</Text>
+                      <Text className={`font-bodyMedium text-xs ${active ? "text-on-accent" : "text-ink-soft"}`}>{t.label}</Text>
                     </Pressable>
                   );
                 })}
@@ -243,10 +242,9 @@ export default function NewPostScreen() {
                     <Pressable
                       key={g.id}
                       onPress={() => setSelectedGroupId(active ? null : g.id)}
-                      style={shadows.soft}
-                      className={`rounded-full px-4 py-2 mr-2 ${active ? "bg-olive" : "bg-surface"}`}
+                      className={`rounded-full px-4 py-2 mr-2 ${active ? "bg-ink" : "bg-cream-soft"}`}
                     >
-                      <Text className={`font-bodyMedium text-xs ${active ? "text-on-accent" : "text-ink"}`} numberOfLines={1}>{g.name}</Text>
+                      <Text className={`font-bodyMedium text-xs ${active ? "text-on-accent" : "text-ink-soft"}`} numberOfLines={1}>{g.name}</Text>
                     </Pressable>
                   );
                 })}
