@@ -1,30 +1,63 @@
 import { useCallback, useState } from "react";
-import { View, Text, ScrollView, Pressable, TextInput, KeyboardAvoidingView, Platform, ActivityIndicator } from "react-native";
+import { View, Text, ScrollView, Pressable, TextInput, KeyboardAvoidingView, Platform, ActivityIndicator, Alert } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useLocalSearchParams, useFocusEffect } from "expo-router";
 import { useAppState } from "@/lib/state/AppStateContext";
 import { shadows } from "@/lib/shadows";
+import { haptics } from "@/lib/haptics";
+import { useCurrentUserId } from "@/lib/hooks/useCurrentUserId";
+import { Icon } from "@/components/ui/Icon";
 import { Avatar, PostCard, timeAgoLabel } from "@/components/community/PostCard";
+import { ModerationSheet, type ModerationTarget } from "@/components/community/ModerationSheet";
 import { BackButton, goBackOr } from "@/components/ui/BackButton";
 import {
-  fetchPost, fetchComments, addComment, deletePost, getCurrentUserId,
+  fetchPost, fetchComments, addComment, deleteComment,
   CommunityPost, CommunityComment,
 } from "@/lib/communityData";
 
-function CommentRow({ comment, isReply, onReply }: { comment: CommunityComment; isReply?: boolean; onReply: (comment: CommunityComment) => void }) {
+const MAX_COMMENT = 1000;
+
+function CommentRow({
+  comment,
+  isReply,
+  onReply,
+  onMore,
+}: {
+  comment: CommunityComment;
+  isReply?: boolean;
+  onReply: (comment: CommunityComment) => void;
+  onMore: (comment: CommunityComment) => void;
+}) {
   const initial = comment.authorName.trim().charAt(0).toUpperCase() || "?";
   return (
     <View className={`flex-row mb-4 ${isReply ? "ml-9 mt-3 mb-0" : ""}`}>
       <Avatar initial={initial} accent={isReply ? "orange" : "olive"} size={isReply ? 30 : 36} />
       <View className="flex-1 ml-2.5">
-        <View style={shadows.soft} className="bg-surface rounded-xl2 px-3 py-2.5">
+        <Pressable
+          onLongPress={() => {
+            haptics.select();
+            onMore(comment);
+          }}
+          delayLongPress={350}
+          style={shadows.soft}
+          className="bg-surface rounded-xl2 px-3 py-2.5"
+        >
           <Text className="font-bodySemibold text-xs text-ink mb-0.5">{comment.authorName}</Text>
           <Text className="font-body text-xs text-ink-soft leading-5">{comment.text}</Text>
-        </View>
+        </Pressable>
         <View className="flex-row items-center mt-1.5 ml-1">
           <Text className="font-body text-[10px] text-ink-faint">{timeAgoLabel(comment.at)}</Text>
-          <Pressable onPress={() => onReply(comment)} className="ml-3">
+          <Pressable onPress={() => onReply(comment)} hitSlop={8} className="ml-3">
             <Text className="font-bodyMedium text-[10px] text-olive">Përgjigju</Text>
+          </Pressable>
+          <Pressable
+            onPress={() => onMore(comment)}
+            hitSlop={8}
+            accessibilityRole="button"
+            accessibilityLabel="Më shumë veprime për komentin"
+            className="ml-3"
+          >
+            <Text className="font-bodySemibold text-xs leading-3 text-ink-faint">⋯</Text>
           </Pressable>
         </View>
       </View>
@@ -35,22 +68,22 @@ function CommentRow({ comment, isReply, onReply }: { comment: CommunityComment; 
 export default function PostDetailScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const { state } = useAppState();
+  const myId = useCurrentUserId();
   const [loading, setLoading] = useState(true);
   const [post, setPost] = useState<CommunityPost | null>(null);
   const [comments, setComments] = useState<CommunityComment[]>([]);
-  const [myUserId, setMyUserId] = useState<string | null>(null);
   const [draft, setDraft] = useState("");
   const [replyTo, setReplyTo] = useState<CommunityComment | null>(null);
   const [sending, setSending] = useState(false);
+  const [commentMenu, setCommentMenu] = useState<ModerationTarget | null>(null);
 
   const load = useCallback(async () => {
     if (!id) return;
     setLoading(true);
     try {
-      const [p, c, uid] = await Promise.all([fetchPost(id), fetchComments(id), getCurrentUserId()]);
+      const [p, c] = await Promise.all([fetchPost(id), fetchComments(id)]);
       setPost(p);
       setComments(c);
-      setMyUserId(uid);
     } catch (err) {
       console.warn("Post detail load error:", err);
     } finally {
@@ -62,9 +95,10 @@ export default function PostDetailScreen() {
 
   const topLevel = comments.filter((c) => c.parentId === null);
   const repliesOf = (commentId: string) => comments.filter((c) => c.parentId === commentId);
+  const canSend = draft.trim().length > 0 && !sending;
 
   async function handleSend() {
-    if (!draft.trim() || !id || sending) return;
+    if (!canSend || !id) return;
     setSending(true);
     try {
       await addComment({
@@ -73,29 +107,22 @@ export default function PostDetailScreen() {
         parentId: replyTo?.id ?? null,
         authorName: state.profile.parentName ?? "Ti",
       });
+      haptics.tap();
       setDraft("");
       setReplyTo(null);
       setComments(await fetchComments(id));
     } catch (err) {
-      console.warn("Comment error:", err);
+      Alert.alert("Gabim", err instanceof Error ? err.message : "Komenti nuk u dërgua. Provo përsëri.");
     } finally {
       setSending(false);
     }
   }
 
-  async function handleDelete() {
-    if (!id) return;
-    try {
-      await deletePost(id);
-      goBackOr("/(main)/community");
-    } catch (err) {
-      console.warn("Delete post error:", err);
-    }
+  function openCommentMenu(c: CommunityComment) {
+    setCommentMenu({ kind: "comment", id: c.id, authorId: c.authorId, authorName: c.authorName, isMine: c.authorId === myId });
   }
 
-  const isMyPost = post && myUserId && post.authorId === myUserId;
-
-  if (loading) {
+  if (loading && !post) {
     return (
       <SafeAreaView className="flex-1 bg-cream items-center justify-center">
         <ActivityIndicator className="text-olive" />
@@ -106,8 +133,8 @@ export default function PostDetailScreen() {
   if (!post) {
     return (
       <SafeAreaView className="flex-1 bg-cream items-center justify-center px-8">
-        <Text className="font-bodySemibold text-base text-ink mb-2">Postimi s’u gjet</Text>
-        <Text className="font-body text-sm text-ink-soft text-center mb-6">Ndoshta âsht fshi ose linku âsht i gabuem.</Text>
+        <Text className="font-bodySemibold text-base text-ink mb-2">Postimi nuk u gjet</Text>
+        <Text className="font-body text-sm text-ink-soft text-center mb-6">Mund të jetë fshirë, ose lidhja është e gabuar.</Text>
         <Pressable onPress={() => goBackOr("/(main)/community")} className="bg-olive px-5 py-3 rounded-full">
           <Text className="font-bodySemibold text-sm text-on-accent">Kthehu</Text>
         </Pressable>
@@ -117,34 +144,33 @@ export default function PostDetailScreen() {
 
   return (
     <SafeAreaView className="flex-1 bg-cream" edges={["top"]}>
-      <View className="flex-row items-center justify-between px-5 pt-2 mb-2">
-        <BackButton fallback="/(main)/community" />
+      <View className="flex-row items-center px-5 pt-2 mb-2">
+        <BackButton fallback="/(main)/community" className="mr-3" />
         <Text className="font-bodySemibold text-base text-ink">Postimi</Text>
-        {isMyPost ? (
-          <Pressable onPress={handleDelete} className="h-10 min-w-10 items-center justify-center">
-            <Text className="font-bodyMedium text-xs text-orange">Fshij</Text>
-          </Pressable>
-        ) : (
-          <View className="h-10 w-10" />
-        )}
       </View>
 
       <KeyboardAvoidingView className="flex-1" behavior={Platform.OS === "ios" ? "padding" : undefined} keyboardVerticalOffset={90}>
-        <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={{ paddingBottom: 24 }}>
-          <PostCard post={post} onOpen={() => {}} />
+        <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={{ paddingBottom: 24 }} keyboardShouldPersistTaps="handled">
+          <PostCard
+            post={post}
+            onOpen={() => {}}
+            interactiveMedia
+            // Postimi u fshi ose autori u bllokua: s'ka më çfarë të shihet këtu.
+            onRemoved={() => goBackOr("/(main)/community")}
+          />
 
           <View className="px-5">
             <Text className="font-bodySemibold text-sm text-ink mb-4">
               Komente {comments.length > 0 ? `(${comments.length})` : ""}
             </Text>
             {topLevel.length === 0 ? (
-              <Text className="font-body text-xs text-ink-faint mb-4">Bâhu i pari qi komenton.</Text>
+              <Text className="font-body text-xs text-ink-faint mb-4">Bëhu i pari që komenton.</Text>
             ) : (
               topLevel.map((c) => (
                 <View key={c.id}>
-                  <CommentRow comment={c} onReply={setReplyTo} />
+                  <CommentRow comment={c} onReply={setReplyTo} onMore={openCommentMenu} />
                   {repliesOf(c.id).map((r) => (
-                    <CommentRow key={r.id} comment={r} isReply onReply={setReplyTo} />
+                    <CommentRow key={r.id} comment={r} isReply onReply={setReplyTo} onMore={openCommentMenu} />
                   ))}
                 </View>
               ))
@@ -156,8 +182,8 @@ export default function PostDetailScreen() {
           {replyTo && (
             <View className="flex-row items-center justify-between mb-2 px-1">
               <Text className="font-body text-[11px] text-ink-faint">Përgjigje për {replyTo.authorName}</Text>
-              <Pressable onPress={() => setReplyTo(null)}>
-                <Text className="font-bodySemibold text-xs text-ink-faint">✕</Text>
+              <Pressable onPress={() => setReplyTo(null)} hitSlop={10} accessibilityRole="button" accessibilityLabel="Anulo përgjigjen">
+                <Icon name="close" size={14} color="#7A7062" />
               </Pressable>
             </View>
           )}
@@ -165,25 +191,39 @@ export default function PostDetailScreen() {
             <TextInput
               value={draft}
               onChangeText={setDraft}
-              placeholder="Shkruej një koment..."
+              placeholder={replyTo ? "Shkruaj një përgjigje..." : "Shkruaj një koment..."}
               placeholderClassName="text-ink-faint"
               multiline
+              maxLength={MAX_COMMENT}
               className="flex-1 font-body text-sm text-ink max-h-24 py-1.5"
             />
             <Pressable
               onPress={handleSend}
-              disabled={!draft.trim() || sending}
-              className={`ml-2 w-9 h-9 rounded-full items-center justify-center ${draft.trim() ? "bg-olive" : "bg-cream-line"}`}
+              disabled={!canSend}
+              accessibilityRole="button"
+              accessibilityLabel="Dërgo komentin"
+              className={`ml-2 w-9 h-9 rounded-full items-center justify-center ${canSend ? "bg-olive" : "bg-cream-line"}`}
             >
               {sending ? (
                 <ActivityIndicator className="text-on-accent" size="small" />
               ) : (
-                <Text className={`font-bodySemibold text-base ${draft.trim() ? "text-on-accent" : "text-ink-faint"}`}>➤</Text>
+                <Icon name="send" size={16} color={canSend ? "#FFFFFF" : "#7A7062"} />
               )}
             </Pressable>
           </View>
         </View>
       </KeyboardAvoidingView>
+
+      <ModerationSheet
+        target={commentMenu}
+        onClose={() => setCommentMenu(null)}
+        onDelete={async () => {
+          if (!commentMenu) return;
+          await deleteComment(commentMenu.id);
+          setComments((prev) => prev.filter((c) => c.id !== commentMenu.id && c.parentId !== commentMenu.id));
+        }}
+        onBlocked={load}
+      />
     </SafeAreaView>
   );
 }

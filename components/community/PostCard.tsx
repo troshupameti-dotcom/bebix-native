@@ -2,7 +2,17 @@ import { useState } from "react";
 import { View, Text, Pressable } from "react-native";
 import { Icon } from "@/components/ui/Icon";
 import { shadows } from "@/lib/shadows";
-import { CommunityPost, toggleLike as apiToggleLike, toggleSave as apiToggleSave } from "@/lib/communityData";
+import { haptics } from "@/lib/haptics";
+import { useCurrentUserId } from "@/lib/hooks/useCurrentUserId";
+import { sharePost } from "@/lib/community/share";
+import {
+  CommunityPost,
+  deletePost,
+  toggleLike as apiToggleLike,
+  toggleSave as apiToggleSave,
+} from "@/lib/communityData";
+import { PostMediaGrid } from "@/components/community/PostMediaGrid";
+import { ModerationSheet, type ModerationTarget } from "@/components/community/ModerationSheet";
 
 export function timeAgoLabel(iso: string): string {
   const mins = Math.floor((Date.now() - new Date(iso).getTime()) / 60000);
@@ -23,13 +33,32 @@ export function Avatar({ initial, accent, size = 44 }: { initial: string; accent
   );
 }
 
-export function PostCard({ post, onOpen }: { post: CommunityPost; onOpen: () => void }) {
+export type PostRemovedReason = "deleted" | "blocked";
+
+type PostCardProps = {
+  post: CommunityPost;
+  onOpen: () => void;
+  /**
+   * Postimi u fshi (nga autori) ose autori u bllokua. Lista duhet ta heqë
+   * postimin — për "blocked", duhet rifreskuar, sepse zhduken të gjitha
+   * postimet e atij autori.
+   */
+  onRemoved?: (postId: string, reason: PostRemovedReason) => void;
+  /** Te detajet e postimit: videoja luhet në vend. */
+  interactiveMedia?: boolean;
+};
+
+export function PostCard({ post, onOpen, onRemoved, interactiveMedia = false }: PostCardProps) {
+  const myId = useCurrentUserId();
   const [liked, setLiked] = useState(post.liked);
   const [saved, setSaved] = useState(post.saved);
   const [likeCount, setLikeCount] = useState(post.likeCount);
+  const [menu, setMenu] = useState<ModerationTarget | null>(null);
   const bg = post.accent === "olive" ? "bg-olive-bg" : "bg-orange-bg";
+  const isMine = !!myId && myId === post.authorId;
 
   async function handleLike() {
+    haptics.tap();
     const next = !liked;
     setLiked(next);
     setLikeCount((c) => c + (next ? 1 : -1));
@@ -42,6 +71,7 @@ export function PostCard({ post, onOpen }: { post: CommunityPost; onOpen: () => 
   }
 
   async function handleSave() {
+    haptics.tap();
     const next = !saved;
     setSaved(next);
     try {
@@ -49,6 +79,11 @@ export function PostCard({ post, onOpen }: { post: CommunityPost; onOpen: () => 
     } catch {
       setSaved(!next);
     }
+  }
+
+  function openMenu() {
+    haptics.tap();
+    setMenu({ kind: "post", id: post.id, authorId: post.authorId, authorName: post.authorName, isMine });
   }
 
   return (
@@ -60,7 +95,7 @@ export function PostCard({ post, onOpen }: { post: CommunityPost; onOpen: () => 
       {post.authorIsExpert && (
         <View className="flex-row items-center bg-olive-bg self-start rounded-full px-2.5 py-1 mb-3">
           <Icon name="shield" size={11} color="#6E7452" />
-          <Text className="font-bodySemibold text-[10px] text-olive ml-1">Përgjigje nga ekspert i verifikuar</Text>
+          <Text className="font-bodySemibold text-[10px] text-olive ml-1">Ekspert i verifikuar</Text>
         </View>
       )}
 
@@ -68,21 +103,33 @@ export function PostCard({ post, onOpen }: { post: CommunityPost; onOpen: () => 
         <Avatar initial={post.authorInitial} accent={post.accent} />
         <View className="flex-1 ml-2.5">
           <Text className="font-bodySemibold text-sm text-ink" numberOfLines={1}>{post.authorName}</Text>
-          <Text className="font-body text-[11px] text-ink-faint">
+          <Text className="font-body text-[11px] text-ink-faint" numberOfLines={1}>
             {timeAgoLabel(post.at)} {post.groupName ? `· ${post.groupName}` : ""}
           </Text>
         </View>
         <View className={`w-8 h-8 rounded-full items-center justify-center ${bg}`}>
           <Icon name={post.icon} size={16} color={post.accent === "olive" ? "#6E7452" : "#C9702E"} />
         </View>
+        <Pressable
+          onPress={openMenu}
+          hitSlop={10}
+          accessibilityRole="button"
+          accessibilityLabel="Më shumë veprime"
+          className="ml-1 h-8 w-8 items-center justify-center"
+        >
+          <Text className="font-bodySemibold text-lg leading-5 text-ink-faint">⋯</Text>
+        </Pressable>
       </View>
 
-      <Text className="font-body text-sm text-ink leading-5 mb-1">{post.text}</Text>
-      {post.tag && <Text className="font-bodyMedium text-xs text-olive mb-3">{post.tag}</Text>}
+      {post.text.trim() ? <Text className="font-body text-sm text-ink leading-5 mb-2">{post.text}</Text> : null}
+      <PostMediaGrid media={post.media} interactive={interactiveMedia} onPress={interactiveMedia ? undefined : onOpen} />
+      {post.tag && <Text className="font-bodyMedium text-xs text-olive mb-2">{post.tag}</Text>}
 
-      <View className="flex-row items-center justify-between mt-2 pt-3 border-t border-cream-line">
+      <View className="flex-row items-center justify-between mt-1 pt-3 border-t border-cream-line">
         <Pressable
           onPress={handleLike}
+          accessibilityRole="button"
+          accessibilityState={{ selected: liked }}
           className={`flex-row items-center px-3 py-1.5 rounded-full ${liked ? "bg-olive-bg" : "bg-cream-soft"}`}
         >
           <Icon name="heart" size={14} color={liked ? "#6E7452" : "#A79D8A"} />
@@ -91,15 +138,42 @@ export function PostCard({ post, onOpen }: { post: CommunityPost; onOpen: () => 
           </Text>
         </Pressable>
 
-        <Pressable onPress={onOpen} className="flex-row items-center">
+        <Pressable onPress={onOpen} accessibilityRole="button" accessibilityLabel="Komentet" className="flex-row items-center px-2 py-1.5">
           <Icon name="comment" size={16} color="#A79D8A" />
           <Text className="font-body text-xs text-ink-soft ml-1.5">{post.commentCount}</Text>
         </Pressable>
 
-        <Pressable onPress={handleSave}>
+        <Pressable
+          onPress={() => {
+            haptics.tap();
+            sharePost(post);
+          }}
+          accessibilityRole="button"
+          accessibilityLabel="Shpërndaj"
+          className="px-2 py-1.5"
+        >
+          <Icon name="share" size={16} color="#A79D8A" />
+        </Pressable>
+
+        <Pressable
+          onPress={handleSave}
+          accessibilityRole="button"
+          accessibilityLabel={saved ? "Hiq nga të ruajturat" : "Ruaj"}
+          className="px-2 py-1.5"
+        >
           <Icon name="bookmark" size={16} color={saved ? "#6E7452" : "#A79D8A"} />
         </Pressable>
       </View>
+
+      <ModerationSheet
+        target={menu}
+        onClose={() => setMenu(null)}
+        onDelete={async () => {
+          await deletePost(post);
+          onRemoved?.(post.id, "deleted");
+        }}
+        onBlocked={() => onRemoved?.(post.id, "blocked")}
+      />
     </Pressable>
   );
 }

@@ -37,7 +37,7 @@ export default function SavedPostsScreen() {
     <SafeAreaView className="flex-1 bg-cream" edges={["top"]}>
       <View className="flex-row items-center px-5 pt-2 mb-4">
         <BackButton fallback="/(main)/community" />
-        <Text className="font-display text-2xl text-ink ml-1">Postime të Ruajtura</Text>
+        <Text className="font-display text-xl text-ink ml-1">Postime të ruajtura</Text>
       </View>
 
       {posts.length === 0 ? (
@@ -45,7 +45,7 @@ export default function SavedPostsScreen() {
           <View className="w-16 h-16 rounded-full bg-olive-bg items-center justify-center mb-4">
             <Icon name="bookmark" size={26} color="#6E7452" />
           </View>
-          <Text className="font-bodySemibold text-sm text-ink mb-1">Ende s’ke ruajtë asgjë</Text>
+          <Text className="font-bodySemibold text-sm text-ink mb-1">Ende nuk ke ruajtur asgjë</Text>
           <Text className="font-body text-xs text-ink-soft text-center leading-5">
             Kur shef një postim interesant, shtyp ikonën e bookmark-ut me e ruejt këtu.
           </Text>
@@ -53,7 +53,7 @@ export default function SavedPostsScreen() {
       ) : (
         <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={{ paddingTop: 4, paddingBottom: 40 }}>
           {posts.map((p) => (
-            <PostCard key={p.id} post={p} onOpen={() => router.push(`/community/post/${p.id}`)} />
+            <PostCard key={p.id} post={p} onOpen={() => router.push(`/community/post/${p.id}`)} onRemoved={(id, reason) => (reason === "blocked" ? load() : setPosts((prev) => prev.filter((x) => x.id !== id)))} />
           ))}
         </ScrollView>
       )}

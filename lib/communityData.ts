@@ -1,5 +1,13 @@
 import { supabase } from "@/lib/supabase/client";
 import { IconName } from "@/components/ui/Icon";
+import {
+  uploadPostMedia,
+  removePostMedia,
+  withUrls,
+  type LocalMedia,
+  type PostMedia,
+  type StoredMedia,
+} from "@/lib/community/media";
 
 export type Accent = "olive" | "orange";
 
@@ -59,6 +67,7 @@ export type CommunityPost = {
   commentCount: number;
   liked: boolean;
   saved: boolean;
+  media: PostMedia[];
 };
 
 export type CommunityComment = {
@@ -264,6 +273,7 @@ function mapFeedRow(p: any, likedIds: Set<string>, savedIds: Set<string>): Commu
     commentCount: p.comment_count,
     liked: likedIds.has(p.id),
     saved: savedIds.has(p.id),
+    media: withUrls(p.media as StoredMedia[] | null),
   };
 }
 
@@ -369,9 +379,19 @@ export async function fetchPostsByGroup(groupId: string): Promise<CommunityPost[
   return (data ?? []).map((p) => mapFeedRow(p, likedIds, savedIds));
 }
 
-export async function createPost(input: { text: string; tag?: string | null; groupId?: string | null; authorName: string }): Promise<string> {
+export async function createPost(input: {
+  text: string;
+  tag?: string | null;
+  groupId?: string | null;
+  authorName: string;
+  media?: LocalMedia[];
+}): Promise<string> {
   const uid = await getCurrentUserId();
   if (!uid) throw new Error("Duhet të jesh i kyçur për të postuar.");
+  const localMedia = input.media ?? [];
+  if (!input.text.trim() && localMedia.length === 0) {
+    throw new Error("Shkruaj diçka ose shto një foto/video.");
+  }
   const authorInitial = (input.authorName || "T").trim().charAt(0).toUpperCase() || "T";
 
   // Nëse llogaria është e lidhur me një ekspert të aprovuar (shih expert_applications
@@ -383,6 +403,12 @@ export async function createPost(input: { text: string; tag?: string | null; gro
     .maybeSingle();
   const isExpert = !!expertRow;
 
+  // Skedarët ngarkohen para postimit, që rreshti të ruhet bashkë me rrugët.
+  const media = await uploadPostMedia(uid, localMedia);
+  const hasVideo = media.some((m) => m.type === "video");
+  const hasImage = media.some((m) => m.type === "image");
+  const kind = hasVideo && hasImage ? "mixed" : hasVideo ? "video" : hasImage ? "photo" : "text";
+
   const { data, error } = await supabase
     .from("community_posts")
     .insert({
@@ -391,21 +417,27 @@ export async function createPost(input: { text: string; tag?: string | null; gro
       author_initial: authorInitial,
       author_is_expert: isExpert,
       accent: "olive",
-      kind: "text",
+      kind,
       text: input.text,
+      media,
       tag: input.tag ?? null,
       icon: isExpert ? "shield" : "sparkle",
       group_id: input.groupId ?? null,
     })
     .select("id")
     .single();
-  if (error) throw error;
+  if (error) {
+    // Postimi s'u ruajt: mos lër skedarë jetimë.
+    await removePostMedia(media);
+    throw error;
+  }
   return data.id;
 }
 
-export async function deletePost(id: string) {
-  const { error } = await supabase.from("community_posts").delete().eq("id", id);
+export async function deletePost(post: { id: string; media: StoredMedia[] }) {
+  const { error } = await supabase.from("community_posts").delete().eq("id", post.id);
   if (error) throw error;
+  await removePostMedia(post.media);
 }
 
 export async function toggleLike(postId: string, liked: boolean) {
@@ -437,13 +469,18 @@ export async function toggleSave(postId: string, saved: boolean) {
 // ---------------------------------------------------------------------
 
 export async function fetchComments(postId: string): Promise<CommunityComment[]> {
-  const { data, error } = await supabase
-    .from("community_comments")
-    .select("*")
-    .eq("post_id", postId)
-    .order("created_at", { ascending: true });
+  const [{ data, error }, blocked] = await Promise.all([
+    supabase
+      .from("community_comments")
+      .select("*")
+      .eq("post_id", postId)
+      .order("created_at", { ascending: true }),
+    fetchBlockedUserIds(),
+  ]);
   if (error) throw error;
-  return (data ?? []).map((c: any) => ({
+  return (data ?? [])
+    .filter((c: any) => !blocked.has(c.author_id))
+    .map((c: any) => ({
     id: c.id,
     postId: c.post_id,
     authorId: c.author_id,
@@ -466,6 +503,59 @@ export async function addComment(input: { postId: string; text: string; parentId
   });
   if (error) throw error;
 }
+
+export async function deleteComment(id: string) {
+  const { error } = await supabase.from("community_comments").delete().eq("id", id);
+  if (error) throw error;
+}
+
+// ---------------------------------------------------------------------
+// Moderimi: raportimi dhe bllokimi (App Store 1.2 i kerkon per permbajtje
+// nga perdoruesit). 3 raportime te hapura e fshehin postimin nga feed-i.
+// ---------------------------------------------------------------------
+
+export type ReportReason = "spam" | "harassment" | "inappropriate" | "misinformation" | "other";
+
+async function report(target: { post_id: string } | { comment_id: string }, reason: ReportReason) {
+  const uid = await getCurrentUserId();
+  if (!uid) throw new Error("Duhet të jesh i kyçur.");
+  const { error } = await supabase.from("community_reports").insert({ reporter_id: uid, reason, ...target });
+  // 23505 = e ke raportuar tashmë; për përdoruesin është e njëjta gjë.
+  if (error && error.code !== "23505") throw error;
+}
+
+export function reportPost(postId: string, reason: ReportReason) {
+  return report({ post_id: postId }, reason);
+}
+
+export function reportComment(commentId: string, reason: ReportReason) {
+  return report({ comment_id: commentId }, reason);
+}
+
+export async function blockUser(userId: string) {
+  const uid = await getCurrentUserId();
+  if (!uid) throw new Error("Duhet të jesh i kyçur.");
+  if (uid === userId) throw new Error("Nuk mund të bllokosh veten.");
+  const { error } = await supabase
+    .from("community_blocks")
+    .upsert({ blocker_id: uid, blocked_id: userId }, { onConflict: "blocker_id,blocked_id", ignoreDuplicates: true });
+  if (error) throw error;
+}
+
+export async function unblockUser(userId: string) {
+  const uid = await getCurrentUserId();
+  if (!uid) return;
+  const { error } = await supabase.from("community_blocks").delete().eq("blocker_id", uid).eq("blocked_id", userId);
+  if (error) throw error;
+}
+
+export async function fetchBlockedUserIds(): Promise<Set<string>> {
+  const uid = await getCurrentUserId();
+  if (!uid) return new Set();
+  const { data } = await supabase.from("community_blocks").select("blocked_id").eq("blocker_id", uid);
+  return new Set((data ?? []).map((b) => b.blocked_id));
+}
+
 export async function fetchExpertByUserId(userId: string): Promise<CommunityExpert | null> {
   const { data, error } = await supabase.from("community_experts").select("*").eq("user_id", userId).maybeSingle();
   if (error) throw error;

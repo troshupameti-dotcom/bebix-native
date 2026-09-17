@@ -28,7 +28,7 @@ const DOCS: { title: string; body: string }[] = [
   },
   {
     title: "Rregullat e Komunitetit",
-    body: "Respekt reciprok, pa gjuhë urrejtjeje, pa reklamim të paautorizuar, pa këshilla mjekësore të paverifikuara të paraqitura si fakte. Postimet që shkelin rregullat mund të hiqen dhe llogaritë të pezullohen.",
+    body: "Bebix ka tolerancë zero për përmbajtje fyese, urrejtje, ngacmim, material seksual, spam dhe këshilla mjekësore të rreme të paraqitura si fakte. Mos publiko të dhëna që identifikojnë bebin ose persona të tjerë pa leje. Çdo postim ose koment mund të raportohet nga menuja ⋯, dhe çdo përdorues mund të bllokohet. Raportimet shqyrtohen nga ekipi ynë brenda 24 orëve; përmbajtja që shkel rregullat hiqet dhe llogaria e autorit mund të pezullohet. Postimet me disa raportime fshihen automatikisht derisa të shqyrtohen.",
   },
   {
     title: "Politika e Rimbursimit",

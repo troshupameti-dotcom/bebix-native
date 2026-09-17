@@ -206,7 +206,7 @@ export default function CommunityScreen() {
           <>
             <SectionHeader title={t("community_recommended")} />
             {aiRecommendedPosts.map((p) => (
-              <PostCard key={p.id} post={p} onOpen={() => router.push(`/community/post/${p.id}`)} />
+              <PostCard key={p.id} post={p} onOpen={() => router.push(`/community/post/${p.id}`)} onRemoved={(id, reason) => (reason === "blocked" ? loadAll() : setPosts((prev) => prev.filter((x) => x.id !== id)))} />
             ))}
           </>
         )}
@@ -232,7 +232,7 @@ export default function CommunityScreen() {
             </View>
           )
         ) : (
-          filteredPosts.map((p) => <PostCard key={p.id} post={p} onOpen={() => router.push(`/community/post/${p.id}`)} />)
+          filteredPosts.map((p) => <PostCard key={p.id} post={p} onOpen={() => router.push(`/community/post/${p.id}`)} onRemoved={(id, reason) => (reason === "blocked" ? loadAll() : setPosts((prev) => prev.filter((x) => x.id !== id)))} />)
         )}
       </ScrollView>
 

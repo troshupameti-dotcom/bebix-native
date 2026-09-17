@@ -1,15 +1,12 @@
 import { useCallback, useState } from "react";
-import { View, Text, ScrollView, Pressable, ActivityIndicator, Alert } from "react-native";
+import { View, Text, ScrollView, Pressable, ActivityIndicator } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useRouter, useFocusEffect } from "expo-router";
 import { useAppState } from "@/lib/state/AppStateContext";
 import { Icon } from "@/components/ui/Icon";
 import { Avatar, PostCard } from "@/components/community/PostCard";
 import { BackButton } from "@/components/ui/BackButton";
-import {
-  getCurrentUserId, fetchPostsByAuthor, fetchExpertByUserId, deletePost,
-  CommunityExpert, CommunityPost,
-} from "@/lib/communityData";
+import { getCurrentUserId, fetchPostsByAuthor, fetchExpertByUserId, CommunityExpert, CommunityPost } from "@/lib/communityData";
 
 export default function MyProfileScreen() {
   const router = useRouter();
@@ -35,24 +32,6 @@ export default function MyProfileScreen() {
 
   useFocusEffect(useCallback(() => { load(); }, [load]));
 
-  function handleDelete(postId: string) {
-    Alert.alert("Fshi postimin", "A je i sigurt?", [
-      { text: "Anulo", style: "cancel" },
-      {
-        text: "Fshi",
-        style: "destructive",
-        onPress: async () => {
-          setPosts((prev) => prev.filter((p) => p.id !== postId));
-          try {
-            await deletePost(postId);
-          } catch {
-            load();
-          }
-        },
-      },
-    ]);
-  }
-
   const name = state.profile.parentName || "Ti";
   const initial = name.trim().charAt(0).toUpperCase() || "T";
   const totalLikes = posts.reduce((sum, p) => sum + p.likeCount, 0);
@@ -70,7 +49,7 @@ export default function MyProfileScreen() {
     <SafeAreaView className="flex-1 bg-cream" edges={["top"]}>
       <View className="flex-row items-center px-5 pt-2 mb-2">
         <BackButton fallback="/(main)/community" />
-        <Text className="font-bodySemibold text-base text-ink">Profili Im</Text>
+        <Text className="font-bodySemibold text-base text-ink">Profili im</Text>
       </View>
 
       <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={{ paddingBottom: 40 }}>
@@ -121,12 +100,7 @@ export default function MyProfileScreen() {
           </View>
         ) : (
           posts.map((p) => (
-            <View key={p.id}>
-              <PostCard post={p} onOpen={() => router.push(`/community/post/${p.id}`)} />
-              <Pressable onPress={() => handleDelete(p.id)} className="self-end mr-9 -mt-3 mb-2">
-                <Text className="font-bodyMedium text-[11px] text-orange">Fshij postimin</Text>
-              </Pressable>
-            </View>
+            <PostCard key={p.id} post={p} onOpen={() => router.push(`/community/post/${p.id}`)} onRemoved={(id, reason) => (reason === "blocked" ? load() : setPosts((prev) => prev.filter((x) => x.id !== id)))} />
           ))
         )}
       </ScrollView>

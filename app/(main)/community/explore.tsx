@@ -103,7 +103,7 @@ export default function ExploreScreen() {
     <SafeAreaView className="flex-1 bg-cream" edges={["top"]}>
       <View className="flex-row items-center px-5 pt-2 mb-4">
         <BackButton fallback="/(main)/community" />
-        <Text className="font-display text-xl text-ink ml-1">Ekspertë & Grupe</Text>
+        <Text className="font-display text-xl text-ink ml-1">Ekspertë dhe grupe</Text>
       </View>
 
       <View className="flex-row px-5 mb-4">
