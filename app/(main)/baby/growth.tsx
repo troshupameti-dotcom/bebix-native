@@ -13,6 +13,7 @@ import { useTranslation } from "@/lib/i18n/LanguageContext";
 import { haptics } from "@/lib/haptics";
 import { formatDate } from "@/lib/dateUtils";
 import { shadows } from "@/lib/shadows";
+import { useThemeColors } from "@/lib/theme/useThemeColors";
 import { GrowthHistoryEntry } from "@/lib/state/types";
 
 type Metric = "weight" | "height";
@@ -36,6 +37,7 @@ function emptyForm(): FormShape {
 export default function GrowthScreen() {
   const { t, lang } = useTranslation();
   const { state, baby } = useAppState();
+  const theme = useThemeColors();
   const { showToast } = useToast();
   const [metric, setMetric] = useState<Metric>("weight");
   const [sheetOpen, setSheetOpen] = useState(false);
@@ -146,7 +148,7 @@ export default function GrowthScreen() {
               setExpandedId(null); // ndrron njësinë, mbyll çdo grafik të hapun
             }}
             className="flex-1 items-center rounded-xl py-2.5"
-            style={metric === m ? [shadows.press, { backgroundColor: "#fff" }] : undefined}
+            style={metric === m ? [shadows.press, { backgroundColor: theme.surface }] : undefined}
           >
             <Text className={`font-bodyMedium text-[12.5px] ${metric === m ? "text-ink" : "text-ink-faint"}`}>
               {t(m === "weight" ? "growth_weight" : "growth_height")}
@@ -159,7 +161,7 @@ export default function GrowthScreen() {
         <Text className="mb-2 font-bodySemibold text-base text-ink">{t("baby_growth_summary")}</Text>
 
         {history.length === 0 ? (
-          <View className="items-center gap-2 rounded-xl3 border border-ink/10 bg-white py-14">
+          <View className="items-center gap-2 rounded-xl3 border border-ink/10 bg-surface py-14">
             <Icon name="chart" size={24} color="#E9DFCC" />
             <Text className="font-body text-sm text-ink-soft">{t("growth_add_measurement")}</Text>
           </View>
@@ -193,15 +195,15 @@ export default function GrowthScreen() {
                 </Pressable>
 
                 {isExpanded && (
-                  <View className="mb-4 items-center rounded-xl2 border border-ink/10 bg-white p-4">
+                  <View className="mb-4 items-center rounded-xl2 border border-ink/10 bg-surface p-4">
                     <Text className="mb-2 font-bodyMedium text-[12px] text-ink-soft">Shiko grafikun</Text>
                     {values.length >= 2 ? (
                       <>
                         <Svg width={CHART_WIDTH} height={CHART_HEIGHT + 20}>
-                          <SvgLine x1={0} y1={CHART_HEIGHT} x2={CHART_WIDTH} y2={CHART_HEIGHT} stroke="#E9DFCC" strokeWidth={1} />
-                          <Path d={bandTop} stroke="#E9DFCC" strokeWidth={1.5} fill="none" strokeDasharray="4,4" />
-                          <Path d={bandBottom} stroke="#E9DFCC" strokeWidth={1.5} fill="none" strokeDasharray="4,4" />
-                          <Path d={path} stroke="#6E7452" strokeWidth={2.5} fill="none" strokeLinecap="round" strokeLinejoin="round" />
+                          <SvgLine x1={0} y1={CHART_HEIGHT} x2={CHART_WIDTH} y2={CHART_HEIGHT} stroke={theme.creamLine} strokeWidth={1} />
+                          <Path d={bandTop} stroke={theme.creamLine} strokeWidth={1.5} fill="none" strokeDasharray="4,4" />
+                          <Path d={bandBottom} stroke={theme.creamLine} strokeWidth={1.5} fill="none" strokeDasharray="4,4" />
+                          <Path d={path} stroke={theme.olive} strokeWidth={2.5} fill="none" strokeLinecap="round" strokeLinejoin="round" />
                           {values.map((v, i) => {
                             const min = Math.min(...values) * 0.85;
                             const max = Math.max(...values) * 1.15;
@@ -209,7 +211,7 @@ export default function GrowthScreen() {
                             const stepX = CHART_WIDTH / (values.length - 1);
                             const x = i * stepX;
                             const y = CHART_HEIGHT - ((v - min) / range) * CHART_HEIGHT;
-                            return <Circle key={i} cx={x} cy={y} r={4} fill="#6E7452" />;
+                            return <Circle key={i} cx={x} cy={y} r={4} fill={theme.olive} />;
                           })}
                         </Svg>
                         <Text className="mt-2 font-body text-[10.5px] text-ink-faint">{t("growth_percentile_note")}</Text>

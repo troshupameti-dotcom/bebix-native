@@ -98,7 +98,7 @@ export default function PostDetailScreen() {
   if (loading) {
     return (
       <SafeAreaView className="flex-1 bg-cream items-center justify-center">
-        <ActivityIndicator color="#6E7452" />
+        <ActivityIndicator className="text-olive" />
       </SafeAreaView>
     );
   }
@@ -109,7 +109,7 @@ export default function PostDetailScreen() {
         <Text className="font-bodySemibold text-base text-ink mb-2">Postimi s’u gjet</Text>
         <Text className="font-body text-sm text-ink-soft text-center mb-6">Ndoshta âsht fshi ose linku âsht i gabuem.</Text>
         <Pressable onPress={() => router.back()} className="bg-olive px-5 py-3 rounded-full">
-          <Text className="font-bodySemibold text-sm text-white">Kthehu</Text>
+          <Text className="font-bodySemibold text-sm text-on-accent">Kthehu</Text>
         </Pressable>
       </SafeAreaView>
     );
@@ -168,7 +168,7 @@ export default function PostDetailScreen() {
               value={draft}
               onChangeText={setDraft}
               placeholder="Shkruej një koment..."
-              placeholderTextColor="#A79D8A"
+              placeholderClassName="text-ink-faint"
               multiline
               className="flex-1 font-body text-sm text-ink max-h-24 py-1.5"
             />
@@ -178,9 +178,9 @@ export default function PostDetailScreen() {
               className={`ml-2 w-9 h-9 rounded-full items-center justify-center ${draft.trim() ? "bg-olive" : "bg-cream-line"}`}
             >
               {sending ? (
-                <ActivityIndicator color="#FFFFFF" size="small" />
+                <ActivityIndicator className="text-on-accent" size="small" />
               ) : (
-                <Text className={`font-bodySemibold text-base ${draft.trim() ? "text-white" : "text-ink-faint"}`}>➤</Text>
+                <Text className={`font-bodySemibold text-base ${draft.trim() ? "text-on-accent" : "text-ink-faint"}`}>➤</Text>
               )}
             </Pressable>
           </View>

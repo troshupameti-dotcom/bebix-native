@@ -22,24 +22,24 @@ export function InfoRow({
   placeholder,
 }: InfoRowProps) {
   return (
-    <View className="flex-row items-center justify-between border-b border-ink/8 py-3 dark:border-cream/10">
+    <View className="flex-row items-center justify-between border-b border-ink/8 py-3">
       {isCustom && editing ? (
         <TextInput
           value={label}
           onChangeText={onChangeLabel}
-          className="flex-1 font-body text-[13.5px] text-ink dark:text-cream"
+          className="flex-1 font-body text-[13.5px] text-ink"
         />
       ) : (
-        <Text className="flex-1 font-body text-[13.5px] text-ink dark:text-cream">{label}</Text>
+        <Text className="flex-1 font-body text-[13.5px] text-ink">{label}</Text>
       )}
       <TextInput
         value={value}
         onChangeText={onChangeValue}
         editable={editing}
         placeholder={placeholder}
-        placeholderTextColor="#A79D8A"
+        placeholderClassName="text-ink-faint"
         textAlign="right"
-        className={`font-body text-[13.5px] text-ink-soft dark:text-cream/60 ${
+        className={`font-body text-[13.5px] text-ink-soft ${
           editing ? "border-b border-dashed border-orange" : ""
         }`}
       />

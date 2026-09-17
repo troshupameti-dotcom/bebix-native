@@ -81,7 +81,7 @@ export default function AuditLogScreen() {
                 animate={{ opacity: 1, translateY: 0 }}
                 transition={{ type: "timing", duration: 200, delay: Math.min(i, 8) * 25 }}
                 style={shadows.press}
-                className="mb-2.5 rounded-xl2 border border-ink/10 bg-white p-3.5"
+                className="mb-2.5 rounded-xl2 border border-ink/10 bg-surface p-3.5"
               >
                 <View className="flex-row items-center gap-2.5">
                   <View className="h-8 w-8 items-center justify-center rounded-lg bg-cream-soft">

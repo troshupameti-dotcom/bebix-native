@@ -6,6 +6,7 @@ import * as Linking from "expo-linking";
 import Svg, { Path } from "react-native-svg";
 import { supabase } from "@/lib/supabase/client";
 import { parseOAuthRedirect } from "@/lib/auth/oauthRedirect";
+import { useThemeColors } from "@/lib/theme/useThemeColors";
 
 // Nevojitet vetëm në web (mbyll popup-in e OAuth-it); në native s'bën asgjë.
 WebBrowser.maybeCompleteAuthSession();
@@ -145,10 +146,12 @@ export function SocialAuthRow({ onEmailSelect, onSignedIn, beforeStart }: Social
 }
 
 function AppleGlyph() {
+  // Logoja e Apple-it ndjek ngjyren e tekstit, qe te duket mbi butonin e erret.
+  const theme = useThemeColors();
   return (
     <Svg width={20} height={20} viewBox="0 0 24 24">
       <Path
-        fill="#2C271F"
+        fill={theme.ink}
         d="M16.365 1.43c0 1.14-.462 2.243-1.176 3.032-.79.876-2.058 1.552-3.108 1.464-.14-1.09.42-2.243 1.164-3.008.812-.86 2.232-1.5 3.12-1.488zM20.85 17.02c-.548 1.26-.812 1.824-1.518 2.94-.984 1.56-2.37 3.504-4.086 3.516-1.53.012-1.92-.996-3.996-.984-2.076.012-2.508.996-4.038.984-1.716-.012-3.03-1.776-4.014-3.336-2.754-4.332-3.042-9.42-1.344-12.12 1.206-1.92 3.114-3.048 4.902-3.048 1.818 0 2.964 1.008 4.47 1.008 1.458 0 2.352-1.008 4.47-1.008 1.596 0 3.288.876 4.494 2.388-3.954 2.172-3.312 7.824.66 9.66z"
       />
     </Svg>
@@ -179,8 +182,9 @@ function GoogleGlyph() {
 }
 
 function EmailGlyph() {
+  const theme = useThemeColors();
   return (
-    <Svg width={20} height={20} viewBox="0 0 24 24" fill="none" stroke="#2C271F" strokeWidth={1.6}>
+    <Svg width={20} height={20} viewBox="0 0 24 24" fill="none" stroke={theme.ink} strokeWidth={1.6}>
       <Path d="M3 5h18v14H3V5Z" />
       <Path d="M3.5 6.5 12 13l8.5-6.5" />
     </Svg>

@@ -54,13 +54,13 @@ export default function ExportScreen() {
             disabled={!!loading}
             onPress={() => handleExport(opt.format)}
             style={shadows.soft}
-            className="flex-row items-center gap-3.5 rounded-xl2 border border-ink/10 bg-white p-4"
+            className="flex-row items-center gap-3.5 rounded-xl2 border border-ink/10 bg-surface p-4"
           >
             <View className="h-11 w-11 items-center justify-center rounded-xl bg-olive-bg">
               <Icon name={opt.icon} size={19} color="#6E7452" />
             </View>
             <Text className="flex-1 font-bodySemibold text-[15px] text-ink">{t(opt.labelKey as never)}</Text>
-            {loading === opt.format ? <ActivityIndicator color="#2C271F" /> : <Icon name="chevronRight" size={16} color="#A79D8A" />}
+            {loading === opt.format ? <ActivityIndicator className="text-ink" /> : <Icon name="chevronRight" size={16} color="#A79D8A" />}
           </Pressable>
         ))}
       </View>

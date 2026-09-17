@@ -60,7 +60,7 @@ export default function MyProfileScreen() {
   if (loading) {
     return (
       <SafeAreaView className="flex-1 bg-cream items-center justify-center">
-        <ActivityIndicator color="#6E7452" />
+        <ActivityIndicator className="text-olive" />
       </SafeAreaView>
     );
   }
@@ -117,7 +117,7 @@ export default function MyProfileScreen() {
           <View className="px-5">
             <Text className="font-body text-xs text-ink-faint mb-4">Ende nuk ke postuar asgjë.</Text>
             <Pressable onPress={() => router.push("/community/new")} className="bg-olive px-5 py-3 rounded-full self-start">
-              <Text className="font-bodySemibold text-xs text-white">Posto diçka</Text>
+              <Text className="font-bodySemibold text-xs text-on-accent">Posto diçka</Text>
             </Pressable>
           </View>
         ) : (

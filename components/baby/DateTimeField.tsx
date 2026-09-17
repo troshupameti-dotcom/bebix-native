@@ -36,7 +36,7 @@ export function DateTimeField({ label, value, mode, onChange }: DateTimeFieldPro
           haptics.select();
           setShow(true);
         }}
-        className="rounded-2xl border border-ink/10 bg-white px-4 py-3.5"
+        className="rounded-2xl border border-ink/10 bg-surface px-4 py-3.5"
       >
         <Text className="font-body text-[15px] text-ink">{display}</Text>
       </Pressable>

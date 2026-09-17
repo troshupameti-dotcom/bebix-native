@@ -170,7 +170,7 @@ export default function MomentsScreen() {
                 transition={{ type: "timing", duration: 200, delay: Math.min(i, 8) * 25 }}
                 style={{ width: "31%" }}
               >
-                <Pressable onPress={() => openGrid(m)} style={shadows.press} className="overflow-hidden rounded-xl2 border border-ink/10 bg-white">
+                <Pressable onPress={() => openGrid(m)} style={shadows.press} className="overflow-hidden rounded-xl2 border border-ink/10 bg-surface">
                   {m.uri ? (
                     <Image source={{ uri: m.uri }} style={{ width: "100%", aspectRatio: 1 }} />
                   ) : (
@@ -283,7 +283,7 @@ export default function MomentsScreen() {
           <FormField label={t("moment_tags_ph")} value={form.tags} onChangeText={(v) => setForm((f) => ({ ...f, tags: v }))} />
           <Pressable
             onPress={() => setForm((f) => ({ ...f, favorite: !f.favorite }))}
-            className="flex-row items-center gap-2.5 rounded-2xl border border-ink/10 bg-white px-4 py-3.5"
+            className="flex-row items-center gap-2.5 rounded-2xl border border-ink/10 bg-surface px-4 py-3.5"
           >
             <Icon name="heart" size={16} color={form.favorite ? "#C9702E" : "#A79D8A"} />
             <Text className="font-bodyMedium text-[13.5px] text-ink">{t("moment_favorite")}</Text>

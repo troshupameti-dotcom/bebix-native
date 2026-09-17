@@ -15,10 +15,10 @@ export function timeAgoLabel(iso: string): string {
 
 export function Avatar({ initial, accent, size = 44 }: { initial: string; accent: "olive" | "orange"; size?: number }) {
   const bg = accent === "olive" ? "bg-olive-bg" : "bg-orange-bg";
-  const fg = accent === "olive" ? "#6E7452" : "#C9702E";
+  const fg = accent === "olive" ? "text-olive" : "text-orange";
   return (
     <View style={{ width: size, height: size, borderRadius: size / 2 }} className={`items-center justify-center ${bg}`}>
-      <Text style={{ color: fg, fontSize: size * 0.4 }} className="font-bodySemibold">{initial}</Text>
+      <Text style={{ fontSize: size * 0.4 }} className={`font-bodySemibold ${fg}`}>{initial}</Text>
     </View>
   );
 }

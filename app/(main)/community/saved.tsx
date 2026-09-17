@@ -27,7 +27,7 @@ export default function SavedPostsScreen() {
   if (loading) {
     return (
       <SafeAreaView className="flex-1 bg-cream items-center justify-center">
-        <ActivityIndicator color="#6E7452" />
+        <ActivityIndicator className="text-olive" />
       </SafeAreaView>
     );
   }

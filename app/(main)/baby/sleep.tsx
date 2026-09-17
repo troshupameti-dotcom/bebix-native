@@ -126,7 +126,7 @@ export default function SleepScreen() {
               <Pressable
                 onPress={() => (entry.endAt !== null ? openEdit(entry) : undefined)}
                 style={shadows.press}
-                className="mb-2.5 flex-row items-center gap-3 rounded-xl2 border border-ink/10 bg-white p-3.5"
+                className="mb-2.5 flex-row items-center gap-3 rounded-xl2 border border-ink/10 bg-surface p-3.5"
               >
                 <View className="h-10 w-10 items-center justify-center rounded-xl bg-olive-bg">
                   <Icon name="moon" size={17} color="#6E7452" />

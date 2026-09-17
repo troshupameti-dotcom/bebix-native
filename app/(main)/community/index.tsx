@@ -17,16 +17,16 @@ import { fetchGameRecommendations, ageInMonths, GameSuggestion } from "@/lib/aiG
 function SectionHeader({ title }: { title: string }) {
   return (
     <View className="mb-3 mt-6 px-5">
-      <Text className="font-bodySemibold text-lg text-ink dark:text-cream">{title}</Text>
+      <Text className="font-bodySemibold text-lg text-ink">{title}</Text>
     </View>
   );
 }
 
 function TopicChip({ label, count, onPress }: { label: string; count: number; onPress: () => void }) {
   return (
-    <Pressable onPress={onPress} style={shadows.soft} className="bg-surface dark:bg-ink/40 rounded-full px-3.5 py-1 mr-2 flex-row items-center">
-      <Text className="font-bodyMedium text-[11px] text-ink dark:text-cream">{label}</Text>
-      <Text className="font-body text-[10px] text-ink-faint dark:text-cream/50 ml-1">{count}</Text>
+    <Pressable onPress={onPress} style={shadows.soft} className="bg-surface rounded-full px-3.5 py-1 mr-2 flex-row items-center">
+      <Text className="font-bodyMedium text-[11px] text-ink">{label}</Text>
+      <Text className="font-body text-[10px] text-ink-faint ml-1">{count}</Text>
     </Pressable>
   );
 }
@@ -129,14 +129,14 @@ export default function CommunityScreen() {
 
   if (loading) {
     return (
-      <SafeAreaView className="flex-1 bg-cream dark:bg-ink items-center justify-center">
-        <ActivityIndicator color="#6E7452" />
+      <SafeAreaView className="flex-1 bg-cream items-center justify-center">
+        <ActivityIndicator className="text-olive" />
       </SafeAreaView>
     );
   }
 
   return (
-    <SafeAreaView className="flex-1 bg-cream dark:bg-ink" edges={["top"]}>
+    <SafeAreaView className="flex-1 bg-cream" edges={["top"]}>
       <View className="flex-row items-center justify-between px-5 pt-2 mb-4">
         <Pressable
           onPress={() => router.push("/community/profile")}
@@ -147,11 +147,11 @@ export default function CommunityScreen() {
             {(state.profile.parentName || "T").trim().charAt(0).toUpperCase()}
           </Text>
         </Pressable>
-        <Text className="font-display text-2xl text-ink dark:text-cream">{t("community_title")}</Text>
+        <Text className="font-display text-2xl text-ink">{t("community_title")}</Text>
         <Pressable
           onPress={() => router.push("/community/saved")}
           style={shadows.soft}
-          className="w-10 h-10 rounded-full bg-surface dark:bg-ink/40 items-center justify-center"
+          className="w-10 h-10 rounded-full bg-surface items-center justify-center"
         >
           <Icon name="bookmark" size={18} color={isDark ? "#F7F1E4" : "#2C271F"} />
         </Pressable>
@@ -159,14 +159,14 @@ export default function CommunityScreen() {
 
       {/* Search + Topics — bashkue n'nji blloke t'ngjeshun */}
       <View className="px-5 mb-3">
-        <View style={shadows.soft} className="flex-row items-center bg-surface dark:bg-ink/40 rounded-xl2 px-4 py-3 mb-2.5">
+        <View style={shadows.soft} className="flex-row items-center bg-surface rounded-xl2 px-4 py-3 mb-2.5">
           <Icon name="search" size={18} color="#A79D8A" />
           <TextInput
             value={query}
             onChangeText={setQuery}
             placeholder={t("community_search_ph")}
-            placeholderTextColor="#A79D8A"
-            className="flex-1 ml-2 font-body text-sm text-ink dark:text-cream"
+            placeholderClassName="text-ink-faint"
+            className="flex-1 ml-2 font-body text-sm text-ink"
           />
         </View>
       </View>
@@ -214,7 +214,7 @@ export default function CommunityScreen() {
         <SectionHeader title={query.trim() ? t("community_results") : t("community_feed")} />
         {filteredPosts.length === 0 ? (
           query.trim() ? (
-            <Text className="font-body text-sm text-ink-soft dark:text-cream/60 px-5">
+            <Text className="font-body text-sm text-ink-soft px-5">
               {t("community_no_results", { query })}
             </Text>
           ) : (
@@ -222,12 +222,12 @@ export default function CommunityScreen() {
               <View className="w-14 h-14 rounded-full bg-olive-bg items-center justify-center mb-3">
                 <Icon name="comment" size={24} color="#6E7452" />
               </View>
-              <Text className="font-bodySemibold text-sm text-ink dark:text-cream mb-1">{t("community_empty_title")}</Text>
-              <Text className="font-body text-xs text-ink-soft dark:text-cream/60 text-center leading-5 mb-4">
+              <Text className="font-bodySemibold text-sm text-ink mb-1">{t("community_empty_title")}</Text>
+              <Text className="font-body text-xs text-ink-soft text-center leading-5 mb-4">
                 {t("community_empty_sub")}
               </Text>
               <Pressable onPress={() => router.push("/community/new")} className="bg-olive px-5 py-2.5 rounded-full">
-                <Text className="font-bodySemibold text-xs text-white">{t("community_post_btn")}</Text>
+                <Text className="font-bodySemibold text-xs text-on-accent">{t("community_post_btn")}</Text>
               </Pressable>
             </View>
           )

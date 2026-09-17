@@ -86,7 +86,7 @@ export function ProductCard({ product, onPress, cardWidth }: Props) {
           {/* Discount badge — top-right */}
           {discount != null && (
             <View className="absolute top-2 right-2 bg-orange rounded-full px-2 py-0.5">
-              <Text className="font-bodySemibold text-[9px] text-white">-{discount}%</Text>
+              <Text className="font-bodySemibold text-[9px] text-on-accent">-{discount}%</Text>
             </View>
           )}
 

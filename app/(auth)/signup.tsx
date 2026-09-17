@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
-import { View, Text, Pressable, ScrollView, KeyboardAvoidingView, Platform, Switch } from "react-native";
+import { View, Text, Pressable, ScrollView, KeyboardAvoidingView, Platform } from "react-native";
+import { ThemedSwitch } from "@/components/ui/ThemedSwitch";
 import { router, useLocalSearchParams } from "expo-router";
 import { MotiView } from "moti";
 import { SafeAreaView } from "react-native-safe-area-context";
@@ -149,10 +150,9 @@ export default function SignupScreen() {
               />
 
               <View className="flex-row items-start gap-2.5 pt-1">
-                <Switch
+                <ThemedSwitch
                   value={values.acceptedTerms}
                   onValueChange={(v) => setValues((prev) => ({ ...prev, acceptedTerms: v }))}
-                  trackColor={{ true: "#6E7452", false: "#E9DFCC" }}
                 />
                 <Text className="flex-1 font-body text-sm text-ink-soft">
                   {t("signup_terms_agree")} <Text className="font-bodySemibold text-ink underline">{t("signup_terms")}</Text>{" "}

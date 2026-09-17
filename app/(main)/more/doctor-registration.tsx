@@ -9,13 +9,13 @@ const SPECIALIZATIONS = ["Pediatër", "Nutricionist", "Konsulente Gjidhënieje",
 
 function StatusBanner({ app }: { app: ExpertApplication }) {
   const config = {
-    pending: { bg: "bg-olive-bg", fg: "#6E7452", label: "Në pritje t'aprovimit" },
-    approved: { bg: "bg-olive-bg", fg: "#6E7452", label: "I aprovuem ✓" },
-    rejected: { bg: "bg-orange-bg", fg: "#C9702E", label: "I refuzuem" },
+    pending: { bg: "bg-olive-bg", fg: "text-olive", label: "Në pritje të aprovimit" },
+    approved: { bg: "bg-olive-bg", fg: "text-olive", label: "I aprovuar ✓" },
+    rejected: { bg: "bg-orange-bg", fg: "text-orange", label: "I refuzuar" },
   }[app.status];
   return (
     <View style={shadows.soft} className={`rounded-xl2 p-4 mb-5 ${config.bg}`}>
-      <Text className="font-bodySemibold text-sm mb-1" style={{ color: config.fg }}>{config.label}</Text>
+      <Text className={`font-bodySemibold text-sm mb-1 ${config.fg}`}>{config.label}</Text>
       <Text className="font-body text-xs text-ink-soft mb-1">{app.fullName} · {app.specialization}</Text>
       <Text className="font-body text-[11px] text-ink-faint">Licenca: {app.licenseNumber}</Text>
       {app.adminNote && (
@@ -78,7 +78,7 @@ export default function DoctorRegistrationScreen() {
   if (loading) {
     return (
       <SafeAreaView className="flex-1 bg-cream items-center justify-center">
-        <ActivityIndicator color="#6E7452" />
+        <ActivityIndicator className="text-olive" />
       </SafeAreaView>
     );
   }
@@ -106,12 +106,12 @@ export default function DoctorRegistrationScreen() {
 
               <Text className="font-bodySemibold text-xs text-ink-soft mb-1.5">Emri i plotë</Text>
               <View style={shadows.soft} className="bg-surface rounded-xl2 px-4 py-3 mb-4">
-                <TextInput value={fullName} onChangeText={setFullName} placeholder="Dr. Emri Mbiemri" placeholderTextColor="#A79D8A" className="font-body text-sm text-ink" />
+                <TextInput value={fullName} onChangeText={setFullName} placeholder="Dr. Emri Mbiemri" placeholderClassName="text-ink-faint" className="font-body text-sm text-ink" />
               </View>
 
               <Text className="font-bodySemibold text-xs text-ink-soft mb-1.5">Numri i licencës mjekësore</Text>
               <View style={shadows.soft} className="bg-surface rounded-xl2 px-4 py-3 mb-4">
-                <TextInput value={licenseNumber} onChangeText={setLicenseNumber} placeholder="p.sh. LMK-2024-0891" placeholderTextColor="#A79D8A" className="font-body text-sm text-ink" />
+                <TextInput value={licenseNumber} onChangeText={setLicenseNumber} placeholder="p.sh. LMK-2024-0891" placeholderClassName="text-ink-faint" className="font-body text-sm text-ink" />
               </View>
 
               <Text className="font-bodySemibold text-xs text-ink-soft mb-1.5">Specializimi</Text>
@@ -125,7 +125,7 @@ export default function DoctorRegistrationScreen() {
                       style={shadows.soft}
                       className={`rounded-full px-4 py-2 mr-2 ${active ? "bg-olive" : "bg-surface"}`}
                     >
-                      <Text className={`font-bodyMedium text-xs ${active ? "text-white" : "text-ink"}`}>{s}</Text>
+                      <Text className={`font-bodyMedium text-xs ${active ? "text-on-accent" : "text-ink"}`}>{s}</Text>
                     </Pressable>
                   );
                 })}
@@ -133,12 +133,12 @@ export default function DoctorRegistrationScreen() {
 
               <Text className="font-bodySemibold text-xs text-ink-soft mb-1.5">Vite përvoje</Text>
               <View style={shadows.soft} className="bg-surface rounded-xl2 px-4 py-3 mb-4">
-                <TextInput value={experienceYears} onChangeText={setExperienceYears} keyboardType="number-pad" placeholder="p.sh. 8" placeholderTextColor="#A79D8A" className="font-body text-sm text-ink" />
+                <TextInput value={experienceYears} onChangeText={setExperienceYears} keyboardType="number-pad" placeholder="p.sh. 8" placeholderClassName="text-ink-faint" className="font-body text-sm text-ink" />
               </View>
 
               <Text className="font-bodySemibold text-xs text-ink-soft mb-1.5">Numri i telefonit</Text>
               <View style={shadows.soft} className="bg-surface rounded-xl2 px-4 py-3 mb-4">
-                <TextInput value={phone} onChangeText={setPhone} keyboardType="phone-pad" placeholder="+383 4X XXX XXX" placeholderTextColor="#A79D8A" className="font-body text-sm text-ink" />
+                <TextInput value={phone} onChangeText={setPhone} keyboardType="phone-pad" placeholder="+383 4X XXX XXX" placeholderClassName="text-ink-faint" className="font-body text-sm text-ink" />
               </View>
 
               <Text className="font-bodySemibold text-xs text-ink-soft mb-1.5">Pak fjalë për veten (opsionale)</Text>
@@ -147,7 +147,7 @@ export default function DoctorRegistrationScreen() {
                   value={bio}
                   onChangeText={setBio}
                   placeholder="Klinika, fusha e fokusit, gjuhët që flet..."
-                  placeholderTextColor="#A79D8A"
+                  placeholderClassName="text-ink-faint"
                   multiline
                   className="font-body text-sm text-ink min-h-[70px]"
                   textAlignVertical="top"
@@ -162,9 +162,9 @@ export default function DoctorRegistrationScreen() {
                 className={`py-3.5 rounded-full items-center ${canSubmit ? "bg-olive" : "bg-cream-line"}`}
               >
                 {submitting ? (
-                  <ActivityIndicator color="#FFFFFF" />
+                  <ActivityIndicator className="text-on-accent" />
                 ) : (
-                  <Text className={`font-bodySemibold text-sm ${canSubmit ? "text-white" : "text-ink-faint"}`}>
+                  <Text className={`font-bodySemibold text-sm ${canSubmit ? "text-on-accent" : "text-ink-faint"}`}>
                     {existing?.status === "rejected" ? "Apliko Përsëri" : "Dërgo Aplikimin"}
                   </Text>
                 )}

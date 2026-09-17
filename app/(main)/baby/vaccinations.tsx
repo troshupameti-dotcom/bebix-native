@@ -1,5 +1,6 @@
 import { useState } from "react";
-import { View, Text, ScrollView, Pressable, Switch } from "react-native";
+import { View, Text, ScrollView, Pressable } from "react-native";
+import { ThemedSwitch } from "@/components/ui/ThemedSwitch";
 import { router } from "expo-router";
 import { MotiView } from "moti";
 import { SafeAreaView } from "react-native-safe-area-context";
@@ -15,11 +16,12 @@ import { formatDate } from "@/lib/dateUtils";
 import { shadows } from "@/lib/shadows";
 import { VaccineEntry, VaccineStatus } from "@/lib/state/types";
 
+// bg: klase qe ndjek temen; fg: ngjyra e ikones (Icon e pershtat vete paleten).
 const STATUS_COLOR: Record<VaccineStatus, { bg: string; fg: string }> = {
-  done: { bg: "#E7EAD9", fg: "#6E7452" },
-  upcoming: { bg: "#F3ECDD", fg: "#6B6154" },
-  due_today: { bg: "#F5E1CC", fg: "#C9702E" },
-  overdue: { bg: "#FBDCD4", fg: "#DC2626" },
+  done: { bg: "bg-olive-bg", fg: "#6E7452" },
+  upcoming: { bg: "bg-cream-soft", fg: "#6B6154" },
+  due_today: { bg: "bg-orange-bg", fg: "#C9702E" },
+  overdue: { bg: "bg-red-500/15", fg: "#EF4444" },
 };
 
 type FormShape = {
@@ -152,9 +154,9 @@ export default function VaccinationsScreen() {
                 <Pressable
                   onPress={() => openEdit(v)}
                   style={shadows.press}
-                  className="mb-2.5 flex-row items-center gap-3 rounded-xl2 border border-ink/10 bg-white p-3.5"
+                  className="mb-2.5 flex-row items-center gap-3 rounded-xl2 border border-ink/10 bg-surface p-3.5"
                 >
-                  <View style={{ backgroundColor: colors.bg }} className="h-10 w-10 items-center justify-center rounded-xl">
+                  <View className={`h-10 w-10 items-center justify-center rounded-xl ${colors.bg}`}>
                     <Icon name="syringe" size={17} color={colors.fg} />
                   </View>
                   <View className="flex-1">
@@ -210,12 +212,11 @@ export default function VaccinationsScreen() {
           <FormField label={t("vaccine_doctor_ph")} value={form.doctor} onChangeText={(v) => setForm((f) => ({ ...f, doctor: v }))} />
           <FormField label={t("vaccine_clinic_ph")} value={form.clinic} onChangeText={(v) => setForm((f) => ({ ...f, clinic: v }))} />
           <FormField label={t("vaccine_batch_ph")} value={form.batchNumber} onChangeText={(v) => setForm((f) => ({ ...f, batchNumber: v }))} />
-          <View className="flex-row items-center justify-between rounded-2xl border border-ink/10 bg-white px-4 py-3.5">
+          <View className="flex-row items-center justify-between rounded-2xl border border-ink/10 bg-surface px-4 py-3.5">
             <Text className="font-bodyMedium text-[13.5px] text-ink">{t("vaccine_reminder")}</Text>
-            <Switch
+            <ThemedSwitch
               value={form.reminderEnabled}
               onValueChange={(v) => setForm((f) => ({ ...f, reminderEnabled: v }))}
-              trackColor={{ true: "#6E7452", false: "#E9DFCC" }}
             />
           </View>
           <Pressable onPress={save} className="mt-1 items-center rounded-2xl bg-ink py-4">

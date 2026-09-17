@@ -14,7 +14,7 @@ type QuickActionTileProps = {
 };
 
 export function QuickActionTile({ icon, label, accent, editing, onPress, onRemove }: QuickActionTileProps) {
-  const badgeBg = accent === "orange" ? "#F5E1CC" : "#E7EAD9";
+  const badgeBg = accent === "orange" ? "bg-orange-bg" : "bg-olive-bg";
   const badgeFg = accent === "orange" ? "#C9702E" : "#6E7452";
 
   return (
@@ -22,16 +22,16 @@ export function QuickActionTile({ icon, label, accent, editing, onPress, onRemov
       <Pressable
         onPress={editing ? undefined : onPress}
         style={shadows.soft}
-        className="relative items-center gap-1.5 rounded-xl2 border border-ink/10 bg-white px-1 py-3.5 dark:bg-ink dark:border-cream/10"
+        className="relative items-center gap-1.5 rounded-xl2 border border-ink/10 bg-surface px-1 py-3.5"
       >
         {editing && <RemoveBadge onPress={onRemove} />}
         <View
-          style={{ backgroundColor: badgeBg, width: 34, height: 34, borderRadius: 12 }}
-          className="items-center justify-center"
+          style={{ width: 34, height: 34, borderRadius: 12 }}
+          className={`items-center justify-center ${badgeBg}`}
         >
           <Icon name={icon} size={17} color={badgeFg} />
         </View>
-        <Text numberOfLines={1} className="font-bodySemibold text-[11px] text-ink dark:text-cream">
+        <Text numberOfLines={1} className="font-bodySemibold text-[11px] text-ink">
           {label}
         </Text>
       </Pressable>

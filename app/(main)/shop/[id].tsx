@@ -93,7 +93,7 @@ export default function ProductDetailsScreen() {
   if (product === undefined && !loadError) {
     return (
       <SafeAreaView className="flex-1 bg-cream items-center justify-center">
-        <ActivityIndicator color="#6E7452" />
+        <ActivityIndicator className="text-olive" />
       </SafeAreaView>
     );
   }
@@ -254,7 +254,7 @@ export default function ProductDetailsScreen() {
           }}
           className="flex-1 bg-olive rounded-xl2 py-3.5 items-center"
         >
-          <Text className="font-bodyMedium text-sm text-white">Bli Tani</Text>
+          <Text className="font-bodyMedium text-sm text-on-accent">Bli Tani</Text>
         </Pressable>
       </View>
     </SafeAreaView>

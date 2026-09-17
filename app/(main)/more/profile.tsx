@@ -86,7 +86,7 @@ export default function ProfileScreen() {
         </Pressable>
         <Text className="font-bodyMedium text-lg text-ink">Profili im</Text>
         <Pressable onPress={save} className="px-4 py-2 rounded-full bg-olive">
-          <Text className="font-bodySemibold text-xs text-white">Ruaj</Text>
+          <Text className="font-bodySemibold text-xs text-on-accent">Ruaj</Text>
         </Pressable>
       </View>
 
@@ -103,7 +103,7 @@ export default function ProfileScreen() {
         <View className="px-5">
           <Text className="font-bodySemibold text-xs text-ink-soft mb-2">Emri</Text>
           <View style={shadows.soft} className="bg-surface rounded-xl2 px-4 py-3 mb-5">
-            <TextInput value={name} onChangeText={setName} placeholder="Emri yt" placeholderTextColor="#A79D8A" className="font-body text-sm text-ink" />
+            <TextInput value={name} onChangeText={setName} placeholder="Emri yt" placeholderClassName="text-ink-faint" className="font-body text-sm text-ink" />
           </View>
 
           <Text className="font-bodySemibold text-xs text-ink-soft mb-2">Lidhja me bebin</Text>
@@ -115,7 +115,7 @@ export default function ProfileScreen() {
                 className={`px-4 py-2 rounded-full mr-2 ${relation === r.value ? "bg-olive" : "bg-surface"}`}
                 style={relation !== r.value ? shadows.soft : undefined}
               >
-                <Text className={`font-bodyMedium text-xs ${relation === r.value ? "text-white" : "text-ink-soft"}`}>{r.label}</Text>
+                <Text className={`font-bodyMedium text-xs ${relation === r.value ? "text-on-accent" : "text-ink-soft"}`}>{r.label}</Text>
               </Pressable>
             ))}
           </View>
@@ -123,7 +123,7 @@ export default function ProfileScreen() {
           <Text className="font-bodySemibold text-xs text-ink-soft mb-2">Llogaria</Text>
           <View style={shadows.soft} className="bg-surface rounded-xl2 px-4 py-3 mb-5">
             {authLoading ? (
-              <ActivityIndicator color="#6E7452" />
+              <ActivityIndicator className="text-olive" />
             ) : (
               <>
                 <Text className="font-bodySemibold text-sm text-ink">{email ?? "Pa email"}</Text>
@@ -150,7 +150,7 @@ export default function ProfileScreen() {
               value={password}
               onChangeText={setPassword}
               placeholder="Fjalëkalimi i ri"
-              placeholderTextColor="#A79D8A"
+              placeholderClassName="text-ink-faint"
               secureTextEntry
               autoComplete="new-password"
               className="font-body text-sm text-ink border-b border-cream-line pb-2 mb-3"
@@ -159,7 +159,7 @@ export default function ProfileScreen() {
               value={confirmPassword}
               onChangeText={setConfirmPassword}
               placeholder="Shkruaje përsëri"
-              placeholderTextColor="#A79D8A"
+              placeholderClassName="text-ink-faint"
               secureTextEntry
               autoComplete="new-password"
               className="font-body text-sm text-ink border-b border-cream-line pb-2"
@@ -175,9 +175,9 @@ export default function ProfileScreen() {
               className={`mt-4 py-2.5 rounded-full items-center ${savingPassword ? "bg-olive/50" : "bg-olive"}`}
             >
               {savingPassword ? (
-                <ActivityIndicator color="#FFFFFF" />
+                <ActivityIndicator className="text-on-accent" />
               ) : (
-                <Text className="font-bodySemibold text-xs text-white">
+                <Text className="font-bodySemibold text-xs text-on-accent">
                   {isSocial ? "Cakto fjalëkalimin" : "Ruaj fjalëkalimin"}
                 </Text>
               )}

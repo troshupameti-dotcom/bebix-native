@@ -30,7 +30,7 @@ function genderStyle(g: BabyGender, isActive: boolean) {
   }
   return isActive
     ? { border: "border-ink", bg: "bg-ink", text: "text-cream" }
-    : { border: "border-ink/10", bg: "bg-white", text: "text-ink" };
+    : { border: "border-ink/10", bg: "bg-surface", text: "text-ink" };
 }
 
 function formatDobDisplay(d: Date | null): string {
@@ -159,7 +159,7 @@ export default function BabySettingsScreen() {
         </Pressable>
 
         <Text className="mb-2 font-bodySemibold text-base text-ink">{t("baby_settings_edit_profile")}</Text>
-        <View style={shadows.soft} className="gap-4 rounded-xl3 border border-ink/10 bg-white p-5">
+        <View style={shadows.soft} className="gap-4 rounded-xl3 border border-ink/10 bg-surface p-5">
           <Field label={t("baby_settings_name")}>
             <TextInput value={name} onChangeText={setName} className="font-body text-[15px] text-ink" />
           </Field>
@@ -200,7 +200,7 @@ export default function BabySettingsScreen() {
         </View>
 
         <Text className="mb-2 mt-6 font-bodySemibold text-base text-ink">{t("baby_medical_info")}</Text>
-        <View style={shadows.soft} className="gap-4 rounded-xl3 border border-ink/10 bg-white p-5">
+        <View style={shadows.soft} className="gap-4 rounded-xl3 border border-ink/10 bg-surface p-5">
           <View className="gap-1.5">
             <Text className="font-bodyMedium text-[13px] text-ink-soft">{t("baby_settings_blood_type")}</Text>
             <View className="flex-row flex-wrap gap-2">
@@ -208,7 +208,7 @@ export default function BabySettingsScreen() {
                 <Pressable
                   key={bt}
                   onPress={() => setBloodType(bt)}
-                  className={`rounded-xl border px-3.5 py-2 ${bloodType === bt ? "border-ink bg-ink" : "border-ink/10 bg-white"}`}
+                  className={`rounded-xl border px-3.5 py-2 ${bloodType === bt ? "border-ink bg-ink" : "border-ink/10 bg-surface"}`}
                 >
                   <Text className={`font-bodyMedium text-[12.5px] ${bloodType === bt ? "text-cream" : "text-ink"}`}>{bt}</Text>
                 </Pressable>
@@ -234,7 +234,7 @@ export default function BabySettingsScreen() {
         </Pressable>
 
         <Text className="mb-2 mt-8 font-bodySemibold text-base text-ink">{t("baby_settings_emergency_contacts")}</Text>
-        <View style={shadows.soft} className="rounded-xl3 border border-ink/10 bg-white p-5">
+        <View style={shadows.soft} className="rounded-xl3 border border-ink/10 bg-surface p-5">
           {state.baby.emergencyContacts.map((c) => (
             <View key={c.id} className="flex-row items-center justify-between border-b border-ink/8 py-3">
               <View>
@@ -259,7 +259,7 @@ export default function BabySettingsScreen() {
         </View>
 
         <Text className="mb-2 mt-8 font-bodySemibold text-base text-ink">{t("export_title")}</Text>
-        <View style={shadows.soft} className="overflow-hidden rounded-xl3 border border-ink/10 bg-white">
+        <View style={shadows.soft} className="overflow-hidden rounded-xl3 border border-ink/10 bg-surface">
           <Pressable
             onPress={() => router.push("/(main)/baby/archive")}
             className="flex-row items-center gap-3 border-b border-ink/8 px-5 py-4"
@@ -297,7 +297,7 @@ export default function BabySettingsScreen() {
         <Modal visible={showDobPicker} transparent animationType="slide" onRequestClose={() => setShowDobPicker(false)}>
           <View className="flex-1 justify-end bg-black/30">
             <Pressable style={{ flex: 1 }} onPress={() => setShowDobPicker(false)} />
-            <View className="rounded-t-3xl bg-white pb-8">
+            <View className="rounded-t-3xl bg-surface pb-8">
               <View className="flex-row items-center justify-between border-b border-ink/8 px-5 py-3">
                 <Pressable onPress={() => setShowDobPicker(false)} hitSlop={8}>
                   <Text className="font-bodyMedium text-[15px] text-ink-soft">{t("cancel_action")}</Text>

@@ -10,6 +10,7 @@ export function RemoveBadge({ onPress, style }: RemoveBadgeProps) {
     <Pressable
       onPress={onPress}
       hitSlop={8}
+      className="border-cream"
       style={[
         {
           position: "absolute",
@@ -22,7 +23,6 @@ export function RemoveBadge({ onPress, style }: RemoveBadgeProps) {
           alignItems: "center",
           justifyContent: "center",
           borderWidth: 2,
-          borderColor: "#FBF6EE",
           zIndex: 2,
         },
         style,

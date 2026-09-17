@@ -82,7 +82,7 @@ export default function CartScreen() {
                 onPress={() => router.push("/shop/checkout")}
                 className="bg-olive rounded-xl2 py-3.5 items-center"
               >
-                <Text className="font-bodyMedium text-sm text-white">Vazhdo me Porosinë</Text>
+                <Text className="font-bodyMedium text-sm text-on-accent">Vazhdo me Porosinë</Text>
               </Pressable>
             </View>
           </>

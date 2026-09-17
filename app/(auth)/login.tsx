@@ -1,5 +1,6 @@
 import { useState } from "react";
-import { View, Text, Pressable, ScrollView, KeyboardAvoidingView, Platform, Switch } from "react-native";
+import { View, Text, Pressable, ScrollView, KeyboardAvoidingView, Platform } from "react-native";
+import { ThemedSwitch } from "@/components/ui/ThemedSwitch";
 import { router, useLocalSearchParams } from "expo-router";
 import { MotiView } from "moti";
 import { SafeAreaView } from "react-native-safe-area-context";
@@ -107,10 +108,9 @@ export default function LoginScreen() {
               />
 
               <View className="flex-row items-center gap-2.5 pt-1">
-                <Switch
+                <ThemedSwitch
                   value={values.rememberMe}
                   onValueChange={(v) => setValues((prev) => ({ ...prev, rememberMe: v }))}
-                  trackColor={{ true: "#6E7452", false: "#E9DFCC" }}
                 />
                 <Text className="font-body text-sm text-ink-soft">{t("login_remember_me")}</Text>
               </View>

@@ -56,19 +56,19 @@ export default function AiChatScreen() {
   }
 
   return (
-    <SafeAreaView className="flex-1 bg-cream dark:bg-ink" edges={["top"]}>
+    <SafeAreaView className="flex-1 bg-cream" edges={["top"]}>
       {/* Header */}
       <View className="flex-row items-center px-5 pt-2 pb-4">
         <Pressable
           onPress={() => router.back()}
           style={shadows.soft}
-          className="w-10 h-10 rounded-full bg-surface dark:bg-ink/40 items-center justify-center mr-3"
+          className="w-10 h-10 rounded-full bg-surface items-center justify-center mr-3"
         >
           <Icon name="chevronLeft" size={20} color={isDark ? "#F7F1E4" : "#2C271F"} />
         </Pressable>
         <View className="flex-1">
-          <Text className="font-bodySemibold text-lg text-ink dark:text-cream">{t("ai_chat_title")}</Text>
-          <Text className="font-body text-xs text-ink-soft dark:text-cream/60">{t("ai_chat_subtitle")}</Text>
+          <Text className="font-bodySemibold text-lg text-ink">{t("ai_chat_title")}</Text>
+          <Text className="font-body text-xs text-ink-soft">{t("ai_chat_subtitle")}</Text>
         </View>
         <View className="w-10 h-10 rounded-full bg-olive-bg items-center justify-center">
           <Icon name="sparkle" size={18} color="#6E7452" />
@@ -100,12 +100,12 @@ export default function AiChatScreen() {
               <View
                 style={shadows.soft}
                 className={`max-w-[75%] rounded-xl2 p-3 ${
-                  m.role === "user" ? "bg-orange" : "bg-surface dark:bg-ink/40"
+                  m.role === "user" ? "bg-orange" : "bg-surface"
                 }`}
               >
                 <Text
                   className={`font-body text-sm leading-5 ${
-                    m.role === "user" ? "text-white" : "text-ink dark:text-cream"
+                    m.role === "user" ? "text-on-accent" : "text-ink"
                   }`}
                 >
                   {m.text}
@@ -116,13 +116,13 @@ export default function AiChatScreen() {
         </ScrollView>
 
         {/* Input bar */}
-        <View className="flex-row items-center px-5 py-3 border-t border-cream-soft dark:border-cream/10">
+        <View className="flex-row items-center px-5 py-3 border-t border-cream-soft">
           <TextInput
             value={input}
             onChangeText={setInput}
             placeholder={t("ai_chat_input_ph")}
-            placeholderTextColor="#A79D8A"
-            className="flex-1 bg-surface dark:bg-ink/40 rounded-full px-4 py-3 mr-3 font-body text-sm text-ink dark:text-cream"
+            placeholderClassName="text-ink-faint"
+            className="flex-1 bg-surface rounded-full px-4 py-3 mr-3 font-body text-sm text-ink"
             style={shadows.soft}
             multiline
             onSubmitEditing={handleSend}
@@ -132,7 +132,7 @@ export default function AiChatScreen() {
             disabled={!input.trim()}
             style={shadows.soft}
             className={`w-11 h-11 rounded-full items-center justify-center ${
-              input.trim() ? "bg-orange" : "bg-surface dark:bg-ink/40"
+              input.trim() ? "bg-orange" : "bg-surface"
             }`}
           >
             <Icon name="send" size={18} color={input.trim() ? "#FFFFFF" : "#A79D8A"} />

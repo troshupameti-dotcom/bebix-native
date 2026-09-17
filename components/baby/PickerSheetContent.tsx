@@ -87,8 +87,8 @@ export function PickerSheetContent({
               value={name}
               onChangeText={setName}
               placeholder={customLabelPlaceholder}
-              placeholderTextColor="#A79D8A"
-              className="rounded-2xl border border-ink/10 bg-white px-4 py-3.5 font-body text-[15px] text-ink"
+              placeholderClassName="text-ink-faint"
+              className="rounded-2xl border border-ink/10 bg-surface px-4 py-3.5 font-body text-[15px] text-ink"
             />
           </View>
           {needsValue && (
@@ -98,8 +98,8 @@ export function PickerSheetContent({
                 value={value}
                 onChangeText={setValue}
                 placeholder={customValuePlaceholder}
-                placeholderTextColor="#A79D8A"
-                className="rounded-2xl border border-ink/10 bg-white px-4 py-3.5 font-body text-[15px] text-ink"
+                placeholderClassName="text-ink-faint"
+                className="rounded-2xl border border-ink/10 bg-surface px-4 py-3.5 font-body text-[15px] text-ink"
               />
             </View>
           )}

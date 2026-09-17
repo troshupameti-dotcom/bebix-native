@@ -27,20 +27,19 @@ export function MilestoneChip({
       <Pressable
         onPress={editing ? undefined : onToggle}
         className={`relative flex-row items-center gap-2 rounded-2xl border px-3 py-3 ${
-          done ? "border-olive/30 bg-olive-bg" : "border-ink/10 bg-white dark:bg-ink dark:border-cream/10"
+          done ? "border-olive/30 bg-olive-bg" : "border-ink/10 bg-surface"
         }`}
       >
         {editing && <RemoveBadge onPress={onRemove} />}
         <View
-          className={`h-5 w-5 items-center justify-center rounded-full ${done ? "" : "border border-ink/20"}`}
-          style={done ? { backgroundColor: "#6E7452" } : undefined}
+          className={`h-5 w-5 items-center justify-center rounded-full ${done ? "bg-olive" : "border border-ink/20"}`}
         >
           {done && <Icon name="check" size={12} color="#FBF6EE" />}
         </View>
         {isCustom && editing ? (
           <TextInput value={label} onChangeText={onChangeLabel} className="flex-1 font-bodyMedium text-[12.5px] text-ink" />
         ) : (
-          <Text numberOfLines={1} className="flex-1 font-bodyMedium text-[12.5px] text-ink dark:text-cream">
+          <Text numberOfLines={1} className="flex-1 font-bodyMedium text-[12.5px] text-ink">
             {label}
           </Text>
         )}

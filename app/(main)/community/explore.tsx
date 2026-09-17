@@ -29,7 +29,7 @@ function ExpertRow({ expert, onOpen, onToggleFollow }: { expert: CommunityExpert
         <Text className="font-bodyMedium text-[11px] text-ink-soft">⭐ {expert.rating} ({expert.reviewCount})</Text>
       </View>
       <Pressable onPress={onToggleFollow} className={`px-3 py-1.5 rounded-full ${expert.followed ? "bg-cream-soft" : "bg-olive"}`}>
-        <Text className={`font-bodySemibold text-[11px] ${expert.followed ? "text-ink-soft" : "text-white"}`}>
+        <Text className={`font-bodySemibold text-[11px] ${expert.followed ? "text-ink-soft" : "text-on-accent"}`}>
           {expert.followed ? "Ndjekur" : "Ndiq"}
         </Text>
       </Pressable>
@@ -50,7 +50,7 @@ function GroupRow({ group, onOpen, onToggleJoin }: { group: CommunityGroup; onOp
         <Text className="font-body text-xs text-ink-faint">{group.memberCount.toLocaleString()} anëtarë</Text>
       </View>
       <Pressable onPress={onToggleJoin} className={`px-3 py-1.5 rounded-full ${group.joined ? "bg-cream-soft" : "bg-olive"}`}>
-        <Text className={`font-bodySemibold text-[11px] ${group.joined ? "text-ink-soft" : "text-white"}`}>
+        <Text className={`font-bodySemibold text-[11px] ${group.joined ? "text-ink-soft" : "text-on-accent"}`}>
           {group.joined ? "Anëtar ✓" : "Bashkohu"}
         </Text>
       </Pressable>
@@ -93,7 +93,7 @@ export default function ExploreScreen() {
   if (loading) {
     return (
       <SafeAreaView className="flex-1 bg-cream items-center justify-center">
-        <ActivityIndicator color="#6E7452" />
+        <ActivityIndicator className="text-olive" />
       </SafeAreaView>
     );
   }
@@ -109,10 +109,10 @@ export default function ExploreScreen() {
 
       <View className="flex-row px-5 mb-4">
         <Pressable onPress={() => setTab("experts")} style={shadows.soft} className={`flex-1 py-2.5 rounded-full mr-2 items-center ${tab === "experts" ? "bg-olive" : "bg-surface"}`}>
-          <Text className={`font-bodySemibold text-xs ${tab === "experts" ? "text-white" : "text-ink"}`}>Ekspertë ({experts.length})</Text>
+          <Text className={`font-bodySemibold text-xs ${tab === "experts" ? "text-on-accent" : "text-ink"}`}>Ekspertë ({experts.length})</Text>
         </Pressable>
         <Pressable onPress={() => setTab("groups")} style={shadows.soft} className={`flex-1 py-2.5 rounded-full items-center ${tab === "groups" ? "bg-olive" : "bg-surface"}`}>
-          <Text className={`font-bodySemibold text-xs ${tab === "groups" ? "text-white" : "text-ink"}`}>Grupe ({groups.length})</Text>
+          <Text className={`font-bodySemibold text-xs ${tab === "groups" ? "text-on-accent" : "text-ink"}`}>Grupe ({groups.length})</Text>
         </Pressable>
       </View>
 

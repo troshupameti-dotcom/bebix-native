@@ -1,4 +1,5 @@
 import Svg, { Path, Circle, Rect, Line } from "react-native-svg";
+import { resolveThemeColor, useThemeColors } from "@/lib/theme/useThemeColors";
 
 export type IconName =
   | "home"
@@ -56,8 +57,11 @@ type IconProps = {
  * same visual paths, different plumbing.
  */
 export function Icon({ name, size = 22, color = "currentColor" }: IconProps) {
+  // Ngjyrat e paletes (p.sh. "#2C271F") perkthehen ne ngjyren e temes aktuale,
+  // qe ikonat te mos zhduken mbi sfondin e erret.
+  const theme = useThemeColors();
   const common = {
-    stroke: color,
+    stroke: resolveThemeColor(color, theme),
     strokeWidth: 1.6,
     strokeLinecap: "round" as const,
     strokeLinejoin: "round" as const,

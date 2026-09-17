@@ -62,7 +62,7 @@ export default function CheckoutScreen() {
           Porosia jote u pranua dhe do të kontaktohesh së shpejti për dërgesën.
         </Text>
         <Pressable onPress={() => router.replace("/shop")} className="bg-olive rounded-xl2 py-3 px-6">
-          <Text className="font-bodyMedium text-sm text-white">Kthehu te Dyqani</Text>
+          <Text className="font-bodyMedium text-sm text-on-accent">Kthehu te Dyqani</Text>
         </Pressable>
       </SafeAreaView>
     );
@@ -126,7 +126,7 @@ export default function CheckoutScreen() {
           className="bg-olive rounded-xl2 py-3.5 items-center"
           style={{ opacity: canSubmit && !loading ? 1 : 0.5 }}
         >
-          {loading ? <ActivityIndicator color="#fff" /> : <Text className="font-bodySemibold text-sm text-white">Konfirmo Porosinë</Text>}
+          {loading ? <ActivityIndicator className="text-on-accent" /> : <Text className="font-bodySemibold text-sm text-on-accent">Konfirmo Porosinë</Text>}
         </Pressable>
       </ScrollView>
     </SafeAreaView>

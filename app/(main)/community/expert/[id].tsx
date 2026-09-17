@@ -43,7 +43,7 @@ export default function ExpertProfileScreen() {
   if (loading) {
     return (
       <SafeAreaView className="flex-1 bg-cream items-center justify-center">
-        <ActivityIndicator color="#6E7452" />
+        <ActivityIndicator className="text-olive" />
       </SafeAreaView>
     );
   }
@@ -53,7 +53,7 @@ export default function ExpertProfileScreen() {
       <SafeAreaView className="flex-1 bg-cream items-center justify-center px-8">
         <Text className="font-bodySemibold text-sm text-ink mb-2">Eksperti s’u gjet</Text>
         <Pressable onPress={() => router.back()} className="bg-olive px-5 py-3 rounded-full mt-2">
-          <Text className="font-bodySemibold text-sm text-white">Kthehu</Text>
+          <Text className="font-bodySemibold text-sm text-on-accent">Kthehu</Text>
         </Pressable>
       </SafeAreaView>
     );
@@ -86,7 +86,7 @@ export default function ExpertProfileScreen() {
             <Text className="font-body text-sm text-ink-soft text-center leading-5 mb-4 px-4">{expert.bio}</Text>
           )}
           <Pressable onPress={handleFollow} className={`px-6 py-2.5 rounded-full ${expert.followed ? "bg-cream-soft" : "bg-olive"}`}>
-            <Text className={`font-bodySemibold text-xs ${expert.followed ? "text-ink-soft" : "text-white"}`}>
+            <Text className={`font-bodySemibold text-xs ${expert.followed ? "text-ink-soft" : "text-on-accent"}`}>
               {expert.followed ? "Ndjekur ✓" : "Ndiq"}
             </Text>
           </Pressable>

@@ -27,7 +27,7 @@ export function PrimaryButton({ label, loading, disabled, style, ...props }: Pri
         className="w-full items-center justify-center rounded-2xl bg-ink py-4"
       >
         {loading ? (
-          <ActivityIndicator color="#FBF6EE" />
+          <ActivityIndicator className="text-cream" />
         ) : (
           <Text className="font-bodyMedium text-[15px] text-cream">{label}</Text>
         )}

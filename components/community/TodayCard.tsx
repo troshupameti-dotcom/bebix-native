@@ -30,10 +30,10 @@ export function TodayCard({
         <Text className="font-bodySemibold text-sm text-ink">Sot</Text>
         <View className="flex-row bg-cream-soft rounded-full p-1">
           <Pressable onPress={() => setTab("tip")} className={`px-3 py-1 rounded-full ${tab === "tip" ? "bg-olive" : ""}`}>
-            <Text className={`font-bodyMedium text-[11px] ${tab === "tip" ? "text-white" : "text-ink-soft"}`}>Këshillë</Text>
+            <Text className={`font-bodyMedium text-[11px] ${tab === "tip" ? "text-on-accent" : "text-ink-soft"}`}>Këshillë</Text>
           </Pressable>
           <Pressable onPress={() => setTab("games")} className={`px-3 py-1 rounded-full ${tab === "games" ? "bg-olive" : ""}`}>
-            <Text className={`font-bodyMedium text-[11px] ${tab === "games" ? "text-white" : "text-ink-soft"}`}>Lojëra AI</Text>
+            <Text className={`font-bodyMedium text-[11px] ${tab === "games" ? "text-on-accent" : "text-ink-soft"}`}>Lojëra AI</Text>
           </Pressable>
         </View>
       </View>
@@ -55,7 +55,7 @@ export function TodayCard({
       ) : !hasAge ? (
         <Text className="font-body text-xs text-ink-faint">Shto datëlindjen e bebit n’Profil me marrë lojra t’personalizueme.</Text>
       ) : gamesLoading ? (
-        <ActivityIndicator color="#6E7452" />
+        <ActivityIndicator className="text-olive" />
       ) : gamesError ? (
         <View>
           <Text className="font-body text-xs text-orange mb-2">{gamesError}</Text>

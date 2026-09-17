@@ -6,8 +6,8 @@ import { Icon, IconName } from "@/components/ui/Icon";
 import { useTranslation } from "@/lib/i18n/LanguageContext";
 import { TranslationKey } from "@/lib/i18n/translations";
 import { useOnboardingStatus } from "@/lib/hooks/useOnboardingStatus";
-import { useAppState } from "@/lib/state/AppStateContext";
 import { shadows } from "@/lib/shadows";
+import { useThemeColors } from "@/lib/theme/useThemeColors";
 import { registerForPushNotificationsAsync } from "@/lib/notifications";
 import { useBabyRecordsSync } from "@/lib/hooks/useBabyRecordsSync";
 
@@ -23,10 +23,6 @@ const TABS: { name: string; icon: IconName; labelKey: TranslationKey }[] = [
 // Të gjitha tabet e tjera kërkojnë profil (varen nga të dhëna personale).
 const GUEST_ALLOWED_TABS = new Set(["shop"]);
 
-const TAB_COLORS = {
-  light: { background: "#FFFFFF", border: "#E9DFCC", active: "#2C271F", inactive: "#A79D8A" },
-  dark: { background: "#211D17", border: "#3A342A", active: "#F7F1E4", inactive: "#9C927E" },
-};
 
 const AI_BUTTON_SIZE = 56;
 const AI_OVERLAP = 16;
@@ -44,8 +40,8 @@ const AI_OVERLAP = 16;
  */
 export default function MainLayout() {
   const { t } = useTranslation();
-  const { state } = useAppState();
   const { loading, isAuthenticated, isGuest } = useOnboardingStatus();
+  const theme = useThemeColors();
   const insets = useSafeAreaInsets();
 
   const canBrowse = isAuthenticated || isGuest;
@@ -79,7 +75,12 @@ export default function MainLayout() {
 
   if (loading || !canBrowse) return null;
 
-  const colors = state.darkMode ? TAB_COLORS.dark : TAB_COLORS.light;
+  const colors = {
+    background: theme.surface,
+    border: theme.creamLine,
+    active: theme.ink,
+    inactive: theme.inkFaint,
+  };
   const tabBarHeight = 58 + insets.bottom;
   const tabBarPaddingBottom = Math.max(insets.bottom, 10);
 
@@ -127,7 +128,7 @@ export default function MainLayout() {
               title: t(tab.labelKey),
               tabBarIcon: ({ color, focused }) => (
                 // react-navigation e tipizon color si ColorValue; ne praktike
-                // vjen nga TAB_COLORS, pra string hex.
+                // vjen nga paleta, pra string hex.
                 <Icon name={tab.icon} size={22} color={focused ? colors.active : (color as string)} />
               ),
             }}

@@ -83,7 +83,7 @@ export default function ArchivedRecordsScreen() {
               animate={{ opacity: 1, translateX: 0 }}
               transition={{ type: "timing", duration: 200, delay: Math.min(i, 8) * 25 }}
               style={shadows.press}
-              className="mb-2.5 flex-row items-center gap-3 rounded-xl2 border border-ink/10 bg-white p-3.5"
+              className="mb-2.5 flex-row items-center gap-3 rounded-xl2 border border-ink/10 bg-surface p-3.5"
             >
               <View className="h-10 w-10 items-center justify-center rounded-xl bg-cream-soft">
                 <Icon name={row.icon} size={17} color="#6B6154" />

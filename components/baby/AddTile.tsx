@@ -10,6 +10,7 @@ export function AddTile({ onPress, style }: AddTileProps) {
   return (
     <Pressable
       onPress={onPress}
+      className="border-cream-line"
       style={[
         {
           flex: 1,
@@ -17,7 +18,6 @@ export function AddTile({ onPress, style }: AddTileProps) {
           borderRadius: 22,
           borderWidth: 1.5,
           borderStyle: "dashed",
-          borderColor: "#E9DFCC",
           alignItems: "center",
           justifyContent: "center",
         },

@@ -18,21 +18,21 @@ type Row = {
 function Section({ title, rows }: { title: string; rows: Row[] }) {
   return (
     <View className="mb-6">
-      <Text className="font-bodyMedium text-xs text-ink-faint dark:text-cream/50 uppercase px-5 mb-2">{title}</Text>
-      <View className="mx-5 bg-surface dark:bg-ink/40 rounded-xl2 overflow-hidden" style={shadows.soft}>
+      <Text className="font-bodyMedium text-xs text-ink-faint uppercase px-5 mb-2">{title}</Text>
+      <View className="mx-5 bg-surface rounded-xl2 overflow-hidden" style={shadows.soft}>
         {rows.map((r, i) => (
           <Pressable
             key={r.label}
             onPress={r.onPress}
-            className={`flex-row items-center px-4 py-3.5 ${i < rows.length - 1 ? "border-b border-cream-line dark:border-cream/10" : ""}`}
+            className={`flex-row items-center px-4 py-3.5 ${i < rows.length - 1 ? "border-b border-cream-line" : ""}`}
           >
-            <View className="w-8 h-8 rounded-full bg-cream-soft dark:bg-cream/10 items-center justify-center mr-3">
+            <View className="w-8 h-8 rounded-full bg-cream-soft items-center justify-center mr-3">
               <Icon name={r.icon} size={16} color="#6E7452" />
             </View>
-            <Text className="font-bodyMedium text-sm text-ink dark:text-cream flex-1">{r.label}</Text>
+            <Text className="font-bodyMedium text-sm text-ink flex-1">{r.label}</Text>
             {r.badge && (
-              <View className="bg-cream-soft dark:bg-cream/10 rounded-full px-2 py-0.5 mr-2">
-                <Text className="font-bodySemibold text-[10px] text-ink-faint dark:text-cream/60">{r.badge}</Text>
+              <View className="bg-cream-soft rounded-full px-2 py-0.5 mr-2">
+                <Text className="font-bodySemibold text-[10px] text-ink-faint">{r.badge}</Text>
               </View>
             )}
             <Icon name="chevronRight" size={16} color="#A79D8A" />
@@ -51,13 +51,13 @@ export default function MoreScreen() {
   const { email } = useAuthUser();
 
   return (
-    <SafeAreaView className="flex-1 bg-cream dark:bg-ink" edges={["top"]}>
+    <SafeAreaView className="flex-1 bg-cream" edges={["top"]}>
       <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={{ paddingBottom: 40 }}>
         {/* Profile — Meti only, no stats */}
         <Pressable
           onPress={() => router.push("/more/profile")}
           style={shadows.softLg}
-          className="mx-5 mt-2 bg-surface dark:bg-ink/40 rounded-xl3 p-4 flex-row items-center mb-6"
+          className="mx-5 mt-2 bg-surface rounded-xl3 p-4 flex-row items-center mb-6"
         >
           <View className="w-14 h-14 rounded-full bg-olive-bg items-center justify-center overflow-hidden mr-4">
             {profile.parentPhoto ? (
@@ -67,10 +67,10 @@ export default function MoreScreen() {
             )}
           </View>
           <View className="flex-1">
-            <Text className="font-bodySemibold text-base text-ink dark:text-cream">
+            <Text className="font-bodySemibold text-base text-ink">
               {profile.parentName || t("add_your_name")}
             </Text>
-            <Text className="font-body text-xs text-ink-soft dark:text-cream/60" numberOfLines={1}>
+            <Text className="font-body text-xs text-ink-soft" numberOfLines={1}>
               {email ?? t("profile_hint")}
             </Text>
           </View>
@@ -148,7 +148,7 @@ export default function MoreScreen() {
           <Text className="font-bodyMedium text-sm text-orange">{t("logout")}</Text>
         </Pressable>
 
-        <Text className="font-body text-[11px] text-ink-faint dark:text-cream/40 text-center mt-4">Bebix v1.0.0</Text>
+        <Text className="font-body text-[11px] text-ink-faint text-center mt-4">Bebix v1.0.0</Text>
       </ScrollView>
     </SafeAreaView>
   );

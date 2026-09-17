@@ -62,7 +62,7 @@ export default function BrandProductsScreen() {
 
       {loading ? (
         <View className="flex-1 items-center justify-center">
-          <ActivityIndicator color="#6E7452" />
+          <ActivityIndicator className="text-olive" />
         </View>
       ) : loadError ? (
         <View className="flex-1 items-center justify-center px-8">

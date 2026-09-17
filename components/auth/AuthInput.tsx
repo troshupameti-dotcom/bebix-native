@@ -34,7 +34,7 @@ export function AuthInput({
       >
         <TextInput
           className="flex-1 py-3.5 font-body text-[15px] text-ink"
-          placeholderTextColor="#A79D8A"
+          placeholderClassName="text-ink-faint"
           secureTextEntry={isPassword ? !visible : secureTextEntry}
           autoCapitalize="none"
           onFocus={() => setFocused(true)}

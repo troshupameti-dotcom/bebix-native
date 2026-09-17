@@ -25,13 +25,13 @@ export function LanguageToggle() {
           onPress={() => setLanguage("sq")}
           className={`rounded-full px-3 py-1.5 ${language === "sq" ? "bg-olive" : ""}`}
         >
-          <Text className={`font-bodyMedium text-xs ${language === "sq" ? "text-white" : "text-ink-soft"}`}>SQ</Text>
+          <Text className={`font-bodyMedium text-xs ${language === "sq" ? "text-on-accent" : "text-ink-soft"}`}>SQ</Text>
         </Pressable>
         <Pressable
           onPress={() => setLanguage("en")}
           className={`rounded-full px-3 py-1.5 ${language === "en" ? "bg-olive" : ""}`}
         >
-          <Text className={`font-bodyMedium text-xs ${language === "en" ? "text-white" : "text-ink-soft"}`}>EN</Text>
+          <Text className={`font-bodyMedium text-xs ${language === "en" ? "text-on-accent" : "text-ink-soft"}`}>EN</Text>
         </Pressable>
       </View>
     </View>

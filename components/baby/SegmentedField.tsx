@@ -26,7 +26,7 @@ export function SegmentedField<T extends string>({ label, options, value, onChan
                 onChange(opt.value);
               }}
               className={`flex-row items-center gap-1.5 rounded-xl border px-3.5 py-2.5 ${
-                active ? "border-ink bg-ink" : "border-ink/10 bg-white"
+                active ? "border-ink bg-ink" : "border-ink/10 bg-surface"
               }`}
             >
               {opt.icon && <Icon name={opt.icon} size={14} color={active ? "#FBF6EE" : "#2C271F"} />}

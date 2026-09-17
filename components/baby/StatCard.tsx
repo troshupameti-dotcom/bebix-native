@@ -26,7 +26,7 @@ export function StatCard({
 }: StatCardProps) {
   return (
     <JiggleWrap active={editing} style={{ flex: 1 }}>
-      <View style={shadows.soft} className="relative rounded-xl2 border border-ink/10 bg-white p-4 dark:bg-ink dark:border-cream/10">
+      <View style={shadows.soft} className="relative rounded-xl2 border border-ink/10 bg-surface p-4">
         {editing && <RemoveBadge onPress={onRemove} />}
         {isCustom && editing ? (
           <TextInput
@@ -35,15 +35,15 @@ export function StatCard({
             className="font-bodyMedium text-[12.5px] text-ink-soft"
           />
         ) : (
-          <Text className="font-bodyMedium text-[12.5px] text-ink-soft dark:text-cream/60">{label}</Text>
+          <Text className="font-bodyMedium text-[12.5px] text-ink-soft">{label}</Text>
         )}
         <TextInput
           value={value}
           onChangeText={onChangeValue}
           editable={editing}
-          className={`font-bodySemibold text-[19px] text-ink dark:text-cream ${editing ? "border-b border-dashed border-orange" : ""}`}
+          className={`font-bodySemibold text-[19px] text-ink ${editing ? "border-b border-dashed border-orange" : ""}`}
         />
-        {sub ? <Text className="font-body text-[11.5px] text-ink-soft dark:text-cream/50">{sub}</Text> : null}
+        {sub ? <Text className="font-body text-[11.5px] text-ink-soft">{sub}</Text> : null}
       </View>
     </JiggleWrap>
   );

@@ -68,9 +68,9 @@ export default function NewPostScreen() {
           className={`px-4 py-1.5 rounded-full ${canPost ? "bg-olive" : "bg-cream-line"}`}
         >
           {posting ? (
-            <ActivityIndicator color="#FFFFFF" size="small" />
+            <ActivityIndicator className="text-on-accent" size="small" />
           ) : (
-            <Text className={`font-bodySemibold text-xs ${canPost ? "text-white" : "text-ink-faint"}`}>Posto</Text>
+            <Text className={`font-bodySemibold text-xs ${canPost ? "text-on-accent" : "text-ink-faint"}`}>Posto</Text>
           )}
         </Pressable>
       </View>
@@ -82,7 +82,7 @@ export default function NewPostScreen() {
               value={text}
               onChangeText={setText}
               placeholder="Çka ke në mendje? Ndaj një përvojë, pyetje, apo moment..."
-              placeholderTextColor="#A79D8A"
+              placeholderClassName="text-ink-faint"
               multiline
               autoFocus
               className="font-body text-sm text-ink min-h-[120px]"
@@ -105,7 +105,7 @@ export default function NewPostScreen() {
                       style={shadows.soft}
                       className={`rounded-full px-4 py-2 mr-2 ${active ? "bg-olive" : "bg-surface"}`}
                     >
-                      <Text className={`font-bodyMedium text-xs ${active ? "text-white" : "text-ink"}`}>{t.label}</Text>
+                      <Text className={`font-bodyMedium text-xs ${active ? "text-on-accent" : "text-ink"}`}>{t.label}</Text>
                     </Pressable>
                   );
                 })}
@@ -126,7 +126,7 @@ export default function NewPostScreen() {
                       style={shadows.soft}
                       className={`rounded-full px-4 py-2 mr-2 ${active ? "bg-olive" : "bg-surface"}`}
                     >
-                      <Text className={`font-bodyMedium text-xs ${active ? "text-white" : "text-ink"}`} numberOfLines={1}>{g.name}</Text>
+                      <Text className={`font-bodyMedium text-xs ${active ? "text-on-accent" : "text-ink"}`} numberOfLines={1}>{g.name}</Text>
                     </Pressable>
                   );
                 })}

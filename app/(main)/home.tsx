@@ -118,13 +118,13 @@ function QuickAction({
     <Pressable
       onPress={onPress}
       style={shadows.soft}
-      className="flex-1 bg-surface dark:bg-ink/40 rounded-xl3 py-5 items-center mx-1.5"
+      className="flex-1 bg-surface rounded-xl3 py-5 items-center mx-1.5"
     >
-      <View className="w-12 h-12 rounded-full bg-cream-soft dark:bg-cream/10 items-center justify-center mb-2.5">
+      <View className="w-12 h-12 rounded-full bg-cream-soft items-center justify-center mb-2.5">
         <Icon name={icon} size={22} color="#6E7452" />
       </View>
-      <Text className="font-bodySemibold text-sm text-ink dark:text-cream">{label}</Text>
-      <Text className="font-body text-[11px] text-ink-faint dark:text-cream/50 mt-0.5">{subLabel}</Text>
+      <Text className="font-bodySemibold text-sm text-ink">{label}</Text>
+      <Text className="font-body text-[11px] text-ink-faint mt-0.5">{subLabel}</Text>
     </Pressable>
   );
 }
@@ -173,11 +173,11 @@ export default function HomeScreen() {
   const featuredProducts = useMemo(() => products.slice().sort((a, b) => b.rating - a.rating).slice(0, 4), [products]);
 
   return (
-    <SafeAreaView className="flex-1 bg-cream dark:bg-ink" edges={["top"]}>
+    <SafeAreaView className="flex-1 bg-cream" edges={["top"]}>
       <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={{ paddingBottom: 120 }}>
         {/* Greeting bar — minimale, vetëm koha e ditës + zilja */}
         <View className="flex-row items-center justify-between px-6 pt-3 mb-2">
-          <Text className="font-body text-sm text-ink-faint dark:text-cream/50">{greetingWord(t)}</Text>
+          <Text className="font-body text-sm text-ink-faint">{greetingWord(t)}</Text>
           <Pressable
             onPress={() => router.push("/notifications")}
             className="w-9 h-9 rounded-full items-center justify-center"
@@ -198,11 +198,11 @@ export default function HomeScreen() {
               <Icon name="baby" size={40} color="#6E7452" />
             )}
           </View>
-          <Text className="font-display text-3xl text-ink dark:text-cream mt-4">
+          <Text className="font-display text-3xl text-ink mt-4">
             {profile.babyName || t("home_add_baby_name")}
           </Text>
           {!!profile.babyDob && (
-            <Text className="font-body text-sm text-ink-faint dark:text-cream/50 mt-1">{ageLabel(profile.babyDob, t)}</Text>
+            <Text className="font-body text-sm text-ink-faint mt-1">{ageLabel(profile.babyDob, t)}</Text>
           )}
         </Pressable>
 
@@ -212,14 +212,16 @@ export default function HomeScreen() {
           style={shadows.softLg}
           className="mx-6 bg-ink rounded-xl3 p-5 flex-row items-center"
         >
-          <View className="w-12 h-12 rounded-full bg-white/15 items-center justify-center mr-4">
+          <View className="w-12 h-12 rounded-full bg-on-accent/15 items-center justify-center mr-4">
             <Icon name={nextInsight.icon} size={22} color="#FFFFFF" />
           </View>
           <View className="flex-1">
-            <Text className="font-bodySemibold text-base text-white">{nextInsight.title}</Text>
-            <Text className="font-body text-xs text-white/60 mt-0.5">{nextInsight.subtitle}</Text>
+            <Text className="font-bodySemibold text-base text-on-accent">{nextInsight.title}</Text>
+            <Text className="font-body text-xs text-on-accent/60 mt-0.5">{nextInsight.subtitle}</Text>
           </View>
-          <Icon name="chevronRight" size={18} color="rgba(255,255,255,0.5)" />
+          <View className="opacity-50">
+            <Icon name="chevronRight" size={18} color="#FFFFFF" />
+          </View>
         </Pressable>
 
         {/* Tre veprime — vetëm ato që ndodhin disa herë në ditë */}
@@ -246,22 +248,22 @@ export default function HomeScreen() {
 
         {/* Lidhje diskrete drejt pjesës tjetër (vaksina, rritja, mjekësore...) */}
         <Pressable onPress={() => router.push("/baby")} className="items-center mt-5">
-          <Text className="font-body text-xs text-ink-faint dark:text-cream/50">{t("home_all_categories")}</Text>
+          <Text className="font-body text-xs text-ink-faint">{t("home_all_categories")}</Text>
         </Pressable>
 
         {/* AI — lidhje e qetë, jo banner ngjyrë e fortë */}
         <Pressable onPress={() => router.push("/ai-chat")} className="flex-row items-center justify-center mt-8 mb-2">
           <Icon name="sparkle" size={14} color="#A79D8A" />
-          <Text className="font-body text-xs text-ink-faint dark:text-cream/50 ml-2">{t("home_ai_prompt")}</Text>
+          <Text className="font-body text-xs text-ink-faint ml-2">{t("home_ai_prompt")}</Text>
         </Pressable>
 
         {/* Një rresht i vetëm produktesh — jo dy karuselë */}
         {(productsLoading || featuredProducts.length > 0) && (
           <>
             <View className="flex-row items-center justify-between px-6 mt-9 mb-3">
-              <Text className="font-bodySemibold text-base text-ink dark:text-cream">{t("home_for_you")}</Text>
+              <Text className="font-bodySemibold text-base text-ink">{t("home_for_you")}</Text>
               <Pressable onPress={() => router.push("/shop")}>
-                <Text className="font-bodyMedium text-xs text-ink-faint dark:text-cream/50">{t("home_shop_link")}</Text>
+                <Text className="font-bodyMedium text-xs text-ink-faint">{t("home_shop_link")}</Text>
               </Pressable>
             </View>
             <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ paddingLeft: 24, paddingRight: 8 }}>

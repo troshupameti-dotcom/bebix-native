@@ -1,4 +1,5 @@
-import { View, Text, ScrollView, Switch } from "react-native";
+import { View, Text, ScrollView } from "react-native";
+import { ThemedSwitch } from "@/components/ui/ThemedSwitch";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { Stack } from "expo-router";
 import { useAppState } from "@/lib/state/AppStateContext";
@@ -31,25 +32,22 @@ function ToggleGroup({
 }) {
   return (
     <View className={isLast ? "mb-2" : "mb-6"}>
-      <Text className="font-bodyMedium text-xs text-ink-faint dark:text-cream/50 uppercase px-5 mb-2">{title}</Text>
-      <View className="mx-5 bg-surface dark:bg-ink/40 rounded-xl2 overflow-hidden" style={shadows.soft}>
+      <Text className="font-bodyMedium text-xs text-ink-faint uppercase px-5 mb-2">{title}</Text>
+      <View className="mx-5 bg-surface rounded-xl2 overflow-hidden" style={shadows.soft}>
         {rows.map((r, i) => (
           <View
             key={r.key}
             className={`flex-row items-center px-4 py-3.5 ${
-              i < rows.length - 1 ? "border-b border-cream-line dark:border-cream/10" : ""
+              i < rows.length - 1 ? "border-b border-cream-line" : ""
             }`}
           >
-            <View className="w-8 h-8 rounded-full bg-cream-soft dark:bg-cream/10 items-center justify-center mr-3">
+            <View className="w-8 h-8 rounded-full bg-cream-soft items-center justify-center mr-3">
               <Icon name={r.icon} size={16} color="#6E7452" />
             </View>
-            <Text className="font-bodyMedium text-sm text-ink dark:text-cream flex-1">{t(r.labelKey)}</Text>
-            <Switch
+            <Text className="font-bodyMedium text-sm text-ink flex-1">{t(r.labelKey)}</Text>
+            <ThemedSwitch
               value={prefs[r.key]}
               onValueChange={(value) => onToggle(r.key, value)}
-              trackColor={{ false: "#E4DFD3", true: "#8A9160" }}
-              thumbColor="#FFFFFF"
-              ios_backgroundColor="#E4DFD3"
             />
           </View>
         ))}
@@ -64,7 +62,7 @@ export default function NotificationsScreen() {
   const prefs = state.notificationPrefs;
 
   return (
-    <SafeAreaView className="flex-1 bg-cream dark:bg-ink" edges={["top"]}>
+    <SafeAreaView className="flex-1 bg-cream" edges={["top"]}>
       <Stack.Screen options={{ title: t("notif_title") }} />
       <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={{ paddingTop: 16, paddingBottom: 40 }}>
         <ToggleGroup
