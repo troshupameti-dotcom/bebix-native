@@ -126,7 +126,7 @@ export default function CommunityScreen() {
         </View>
       </View>
 
-      <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={{ paddingBottom: 120 }}>
+      <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={{ paddingBottom: 96 }}>
         <View className="px-5">
           <View className="flex-row items-center bg-surface border border-cream-line rounded-xl2 px-3.5 py-2.5">
             <Icon name="search" size={18} color={theme.inkFaint} />
@@ -225,7 +225,7 @@ export default function CommunityScreen() {
         style={shadows.softLg}
         accessibilityRole="button"
         accessibilityLabel={t("community_post_btn")}
-        className="absolute bottom-28 right-6 w-14 h-14 rounded-full bg-olive items-center justify-center"
+        className="absolute bottom-4 right-5 w-14 h-14 rounded-full bg-olive items-center justify-center"
       >
         <Icon name="plus" size={24} color={theme.onAccent} />
       </Pressable>
