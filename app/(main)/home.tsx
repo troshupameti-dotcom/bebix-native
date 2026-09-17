@@ -6,10 +6,12 @@ import { useAppState, active } from "@/lib/state/AppStateContext";
 import { useLanguage } from "@/lib/i18n/LanguageContext";
 import { Icon, IconName } from "@/components/ui/Icon";
 import { shadows } from "@/lib/shadows";
-import { initialNotifications, Product } from "@/lib/homeContent";
+import { Product } from "@/lib/homeContent";
 import { fetchProducts } from "@/lib/shopData";
 import { ProductCard, ProductCardSkeleton } from "@/components/ProductCard";
 import type { TranslationKey } from "@/lib/i18n/translations";
+import { timeAgoLabel } from "@/lib/i18n/timeAgo";
+import { useInbox } from "@/lib/notifications/useInbox";
 
 // ---------------------------------------------------------------------
 // Helpers — each takes `t` explicitly since these live outside the
@@ -35,17 +37,6 @@ function ageLabel(dob: string | null, t: T): string {
   const years = Math.floor(months / 12);
   const remMonths = months % 12;
   return remMonths ? t("age_years_months", { y: years, m: remMonths }) : t("age_years", { n: years });
-}
-
-function timeAgoLabel(iso: string | null, t: T): string {
-  if (!iso) return t("time_never");
-  const mins = Math.floor((Date.now() - new Date(iso).getTime()) / 60000);
-  if (mins < 1) return t("time_now");
-  if (mins < 60) return t("time_min_ago", { n: mins });
-  const hrs = Math.floor(mins / 60);
-  if (hrs < 24) return t("time_hr_ago", { n: hrs });
-  const days = Math.floor(hrs / 24);
-  return t("time_day_ago", { n: days });
 }
 
 function isToday(iso: string): boolean {
@@ -139,7 +130,8 @@ export default function HomeScreen() {
   const { profile, baby } = state;
   const { t } = useLanguage();
 
-  const unreadCount = initialNotifications.filter((n) => !n.read).length;
+  // Njoftimet reale nga historiku i bebit (lib/notifications/inbox.ts).
+  const { unreadCount } = useInbox();
 
   const lastFeeding = active(baby.feedingLog)[0] ?? null;
   const lastSleep = active(baby.sleepLog)[0] ?? null;
@@ -179,8 +171,11 @@ export default function HomeScreen() {
         <View className="flex-row items-center justify-between px-6 pt-3 mb-2">
           <Text className="font-body text-sm text-ink-faint">{greetingWord(t)}</Text>
           <Pressable
-            onPress={() => router.push("/notifications")}
-            className="w-9 h-9 rounded-full items-center justify-center"
+            onPress={() => router.push("/(main)/notifications")}
+            hitSlop={6}
+            accessibilityRole="button"
+            accessibilityLabel={unreadCount > 0 ? `${t("inbox_title")}: ${unreadCount}` : t("inbox_title")}
+            className="w-10 h-10 rounded-full items-center justify-center"
           >
             <Icon name="bell" size={19} color="#6B6154" />
             {unreadCount > 0 && (

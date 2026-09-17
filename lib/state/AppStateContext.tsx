@@ -133,6 +133,7 @@ type Action =
   | { type: "CLEAR_CART" }
   | { type: "SET_BABY"; value: Partial<BabyModuleState> }
   | { type: "SET_NOTIFICATION_PREF"; key: keyof NotificationPrefs; value: boolean }
+  | { type: "SET_READ_NOTIFICATIONS"; ids: string[] }
   | { type: "HYDRATE"; state: AppState };
 
 function reducer(state: AppState, action: Action): AppState {
@@ -179,6 +180,8 @@ function reducer(state: AppState, action: Action): AppState {
       return { ...state, baby: { ...state.baby, ...action.value } };
     case "SET_NOTIFICATION_PREF":
       return { ...state, notificationPrefs: { ...state.notificationPrefs, [action.key]: action.value } };
+    case "SET_READ_NOTIFICATIONS":
+      return { ...state, readNotificationIds: action.ids };
     case "HYDRATE":
       // Merr shtetin e ruajtur, por siguron që fushat e reja (si
       // `notificationPrefs`) ekzistojnë edhe nëse instalimi i vjetër i
@@ -188,6 +191,7 @@ function reducer(state: AppState, action: Action): AppState {
         ...action.state,
         cartItems: (action.state as AppState).cartItems ?? initialAppState.cartItems,
         notificationPrefs: { ...initialAppState.notificationPrefs, ...(action.state as AppState).notificationPrefs },
+        readNotificationIds: (action.state as AppState).readNotificationIds ?? [],
       };
     default:
       return state;
@@ -274,6 +278,15 @@ function buildValue(state: AppState, dispatch: React.Dispatch<Action>) {
     },
 
     // ---- Notification preferences ----
+    /**
+     * Shënon njoftimet si të lexuara. Ruhen vetëm id-të që ekzistojnë ende
+     * (`currentIds`), që lista të mos rritet pa fund me kujtesa të vjetra.
+     */
+    markNotificationsRead: (ids: string[], currentIds: string[]) => {
+      const current = new Set(currentIds);
+      const next = new Set([...state.readNotificationIds, ...ids].filter((id) => current.has(id)));
+      dispatch({ type: "SET_READ_NOTIFICATIONS", ids: [...next] });
+    },
     setNotificationPref: (key: keyof NotificationPrefs, value: boolean) =>
       dispatch({ type: "SET_NOTIFICATION_PREF", key, value }),
 

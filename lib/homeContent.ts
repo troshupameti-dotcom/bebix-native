@@ -69,14 +69,6 @@ export type Article = {
   icon: IconName;
 };
 
-export type NotificationItem = {
-  id: string;
-  title: string;
-  body: string;
-  at: string;
-  read: boolean;
-  icon: IconName;
-};
 
 export const CATEGORY_META: Record<ProductCategory, { icon: IconName; labelKey: string }> = {
   feeding: { icon: "spoon", labelKey: "tile_feeding" },
@@ -157,19 +149,4 @@ export const questionCatalog: Question[] = [
   { id: "q2", productId: "p1", author: "Ergys", question: "Përshtatet me sterilizues me avull?", answer: "Po, të gjitha pjesët janë të sigurta për sterilizim me avull.", date: "2026-05-25" },
   { id: "q3", productId: "p3", author: "Leutrim", question: "Ka aromë?", answer: "Jo, janë plotësisht pa aromë.", date: "2026-06-08" },
   { id: "q4", productId: "p9", author: "Diana", question: "Për çfarë moshe rekomandohet?", answer: null, date: "2026-06-20" },
-];
-
-export const initialNotifications: NotificationItem[] = [
-  {
-    id: "n1", icon: "syringe", read: false, at: new Date(Date.now() - 3 * 3600000).toISOString(),
-    title: "Vaksina po afron", body: "DTaP (doza 2) është planifikuar për javën e ardhshme.",
-  },
-  {
-    id: "n2", icon: "spoon", read: false, at: new Date(Date.now() - 26 * 3600000).toISOString(),
-    title: "Koha e ushqyerjes", body: "Ka kaluar 3 orë nga ushqyerja e fundit e regjistruar.",
-  },
-  {
-    id: "n3", icon: "sparkle", read: true, at: new Date(Date.now() - 3 * 86400000).toISOString(),
-    title: "Ofertë e re", body: "-15% te produktet e gjumit këtë javë.",
-  },
 ];

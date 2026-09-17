@@ -85,6 +85,8 @@ export type AppState = {
   memories: MemoryPhoto[];
   baby: BabyModuleState;
   notificationPrefs: NotificationPrefs;
+  /** Njoftimet e shënuara si të lexuara (id-të e lib/notifications/inbox.ts). */
+  readNotificationIds: string[];
 };
 
 export const emptyProfile: BabyProfile = {
@@ -112,6 +114,7 @@ export const initialAppState: AppState = {
   memories: [],
   baby: initialBabyState,
   notificationPrefs: initialNotificationPrefs,
+  readNotificationIds: [],
 };
 
 export * from "./babyTypes";

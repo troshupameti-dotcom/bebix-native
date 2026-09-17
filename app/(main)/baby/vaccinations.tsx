@@ -13,6 +13,7 @@ import { useTranslation } from "@/lib/i18n/LanguageContext";
 import { haptics } from "@/lib/haptics";
 import { formatDate } from "@/lib/dateUtils";
 import { shadows } from "@/lib/shadows";
+import { computeVaccineStatus } from "@/lib/baby/vaccineStatus";
 import { VaccineEntry, VaccineStatus } from "@/lib/state/types";
 import { BackButton } from "@/components/ui/BackButton";
 
@@ -62,15 +63,6 @@ function emptyForm(): FormShape {
   };
 }
 
-function computeStatus(v: { dueDate: string; givenDate: string | null }): VaccineStatus {
-  if (v.givenDate) return "done";
-  const due = new Date(v.dueDate);
-  const now = new Date();
-  const isSameDay = due.toDateString() === now.toDateString();
-  if (isSameDay) return "due_today";
-  return due.getTime() < now.getTime() ? "overdue" : "upcoming";
-}
-
 export default function VaccinationsScreen() {
   const { t, lang } = useTranslation();
   const { state, baby } = useAppState();
@@ -80,7 +72,7 @@ export default function VaccinationsScreen() {
   const [form, setForm] = useState<FormShape>(emptyForm());
 
   const vaccines = active(state.baby.vaccines)
-    .map((v) => ({ ...v, status: computeStatus(v) }))
+    .map((v) => ({ ...v, status: computeVaccineStatus(v) }))
     .sort((a, b) => {
       const order: Record<VaccineStatus, number> = { overdue: 0, due_today: 1, upcoming: 2, done: 3 };
       if (order[a.status] !== order[b.status]) return order[a.status] - order[b.status];

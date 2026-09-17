@@ -139,6 +139,7 @@ export default function MainLayout() {
         ))}
 
         <Tabs.Screen name="ai-chat" options={{ href: null }} />
+        <Tabs.Screen name="notifications" options={{ href: null }} />
       </Tabs>
 
       <Pressable
