@@ -9,6 +9,7 @@ import { shadows } from "@/lib/shadows";
 import { Product, CATEGORY_META } from "@/lib/homeContent";
 import { fetchProductById, fetchProducts } from "@/lib/shopData";
 import { BackButton, goBackOr } from "@/components/ui/BackButton";
+import { track } from "@/lib/analytics/posthog";
 
 const { width } = Dimensions.get("window");
 
@@ -70,7 +71,10 @@ export default function ProductDetailsScreen() {
         const [p, all] = await Promise.all([fetchProductById(id), fetchProducts()]);
         if (!active) return;
         setProduct(p);
-        if (p) setRelated(all.filter((x) => x.category === p.category && x.id !== p.id).slice(0, 4));
+        if (p) {
+          setRelated(all.filter((x) => x.category === p.category && x.id !== p.id).slice(0, 4));
+          track("product_viewed", { product_id: p.id, price: p.price, category: p.category });
+        }
       } catch (e: any) {
         if (active) setLoadError(e.message ?? "Diçka shkoi keq.");
       }
@@ -234,6 +238,7 @@ export default function ProductDetailsScreen() {
               imageUrl: product.imageUrl ?? null,
               icon: product.icon,
             });
+            track("added_to_cart", { product_id: product.id, price: product.price });
             showToast(`${product.name} u shtua në shportë`);
           }}
           className="flex-1 bg-surface border border-olive rounded-xl2 py-3.5 items-center mr-3"
@@ -249,6 +254,7 @@ export default function ProductDetailsScreen() {
               imageUrl: product.imageUrl ?? null,
               icon: product.icon,
             });
+            track("added_to_cart", { product_id: product.id, price: product.price });
             router.push("/shop/cart");
           }}
           className="flex-1 bg-olive rounded-xl2 py-3.5 items-center"

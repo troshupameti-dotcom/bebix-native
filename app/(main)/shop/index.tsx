@@ -9,6 +9,7 @@ import { shadows } from "@/lib/shadows";
 import { CATEGORY_META, Product, ProductCategory, Brand } from "@/lib/homeContent";
 import { fetchProducts, fetchBrands } from "@/lib/shopData";
 import { ProductCard, ProductCardSkeleton } from "@/components/ProductCard";
+import { track } from "@/lib/analytics/posthog";
 
 type SortMode = "relevant" | "priceAsc" | "priceDesc" | "rating";
 
@@ -125,6 +126,7 @@ export default function ShopScreen() {
     // prandaj mbushja behet ne efekt pas montimit.
     // eslint-disable-next-line react-hooks/set-state-in-effect
     load();
+    track("shop_opened");
   }, []);
 
   const flashDeals = useMemo(() => products.filter((p) => p.compareAtPrice != null), [products]);

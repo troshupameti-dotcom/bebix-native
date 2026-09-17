@@ -1,5 +1,6 @@
 import { useSyncExternalStore } from "react";
 import { supabase } from "@/lib/supabase/client";
+import { setAnalyticsUser } from "@/lib/analytics/posthog";
 
 /**
  * Id-ja e përdoruesit të kyçur, e përbashkët për gjithë app-in. Lexohet nga
@@ -13,6 +14,8 @@ const listeners = new Set<() => void>();
 function set(id: string | null) {
   if (id === currentId) return;
   currentId = id;
+  // I vetmi vend ku ndryshon identiteti i perdoruesit — analitika e ndjek ketu.
+  setAnalyticsUser(id);
   listeners.forEach((l) => l());
 }
 

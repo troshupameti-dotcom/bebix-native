@@ -8,6 +8,7 @@ import { shadows } from "@/lib/shadows";
 import { supabase } from "@/lib/supabase/client";
 import { BackButton } from "@/components/ui/BackButton";
 import { fetchSavedContact } from "@/lib/shop/orders";
+import { track } from "@/lib/analytics/posthog";
 
 /**
  * Gabimet e bazës vijnë si tekst teknik (p.sh. kufizime stoku). Klienti
@@ -71,6 +72,16 @@ export default function CheckoutScreen() {
     return () => { active = false; };
   }, [authState]);
 
+  useEffect(() => {
+    if (state.cartItems.length === 0) return;
+    track("checkout_started", {
+      items: state.cartItems.reduce((n, i) => n + i.qty, 0),
+      value: Number(cartTotal().toFixed(2)),
+    });
+    // Vetem ne hapje te ekranit, jo sa here ndryshon shporta.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
   const canSubmit = !!(fullName.trim() && phone.trim() && address.trim() && city.trim() && state.cartItems.length > 0);
 
   const submitOrder = useCallback(async () => {
@@ -93,14 +104,20 @@ export default function CheckoutScreen() {
 
       if (rpcError) throw new Error(rpcError.message);
 
+      track("order_placed", {
+        items: state.cartItems.reduce((n, i) => n + i.qty, 0),
+        value: Number(cartTotal().toFixed(2)),
+      });
       clearCart();
       setDone(true);
     } catch (e: any) {
-      setError(friendlyError(e?.message ?? "Diçka shkoi keq, provo përsëri."));
+      const message = e?.message ?? "Diçka shkoi keq, provo përsëri.";
+      track("order_failed", { reason: String(message).slice(0, 120) });
+      setError(friendlyError(message));
     } finally {
       setLoading(false);
     }
-  }, [canSubmit, fullName, phone, address, city, state.cartItems, clearCart]);
+  }, [canSubmit, fullName, phone, address, city, state.cartItems, clearCart, cartTotal]);
 
   // --- Kyçja kërkohet PARA formularit, jo pasi e mbush.
   if (authState === "loading") {
