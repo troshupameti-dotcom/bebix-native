@@ -120,7 +120,10 @@ export default function NewPostScreen() {
       haptics.success();
       goBackOr("/(main)/community");
     } catch (e) {
-      setError(e instanceof Error ? e.message : "Postimi nuk u publikua. Provo përsëri.");
+      // Shfaq shkakun e vertete: gabimet e Supabase-it vijne si objekt me
+      // fushen message, jo si Error.
+      const detail = e instanceof Error ? e.message : typeof e === "object" && e && "message" in e ? String((e as { message: unknown }).message) : "";
+      setError(detail ? `Postimi nuk u publikua: ${detail}` : "Postimi nuk u publikua. Provo përsëri.");
     } finally {
       setPosting(false);
     }

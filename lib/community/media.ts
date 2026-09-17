@@ -1,3 +1,4 @@
+import { File } from "expo-file-system";
 import { supabase } from "@/lib/supabase/client";
 
 export const COMMUNITY_BUCKET = "community-media";
@@ -32,6 +33,25 @@ export type LocalMedia = {
   mimeType?: string | null;
   fileSize?: number | null;
 };
+
+/**
+ * Lexon bajtat e skedarit lokal. expo-file-system e lexon direkt nga disku;
+ * `fetch` mbi file:// dështon ose kthen 0 bajt në disa pajisje Android,
+ * prandaj mbetet vetëm si rrugë rezervë.
+ */
+async function readBytes(uri: string): Promise<ArrayBuffer> {
+  try {
+    const bytes = await new File(uri).arrayBuffer();
+    if (bytes.byteLength > 0) return bytes;
+  } catch {
+    // p.sh. content:// nga zgjedhësi i Android-it — provo me fetch.
+  }
+
+  const response = await fetch(uri);
+  const bytes = await response.arrayBuffer();
+  if (bytes.byteLength === 0) throw new Error("Skedari u lexua bosh.");
+  return bytes;
+}
 
 export function publicUrl(path: string): string {
   return supabase.storage.from(COMMUNITY_BUCKET).getPublicUrl(path).data.publicUrl;
@@ -79,8 +99,7 @@ export async function uploadPostMedia(userId: string, items: LocalMedia[]): Prom
       const ext = extensionFor(item);
       const path = `${userId}/${Date.now()}-${Math.random().toString(36).slice(2, 8)}.${ext}`;
 
-      // fetch() e lexon file:// në React Native; arrayBuffer shmang base64.
-      const bytes = await (await fetch(item.uri)).arrayBuffer();
+      const bytes = await readBytes(item.uri);
       const { error } = await supabase.storage
         .from(COMMUNITY_BUCKET)
         .upload(path, bytes, { contentType: contentTypeFor(ext, item.type) });

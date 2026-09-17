@@ -405,9 +405,10 @@ export async function createPost(input: {
 
   // Skedarët ngarkohen para postimit, që rreshti të ruhet bashkë me rrugët.
   const media = await uploadPostMedia(uid, localMedia);
-  const hasVideo = media.some((m) => m.type === "video");
-  const hasImage = media.some((m) => m.type === "image");
-  const kind = hasVideo && hasImage ? "mixed" : hasVideo ? "video" : hasImage ? "photo" : "text";
+
+  // Kolona "kind" NUK dërgohet me qëllim: ka listën e vet të vlerave të
+  // pranuara në bazë, dhe një vlerë e panjohur (photo/video/mixed) e
+  // refuzonte të gjithë postimin. Pamja varet nga lista "media", jo nga ajo.
 
   const { data, error } = await supabase
     .from("community_posts")
@@ -417,7 +418,6 @@ export async function createPost(input: {
       author_initial: authorInitial,
       author_is_expert: isExpert,
       accent: "olive",
-      kind,
       text: input.text,
       media,
       tag: input.tag ?? null,
@@ -429,7 +429,9 @@ export async function createPost(input: {
   if (error) {
     // Postimi s'u ruajt: mos lër skedarë jetimë.
     await removePostMedia(media);
-    throw error;
+    // Gabimet e Supabase-it jane objekte, jo Error: pa kete, UI-ja tregonte
+    // vetem mesazhin e pergjithshem dhe shkaku i vertete humbte.
+    throw new Error(error.message || "Postimi nuk u ruajt.");
   }
   return data.id;
 }
