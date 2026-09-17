@@ -34,7 +34,9 @@ export default function CheckoutScreen() {
   // pulsonte për një moment edhe për përdoruesit e kyçur.
   const [authState, setAuthState] = useState<"loading" | "in" | "out">("loading");
 
-  const [fullName, setFullName] = useState("");
+  // Emri vjen nga profili si vlere fillestare; porosia e fundit e plotson
+  // pastaj cfare mungon.
+  const [fullName, setFullName] = useState(() => state.profile.parentName ?? "");
   const [phone, setPhone] = useState("");
   const [address, setAddress] = useState("");
   const [city, setCity] = useState("");
@@ -56,7 +58,6 @@ export default function CheckoutScreen() {
   // Parambushje: emri nga profili, adresa dhe telefoni nga porosia e fundit.
   useEffect(() => {
     let active = true;
-    setFullName((prev) => prev || state.profile.parentName || "");
     if (authState !== "in") return;
 
     fetchSavedContact().then((saved) => {
@@ -68,7 +69,7 @@ export default function CheckoutScreen() {
     });
 
     return () => { active = false; };
-  }, [authState, state.profile.parentName]);
+  }, [authState]);
 
   const canSubmit = !!(fullName.trim() && phone.trim() && address.trim() && city.trim() && state.cartItems.length > 0);
 
