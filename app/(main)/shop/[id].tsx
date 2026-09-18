@@ -10,18 +10,10 @@ import { Product } from "@/lib/homeContent";
 import { fetchProductById, fetchRelatedProducts } from "@/lib/shopData";
 import { BackButton, goBackOr } from "@/components/ui/BackButton";
 import { track } from "@/lib/analytics/posthog";
+import { ProductReviews, Stars } from "@/components/shop/ProductReviews";
 
 const { width } = Dimensions.get("window");
 
-function StarRow({ rating, size = 14 }: { rating: number; size?: number }) {
-  return (
-    <View className="flex-row">
-      {[1, 2, 3, 4, 5].map((n) => (
-        <Icon key={n} name="sparkle" size={size} color={n <= Math.round(rating) ? "#C9702E" : "#E9DFCC"} />
-      ))}
-    </View>
-  );
-}
 
 function RelatedCard({ product, onPress }: { product: Product; onPress: () => void }) {
   const bg = product.accent === "olive" ? "bg-olive-bg" : "bg-orange-bg";
@@ -164,7 +156,7 @@ export default function ProductDetailsScreen() {
           {/* Pa vlerësime reale, "5.0 (0 vlerësime)" duket i sajuar. */}
           {(product.reviewCount ?? 0) > 0 && (
             <View className="flex-row items-center mb-3">
-              <StarRow rating={avgRating} />
+              <Stars rating={avgRating} />
               <Text className="font-body text-xs text-ink-soft ml-2">
                 {avgRating.toFixed(1)} · {product.reviewCount} vlerësime
               </Text>
@@ -184,6 +176,8 @@ export default function ProductDetailsScreen() {
             <Text className="font-body text-sm text-ink-soft leading-6">{product.description}</Text>
           </View>
         ) : null}
+
+        <ProductReviews productId={product.id} />
 
         {/* Related products */}
         {related.length > 0 && (

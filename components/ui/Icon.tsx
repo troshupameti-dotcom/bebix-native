@@ -42,7 +42,9 @@ export type IconName =
   | "play"
   | "syringe"
   | "eye"
-  | "eyeOff";
+  | "eyeOff"
+  | "star"
+  | "starFilled";
 
 type IconProps = {
   name: IconName;
@@ -169,6 +171,9 @@ const GLYPHS: Record<IconName, (p: CommonProps) => React.ReactNode> = {
   heart: (p) => <Path d="M12 20.5S3.5 15 3.5 9a4.5 4.5 0 0 1 8.5-2 4.5 4.5 0 0 1 8.5 2c0 6-8.5 11.5-8.5 11.5Z" {...p} />,
   comment: (p) => <Path d="M4 5h16v11H9l-5 4V5Z" {...p} />,
   bookmark: (p) => <Path d="M6 3.5h12v17l-6-4-6 4v-17Z" {...p} />,
+  star: (p) => <Path d="M12 3.6l2.6 5.3 5.8.8-4.2 4.1 1 5.8-5.2-2.7-5.2 2.7 1-5.8-4.2-4.1 5.8-.8z" {...p} />,
+  // Ylli i mbushur: e njejta forme, e lyer me ngjyren e vijes.
+  starFilled: (p) => <Path d="M12 3.6l2.6 5.3 5.8.8-4.2 4.1 1 5.8-5.2-2.7-5.2 2.7 1-5.8-4.2-4.1 5.8-.8z" {...p} fill={p.stroke} />,
   moon: (p) => <Path d="M20 14.5A8.5 8.5 0 1 1 9.5 4a6.8 6.8 0 0 0 10.5 10.5Z" {...p} />,
   globe: (p) => (
     <>
