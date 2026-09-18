@@ -26,7 +26,9 @@ export type AnalyticsEvent =
   | "added_to_cart"
   | "checkout_started"
   | "order_placed"
-  | "order_failed";
+  | "order_failed"
+  // Jo pjese e gypit: gabimet e app-it, qe te mos mesohen nga recensionet.
+  | "app_error";
 
 type Props = Record<string, string | number | boolean | null>;
 

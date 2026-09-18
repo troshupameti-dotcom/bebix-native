@@ -105,6 +105,14 @@ export default function MoreScreen() {
           ]}
         />
 
+        {/* Llogaria — fshirja duhet të jetë e gjetshme, jo e fshehur. */}
+        <Section
+          title={t("section_account")}
+          rows={[
+            { icon: "close", label: t("delete_account"), onPress: () => router.push("/more/delete-account") },
+          ]}
+        />
+
         <Section
           title={t("section_help")}
           rows={[

@@ -94,6 +94,8 @@ export const translations = {
     appearance: "Pamja",
     language: "Gjuha",
 
+    section_account: "Llogaria",
+    delete_account: "Fshi llogarinë",
     section_help: "Ndihmë",
     help_center: "Ndihmë",
     about_bebix: "Rreth Bebix",
@@ -523,6 +525,8 @@ export const translations = {
     appearance: "Appearance",
     language: "Language",
 
+    section_account: "Account",
+    delete_account: "Delete account",
     section_help: "Help",
     help_center: "Help Center",
     about_bebix: "About Bebix",

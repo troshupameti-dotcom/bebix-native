@@ -1,5 +1,6 @@
 import "../global.css";
 import "@/lib/theme/interop";
+import { installErrorReporter } from "@/lib/errors/reporter";
 import { useEffect } from "react";
 import { Stack } from "expo-router";
 import { StatusBar } from "expo-status-bar";
@@ -13,6 +14,9 @@ import { ToastProvider } from "@/lib/toast/ToastContext";
 import { useThemeColors } from "@/lib/theme/useThemeColors";
 
 SplashScreen.preventAutoHideAsync();
+
+// Lidhet para se te renderohet cdo gje: nje gabim ne montim duhet kapur.
+installErrorReporter();
 
 export default function RootLayout() {
   const [fontsLoaded] = useFonts({

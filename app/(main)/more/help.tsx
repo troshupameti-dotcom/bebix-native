@@ -4,6 +4,7 @@ import { SafeAreaView } from "react-native-safe-area-context";
 import { Icon } from "@/components/ui/Icon";
 import { shadows } from "@/lib/shadows";
 import { BackButton } from "@/components/ui/BackButton";
+import { SUPPORT_EMAIL } from "@/lib/support";
 
 const FAQS: { q: string; a: string }[] = [
   { q: "Si shtoj bebin tim te profili?", a: "Shko te Bebi → shtyp foton/emrin lart → plotëso emrin, datëlindjen dhe detajet e tjera." },
@@ -44,7 +45,7 @@ export default function HelpCenterScreen() {
         <Text className="font-bodyMedium text-xs text-ink-faint uppercase px-5 mb-2">Na kontakto</Text>
         <View className="px-5">
           <Pressable
-            onPress={() => Linking.openURL("mailto:support@bebix.app?subject=Ndihmë%20Bebix")}
+            onPress={() => Linking.openURL(`mailto:${SUPPORT_EMAIL}?subject=Ndihmë%20Bebix`)}
             style={shadows.soft}
             className="flex-row items-center bg-surface rounded-xl2 px-4 py-3.5 mb-3"
           >
@@ -55,7 +56,7 @@ export default function HelpCenterScreen() {
             <Icon name="chevronRight" size={16} color="#A79D8A" />
           </Pressable>
           <Text className="font-body text-xs text-ink-faint px-1">
-            (Rregullo adresën “support@bebix.app” me email-in real që do të përdorësh)
+            Përgjigjemi brenda dy ditësh pune.
           </Text>
         </View>
       </ScrollView>

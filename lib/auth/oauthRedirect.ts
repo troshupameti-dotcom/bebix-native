@@ -8,10 +8,12 @@
  *   Implicit flow: bebix://auth/callback#access_token=...&refresh_token=...
  *                  (default i supabase-js kur `flowType` s'caktohet)
  *   Gabim:         ?error=...&error_description=...  (ose në fragment)
+ *   Rivendosje:    #access_token=...&type=recovery  (linku nga email-i)
  */
 export type OAuthRedirectResult =
   | { type: "code"; code: string }
-  | { type: "tokens"; accessToken: string; refreshToken: string }
+  /** `recovery` = linku i rivendosjes se fjalekalimit, jo kycje normale. */
+  | { type: "tokens"; accessToken: string; refreshToken: string; recovery: boolean }
   | { type: "error"; message: string }
   | { type: "none" };
 
@@ -51,7 +53,12 @@ export function parseOAuthRedirect(url: string): OAuthRedirectResult {
   }
 
   if (params.access_token && params.refresh_token) {
-    return { type: "tokens", accessToken: params.access_token, refreshToken: params.refresh_token };
+    return {
+      type: "tokens",
+      accessToken: params.access_token,
+      refreshToken: params.refresh_token,
+      recovery: params.type === "recovery",
+    };
   }
 
   return { type: "none" };
