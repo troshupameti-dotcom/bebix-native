@@ -1,4 +1,5 @@
 import { supabase } from "@/lib/supabase/client";
+import { resolveDataOwnerId } from "@/lib/baby/household";
 
 /**
  * Sinkronizon emrin dhe datëlindjen e bebit te Supabase (tabela
@@ -8,8 +9,8 @@ import { supabase } from "@/lib/supabase/client";
  * ose data e lindjes (psh te "save()" te Cilësimet e bebit).
  */
 export async function syncBabyProfileToSupabase(babyName: string | null, babyDobIso: string | null) {
-  const { data: userData } = await supabase.auth.getUser();
-  const userId = userData?.user?.id;
+  // Profili i bebit i perket pronarit te te dhenave, jo secilit prind.
+  const userId = await resolveDataOwnerId();
   if (!userId) return;
 
   const { error } = await supabase.from("baby_profiles").upsert(

@@ -1,6 +1,7 @@
 import { useSyncExternalStore } from "react";
 import { supabase } from "@/lib/supabase/client";
 import { setAnalyticsUser } from "@/lib/analytics/posthog";
+import { clearHouseholdCache } from "@/lib/baby/household";
 
 /**
  * Id-ja e përdoruesit të kyçur, e përbashkët për gjithë app-in. Lexohet nga
@@ -14,8 +15,10 @@ const listeners = new Set<() => void>();
 function set(id: string | null) {
   if (id === currentId) return;
   currentId = id;
-  // I vetmi vend ku ndryshon identiteti i perdoruesit — analitika e ndjek ketu.
+  // I vetmi vend ku ndryshon identiteti i perdoruesit — analitika dhe
+  // kujtesa e familjes e ndjekin ketu.
   setAnalyticsUser(id);
+  clearHouseholdCache();
   listeners.forEach((l) => l());
 }
 

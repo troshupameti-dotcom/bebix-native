@@ -1,5 +1,6 @@
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { supabase } from "@/lib/supabase/client";
+import { resolveDataOwnerId } from "@/lib/baby/household";
 import type { BabyModuleState, Moment } from "@/lib/state/babyTypes";
 import {
   AnyBabyRecord,
@@ -211,8 +212,11 @@ async function resolveRemoteMomentUris(remote: Moment[], local: Moment[]): Promi
  * dhe sinkronizohet kur ka rrjet.
  */
 export async function syncBabyRecords(baby: BabyModuleState): Promise<Partial<BabyModuleState> | null> {
-  const { data: userData } = await supabase.auth.getUser();
-  const userId = userData?.user?.id;
+  // Jo id-ja e llogarise, por e pronarit te te dhenave: nese ky prind
+  // eshte ftuar te familja e tjetrit, te dyve u duhet i njejti histori.
+  // Pa kete, secili do te shkruante te vetja dhe do te dukej sikur
+  // sinkronizimi nuk punon.
+  const userId = await resolveDataOwnerId();
   if (!userId) return null;
 
   const lastSync = await AsyncStorage.getItem(LAST_SYNC_KEY);

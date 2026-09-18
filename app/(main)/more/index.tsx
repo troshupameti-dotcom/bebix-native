@@ -109,6 +109,7 @@ export default function MoreScreen() {
         <Section
           title={t("section_account")}
           rows={[
+            { icon: "family", label: t("family_title"), onPress: () => router.push("/more/family") },
             { icon: "close", label: t("delete_account"), onPress: () => router.push("/more/delete-account") },
           ]}
         />

@@ -95,6 +95,7 @@ export const translations = {
     language: "Gjuha",
 
     section_account: "Llogaria",
+    family_title: "Familja",
     delete_account: "Fshi llogarinë",
     section_help: "Ndihmë",
     help_center: "Ndihmë",
@@ -526,6 +527,7 @@ export const translations = {
     language: "Language",
 
     section_account: "Account",
+    family_title: "Family",
     delete_account: "Delete account",
     section_help: "Help",
     help_center: "Help Center",
