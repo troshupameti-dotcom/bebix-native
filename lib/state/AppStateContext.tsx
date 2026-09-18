@@ -2,6 +2,7 @@ import { createContext, useContext, useEffect, useReducer, useState, ReactNode }
 import { useColorScheme } from "react-native";
 import { useColorScheme as useNativeWindColorScheme } from "nativewind";
 import AsyncStorage from "@react-native-async-storage/async-storage";
+import { syncNotificationSettings } from "@/lib/notifications/settingsSync";
 import {
   AppState,
   initialAppState,
@@ -232,6 +233,13 @@ export function AppStateProvider({ children }: { children: ReactNode }) {
     AsyncStorage.setItem(STORAGE_KEY, JSON.stringify(state));
   }, [state]);
 
+  // Pas ngarkimit, cilesimet e njoftimeve i shkojne edhe serverit: kujtesat
+  // e vaksinave dhe statusi i porosise dergohen prej andej, jo nga telefoni.
+  useEffect(() => {
+    if (!hydrated) return;
+    void syncNotificationSettings(state.notificationPrefs);
+  }, [hydrated, state.notificationPrefs]);
+
   // Real dark mode: whenever the user's chosen darkMode value changes,
   // sync NativeWind's color scheme so every `dark:` class in the app
   // (not just this screen) updates automatically.
@@ -288,6 +296,8 @@ function buildValue(state: AppState, dispatch: React.Dispatch<Action>) {
       dispatch({ type: "SET_READ_NOTIFICATIONS", ids: [...next] });
     },
     setNotificationPref: (key: keyof NotificationPrefs, value: boolean) =>
+      // Dergimi te serveri behet nga efekti me poshte, qe mbulon edhe
+      // ngarkimin e pare — jo ketu, qe te mos kete dy rruge per te njejten gje.
       dispatch({ type: "SET_NOTIFICATION_PREF", key, value }),
 
     baby: {

@@ -46,7 +46,7 @@ serve(async () => {
       messages.push({
         to: t.expo_push_token,
         title: "🎁 Kujtesë dhurate",
-        body: `Ditëlindja e ${b.baby_name ?? "bebit"} âsht pas 7 ditësh — koha me ble dhuratën!`,
+        body: `Ditëlindja e ${b.baby_name ?? "bebit"} është pas 7 ditësh — koha për dhuratën!`,
         sound: "default",
       })
     );
