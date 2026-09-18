@@ -4,6 +4,7 @@ import { useAppState } from "@/lib/state/AppStateContext";
 import { Icon } from "@/components/ui/Icon";
 import { shadows } from "@/lib/shadows";
 import { Product } from "@/lib/homeContent";
+import { productImage } from "@/lib/shop/image";
 
 type Props = {
   product: Product;
@@ -33,6 +34,8 @@ export function ProductCard({ product, onPress, cardWidth }: Props) {
   const bg = "bg-cream-soft";
   const fg = "#B5A78F";
   const discount = discountPercent(product);
+  // Kartela eshte ~180px; pa kete shkarkohej foto origjinale per secilen.
+  const thumbnail = productImage(product.imageUrl, 400);
   const savings = product.compareAtPrice != null && product.compareAtPrice > product.price
     ? product.compareAtPrice - product.price
     : null;
@@ -60,8 +63,8 @@ export function ProductCard({ product, onPress, cardWidth }: Props) {
           style={shadows.soft}
           className={`w-full aspect-square items-center justify-center relative rounded-xl2 overflow-hidden ${bg}`}
         >
-          {product.imageUrl ? (
-            <Image source={{ uri: product.imageUrl }} className="w-full h-full" resizeMode="contain" />
+          {thumbnail ? (
+            <Image source={{ uri: thumbnail }} className="w-full h-full" resizeMode="contain" />
           ) : (
             <Icon name={product.icon} size={36} color={fg} />
           )}

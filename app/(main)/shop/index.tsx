@@ -1,22 +1,20 @@
-import { useEffect, useMemo, useState } from "react";
-import { View, Text, ScrollView, Pressable, TextInput, Image, useWindowDimensions } from "react-native";
+import { useCallback, useEffect, useRef, useState } from "react";
+import { View, Text, FlatList, ScrollView, Pressable, TextInput, Image, ActivityIndicator, useWindowDimensions } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useRouter } from "expo-router";
 import { useAppState } from "@/lib/state/AppStateContext";
 import { useTranslation } from "@/lib/i18n/LanguageContext";
 import { Icon } from "@/components/ui/Icon";
-import { shadows } from "@/lib/shadows";
+import { useThemeColors } from "@/lib/theme/useThemeColors";
 import { CATEGORY_META, Product, ProductCategory, Brand } from "@/lib/homeContent";
-import { fetchProducts, fetchBrands } from "@/lib/shopData";
+import { fetchProductPage, fetchBrands, ProductSort, PRODUCT_PAGE_SIZE } from "@/lib/shopData";
 import { ProductCard, ProductCardSkeleton } from "@/components/ProductCard";
 import { track } from "@/lib/analytics/posthog";
 
-type SortMode = "relevant" | "priceAsc" | "priceDesc" | "rating";
-
-const PADDING_X = 20; // px-5
+const PADDING_X = 20;
 const GRID_GAP = 12;
+const SEARCH_DEBOUNCE_MS = 350;
 
-/** 15. Mobile → 2, Tablet → 3, Desktop → 4 kolona. */
 function useGridColumns() {
   const { width } = useWindowDimensions();
   if (width >= 1024) return 4;
@@ -24,67 +22,23 @@ function useGridColumns() {
   return 2;
 }
 
+const SORT_OPTIONS: { value: ProductSort; labelKey: string }[] = [
+  { value: "newest", labelKey: "sort_relevant" },
+  { value: "priceAsc", labelKey: "sort_price_asc" },
+  { value: "priceDesc", labelKey: "sort_price_desc" },
+  { value: "rating", labelKey: "sort_rating" },
+];
+
 function Chip({ label, active, onPress }: { label: string; active: boolean; onPress: () => void }) {
   return (
     <Pressable
       onPress={onPress}
-      className={`px-4 py-2 rounded-full mr-2 ${active ? "bg-olive" : "bg-surface"}`}
-      style={!active ? shadows.soft : undefined}
+      accessibilityRole="button"
+      accessibilityState={{ selected: active }}
+      className={`px-3.5 py-1.5 rounded-full mr-2 ${active ? "bg-ink" : "bg-cream-soft"}`}
     >
       <Text className={`font-bodyMedium text-xs ${active ? "text-on-accent" : "text-ink-soft"}`}>{label}</Text>
     </Pressable>
-  );
-}
-
-/** Kategoritë tash si grid 2×3 me ikona të mëdha — krejt 6 shihen menjëherë, pa scroll. */
-function CategoryTile({
-  label,
-  icon,
-  active,
-  onPress,
-}: {
-  label: string;
-  icon: Parameters<typeof Icon>[0]["name"];
-  active: boolean;
-  onPress: () => void;
-}) {
-  return (
-    <Pressable
-      onPress={onPress}
-      style={!active ? shadows.soft : undefined}
-      className={`flex-1 items-center py-4 rounded-xl2 ${active ? "bg-olive" : "bg-surface"}`}
-    >
-      <Icon name={icon} size={22} color={active ? "#FFFFFF" : "#6E7452"} />
-      <Text className={`font-bodyMedium text-xs mt-2 text-center ${active ? "text-on-accent" : "text-ink"}`} numberOfLines={1}>
-        {label}
-      </Text>
-    </Pressable>
-  );
-}
-
-function ProductGrid({ items, cardWidth, onOpen }: { items: Product[]; cardWidth: number; onOpen: (id: string) => void }) {
-  return (
-    <View
-      className="px-5 mt-4 flex-row flex-wrap"
-      style={{ columnGap: GRID_GAP, rowGap: GRID_GAP, paddingHorizontal: PADDING_X }}
-    >
-      {items.map((p) => (
-        <ProductCard key={p.id} product={p} cardWidth={cardWidth} onPress={() => onOpen(p.id)} />
-      ))}
-    </View>
-  );
-}
-
-function SkeletonGrid({ columns, cardWidth }: { columns: number; cardWidth: number }) {
-  return (
-    <View
-      className="flex-row flex-wrap"
-      style={{ columnGap: GRID_GAP, rowGap: GRID_GAP, paddingHorizontal: PADDING_X, paddingTop: 16 }}
-    >
-      {Array.from({ length: columns * 3 }).map((_, i) => (
-        <ProductCardSkeleton key={i} cardWidth={cardWidth} />
-      ))}
-    </View>
   );
 }
 
@@ -92,68 +46,213 @@ export default function ShopScreen() {
   const router = useRouter();
   const { t } = useTranslation();
   const { state } = useAppState();
-  const isDark = state.darkMode;
+  const theme = useThemeColors();
   const { width } = useWindowDimensions();
   const columns = useGridColumns();
   const cardWidth = (width - PADDING_X * 2 - GRID_GAP * (columns - 1)) / columns;
 
   const [query, setQuery] = useState("");
+  const [search, setSearch] = useState("");
   const [category, setCategory] = useState<ProductCategory | "all">("all");
-  const [sort, setSort] = useState<SortMode>("relevant");
-  const [showFilters, setShowFilters] = useState(false);
+  const [sort, setSort] = useState<ProductSort>("newest");
+  const [showSort, setShowSort] = useState(false);
 
-  const [products, setProducts] = useState<Product[]>([]);
+  const [items, setItems] = useState<Product[]>([]);
+  const [total, setTotal] = useState(0);
+  const [hasMore, setHasMore] = useState(false);
+  const [page, setPage] = useState(0);
+  // `loading` nuk eshte flamur me vete: eshte pyetja "a i perket lista
+  // filtrave te tanishem". Nje flamur i vecante mund te dale nga sinkroni
+  // me listen; kjo nuk mundet.
+  const [loadedKey, setLoadedKey] = useState<string | null>(null);
+  const [reloadNonce, setReloadNonce] = useState(0);
+  const [loadingMore, setLoadingMore] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
   const [brands, setBrands] = useState<Brand[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [loadError, setLoadError] = useState<string | null>(null);
+  const [onSale, setOnSale] = useState<Product[]>([]);
 
-  async function load() {
-    setLoading(true);
-    setLoadError(null);
-    try {
-      const [productsData, brandsData] = await Promise.all([fetchProducts(), fetchBrands()]);
-      setProducts(productsData);
-      setBrands(brandsData);
-    } catch (e: any) {
-      setLoadError(e.message ?? "Diçka shkoi keq.");
-    } finally {
-      setLoading(false);
-    }
-  }
+  // Çdo ndryshim filtri nis një kërkesë; përgjigjet e vona nga filtrat e
+  // mëparshëm duhen injoruar, përndryshe lista "kërcen" mbrapsht.
+  const requestId = useRef(0);
 
+  const isFiltering = search.trim().length > 0 || category !== "all";
+
+  // Kërkimi shkon te serveri, prandaj pritet derisa shkruesi të ndalet.
   useEffect(() => {
-    // State-i fillestar varet nga te dhena asinkrone (AsyncStorage / rrjeti),
-    // prandaj mbushja behet ne efekt pas montimit.
-    // eslint-disable-next-line react-hooks/set-state-in-effect
-    load();
+    const timer = setTimeout(() => setSearch(query), SEARCH_DEBOUNCE_MS);
+    return () => clearTimeout(timer);
+  }, [query]);
+
+  const filterKey = `${search}|${category}|${sort}|${reloadNonce}`;
+  const loading = loadedKey !== filterKey && error === null;
+
+  // Te gjitha shkrimet e state-it rrine brenda .then/.catch: sinkronisht
+  // brenda efektit do te shkaktonin render te dyte pa nevoje.
+  useEffect(() => {
+    const id = ++requestId.current;
+    let active = true;
+    fetchProductPage({ search, category, sort, page: 0 })
+      .then((result) => {
+        if (!active || id !== requestId.current) return;
+        setItems(result.items);
+        setTotal(result.total);
+        setHasMore(result.hasMore);
+        setPage(0);
+        setError(null);
+        setLoadedKey(filterKey);
+      })
+      .catch((e: any) => {
+        if (!active || id !== requestId.current) return;
+        setError(e?.message ?? t("shop_load_error_title"));
+      });
+    return () => { active = false; };
+  }, [filterKey, search, category, sort, t]);
+  const loadMore = useCallback(async () => {
+    if (loadingMore || loading || !hasMore) return;
+    const id = requestId.current;
+    setLoadingMore(true);
+    try {
+      const next = page + 1;
+      const result = await fetchProductPage({ search, category, sort, page: next });
+      if (id !== requestId.current) return;
+      setItems((prev) => [...prev, ...result.items]);
+      setHasMore(result.hasMore);
+      setPage(next);
+    } catch {
+      // Faqja tjetër dështoi: lista ekzistuese mbetet, provohet me scroll-in tjetër.
+    } finally {
+      if (id === requestId.current) setLoadingMore(false);
+    }
+  }, [loadingMore, loading, hasMore, page, search, category, sort]);
+
+
+  // Markat dhe ofertat ngarkohen një herë; nuk varen nga filtrat.
+  useEffect(() => {
+    let active = true;
+    Promise.all([fetchBrands(), fetchProductPage({ onSaleOnly: true, pageSize: 8 })])
+      .then(([brandList, sale]) => {
+        if (!active) return;
+        setBrands(brandList);
+        setOnSale(sale.items);
+      })
+      .catch(() => {
+        // Seksione dytësore: nëse dështojnë, grid-i kryesor mjafton.
+      });
     track("shop_opened");
+    return () => { active = false; };
   }, []);
 
-  const flashDeals = useMemo(() => products.filter((p) => p.compareAtPrice != null), [products]);
-  const trending = useMemo(() => products.filter((p) => p.rating >= 4.6).slice(0, 6), [products]);
-
-  const filtered = useMemo(() => {
-    let list = products.slice();
-    if (query.trim()) {
-      const q = query.toLowerCase();
-      list = list.filter((p) => p.name.toLowerCase().includes(q) || p.brand.toLowerCase().includes(q));
-    }
-    if (category !== "all") list = list.filter((p) => p.category === category);
-    if (sort === "priceAsc") list.sort((a, b) => a.price - b.price);
-    if (sort === "priceDesc") list.sort((a, b) => b.price - a.price);
-    if (sort === "rating") list.sort((a, b) => b.rating - a.rating);
-    return list;
-  }, [products, query, category, sort]);
-
-  const isSearching = query.trim().length > 0 || category !== "all" || sort !== "relevant";
   const categoryKeys = Object.keys(CATEGORY_META) as ProductCategory[];
 
+  const renderHeader = useCallback(() => (
+    <View>
+      {/* Kategoritë — gjashtë, të gjitha të dukshme */}
+      <View className="px-5 pt-1" style={{ gap: GRID_GAP }}>
+        {[0, 1].map((row) => (
+          <View key={row} className="flex-row" style={{ gap: GRID_GAP }}>
+            {categoryKeys.slice(row * 3, row * 3 + 3).map((cat) => {
+              const active = category === cat;
+              return (
+                <Pressable
+                  key={cat}
+                  onPress={() => setCategory(active ? "all" : cat)}
+                  accessibilityRole="button"
+                  accessibilityState={{ selected: active }}
+                  className={`flex-1 items-center py-3.5 rounded-xl2 ${active ? "bg-ink" : "bg-cream-soft"}`}
+                >
+                  <Icon name={CATEGORY_META[cat].icon} size={20} color={active ? theme.onAccent : theme.inkSoft} />
+                  <Text
+                    className={`font-bodyMedium text-[11px] mt-1.5 text-center ${active ? "text-on-accent" : "text-ink-soft"}`}
+                    numberOfLines={1}
+                  >
+                    {t(CATEGORY_META[cat].labelKey as any)}
+                  </Text>
+                </Pressable>
+              );
+            })}
+          </View>
+        ))}
+      </View>
 
+      {!isFiltering && brands.length > 0 && (
+        <>
+          <Text className="font-bodySemibold text-base text-ink px-5 mt-6 mb-3">{t("shop_brands")}</Text>
+          <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ paddingHorizontal: 20 }}>
+            {brands.map((b) => (
+              <Pressable key={b.id} onPress={() => router.push(`/shop/brand/${b.id}`)} className="items-center mr-4 w-[72px]">
+                <View className="w-[72px] h-[72px] rounded-2xl bg-surface border border-cream-line items-center justify-center overflow-hidden">
+                  {b.logoUrl ? (
+                    <Image source={{ uri: b.logoUrl }} className="w-full h-full" resizeMode="cover" />
+                  ) : (
+                    <Icon name={b.icon} size={24} color={theme.inkFaint} />
+                  )}
+                </View>
+                <Text className="font-body text-[11px] text-ink-soft text-center mt-2" numberOfLines={1}>{b.name}</Text>
+              </Pressable>
+            ))}
+          </ScrollView>
+        </>
+      )}
+
+      {!isFiltering && onSale.length > 0 && (
+        <>
+          <Text className="font-bodySemibold text-base text-ink px-5 mt-7 mb-3">{t("shop_on_sale")}</Text>
+          <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ paddingHorizontal: 20 }}>
+            {onSale.map((p) => (
+              <View key={p.id} className="mr-3">
+                <ProductCard product={p} cardWidth={150} onPress={() => router.push(`/shop/${p.id}`)} />
+              </View>
+            ))}
+          </ScrollView>
+        </>
+      )}
+
+      <View className="flex-row items-center justify-between px-5 mt-7 mb-3">
+        <Text className="font-bodySemibold text-base text-ink">
+          {isFiltering ? t("shop_results_count", { n: total }) : t("shop_all_products")}
+        </Text>
+        <Pressable onPress={() => setShowSort((v) => !v)} hitSlop={8} accessibilityRole="button">
+          <Text className="font-bodyMedium text-xs text-olive">{t("shop_sort_by")}</Text>
+        </Pressable>
+      </View>
+
+      {showSort && (
+        <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ paddingHorizontal: 20 }} className="mb-3">
+          {SORT_OPTIONS.map((option) => (
+            <Chip
+              key={option.value}
+              label={t(option.labelKey as any)}
+              active={sort === option.value}
+              onPress={() => setSort(option.value)}
+            />
+          ))}
+        </ScrollView>
+      )}
+    </View>
+  ), [brands, onSale, category, isFiltering, showSort, sort, total, categoryKeys, router, t, theme]);
+
+  const renderFooter = useCallback(() => {
+    if (loadingMore) {
+      return (
+        <View className="py-6">
+          <ActivityIndicator className="text-olive" />
+        </View>
+      );
+    }
+    if (!hasMore && items.length > 0) {
+      return (
+        <Text className="font-body text-xs text-ink-faint text-center py-6">
+          {t("shop_end_of_list", { n: total })}
+        </Text>
+      );
+    }
+    return <View className="h-6" />;
+  }, [loadingMore, hasMore, items.length, total, t]);
 
   return (
     <SafeAreaView className="flex-1 bg-cream" edges={["top"]}>
-      {/* Header */}
-      <View className="flex-row items-center justify-between px-5 pt-2 mb-4">
+      <View className="flex-row items-end justify-between px-5 pt-2 mb-3">
         <View>
           <Text className="font-display text-2xl text-ink">{t("shop_title")}</Text>
           {state.profile.parentName && (
@@ -165,28 +264,32 @@ export default function ShopScreen() {
         <View className="flex-row items-center">
           <Pressable
             onPress={() => router.push("/shop/orders")}
-            style={shadows.soft}
+            hitSlop={4}
             accessibilityRole="button"
-            accessibilityLabel="Porosite e mia"
-            className="w-10 h-10 rounded-full bg-surface items-center justify-center mr-2"
+            accessibilityLabel={t("my_orders")}
+            className="w-10 h-10 items-center justify-center"
           >
-            <Icon name="cube" size={18} color={isDark ? "#F7F1E4" : "#2C271F"} />
+            <Icon name="cube" size={20} color={theme.inkSoft} />
           </Pressable>
           <Pressable
             onPress={() => router.push("/shop/wishlist")}
-            style={shadows.soft}
-            className="w-10 h-10 rounded-full bg-surface items-center justify-center mr-2"
+            hitSlop={4}
+            accessibilityRole="button"
+            accessibilityLabel={t("saved_products")}
+            className="w-10 h-10 items-center justify-center"
           >
-            <Icon name="heart" size={18} color={isDark ? "#F7F1E4" : "#2C271F"} />
+            <Icon name="heart" size={20} color={theme.inkSoft} />
           </Pressable>
           <Pressable
             onPress={() => router.push("/shop/cart")}
-            style={shadows.soft}
-            className="w-10 h-10 rounded-full bg-surface items-center justify-center"
+            hitSlop={4}
+            accessibilityRole="button"
+            accessibilityLabel={t("cart_title")}
+            className="w-10 h-10 items-center justify-center"
           >
-            <Icon name="cart" size={18} color={isDark ? "#F7F1E4" : "#2C271F"} />
+            <Icon name="cart" size={20} color={theme.ink} />
             {state.cartCount > 0 && (
-              <View className="absolute -top-1 -right-1 w-4 h-4 rounded-full bg-orange items-center justify-center">
+              <View className="absolute top-0.5 right-0 w-4 h-4 rounded-full bg-orange items-center justify-center">
                 <Text className="text-on-accent text-[10px] font-bodySemibold">{state.cartCount}</Text>
               </View>
             )}
@@ -194,173 +297,81 @@ export default function ShopScreen() {
         </View>
       </View>
 
-      {/* Search */}
-      <View className="px-5 mb-4">
-        <View style={shadows.soft} className="flex-row items-center bg-surface rounded-xl2 px-4 py-3">
-          <Icon name="search" size={18} color="#A79D8A" />
+      <View className="px-5 mb-3">
+        <View className="flex-row items-center bg-surface border border-cream-line rounded-xl2 px-3.5 py-2.5">
+          <Icon name="search" size={18} color={theme.inkFaint} />
           <TextInput
             value={query}
             onChangeText={setQuery}
             placeholder={t("shop_search_ph")}
             placeholderClassName="text-ink-faint"
+            returnKeyType="search"
             className="flex-1 ml-2 font-body text-sm text-ink"
           />
-          <Pressable onPress={() => setShowFilters((v) => !v)}>
-            <Icon name="chart" size={18} color={showFilters ? "#C9702E" : "#A79D8A"} />
-          </Pressable>
+          {query.length > 0 && (
+            <Pressable onPress={() => setQuery("")} hitSlop={8} accessibilityLabel={t("community_clear_search")}>
+              <Icon name="close" size={16} color={theme.inkFaint} />
+            </Pressable>
+          )}
         </View>
       </View>
 
-      {showFilters && (
-        <View className="px-5 mb-4">
-          <Text className="font-bodyMedium text-xs text-ink-soft mb-2">{t("shop_sort_by")}</Text>
-          <View className="flex-row mb-3">
-            <Chip label={t("sort_relevant")} active={sort === "relevant"} onPress={() => setSort("relevant")} />
-            <Chip label={t("sort_price_asc")} active={sort === "priceAsc"} onPress={() => setSort("priceAsc")} />
-            <Chip label={t("sort_price_desc")} active={sort === "priceDesc"} onPress={() => setSort("priceDesc")} />
-            <Chip label={t("sort_rating")} active={sort === "rating"} onPress={() => setSort("rating")} />
-          </View>
-        </View>
-      )}
-
-      {loading ? (
-        <ScrollView showsVerticalScrollIndicator={false}>
-          <SkeletonGrid columns={columns} cardWidth={cardWidth} />
-        </ScrollView>
-      ) : loadError ? (
+      {error ? (
         <View className="flex-1 items-center justify-center px-8">
-          <Icon name="close" size={24} color="#C9702E" />
-          <Text className="font-bodyMedium text-sm text-ink mt-3 text-center">{t("shop_load_error_title")}</Text>
-          <Text className="font-body text-xs text-ink-faint mt-1 text-center">{loadError}</Text>
-          <Pressable onPress={load} className="mt-4 bg-olive rounded-full px-5 py-2.5">
+          <Text className="font-bodyMedium text-sm text-ink text-center">{t("shop_load_error_title")}</Text>
+          <Text className="font-body text-xs text-ink-faint mt-1 text-center">{error}</Text>
+          <Pressable
+            onPress={() => { setError(null); setReloadNonce((n) => n + 1); }}
+            className="mt-4 bg-olive rounded-full px-5 py-2.5"
+          >
             <Text className="font-bodyMedium text-xs text-on-accent">{t("shop_retry")}</Text>
           </Pressable>
         </View>
-      ) : products.length === 0 ? (
-        // 14. Empty state
-        <View className="flex-1 items-center justify-center px-8">
-          <Icon name="cube" size={24} color="#A79D8A" />
-          <Text className="font-bodyMedium text-sm text-ink mt-3 text-center">{t("shop_empty_title")}</Text>
-          <Text className="font-body text-xs text-ink-faint mt-1 text-center">{t("shop_empty_sub")}</Text>
-        </View>
-      ) : (
-        <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={{ paddingBottom: 120 }}>
-          {/* Kategoritë — grid 2×3, krejt të dukshme pa scroll */}
-          <View className="px-5 mb-2">
-            <View className="flex-row justify-between mb-2">
-              <Chip label={t("shop_all_chip")} active={category === "all"} onPress={() => setCategory("all")} />
-            </View>
-            <View style={{ gap: GRID_GAP }}>
-              {[0, 1].map((row) => (
-                <View key={row} className="flex-row" style={{ gap: GRID_GAP }}>
-                  {categoryKeys.slice(row * 3, row * 3 + 3).map((cat) => (
-                    <CategoryTile
-                      key={cat}
-                      label={t(CATEGORY_META[cat].labelKey as any)}
-                      icon={CATEGORY_META[cat].icon}
-                      active={category === cat}
-                      onPress={() => setCategory(category === cat ? "all" : cat)}
-                    />
-                  ))}
-                </View>
-              ))}
-            </View>
+      ) : loading ? (
+        <ScrollView showsVerticalScrollIndicator={false}>
+          <View className="flex-row flex-wrap" style={{ columnGap: GRID_GAP, rowGap: GRID_GAP, paddingHorizontal: PADDING_X, paddingTop: 16 }}>
+            {Array.from({ length: columns * 3 }).map((_, i) => (
+              <ProductCardSkeleton key={i} cardWidth={cardWidth} />
+            ))}
           </View>
-
-          {isSearching ? (
-            filtered.length === 0 ? (
-              // 14. Empty state kur s'ka rezultate
-              <View className="items-center justify-center px-8 mt-10">
-                <Icon name="search" size={24} color="#A79D8A" />
-                <Text className="font-bodyMedium text-sm text-ink mt-3 text-center">{t("shop_no_results_title")}</Text>
+        </ScrollView>
+      ) : (
+        <FlatList
+          // Ndryshimi i numrit të kolonave kërkon montim të ri të listës.
+          key={columns}
+          data={items}
+          keyExtractor={(item) => item.id}
+          numColumns={columns}
+          renderItem={({ item }) => (
+            <ProductCard product={item} cardWidth={cardWidth} onPress={() => router.push(`/shop/${item.id}`)} />
+          )}
+          columnWrapperStyle={columns > 1 ? { gap: GRID_GAP, paddingHorizontal: PADDING_X } : undefined}
+          contentContainerStyle={{ paddingBottom: 120 }}
+          ListHeaderComponent={renderHeader}
+          ListFooterComponent={renderFooter}
+          ListEmptyComponent={
+            <View className="items-center px-10 py-12">
+              <Icon name="search" size={24} color={theme.inkFaint} />
+              <Text className="font-bodyMedium text-sm text-ink mt-3 text-center">
+                {isFiltering ? t("shop_no_results_title") : t("shop_empty_title")}
+              </Text>
+              {isFiltering && (
                 <Pressable
-                  onPress={() => {
-                    setQuery("");
-                    setCategory("all");
-                    setSort("relevant");
-                  }}
+                  onPress={() => { setQuery(""); setCategory("all"); }}
                   className="mt-4 bg-olive rounded-full px-5 py-2.5"
                 >
                   <Text className="font-bodyMedium text-xs text-on-accent">{t("shop_view_all")}</Text>
                 </Pressable>
-              </View>
-            ) : (
-              <ProductGrid items={filtered} cardWidth={cardWidth} onOpen={(id) => router.push(`/shop/${id}`)} />
-            )
-          ) : (
-            <>
-              {/* 9. Section header — Markat */}
-              {brands.length > 0 && (
-                <>
-                  <Text className="font-bodySemibold text-lg text-ink px-5 mt-5 mb-3">{t("shop_brands")}</Text>
-                  <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ paddingHorizontal: 20 }}>
-                    {brands.map((b) => {
-                      const bg = b.accent === "olive" ? "bg-olive-bg" : "bg-orange-bg";
-                      const fg = b.accent === "olive" ? "#6E7452" : "#C9702E";
-                      return (
-                        <Pressable
-                          key={b.id}
-                          onPress={() => router.push(`/shop/brand/${b.id}`)}
-                          className="items-center mr-4 w-20"
-                        >
-                          <View
-                            style={shadows.soft}
-                            className="w-20 h-20 rounded-2xl bg-surface items-center justify-center overflow-hidden"
-                          >
-                            {b.logoUrl ? (
-                              <Image source={{ uri: b.logoUrl }} className="w-full h-full" resizeMode="cover" />
-                            ) : (
-                              <View className={`w-full h-full items-center justify-center ${bg}`}>
-                                <Icon name={b.icon} size={26} color={fg} />
-                              </View>
-                            )}
-                          </View>
-                          <Text className="font-bodyMedium text-[11px] text-ink text-center mt-2" numberOfLines={1}>
-                            {b.name}
-                          </Text>
-                        </Pressable>
-                      );
-                    })}
-                  </ScrollView>
-                </>
               )}
-
-              {flashDeals.length > 0 && (
-                <>
-                  <View className="flex-row items-center justify-between px-5 mt-6 mb-3">
-                    <Text className="font-bodySemibold text-lg text-ink">{t("shop_flash_deals")}</Text>
-                  </View>
-                  <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ paddingHorizontal: 20 }}>
-                    {flashDeals.map((p) => (
-                      <View key={p.id} className="mr-3">
-                        <ProductCard product={p} cardWidth={150} onPress={() => router.push(`/shop/${p.id}`)} />
-                      </View>
-                    ))}
-                  </ScrollView>
-                </>
-              )}
-
-              {trending.length > 0 && (
-                <>
-                  <Text className="font-bodySemibold text-lg text-ink px-5 mt-6 mb-3">{t("shop_trending")}</Text>
-                  <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ paddingHorizontal: 20 }}>
-                    {trending.map((p) => (
-                      <View key={p.id} className="mr-3">
-                        <ProductCard product={p} cardWidth={150} onPress={() => router.push(`/shop/${p.id}`)} />
-                      </View>
-                    ))}
-                  </ScrollView>
-                </>
-              )}
-
-              {/* 9. Section header — grid kryesor, me "Shiko të gjitha" */}
-              <View className="flex-row items-center justify-between px-5 mt-6 mb-1">
-                <Text className="font-bodySemibold text-lg text-ink">{t("shop_all_products")}</Text>
-              </View>
-              <ProductGrid items={products} cardWidth={cardWidth} onOpen={(id) => router.push(`/shop/${id}`)} />
-            </>
-          )}
-        </ScrollView>
+            </View>
+          }
+          onEndReached={loadMore}
+          onEndReachedThreshold={0.6}
+          showsVerticalScrollIndicator={false}
+          initialNumToRender={PRODUCT_PAGE_SIZE}
+          windowSize={7}
+          removeClippedSubviews
+        />
       )}
     </SafeAreaView>
   );

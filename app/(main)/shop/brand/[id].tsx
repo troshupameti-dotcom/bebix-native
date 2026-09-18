@@ -4,7 +4,7 @@ import { SafeAreaView } from "react-native-safe-area-context";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import { Icon } from "@/components/ui/Icon";
 import { Product, Brand } from "@/lib/homeContent";
-import { fetchBrandById, fetchProductsByBrand } from "@/lib/shopData";
+import { fetchBrandById, fetchProductPage } from "@/lib/shopData";
 import { ProductCard } from "@/components/ProductCard";
 import { BackButton } from "@/components/ui/BackButton";
 
@@ -36,10 +36,10 @@ export default function BrandProductsScreen() {
       setLoading(true);
       setLoadError(null);
       try {
-        const [b, p] = await Promise.all([fetchBrandById(id), fetchProductsByBrand(id)]);
+        const [b, p] = await Promise.all([fetchBrandById(id), fetchProductPage({ brandId: id, pageSize: 48 })]);
         if (!active) return;
         setBrand(b);
-        setProducts(p);
+        setProducts(p.items);
       } catch (e: any) {
         if (active) setLoadError(e.message ?? "Diçka shkoi keq.");
       } finally {

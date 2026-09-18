@@ -1,13 +1,13 @@
 import { useToast } from "@/lib/toast/ToastContext";
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useState } from "react";
 import { View, Text, ScrollView, Pressable, Dimensions, Image, ActivityIndicator, FlatList } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import { useAppState } from "@/lib/state/AppStateContext";
-import { Icon, IconName } from "@/components/ui/Icon";
+import { Icon } from "@/components/ui/Icon";
 import { shadows } from "@/lib/shadows";
-import { Product, CATEGORY_META } from "@/lib/homeContent";
-import { fetchProductById, fetchProducts } from "@/lib/shopData";
+import { Product } from "@/lib/homeContent";
+import { fetchProductById, fetchRelatedProducts } from "@/lib/shopData";
 import { BackButton, goBackOr } from "@/components/ui/BackButton";
 import { track } from "@/lib/analytics/posthog";
 
@@ -19,18 +19,6 @@ function StarRow({ rating, size = 14 }: { rating: number; size?: number }) {
       {[1, 2, 3, 4, 5].map((n) => (
         <Icon key={n} name="sparkle" size={size} color={n <= Math.round(rating) ? "#C9702E" : "#E9DFCC"} />
       ))}
-    </View>
-  );
-}
-
-function ComingSoonRow({ icon, label }: { icon: IconName; label: string }) {
-  return (
-    <View className="flex-row items-center bg-cream-soft rounded-xl2 p-3 mr-3">
-      <Icon name={icon} size={16} color="#A79D8A" />
-      <Text className="font-bodyMedium text-xs text-ink-faint ml-2">{label}</Text>
-      <View className="bg-surface rounded-full px-2 py-0.5 ml-2">
-        <Text className="font-bodySemibold text-[9px] text-ink-faint">SË SHPEJTI</Text>
-      </View>
     </View>
   );
 }
@@ -68,11 +56,12 @@ export default function ProductDetailsScreen() {
     let active = true;
     (async () => {
       try {
-        const [p, all] = await Promise.all([fetchProductById(id), fetchProducts()]);
+        const p = await fetchProductById(id);
         if (!active) return;
         setProduct(p);
         if (p) {
-          setRelated(all.filter((x) => x.category === p.category && x.id !== p.id).slice(0, 4));
+          // Me pare shkarkohej gjithe katalogu per te mbushur 4 kartela.
+          fetchRelatedProducts(p.category, p.id, 4).then((r) => { if (active) setRelated(r); }).catch(() => {});
           track("product_viewed", { product_id: p.id, price: p.price, category: p.category });
         }
       } catch (e: any) {
@@ -86,14 +75,6 @@ export default function ProductDetailsScreen() {
 
   const avgRating = product?.rating ?? 0;
 
-  // "AI Product Explanation" — përshkrim i gjeneruar nga të dhënat e
-  // produktit (jo thirrje reale AI ende).
-  const aiExplanation = useMemo(() => {
-    if (!product) return "";
-    const catLabel = CATEGORY_META[product.category]?.labelKey ?? product.category;
-    const dealNote = product.compareAtPrice ? ` Aktualisht në ofertë, kursim prej €${(product.compareAtPrice - product.price).toFixed(2)}.` : "";
-    return `${product.name} nga ${product.brand} bën pjesë te kategoria ${catLabel}, me vlerësim mesatar ${avgRating.toFixed(1)}/5 nga ${product.reviewCount ?? 0} blerës.${dealNote} Zgjidhje e mirë nëse kërkon cilësi të qëndrueshme për përdorim të përditshëm.`;
-  }, [product, avgRating]);
 
   if (product === undefined && !loadError) {
     return (
@@ -176,23 +157,19 @@ export default function ProductDetailsScreen() {
           )}
         </View>
 
-        {/* Video / 360 / AR — placeholder deri sa të ketë media reale + development build */}
-        <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ paddingHorizontal: 20, paddingTop: 16 }}>
-          <ComingSoonRow icon="play" label="Video e Produktit" />
-          <ComingSoonRow icon="repeat" label="Pamje 360°" />
-          <ComingSoonRow icon="cube" label="Pamje AR" />
-        </ScrollView>
-
         {/* Info */}
         <View className="px-5 mt-5">
           <Text className="font-body text-xs text-ink-faint mb-1">{product.brand}</Text>
           <Text className="font-display text-xl text-ink mb-2">{product.name}</Text>
-          <View className="flex-row items-center mb-3">
-            <StarRow rating={avgRating} />
-            <Text className="font-body text-xs text-ink-soft ml-2">
-              {avgRating.toFixed(1)} ({product.reviewCount ?? 0} vlerësime)
-            </Text>
-          </View>
+          {/* Pa vlerësime reale, "5.0 (0 vlerësime)" duket i sajuar. */}
+          {(product.reviewCount ?? 0) > 0 && (
+            <View className="flex-row items-center mb-3">
+              <StarRow rating={avgRating} />
+              <Text className="font-body text-xs text-ink-soft ml-2">
+                {avgRating.toFixed(1)} · {product.reviewCount} vlerësime
+              </Text>
+            </View>
+          )}
           <View className="flex-row items-center">
             <Text className="font-display text-2xl text-ink mr-2">€{product.price.toFixed(2)}</Text>
             {product.compareAtPrice && (
@@ -201,10 +178,12 @@ export default function ProductDetailsScreen() {
           </View>
         </View>
 
-        {/* Përshkrimi i produktit — tekst i pastër, pa kornizë, pa ikonë */}
-        <View className="px-5 mt-5">
-          <Text className="font-body text-sm text-ink-soft leading-6">{aiExplanation}</Text>
-        </View>
+        {/* Përshkrimi i vërtetë nga paneli — asgjë e gjeneruar */}
+        {product.description ? (
+          <View className="px-5 mt-5">
+            <Text className="font-body text-sm text-ink-soft leading-6">{product.description}</Text>
+          </View>
+        ) : null}
 
         {/* Related products */}
         {related.length > 0 && (

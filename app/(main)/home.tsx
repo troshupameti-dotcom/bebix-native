@@ -7,7 +7,7 @@ import { useLanguage } from "@/lib/i18n/LanguageContext";
 import { Icon, IconName } from "@/components/ui/Icon";
 import { shadows } from "@/lib/shadows";
 import { Product } from "@/lib/homeContent";
-import { fetchProducts } from "@/lib/shopData";
+import { fetchFeaturedProducts } from "@/lib/shopData";
 import { ProductCard, ProductCardSkeleton } from "@/components/ProductCard";
 import type { TranslationKey } from "@/lib/i18n/translations";
 import { timeAgoLabel } from "@/lib/i18n/timeAgo";
@@ -156,7 +156,7 @@ export default function HomeScreen() {
   const [productsLoading, setProductsLoading] = useState(true);
 
   useEffect(() => {
-    fetchProducts()
+    fetchFeaturedProducts(6)
       .then(setProducts)
       .catch(() => setProducts([]))
       .finally(() => setProductsLoading(false));

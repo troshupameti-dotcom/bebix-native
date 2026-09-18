@@ -22,6 +22,7 @@ export type Product = {
   badge: "new" | "sale" | "bestseller" | null;
   reviewCount?: number;
   imageUrl?: string | null; // foto reale nga Supabase Storage (produktet e admin panelit)
+  description?: string | null;
   // Opsionale: nëse s'jepen, ekrani i detajeve i llogarit vetë (produkte
   // të kategorisë së njëjtë) si rezervë.
   relatedIds?: string[];

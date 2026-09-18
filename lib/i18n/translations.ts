@@ -263,6 +263,10 @@ export const translations = {
     shop_brands: "Markat",
     shop_flash_deals: "⚡ Oferta",
     shop_trending: "Të kërkuara",
+    cart_title: "Shporta",
+    shop_on_sale: "Në ofertë",
+    shop_results_count: "{n} produkte",
+    shop_end_of_list: "Kjo ishte e gjitha — {n} produkte.",
     shop_all_products: "Të gjitha produktet",
 
     // ---- Community screen ----
@@ -685,6 +689,10 @@ export const translations = {
     shop_brands: "Brands",
     shop_flash_deals: "⚡ Flash Deals",
     shop_trending: "Trending",
+    cart_title: "Cart",
+    shop_on_sale: "On sale",
+    shop_results_count: "{n} products",
+    shop_end_of_list: "That is everything — {n} products.",
     shop_all_products: "All Products",
 
     // ---- Community screen ----
