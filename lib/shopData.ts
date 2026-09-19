@@ -1,5 +1,5 @@
 import { supabase } from "@/lib/supabase/client";
-import { Product, ProductCategory, CATEGORY_META, Brand } from "@/lib/homeContent";
+import { Product, Brand } from "@/lib/homeContent";
 import { IconName } from "@/components/ui/Icon";
 
 /**
@@ -19,7 +19,7 @@ export const PRODUCT_PAGE_SIZE = 24;
 
 /** Kolonat e nevojshme për një kartelë liste — pa `description`, pa `gallery_urls`. */
 const LIST_COLUMNS =
-  "id, name, price, compare_at_price, image_url, accent, rating, review_count, badge, stock, free_delivery, merchant_name, brands(name), categories(key)";
+  "id, name, price, compare_at_price, image_url, accent, rating, review_count, badge, stock, free_delivery, merchant_name, brands(name), categories(key, icon)";
 
 const DETAIL_COLUMNS = `${LIST_COLUMNS}, description, gallery_urls`;
 
@@ -39,7 +39,7 @@ type ProductRow = {
   free_delivery: boolean;
   merchant_name: string | null;
   brands: { name: string } | null;
-  categories: { key: string } | null;
+  categories: { key: string; icon: string | null } | null;
 };
 
 type BrandRow = {
@@ -54,7 +54,8 @@ export type ProductSort = "newest" | "priceAsc" | "priceDesc" | "rating";
 
 export type ProductQuery = {
   search?: string;
-  category?: ProductCategory | "all";
+  /** Celesi i kategorise nga baza, ose "all". */
+  category?: string;
   brandId?: string;
   sort?: ProductSort;
   /** Faqja, duke nisur nga 0. */
@@ -71,8 +72,9 @@ export type ProductPage = {
   hasMore: boolean;
 };
 
-function iconForCategoryKey(key: string | undefined): IconName {
-  if (key && key in CATEGORY_META) return CATEGORY_META[key as ProductCategory].icon;
+/** Ikona e kategorise vjen nga paneli; nese s'eshte e vlefshme, kub. */
+function iconForCategory(icon: string | null | undefined): IconName {
+  if (icon && VALID_ICONS.has(icon as IconName)) return icon as IconName;
   return "cube";
 }
 
@@ -96,8 +98,8 @@ function mapRow(row: ProductRow): Product {
     brand: row.brands?.name ?? "Bebix",
     price: Number(row.price),
     compareAtPrice: row.compare_at_price != null ? Number(row.compare_at_price) : null,
-    category: (row.categories?.key as ProductCategory) ?? "feeding",
-    icon: iconForCategoryKey(row.categories?.key),
+    category: row.categories?.key ?? "",
+    icon: iconForCategory(row.categories?.icon),
     accent: row.accent,
     rating: Number(row.rating),
     badge: row.badge,
@@ -127,19 +129,24 @@ function mapBrandRow(row: BrandRow, index: number): Brand {
 // duhej një join `!inner`, që i heq produktet pa kategori.
 // ---------------------------------------------------------------------
 
-export type ShopCategory = { id: string; key: string; label: string };
+export type ShopCategory = { id: string; key: string; label: string; icon: IconName };
 
 let categoryCache: ShopCategory[] | null = null;
 
 export async function fetchCategories(): Promise<ShopCategory[]> {
   if (categoryCache) return categoryCache;
-  const { data, error } = await supabase.from("categories").select("id, key, label").order("sort_order");
+  const { data, error } = await supabase.from("categories").select("id, key, label, icon").order("sort_order");
   if (error) throw error;
-  categoryCache = (data ?? []).map((c: any) => ({ id: c.id, key: c.key, label: c.label }));
+  categoryCache = (data ?? []).map((c: any) => ({
+    id: c.id,
+    key: c.key,
+    label: c.label,
+    icon: iconForCategory(c.icon),
+  }));
   return categoryCache;
 }
 
-async function categoryIdFor(key: ProductCategory | "all" | undefined): Promise<string | null> {
+async function categoryIdFor(key: string | undefined): Promise<string | null> {
   if (!key || key === "all") return null;
   const categories = await fetchCategories();
   return categories.find((c) => c.key === key)?.id ?? null;
@@ -225,7 +232,7 @@ export async function fetchProductById(id: string): Promise<Product | null> {
 
 /** Produkte të ngjashme për ekranin e detajeve — më parë shkarkohej gjithë katalogu për 4 kartela. */
 export async function fetchRelatedProducts(
-  category: ProductCategory,
+  category: string,
   excludeId: string,
   limit = 6
 ): Promise<Product[]> {

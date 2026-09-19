@@ -15,7 +15,11 @@ export type Product = {
   brand: string;
   price: number;
   compareAtPrice: number | null;
-  category: ProductCategory;
+  /**
+   * Celesi i kategorise ashtu si rri te baza. NUK eshte union i fiksuar:
+   * kategorite i menaxhon paneli dhe mund te shtohen pa prekur kodin.
+   */
+  category: string;
   icon: IconName;
   accent: "olive" | "orange";
   rating: number; // 0-5

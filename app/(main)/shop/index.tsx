@@ -6,8 +6,11 @@ import { useAppState } from "@/lib/state/AppStateContext";
 import { useTranslation } from "@/lib/i18n/LanguageContext";
 import { Icon } from "@/components/ui/Icon";
 import { useThemeColors } from "@/lib/theme/useThemeColors";
-import { CATEGORY_META, Product, ProductCategory, Brand } from "@/lib/homeContent";
-import { fetchProductPage, fetchBrands, ProductSort, PRODUCT_PAGE_SIZE } from "@/lib/shopData";
+import { Product, Brand } from "@/lib/homeContent";
+import {
+  fetchProductPage, fetchBrands, fetchCategories,
+  type ProductSort, type ShopCategory, PRODUCT_PAGE_SIZE,
+} from "@/lib/shopData";
 import { ProductCard, ProductCardSkeleton } from "@/components/ProductCard";
 import { track } from "@/lib/analytics/posthog";
 
@@ -53,7 +56,8 @@ export default function ShopScreen() {
 
   const [query, setQuery] = useState("");
   const [search, setSearch] = useState("");
-  const [category, setCategory] = useState<ProductCategory | "all">("all");
+  // Celesi i kategorise nga baza, ose "all". Kategorite i menaxhon paneli.
+  const [category, setCategory] = useState<string>("all");
   const [sort, setSort] = useState<ProductSort>("newest");
   const [showSort, setShowSort] = useState(false);
 
@@ -71,6 +75,7 @@ export default function ShopScreen() {
 
   const [brands, setBrands] = useState<Brand[]>([]);
   const [onSale, setOnSale] = useState<Product[]>([]);
+  const [categories, setCategories] = useState<ShopCategory[]>([]);
 
   // Çdo ndryshim filtri nis një kërkesë; përgjigjet e vona nga filtrat e
   // mëparshëm duhen injoruar, përndryshe lista "kërcen" mbrapsht.
@@ -130,11 +135,16 @@ export default function ShopScreen() {
   // Markat dhe ofertat ngarkohen një herë; nuk varen nga filtrat.
   useEffect(() => {
     let active = true;
-    Promise.all([fetchBrands(), fetchProductPage({ onSaleOnly: true, pageSize: 8 })])
-      .then(([brandList, sale]) => {
+    Promise.all([
+      fetchBrands(),
+      fetchProductPage({ onSaleOnly: true, pageSize: 8 }),
+      fetchCategories(),
+    ])
+      .then(([brandList, sale, categoryList]) => {
         if (!active) return;
         setBrands(brandList);
         setOnSale(sale.items);
+        setCategories(categoryList);
       })
       .catch(() => {
         // Seksione dytësore: nëse dështojnë, grid-i kryesor mjafton.
@@ -143,38 +153,44 @@ export default function ShopScreen() {
     return () => { active = false; };
   }, []);
 
-  const categoryKeys = Object.keys(CATEGORY_META) as ProductCategory[];
 
   const renderHeader = useCallback(() => (
     <View>
-      {/* Kategoritë — gjashtë, të gjitha të dukshme */}
-      <View className="px-5 pt-1" style={{ gap: GRID_GAP }}>
-        {[0, 1].map((row) => (
-          <View key={row} className="flex-row" style={{ gap: GRID_GAP }}>
-            {categoryKeys.slice(row * 3, row * 3 + 3).map((cat) => {
-              const active = category === cat;
-              return (
-                <Pressable
-                  key={cat}
-                  onPress={() => setCategory(active ? "all" : cat)}
-                  accessibilityRole="button"
-                  accessibilityState={{ selected: active }}
-                  className={`flex-1 items-center py-3.5 rounded-xl2 ${active ? "bg-ink" : "bg-cream-soft"}`}
+      {/* Kategorite vijne nga paneli, jo nga kodi: mund te shtohen pa
+          prekur app-in, prandaj shiriti rreshqet ne vend te nje rrjeti
+          me numer te fiksuar. */}
+      {categories.length > 0 && (
+        <ScrollView
+          horizontal
+          showsHorizontalScrollIndicator={false}
+          contentContainerStyle={{ paddingHorizontal: 20, gap: 10 }}
+        >
+          {[{ id: "all", key: "all", label: t("shop_all_chip"), icon: "shop" as const }, ...categories].map((cat) => {
+            const isActive = category === cat.key;
+            return (
+              <Pressable
+                key={cat.id}
+                onPress={() => setCategory(isActive && cat.key !== "all" ? "all" : cat.key)}
+                accessibilityRole="button"
+                accessibilityState={{ selected: isActive }}
+                className="items-center w-[76px]"
+              >
+                <View
+                  className={`w-14 h-14 rounded-2xl items-center justify-center ${isActive ? "bg-ink" : "bg-cream-soft"}`}
                 >
-                  <Icon name={CATEGORY_META[cat].icon} size={20} color={active ? theme.onAccent : theme.inkSoft} />
-                  <Text
-                    className={`font-bodyMedium text-[11px] mt-1.5 text-center ${active ? "text-on-accent" : "text-ink-soft"}`}
-                    numberOfLines={1}
-                  >
-                    {t(CATEGORY_META[cat].labelKey as any)}
-                  </Text>
-                </Pressable>
-              );
-            })}
-          </View>
-        ))}
-      </View>
-
+                  <Icon name={cat.icon} size={22} color={isActive ? theme.onAccent : theme.inkSoft} />
+                </View>
+                <Text
+                  className={`font-bodyMedium text-[11px] mt-1.5 text-center ${isActive ? "text-ink" : "text-ink-soft"}`}
+                  numberOfLines={2}
+                >
+                  {cat.label}
+                </Text>
+              </Pressable>
+            );
+          })}
+        </ScrollView>
+      )}
       {!isFiltering && brands.length > 0 && (
         <>
           <Text className="font-bodySemibold text-base text-ink px-5 mt-6 mb-3">{t("shop_brands")}</Text>
@@ -230,7 +246,7 @@ export default function ShopScreen() {
         </ScrollView>
       )}
     </View>
-  ), [brands, onSale, category, isFiltering, showSort, sort, total, categoryKeys, router, t, theme]);
+  ), [brands, onSale, categories, category, isFiltering, showSort, sort, total, router, t, theme]);
 
   const renderFooter = useCallback(() => {
     if (loadingMore) {
