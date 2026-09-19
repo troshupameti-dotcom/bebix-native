@@ -9,21 +9,24 @@ import { shadows } from "@/lib/shadows";
 import { useAuthUser } from "@/lib/hooks/useAuthUser";
 import { supabase } from "@/lib/supabase/client";
 import { BackButton, goBackOr } from "@/components/ui/BackButton";
+import { useTranslation } from "@/lib/i18n/LanguageContext";
+import type { TranslationKey } from "@/lib/i18n/translations";
 
-const RELATIONS: { value: ParentRelation; label: string }[] = [
-  { value: "mom", label: "Mama" },
-  { value: "dad", label: "Babi" },
-  { value: "guardian", label: "Kujdestar/e" },
+const RELATIONS: { value: ParentRelation; labelKey: TranslationKey }[] = [
+  { value: "mom", labelKey: "prof_rel_mom" },
+  { value: "dad", labelKey: "prof_rel_dad" },
+  { value: "guardian", labelKey: "prof_rel_guardian" },
 ];
 
-const PROVIDER_LABELS: Record<string, string> = {
-  google: "Hyrje me Google",
-  apple: "Hyrje me Apple",
-  email: "Hyrje me email",
+const PROVIDER_KEYS: Record<string, TranslationKey> = {
+  google: "prof_login_google",
+  apple: "prof_login_apple",
+  email: "prof_login_email",
 };
 
 export default function ProfileScreen() {
   const { state, updateProfile } = useAppState();
+  const { t } = useTranslation();
   const { email, provider, loading: authLoading } = useAuthUser();
   const [name, setName] = useState(state.profile.parentName || "");
   const [relation, setRelation] = useState<ParentRelation>(state.profile.relation);
@@ -52,11 +55,11 @@ export default function ProfileScreen() {
   const savePassword = async () => {
     setPasswordError(null);
     if (password.length < 8) {
-      setPasswordError("Të paktën 8 karaktere.");
+      setPasswordError(t("signup_error_password"));
       return;
     }
     if (password !== confirmPassword) {
-      setPasswordError("Fjalëkalimet nuk përputhen.");
+      setPasswordError(t("signup_error_confirm_password"));
       return;
     }
 
@@ -72,8 +75,8 @@ export default function ProfileScreen() {
     setPassword("");
     setConfirmPassword("");
     Alert.alert(
-      isSocial ? "Fjalëkalimi u caktua" : "Fjalëkalimi u ndryshua",
-      "Tani mund të hysh edhe me email.",
+      isSocial ? t("prof_pw_set_title") : t("prof_pw_changed_title"),
+      t("prof_pw_body"),
     );
   };
 
@@ -81,9 +84,9 @@ export default function ProfileScreen() {
     <SafeAreaView className="flex-1 bg-cream" edges={["top"]}>
       <View className="flex-row items-center justify-between px-5 pt-2 mb-5">
         <BackButton fallback="/(main)/more" />
-        <Text className="font-bodyMedium text-lg text-ink">Profili im</Text>
+        <Text className="font-bodyMedium text-lg text-ink">{t("prof_title")}</Text>
         <Pressable onPress={save} className="px-4 py-2 rounded-full bg-olive">
-          <Text className="font-bodySemibold text-xs text-on-accent">Ruaj</Text>
+          <Text className="font-bodySemibold text-xs text-on-accent">{t("prof_save")}</Text>
         </Pressable>
       </View>
 
@@ -93,17 +96,17 @@ export default function ProfileScreen() {
             {photo ? <Image source={{ uri: photo }} className="w-24 h-24" /> : <Icon name="camera" size={28} color="#6E7452" />}
           </Pressable>
           <Pressable onPress={pickPhoto}>
-            <Text className="font-bodyMedium text-xs text-olive">Ndrysho foton</Text>
+            <Text className="font-bodyMedium text-xs text-olive">{t("prof_change_photo")}</Text>
           </Pressable>
         </View>
 
         <View className="px-5">
-          <Text className="font-bodySemibold text-xs text-ink-soft mb-2">Emri</Text>
+          <Text className="font-bodySemibold text-xs text-ink-soft mb-2">{t("prof_name")}</Text>
           <View style={shadows.soft} className="bg-surface rounded-xl2 px-4 py-3 mb-5">
-            <TextInput value={name} onChangeText={setName} placeholder="Emri yt" placeholderClassName="text-ink-faint" className="font-body text-sm text-ink" />
+            <TextInput value={name} onChangeText={setName} placeholder={t("prof_ph_name")} placeholderClassName="text-ink-faint" className="font-body text-sm text-ink" />
           </View>
 
-          <Text className="font-bodySemibold text-xs text-ink-soft mb-2">Lidhja me bebin</Text>
+          <Text className="font-bodySemibold text-xs text-ink-soft mb-2">{t("prof_relation")}</Text>
           <View className="flex-row mb-5">
             {RELATIONS.map((r) => (
               <Pressable
@@ -112,21 +115,21 @@ export default function ProfileScreen() {
                 className={`px-4 py-2 rounded-full mr-2 ${relation === r.value ? "bg-olive" : "bg-surface"}`}
                 style={relation !== r.value ? shadows.soft : undefined}
               >
-                <Text className={`font-bodyMedium text-xs ${relation === r.value ? "text-on-accent" : "text-ink-soft"}`}>{r.label}</Text>
+                <Text className={`font-bodyMedium text-xs ${relation === r.value ? "text-on-accent" : "text-ink-soft"}`}>{t(r.labelKey)}</Text>
               </Pressable>
             ))}
           </View>
 
-          <Text className="font-bodySemibold text-xs text-ink-soft mb-2">Llogaria</Text>
+          <Text className="font-bodySemibold text-xs text-ink-soft mb-2">{t("prof_account")}</Text>
           <View style={shadows.soft} className="bg-surface rounded-xl2 px-4 py-3 mb-5">
             {authLoading ? (
               <ActivityIndicator className="text-olive" />
             ) : (
               <>
-                <Text className="font-bodySemibold text-sm text-ink">{email ?? "Pa email"}</Text>
+                <Text className="font-bodySemibold text-sm text-ink">{email ?? t("prof_no_email")}</Text>
                 {provider ? (
                   <Text className="font-body text-xs text-ink-soft mt-1">
-                    {PROVIDER_LABELS[provider] ?? `Hyrje me ${provider}`}
+                    {PROVIDER_KEYS[provider] ? t(PROVIDER_KEYS[provider]) : t("prof_login_other", { provider })}
                   </Text>
                 ) : null}
               </>
@@ -134,19 +137,19 @@ export default function ProfileScreen() {
           </View>
 
           <Text className="font-bodySemibold text-xs text-ink-soft mb-2">
-            {isSocial ? "Cakto fjalëkalim" : "Ndrysho fjalëkalimin"}
+            {isSocial ? t("prof_set_password") : t("prof_change_password")}
           </Text>
           <View style={shadows.soft} className="bg-surface rounded-xl2 px-4 py-3">
             {isSocial ? (
               <Text className="font-body text-xs text-ink-soft mb-3 leading-5">
-                Hyre me {provider === "google" ? "Google" : "Apple"}. Cakto një fjalëkalim për të hyrë edhe me email.
+                {t("prof_social_note", { provider: provider === "google" ? "Google" : "Apple" })}
               </Text>
             ) : null}
 
             <TextInput
               value={password}
               onChangeText={setPassword}
-              placeholder="Fjalëkalimi i ri"
+              placeholder={t("prof_ph_new_password")}
               placeholderClassName="text-ink-faint"
               secureTextEntry
               autoComplete="new-password"
@@ -155,7 +158,7 @@ export default function ProfileScreen() {
             <TextInput
               value={confirmPassword}
               onChangeText={setConfirmPassword}
-              placeholder="Shkruaje përsëri"
+              placeholder={t("prof_ph_repeat")}
               placeholderClassName="text-ink-faint"
               secureTextEntry
               autoComplete="new-password"
@@ -175,7 +178,7 @@ export default function ProfileScreen() {
                 <ActivityIndicator className="text-on-accent" />
               ) : (
                 <Text className="font-bodySemibold text-xs text-on-accent">
-                  {isSocial ? "Cakto fjalëkalimin" : "Ruaj fjalëkalimin"}
+                  {isSocial ? t("prof_set_password_btn") : t("prof_save_password_btn")}
                 </Text>
               )}
             </Pressable>

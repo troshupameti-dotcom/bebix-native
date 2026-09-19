@@ -7,6 +7,7 @@ import { Product, Brand } from "@/lib/homeContent";
 import { fetchBrandById, fetchProductPage } from "@/lib/shopData";
 import { ProductCard } from "@/components/ProductCard";
 import { BackButton } from "@/components/ui/BackButton";
+import { useTranslation } from "@/lib/i18n/LanguageContext";
 
 const PADDING_X = 20;
 const GRID_GAP = 12;
@@ -19,6 +20,7 @@ function useGridColumns() {
 }
 
 export default function BrandProductsScreen() {
+  const { t } = useTranslation();
   const router = useRouter();
   const { id } = useLocalSearchParams<{ id: string }>();
   const { width } = useWindowDimensions();
@@ -41,7 +43,7 @@ export default function BrandProductsScreen() {
         setBrand(b);
         setProducts(p.items);
       } catch (e: any) {
-        if (active) setLoadError(e.message ?? "Diçka shkoi keq.");
+        if (active) setLoadError(String(e?.message ?? e));
       } finally {
         if (active) setLoading(false);
       }
@@ -55,7 +57,7 @@ export default function BrandProductsScreen() {
     <SafeAreaView className="flex-1 bg-cream" edges={["top"]}>
       <View className="flex-row items-center px-5 pt-2 mb-4">
         <BackButton fallback="/(main)/shop" className="mr-3" />
-        <Text className="font-display text-2xl text-ink">{brand?.name ?? "Marka"}</Text>
+        <Text className="font-display text-2xl text-ink">{brand?.name ?? t("brand_fallback")}</Text>
       </View>
 
       {loading ? (
@@ -65,13 +67,13 @@ export default function BrandProductsScreen() {
       ) : loadError ? (
         <View className="flex-1 items-center justify-center px-8">
           <Icon name="close" size={24} color="#C9702E" />
-          <Text className="font-bodyMedium text-sm text-ink mt-3 text-center">S’u ngarkuan produktet.</Text>
+          <Text className="font-bodyMedium text-sm text-ink mt-3 text-center">{t("brand_load_failed")}</Text>
         </View>
       ) : products.length === 0 ? (
         <View className="flex-1 items-center justify-center px-8">
           <Icon name="cube" size={24} color="#A79D8A" />
           <Text className="font-bodyMedium text-sm text-ink mt-3 text-center">
-            Ende s’ka produkte për këtë markë.
+            {t("brand_empty")}
           </Text>
         </View>
       ) : (

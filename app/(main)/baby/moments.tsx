@@ -246,7 +246,7 @@ export default function MomentsScreen() {
             <View className="mt-5 flex-row gap-2.5">
               <Pressable onPress={openEditFromView} className="flex-1 flex-row items-center justify-center gap-2 rounded-2xl bg-cream-soft py-3.5">
                 <Icon name="edit" size={15} color="#2C271F" />
-                <Text className="font-bodySemibold text-[13.5px] text-ink">Ndrysho</Text>
+                <Text className="font-bodySemibold text-[13.5px] text-ink">{t("edit_action")}</Text>
               </Pressable>
               <Pressable onPress={handleDeleteFromView} className="flex-1 flex-row items-center justify-center gap-2 rounded-2xl border border-red-200 bg-red-50 py-3.5">
                 <Icon name="close" size={15} color="#EF4444" />

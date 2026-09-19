@@ -3,6 +3,7 @@ import { SafeAreaView } from "react-native-safe-area-context";
 import { useLocalSearchParams } from "expo-router";
 import { Icon, IconName } from "@/components/ui/Icon";
 import { BackButton } from "@/components/ui/BackButton";
+import { useTranslation } from "@/lib/i18n/LanguageContext";
 
 /**
  * Ekran i përbashkët për çdo seksion të "More" që s'mund të jetë ende
@@ -10,6 +11,7 @@ import { BackButton } from "@/components/ui/BackButton";
  * Expo Go). Trajtohet me ndershmëri — jo si buton që s'bën asgjë.
  */
 export default function ComingSoonScreen() {
+  const { t } = useTranslation();
   const { title, reason, icon } = useLocalSearchParams<{ title: string; reason?: string; icon?: string }>();
 
   return (
@@ -23,7 +25,7 @@ export default function ComingSoonScreen() {
         <View className="w-16 h-16 rounded-full bg-olive-bg items-center justify-center mb-4">
           <Icon name={(icon as IconName) || "lock"} size={26} color="#6E7452" />
         </View>
-        <Text className="font-bodySemibold text-base text-ink mb-2 text-center">Së shpejti</Text>
+        <Text className="font-bodySemibold text-base text-ink mb-2 text-center">{t("soon_title")}</Text>
         <Text className="font-body text-sm text-ink-soft text-center leading-5">
           {reason || "Kjo pjesë kërkon lidhje me backend (Supabase) ose shërbime shtesë përpara se të jetë plotësisht funksionale."}
         </Text>

@@ -6,8 +6,10 @@ import { Icon } from "@/components/ui/Icon";
 import { shadows } from "@/lib/shadows";
 import { ZoomScreen } from "@/components/ZoomScreen";
 import { BackButton } from "@/components/ui/BackButton";
+import { useTranslation } from "@/lib/i18n/LanguageContext";
 
 export default function WishlistScreen() {
+  const { t } = useTranslation();
   const router = useRouter();
   const { state, toggleFavorite } = useAppState();
 
@@ -16,7 +18,7 @@ export default function WishlistScreen() {
       <ZoomScreen>
         <View className="flex-row items-center px-5 pt-2 mb-4">
           <BackButton fallback="/(main)/shop" className="mr-3" />
-          <Text className="font-display text-2xl text-ink">Të Preferuarat</Text>
+          <Text className="font-display text-2xl text-ink">{t("wishlist_title")}</Text>
         </View>
 
         <ScrollView contentContainerStyle={{ paddingBottom: 40 }}>

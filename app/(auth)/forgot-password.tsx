@@ -86,7 +86,7 @@ export default function ForgotPasswordScreen() {
             <TextInput
               value={email}
               onChangeText={setEmail}
-              placeholder="ti@example.com"
+              placeholder={t("fp_ph_email")}
               placeholderClassName="text-ink-faint"
               autoCapitalize="none"
               autoCorrect={false}

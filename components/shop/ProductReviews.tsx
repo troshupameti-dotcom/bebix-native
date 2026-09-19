@@ -7,6 +7,7 @@ import { haptics } from "@/lib/haptics";
 import { useThemeColors } from "@/lib/theme/useThemeColors";
 import { useAppState } from "@/lib/state/AppStateContext";
 import { useCurrentUserId } from "@/lib/hooks/useCurrentUserId";
+import { useTranslation } from "@/lib/i18n/LanguageContext";
 import { fetchReviews, submitReview, deleteMyReview, ProductReview } from "@/lib/shop/reviews";
 
 const MAX_BODY = 1000;
@@ -54,16 +55,17 @@ function StarPicker({ value, onChange }: { value: number; onChange: (n: number) 
 }
 
 function ReviewRow({ review }: { review: ProductReview }) {
+  const { t } = useTranslation();
   return (
     <View className="py-3 border-t border-cream-line">
       <View className="flex-row items-center mb-1.5">
         <Stars rating={review.rating} size={12} />
         <Text className="font-bodyMedium text-xs text-ink ml-2 flex-1" numberOfLines={1}>
-          {review.isMine ? "Ti" : review.authorName}
+          {review.isMine ? t("rev_you") : review.authorName}
         </Text>
         {review.verifiedPurchase && (
           <View className="bg-olive-bg rounded-full px-2 py-0.5">
-            <Text className="font-bodyMedium text-[10px] text-olive">E bleu këtu</Text>
+            <Text className="font-bodyMedium text-[10px] text-olive">{t("rev_verified")}</Text>
           </View>
         )}
       </View>
@@ -78,6 +80,7 @@ export function ProductReviews({ productId }: { productId: string }) {
   const router = useRouter();
   const theme = useThemeColors();
   const myId = useCurrentUserId();
+  const { t } = useTranslation();
   const { state } = useAppState();
 
   const [reviews, setReviews] = useState<ProductReview[]>([]);
@@ -123,7 +126,7 @@ export function ProductReviews({ productId }: { productId: string }) {
 
   async function handleSave() {
     if (rating < 1) {
-      setError("Zgjidh sa yje i jep.");
+      setError(t("rev_pick_stars"));
       return;
     }
     setSaving(true);
@@ -138,7 +141,7 @@ export function ProductReviews({ productId }: { productId: string }) {
       setWriting(false);
       await load();
     } catch (e: any) {
-      setError(e?.message ?? "Vlerësimi nuk u ruajt.");
+      setError(e?.message ?? t("rev_save_failed"));
     } finally {
       setSaving(false);
     }
@@ -151,7 +154,7 @@ export function ProductReviews({ productId }: { productId: string }) {
       setWriting(false);
       await load();
     } catch (e: any) {
-      setError(e?.message ?? "Fshirja dështoi.");
+      setError(e?.message ?? t("rev_delete_failed"));
     } finally {
       setSaving(false);
     }
@@ -169,12 +172,12 @@ export function ProductReviews({ productId }: { productId: string }) {
     <View className="px-5 mt-7">
       <View className="flex-row items-center justify-between mb-3">
         <Text className="font-bodySemibold text-base text-ink">
-          Vlerësimet{total > 0 ? ` (${total})` : ""}
+          {t("rev_title")}{total > 0 ? ` (${total})` : ""}
         </Text>
         {!writing && (
           <Pressable onPress={openForm} hitSlop={8} accessibilityRole="button">
             <Text className="font-bodyMedium text-xs text-olive">
-              {mine ? "Ndrysho vlerësimin tënd" : "Shkruaj vlerësim"}
+              {mine ? t("rev_edit_mine") : t("rev_write")}
             </Text>
           </Pressable>
         )}
@@ -182,16 +185,16 @@ export function ProductReviews({ productId }: { productId: string }) {
 
       {writing && (
         <View style={shadows.soft} className="bg-surface rounded-xl2 p-4 mb-4">
-          <Text className="font-bodyMedium text-sm text-ink-soft mb-2">Sa yje i jep?</Text>
+          <Text className="font-bodyMedium text-sm text-ink-soft mb-2">{t("rev_how_many_stars")}</Text>
           <StarPicker value={rating} onChange={setRating} />
 
           <Text className="font-bodyMedium text-sm text-ink-soft mt-4 mb-2">
-            Çfarë duhet të dinë prindërit e tjerë? (opsionale)
+            {t("rev_what_to_know")}
           </Text>
           <TextInput
             value={body}
             onChangeText={setBody}
-            placeholder="P.sh. cilësia, madhësia, sa zgjati..."
+            placeholder={t("rev_ph")}
             placeholderClassName="text-ink-faint"
             multiline
             maxLength={MAX_BODY}
@@ -206,7 +209,7 @@ export function ProductReviews({ productId }: { productId: string }) {
               onPress={() => setWriting(false)}
               className="flex-1 bg-cream-soft rounded-xl2 py-3 items-center mr-2"
             >
-              <Text className="font-bodyMedium text-sm text-ink">Anulo</Text>
+              <Text className="font-bodyMedium text-sm text-ink">{t("cancel_action")}</Text>
             </Pressable>
             <Pressable
               onPress={handleSave}
@@ -217,14 +220,14 @@ export function ProductReviews({ productId }: { productId: string }) {
               {saving ? (
                 <ActivityIndicator color={theme.onAccent} />
               ) : (
-                <Text className="font-bodySemibold text-sm text-on-accent">Ruaj</Text>
+                <Text className="font-bodySemibold text-sm text-on-accent">{t("save_action")}</Text>
               )}
             </Pressable>
           </View>
 
           {mine && (
             <Pressable onPress={handleDelete} className="items-center mt-3">
-              <Text className="font-bodyMedium text-xs text-orange">Fshi vlerësimin tim</Text>
+              <Text className="font-bodyMedium text-xs text-orange">{t("rev_delete_mine")}</Text>
             </Pressable>
           )}
         </View>
@@ -233,8 +236,7 @@ export function ProductReviews({ productId }: { productId: string }) {
       {reviews.length === 0 ? (
         !writing && (
           <Text className="font-body text-xs text-ink-soft leading-5">
-            Ende nuk ka vlerësime për këtë produkt. Nëse e ke provuar, shkruaj i pari — prindërit e
-            tjerë vendosin duke lexuar përvoja të vërteta.
+            {t("rev_empty")}
           </Text>
         )
       ) : (

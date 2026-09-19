@@ -5,6 +5,7 @@ import { Icon } from "@/components/ui/Icon";
 import { shadows } from "@/lib/shadows";
 import { haptics } from "@/lib/haptics";
 import { useThemeColors } from "@/lib/theme/useThemeColors";
+import { useTranslation } from "@/lib/i18n/LanguageContext";
 import {
   fetchMedicationSchedules, createMedicationSchedule, stopMedicationSchedule, markDoseGiven,
   type MedicationSchedule,
@@ -13,14 +14,16 @@ import {
 const INTERVALS = [4, 6, 8, 12, 24];
 const DAY_OPTIONS = [3, 5, 7, 10];
 
-function nextDose(schedule: MedicationSchedule): string {
+type Translate = (key: any, params?: Record<string, string | number>) => string;
+
+function nextDose(schedule: MedicationSchedule, t: Translate): string {
   const base = schedule.lastSentAt ? new Date(schedule.lastSentAt) : new Date(schedule.startAt);
   const next = new Date(base.getTime() + (schedule.lastSentAt ? schedule.intervalHours * 3600000 : 0));
   const diffMin = Math.round((next.getTime() - Date.now()) / 60000);
 
-  if (diffMin <= 0) return "tani";
-  if (diffMin < 60) return `pas ${diffMin} min`;
-  return `pas ${Math.round(diffMin / 60)} orësh`;
+  if (diffMin <= 0) return t("med_now");
+  if (diffMin < 60) return t("med_in_min", { n: diffMin });
+  return t("med_in_hours", { n: Math.round(diffMin / 60) });
 }
 
 /**
@@ -32,6 +35,7 @@ function nextDose(schedule: MedicationSchedule): string {
  */
 export function MedicationReminders() {
   const theme = useThemeColors();
+  const { t } = useTranslation();
   const [schedules, setSchedules] = useState<MedicationSchedule[]>([]);
   const [loading, setLoading] = useState(true);
   const [adding, setAdding] = useState(false);
@@ -57,7 +61,7 @@ export function MedicationReminders() {
 
   async function handleSave() {
     if (!name.trim()) {
-      setError("Shkruaj emrin e ilaçit.");
+      setError(t("med_need_name"));
       return;
     }
     setSaving(true);
@@ -70,17 +74,17 @@ export function MedicationReminders() {
       setAdding(false);
       await load();
     } catch (e: any) {
-      setError(e?.message ?? "Kujtesa nuk u ruajt.");
+      setError(e?.message ?? t("med_save_failed"));
     } finally {
       setSaving(false);
     }
   }
 
   function confirmStop(schedule: MedicationSchedule) {
-    Alert.alert("Ndalo kujtesën?", `${schedule.name} nuk do të kujtohet më.`, [
-      { text: "Anulo", style: "cancel" },
+    Alert.alert(t("med_stop_q"), t("med_stop_body", { name: schedule.name }), [
+      { text: t("cancel_action"), style: "cancel" },
       {
-        text: "Ndalo",
+        text: t("med_stop"),
         style: "destructive",
         onPress: async () => {
           await stopMedicationSchedule(schedule.id);
@@ -95,37 +99,37 @@ export function MedicationReminders() {
   return (
     <View className="px-5 mt-6">
       <View className="flex-row items-center justify-between mb-3">
-        <Text className="font-bodySemibold text-base text-ink">Kujtesa e ilaçeve</Text>
+        <Text className="font-bodySemibold text-base text-ink">{t("med_title")}</Text>
         {!adding && (
           <Pressable onPress={() => setAdding(true)} hitSlop={8} accessibilityRole="button">
-            <Text className="font-bodyMedium text-xs text-olive">Shto kujtesë</Text>
+            <Text className="font-bodyMedium text-xs text-olive">{t("med_add")}</Text>
           </Pressable>
         )}
       </View>
 
       {adding && (
         <View style={shadows.soft} className="bg-surface rounded-xl2 p-4 mb-3">
-          <Text className="font-bodyMedium text-sm text-ink-soft mb-2">Ilaçi</Text>
+          <Text className="font-bodyMedium text-sm text-ink-soft mb-2">{t("med_name")}</Text>
           <TextInput
             value={name}
             onChangeText={setName}
-            placeholder="P.sh. Paracetamol"
+            placeholder={t("med_ph_name")}
             placeholderClassName="text-ink-faint"
             maxLength={80}
             className="bg-cream-soft rounded-xl2 px-3 py-2.5 font-body text-sm text-ink mb-3"
           />
 
-          <Text className="font-bodyMedium text-sm text-ink-soft mb-2">Doza (opsionale)</Text>
+          <Text className="font-bodyMedium text-sm text-ink-soft mb-2">{t("med_dose")}</Text>
           <TextInput
             value={dose}
             onChangeText={setDose}
-            placeholder="P.sh. 2.5 ml"
+            placeholder={t("med_ph_dose")}
             placeholderClassName="text-ink-faint"
             maxLength={60}
             className="bg-cream-soft rounded-xl2 px-3 py-2.5 font-body text-sm text-ink mb-3"
           />
 
-          <Text className="font-bodyMedium text-sm text-ink-soft mb-2">Çdo sa orë</Text>
+          <Text className="font-bodyMedium text-sm text-ink-soft mb-2">{t("med_every")}</Text>
           <View className="flex-row mb-3">
             {INTERVALS.map((h) => (
               <Pressable
@@ -142,7 +146,7 @@ export function MedicationReminders() {
             ))}
           </View>
 
-          <Text className="font-bodyMedium text-sm text-ink-soft mb-2">Për sa ditë</Text>
+          <Text className="font-bodyMedium text-sm text-ink-soft mb-2">{t("med_days")}</Text>
           <View className="flex-row mb-3">
             {DAY_OPTIONS.map((d) => (
               <Pressable
@@ -166,7 +170,7 @@ export function MedicationReminders() {
               onPress={() => { setAdding(false); setError(null); }}
               className="flex-1 bg-cream-soft rounded-xl2 py-3 items-center mr-2"
             >
-              <Text className="font-bodyMedium text-sm text-ink">Anulo</Text>
+              <Text className="font-bodyMedium text-sm text-ink">{t("cancel_action")}</Text>
             </Pressable>
             <Pressable
               onPress={handleSave}
@@ -177,13 +181,13 @@ export function MedicationReminders() {
               {saving ? (
                 <ActivityIndicator color={theme.onAccent} />
               ) : (
-                <Text className="font-bodySemibold text-sm text-on-accent">Ruaj</Text>
+                <Text className="font-bodySemibold text-sm text-on-accent">{t("save_action")}</Text>
               )}
             </Pressable>
           </View>
 
           <Text className="font-body text-[11px] text-ink-faint leading-4 mt-3">
-            Kujtesa e parë vjen pas {intervalHours} orësh — sepse dozën e tanishme sapo e dhe.
+            {t("med_first_note", { n: intervalHours })}
           </Text>
         </View>
       )}
@@ -193,8 +197,7 @@ export function MedicationReminders() {
       ) : active.length === 0 ? (
         !adding && (
           <Text className="font-body text-xs text-ink-soft leading-5">
-            Kur bebi merr një ilaç me orar, shtoje këtu dhe të kujtojmë ne — edhe kur app-i është i
-            mbyllur.
+            {t("med_empty")}
           </Text>
         )
       ) : (
@@ -208,7 +211,7 @@ export function MedicationReminders() {
                 {schedule.name}{schedule.dose ? ` · ${schedule.dose}` : ""}
               </Text>
               <Text className="font-body text-[11px] text-ink-faint mt-0.5">
-                Çdo {schedule.intervalHours} orë · tjetra {nextDose(schedule)}
+                {t("med_every_hours", { n: schedule.intervalHours })} · {t("med_next", { when: nextDose(schedule, t) })}
               </Text>
             </View>
             <View className="items-end">
@@ -217,10 +220,10 @@ export function MedicationReminders() {
                 accessibilityRole="button"
                 className="bg-olive rounded-full px-3 py-1.5 mb-1.5"
               >
-                <Text className="font-bodyMedium text-[11px] text-on-accent">Dhashë</Text>
+                <Text className="font-bodyMedium text-[11px] text-on-accent">{t("med_given")}</Text>
               </Pressable>
               <Pressable onPress={() => confirmStop(schedule)} hitSlop={8} accessibilityRole="button">
-                <Text className="font-bodyMedium text-[11px] text-ink-faint">Ndalo</Text>
+                <Text className="font-bodyMedium text-[11px] text-ink-faint">{t("med_stop")}</Text>
               </Pressable>
             </View>
           </View>

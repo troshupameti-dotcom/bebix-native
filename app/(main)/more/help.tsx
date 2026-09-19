@@ -5,58 +5,61 @@ import { Icon } from "@/components/ui/Icon";
 import { shadows } from "@/lib/shadows";
 import { BackButton } from "@/components/ui/BackButton";
 import { SUPPORT_EMAIL } from "@/lib/support";
+import { useTranslation } from "@/lib/i18n/LanguageContext";
+import type { TranslationKey } from "@/lib/i18n/translations";
 
-const FAQS: { q: string; a: string }[] = [
-  { q: "Si shtoj bebin tim te profili?", a: "Shko te Bebi → shtyp foton/emrin lart → plotëso emrin, datëlindjen dhe detajet e tjera." },
-  { q: "A ruhen të dhënat e mia nëse mbyll app-in?", a: "Po — çdo gjë ruhet automatikisht në pajisjen tënde, dhe llogaria (email/fjalëkalim) ruhet nga Supabase." },
-  { q: "Si aktivizoj kujtesat për vaksinat?", a: "Te secili vaksinim, aktivizo çelësin 'Kujtesë' — do të shfaqet te seksioni Kujtesat në Home." },
-  { q: "A mund të kem disa bebe në të njëjtën llogari?", a: "Ende jo — kjo veçori (Bebet e Mia) po zhvillohet dhe do të aktivizohet së shpejti." },
-  { q: "Si e ndryshoj gjuhën e app-it?", a: "Më Shumë → Gjuha → zgjidh Shqip ose English." },
+const FAQS: { q: TranslationKey; a: TranslationKey }[] = [
+  { q: "help_q1", a: "help_a1" },
+  { q: "help_q2", a: "help_a2" },
+  { q: "help_q3", a: "help_a3" },
+  { q: "help_q4", a: "help_a4" },
+  { q: "help_q5", a: "help_a5" },
 ];
 
 export default function HelpCenterScreen() {
+  const { t } = useTranslation();
   const [open, setOpen] = useState<number | null>(null);
 
   return (
     <SafeAreaView className="flex-1 bg-cream" edges={["top"]}>
       <View className="flex-row items-center px-5 pt-2 mb-4">
         <BackButton fallback="/(main)/more" className="mr-3" />
-        <Text className="font-display text-xl text-ink">Qendra e Ndihmës</Text>
+        <Text className="font-display text-xl text-ink">{t("help_title")}</Text>
       </View>
 
       <ScrollView contentContainerStyle={{ paddingBottom: 40 }}>
-        <Text className="font-bodyMedium text-xs text-ink-faint uppercase px-5 mb-2">Pyetje të Shpeshta</Text>
+        <Text className="font-bodyMedium text-xs text-ink-faint uppercase px-5 mb-2">{t("help_faq")}</Text>
         <View className="px-5 mb-6">
           {FAQS.map((f, i) => (
             <View key={f.q} style={shadows.soft} className="bg-surface rounded-xl2 mb-3 overflow-hidden">
               <Pressable onPress={() => setOpen(open === i ? null : i)} className="flex-row items-center justify-between px-4 py-3.5">
-                <Text className="font-bodyMedium text-sm text-ink flex-1 mr-2">{f.q}</Text>
+                <Text className="font-bodyMedium text-sm text-ink flex-1 mr-2">{t(f.q)}</Text>
                 <Icon name={open === i ? "chevronLeft" : "chevronRight"} size={16} color="#A79D8A" />
               </Pressable>
               {open === i && (
                 <View className="px-4 pb-4">
-                  <Text className="font-body text-sm text-ink-soft leading-5">{f.a}</Text>
+                  <Text className="font-body text-sm text-ink-soft leading-5">{t(f.a)}</Text>
                 </View>
               )}
             </View>
           ))}
         </View>
 
-        <Text className="font-bodyMedium text-xs text-ink-faint uppercase px-5 mb-2">Na kontakto</Text>
+        <Text className="font-bodyMedium text-xs text-ink-faint uppercase px-5 mb-2">{t("help_contact")}</Text>
         <View className="px-5">
           <Pressable
-            onPress={() => Linking.openURL(`mailto:${SUPPORT_EMAIL}?subject=Ndihmë%20Bebix`)}
+            onPress={() => Linking.openURL(`mailto:${SUPPORT_EMAIL}?subject=${encodeURIComponent(t("help_email_subject"))}`)}
             style={shadows.soft}
             className="flex-row items-center bg-surface rounded-xl2 px-4 py-3.5 mb-3"
           >
             <View className="w-8 h-8 rounded-full bg-cream-soft items-center justify-center mr-3">
               <Icon name="send" size={15} color="#6E7452" />
             </View>
-            <Text className="font-bodyMedium text-sm text-ink flex-1">Dërgo Email</Text>
+            <Text className="font-bodyMedium text-sm text-ink flex-1">{t("help_send_email")}</Text>
             <Icon name="chevronRight" size={16} color="#A79D8A" />
           </Pressable>
           <Text className="font-body text-xs text-ink-faint px-1">
-            Përgjigjemi brenda dy ditësh pune.
+            {t("help_reply_time")}
           </Text>
         </View>
       </ScrollView>

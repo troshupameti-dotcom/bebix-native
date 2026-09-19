@@ -5,28 +5,38 @@ import { useFocusEffect } from "expo-router";
 import { shadows } from "@/lib/shadows";
 import { fetchMyApplication, submitApplication, ExpertApplication } from "@/lib/expertApplications";
 import { BackButton } from "@/components/ui/BackButton";
+import { useTranslation } from "@/lib/i18n/LanguageContext";
+import type { TranslationKey } from "@/lib/i18n/translations";
 
-const SPECIALIZATIONS = ["Pediatër", "Nutricionist", "Konsulente Gjidhënieje", "Psikolog Fëmijësh", "Trajner Gjumi"];
+const SPECIALIZATIONS: { value: string; labelKey: TranslationKey }[] = [
+  { value: "Pediatër", labelKey: "doc_spec_pediatrician" },
+  { value: "Nutricionist", labelKey: "doc_spec_nutritionist" },
+  { value: "Konsulente Gjidhënieje", labelKey: "doc_spec_lactation" },
+  { value: "Psikolog Fëmijësh", labelKey: "doc_spec_psychologist" },
+  { value: "Trajner Gjumi", labelKey: "doc_spec_sleep" },
+];
 
 function StatusBanner({ app }: { app: ExpertApplication }) {
+  const { t } = useTranslation();
   const config = {
-    pending: { bg: "bg-olive-bg", fg: "text-olive", label: "Në pritje të aprovimit" },
-    approved: { bg: "bg-olive-bg", fg: "text-olive", label: "I aprovuar ✓" },
-    rejected: { bg: "bg-orange-bg", fg: "text-orange", label: "I refuzuar" },
+    pending: { bg: "bg-olive-bg", fg: "text-olive", label: t("doc_status_pending") },
+    approved: { bg: "bg-olive-bg", fg: "text-olive", label: t("doc_status_approved") },
+    rejected: { bg: "bg-orange-bg", fg: "text-orange", label: t("doc_status_rejected") },
   }[app.status];
   return (
     <View style={shadows.soft} className={`rounded-xl2 p-4 mb-5 ${config.bg}`}>
       <Text className={`font-bodySemibold text-sm mb-1 ${config.fg}`}>{config.label}</Text>
       <Text className="font-body text-xs text-ink-soft mb-1">{app.fullName} · {app.specialization}</Text>
-      <Text className="font-body text-[11px] text-ink-faint">Licenca: {app.licenseNumber}</Text>
+      <Text className="font-body text-[11px] text-ink-faint">{t("doc_license_label", { n: app.licenseNumber })}</Text>
       {app.adminNote && (
-        <Text className="font-body text-xs text-ink-soft mt-2">Shënim admin: {app.adminNote}</Text>
+        <Text className="font-body text-xs text-ink-soft mt-2">{t("doc_admin_note", { note: app.adminNote })}</Text>
       )}
     </View>
   );
 }
 
 export default function DoctorRegistrationScreen() {
+  const { t } = useTranslation();
   const [loading, setLoading] = useState(true);
   const [existing, setExisting] = useState<ExpertApplication | null>(null);
   const [submitting, setSubmitting] = useState(false);
@@ -34,7 +44,7 @@ export default function DoctorRegistrationScreen() {
 
   const [fullName, setFullName] = useState("");
   const [licenseNumber, setLicenseNumber] = useState("");
-  const [specialization, setSpecialization] = useState(SPECIALIZATIONS[0]);
+  const [specialization, setSpecialization] = useState(SPECIALIZATIONS[0].value);
   const [experienceYears, setExperienceYears] = useState("");
   const [phone, setPhone] = useState("");
   const [bio, setBio] = useState("");
@@ -69,7 +79,7 @@ export default function DoctorRegistrationScreen() {
       const app = await fetchMyApplication();
       setExisting(app);
     } catch (e: any) {
-      setError(e.message ?? "Gabim gjatë dërgimit.");
+      setError(e.message ?? t("doc_send_failed"));
     } finally {
       setSubmitting(false);
     }
@@ -87,7 +97,7 @@ export default function DoctorRegistrationScreen() {
     <SafeAreaView className="flex-1 bg-cream" edges={["top"]}>
       <View className="flex-row items-center px-5 pt-2 mb-4">
         <BackButton fallback="/(main)/more" />
-        <Text className="font-display text-xl text-ink ml-1">Regjistrohu si Mjek</Text>
+        <Text className="font-display text-xl text-ink ml-1">{t("doc_title")}</Text>
       </View>
 
       <KeyboardAvoidingView className="flex-1" behavior={Platform.OS === "ios" ? "padding" : undefined} keyboardVerticalOffset={90}>
@@ -99,52 +109,52 @@ export default function DoctorRegistrationScreen() {
               {existing?.status === "rejected" && <StatusBanner app={existing} />}
 
               <Text className="font-body text-xs text-ink-soft mb-5 leading-5">
-                Plotëso të dhënat e sakta — aplikimi shqyrtohet manualisht nga ekipi ynë para se me u shfaq si “ekspert i verifikuar” në Komunitet.
+                {t("doc_intro")}
               </Text>
 
-              <Text className="font-bodySemibold text-xs text-ink-soft mb-1.5">Emri i plotë</Text>
+              <Text className="font-bodySemibold text-xs text-ink-soft mb-1.5">{t("doc_full_name")}</Text>
               <View style={shadows.soft} className="bg-surface rounded-xl2 px-4 py-3 mb-4">
-                <TextInput value={fullName} onChangeText={setFullName} placeholder="Dr. Emri Mbiemri" placeholderClassName="text-ink-faint" className="font-body text-sm text-ink" />
+                <TextInput value={fullName} onChangeText={setFullName} placeholder={t("doc_ph_name")} placeholderClassName="text-ink-faint" className="font-body text-sm text-ink" />
               </View>
 
-              <Text className="font-bodySemibold text-xs text-ink-soft mb-1.5">Numri i licencës mjekësore</Text>
+              <Text className="font-bodySemibold text-xs text-ink-soft mb-1.5">{t("doc_license")}</Text>
               <View style={shadows.soft} className="bg-surface rounded-xl2 px-4 py-3 mb-4">
-                <TextInput value={licenseNumber} onChangeText={setLicenseNumber} placeholder="p.sh. LMK-2024-0891" placeholderClassName="text-ink-faint" className="font-body text-sm text-ink" />
+                <TextInput value={licenseNumber} onChangeText={setLicenseNumber} placeholder={t("doc_ph_license")} placeholderClassName="text-ink-faint" className="font-body text-sm text-ink" />
               </View>
 
-              <Text className="font-bodySemibold text-xs text-ink-soft mb-1.5">Specializimi</Text>
+              <Text className="font-bodySemibold text-xs text-ink-soft mb-1.5">{t("doc_specialty")}</Text>
               <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ paddingBottom: 4 }} className="mb-4">
                 {SPECIALIZATIONS.map((s) => {
-                  const active = specialization === s;
+                  const active = specialization === s.value;
                   return (
                     <Pressable
-                      key={s}
-                      onPress={() => setSpecialization(s)}
+                      key={s.value}
+                      onPress={() => setSpecialization(s.value)}
                       style={shadows.soft}
                       className={`rounded-full px-4 py-2 mr-2 ${active ? "bg-olive" : "bg-surface"}`}
                     >
-                      <Text className={`font-bodyMedium text-xs ${active ? "text-on-accent" : "text-ink"}`}>{s}</Text>
+                      <Text className={`font-bodyMedium text-xs ${active ? "text-on-accent" : "text-ink"}`}>{t(s.labelKey)}</Text>
                     </Pressable>
                   );
                 })}
               </ScrollView>
 
-              <Text className="font-bodySemibold text-xs text-ink-soft mb-1.5">Vite përvoje</Text>
+              <Text className="font-bodySemibold text-xs text-ink-soft mb-1.5">{t("doc_years")}</Text>
               <View style={shadows.soft} className="bg-surface rounded-xl2 px-4 py-3 mb-4">
-                <TextInput value={experienceYears} onChangeText={setExperienceYears} keyboardType="number-pad" placeholder="p.sh. 8" placeholderClassName="text-ink-faint" className="font-body text-sm text-ink" />
+                <TextInput value={experienceYears} onChangeText={setExperienceYears} keyboardType="number-pad" placeholder={t("doc_ph_years")} placeholderClassName="text-ink-faint" className="font-body text-sm text-ink" />
               </View>
 
-              <Text className="font-bodySemibold text-xs text-ink-soft mb-1.5">Numri i telefonit</Text>
+              <Text className="font-bodySemibold text-xs text-ink-soft mb-1.5">{t("doc_phone")}</Text>
               <View style={shadows.soft} className="bg-surface rounded-xl2 px-4 py-3 mb-4">
-                <TextInput value={phone} onChangeText={setPhone} keyboardType="phone-pad" placeholder="+383 4X XXX XXX" placeholderClassName="text-ink-faint" className="font-body text-sm text-ink" />
+                <TextInput value={phone} onChangeText={setPhone} keyboardType="phone-pad" placeholder={t("doc_ph_phone")} placeholderClassName="text-ink-faint" className="font-body text-sm text-ink" />
               </View>
 
-              <Text className="font-bodySemibold text-xs text-ink-soft mb-1.5">Pak fjalë për veten (opsionale)</Text>
+              <Text className="font-bodySemibold text-xs text-ink-soft mb-1.5">{t("doc_bio")}</Text>
               <View style={shadows.soft} className="bg-surface rounded-xl2 px-4 py-3 mb-6">
                 <TextInput
                   value={bio}
                   onChangeText={setBio}
-                  placeholder="Klinika, fusha e fokusit, gjuhët që flet..."
+                  placeholder={t("doc_ph_bio")}
                   placeholderClassName="text-ink-faint"
                   multiline
                   className="font-body text-sm text-ink min-h-[70px]"
@@ -163,7 +173,7 @@ export default function DoctorRegistrationScreen() {
                   <ActivityIndicator className="text-on-accent" />
                 ) : (
                   <Text className={`font-bodySemibold text-sm ${canSubmit ? "text-on-accent" : "text-ink-faint"}`}>
-                    {existing?.status === "rejected" ? "Apliko Përsëri" : "Dërgo Aplikimin"}
+                    {existing?.status === "rejected" ? t("doc_reapply") : t("doc_submit")}
                   </Text>
                 )}
               </Pressable>

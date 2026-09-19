@@ -303,7 +303,7 @@ export default function BabySettingsScreen() {
                 </Pressable>
                 <Text className="font-bodySemibold text-[15px] text-ink">{t("baby_settings_dob")}</Text>
                 <Pressable onPress={confirmDob} hitSlop={8}>
-                  <Text className="font-bodyMedium text-[15px] text-orange">Gati</Text>
+                  <Text className="font-bodyMedium text-[15px] text-orange">{t("settings_ready")}</Text>
                 </Pressable>
               </View>
               <DateTimePicker

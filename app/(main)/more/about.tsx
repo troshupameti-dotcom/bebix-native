@@ -3,6 +3,7 @@ import { SafeAreaView } from "react-native-safe-area-context";
 import { Icon, IconName } from "@/components/ui/Icon";
 import { shadows } from "@/lib/shadows";
 import { BackButton } from "@/components/ui/BackButton";
+import { useTranslation } from "@/lib/i18n/LanguageContext";
 
 function ActionRow({ icon, label, onPress }: { icon: IconName; label: string; onPress: () => void }) {
   return (
@@ -17,43 +18,44 @@ function ActionRow({ icon, label, onPress }: { icon: IconName; label: string; on
 }
 
 export default function AboutScreen() {
+  const { t } = useTranslation();
 
   const shareApp = () => {
-    Share.share({ message: "Provo Bebix — aplikacioni që më ndihmon të ndjek gjithçka për bebin tim! " });
+    Share.share({ message: t("about_share_message") });
   };
 
   return (
     <SafeAreaView className="flex-1 bg-cream" edges={["top"]}>
       <View className="flex-row items-center px-5 pt-2 mb-5">
         <BackButton fallback="/(main)/more" className="mr-3" />
-        <Text className="font-display text-xl text-ink">Rreth Bebix</Text>
+        <Text className="font-display text-xl text-ink">{t("about_title")}</Text>
       </View>
 
       <ScrollView contentContainerStyle={{ paddingBottom: 40 }}>
         <View className="px-5 mb-6">
           <View style={shadows.soft} className="bg-olive-bg rounded-xl2 p-5">
-            <Text className="font-bodySemibold text-lg text-ink mb-2">Misioni Ynë</Text>
+            <Text className="font-bodySemibold text-lg text-ink mb-2">{t("about_mission")}</Text>
             <Text className="font-body text-sm text-ink-soft leading-6 mb-4">
-              Bebix ekziston për t’i ndihmuar prindërit të ndjekin çdo hap të rritjes së bebit të tyre me qetësi mendore — nga ushqyerja dhe gjumi, te vaksinat dhe momentet e para — të gjitha në një vend të vetëm, të krijuar me kujdes.
+              {t("about_mission_body")}
             </Text>
-            <Text className="font-bodySemibold text-lg text-ink mb-2">Vizioni Ynë</Text>
+            <Text className="font-bodySemibold text-lg text-ink mb-2">{t("about_vision")}</Text>
             <Text className="font-body text-sm text-ink-soft leading-6">
-              Të bëhemi shoqëruesi më i besuar i çdo familjeje në rrugëtimin e prindërimit — duke kombinuar teknologji të thjeshtë me përvojë njerëzore reale.
+              {t("about_vision_body")}
             </Text>
           </View>
         </View>
 
         <View className="px-5 mb-6">
           <View style={shadows.soft} className="bg-surface rounded-xl2 overflow-hidden">
-            <ActionRow icon="sparkle" label="Vlerëso Bebix" onPress={() => { /* Linking.openURL(url-i i App Store/Play Store kur të publikohet) */ }} />
-            <ActionRow icon="share" label="Ndaj Bebix me Miq" onPress={shareApp} />
-            <ActionRow icon="globe" label="Faqja jonë" onPress={() => { /* Linking.openURL("https://bebix.app") — vendos domain-in real */ }} />
+            <ActionRow icon="sparkle" label={t("about_rate")} onPress={() => { /* Linking.openURL(url-i i App Store/Play Store kur të publikohet) */ }} />
+            <ActionRow icon="share" label={t("about_share")} onPress={shareApp} />
+            <ActionRow icon="globe" label={t("about_website")} onPress={() => { /* Linking.openURL("https://bebix.app") — vendos domain-in real */ }} />
           </View>
         </View>
 
         <View className="px-5">
-          <Text className="font-body text-xs text-ink-faint text-center">Versioni 1.0.0 (Build 1)</Text>
-          <Text className="font-body text-xs text-ink-faint text-center mt-1">© 2026 Bebix. Të gjitha të drejtat e rezervuara.</Text>
+          <Text className="font-body text-xs text-ink-faint text-center">{t("about_version")}</Text>
+          <Text className="font-body text-xs text-ink-faint text-center mt-1">{t("about_rights")}</Text>
         </View>
       </ScrollView>
     </SafeAreaView>

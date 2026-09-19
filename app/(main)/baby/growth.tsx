@@ -204,7 +204,7 @@ export default function GrowthScreen() {
 
                 {isExpanded && (
                   <View className="mb-4 items-center rounded-xl2 border border-ink/10 bg-surface p-4">
-                    <Text className="mb-2 font-bodyMedium text-[12px] text-ink-soft">Shiko grafikun</Text>
+                    <Text className="mb-2 font-bodyMedium text-[12px] text-ink-soft">{t("baby_see_chart")}</Text>
                     {values.length >= 2 ? (
                       <>
                         <Svg width={CHART_WIDTH} height={CHART_HEIGHT + 20}>

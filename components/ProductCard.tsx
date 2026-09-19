@@ -5,6 +5,7 @@ import { Icon } from "@/components/ui/Icon";
 import { shadows } from "@/lib/shadows";
 import { Product } from "@/lib/homeContent";
 import { productImage } from "@/lib/shop/image";
+import { useTranslation } from "@/lib/i18n/LanguageContext";
 
 type Props = {
   product: Product;
@@ -24,6 +25,7 @@ function discountPercent(product: Product): number | null {
 }
 
 export function ProductCard({ product, onPress, cardWidth }: Props) {
+  const { t } = useTranslation();
   const { toggleFavorite, isFavorite } = useAppState();
   const fav = isFavorite(product.id);
   // Inicializues dembel: nje Animated.Value e vetme per gjithe jeten e
@@ -74,7 +76,7 @@ export function ProductCard({ product, onPress, cardWidth }: Props) {
             {product.freeDelivery && (
               <View className="bg-surface rounded-full px-2 py-1 flex-row items-center self-start" style={shadows.soft}>
                 <Icon name="cube" size={10} color="#6E7452" />
-                <Text className="font-bodyMedium text-[8px] text-olive ml-1 uppercase">Falas</Text>
+                <Text className="font-bodyMedium text-[8px] text-olive ml-1 uppercase">{t("card_free_shipping")}</Text>
               </View>
             )}
             {product.badge && (
@@ -135,7 +137,7 @@ export function ProductCard({ product, onPress, cardWidth }: Props) {
           )}
           {product.stock === 0 && (
             <Text className="font-bodyMedium text-xs text-ink-faint mt-1">
-              Jashtë stokut
+              {t("card_out_of_stock")}
             </Text>
           )}
         </View>

@@ -11,6 +11,7 @@ import { fetchProductById, fetchRelatedProducts } from "@/lib/shopData";
 import { BackButton, goBackOr } from "@/components/ui/BackButton";
 import { track } from "@/lib/analytics/posthog";
 import { ProductReviews, Stars } from "@/components/shop/ProductReviews";
+import { useTranslation } from "@/lib/i18n/LanguageContext";
 
 const { width } = Dimensions.get("window");
 
@@ -34,6 +35,7 @@ function RelatedCard({ product, onPress }: { product: Product; onPress: () => vo
 }
 
 export default function ProductDetailsScreen() {
+  const { t } = useTranslation();
   const router = useRouter();
   const { id } = useLocalSearchParams<{ id: string }>();
   const { toggleFavorite, isFavorite, addToCart } = useAppState();
@@ -57,7 +59,7 @@ export default function ProductDetailsScreen() {
           track("product_viewed", { product_id: p.id, price: p.price, category: p.category });
         }
       } catch (e: any) {
-        if (active) setLoadError(e.message ?? "Diçka shkoi keq.");
+        if (active) setLoadError(e.message ?? null);
       }
     })();
     return () => {
@@ -80,9 +82,9 @@ export default function ProductDetailsScreen() {
     return (
       <SafeAreaView className="flex-1 bg-cream items-center justify-center px-8">
         <Icon name="close" size={28} color="#A79D8A" />
-        <Text className="font-bodyMedium text-sm text-ink-soft mt-3 text-center">{loadError ?? "Produkti s'u gjet."}</Text>
+        <Text className="font-bodyMedium text-sm text-ink-soft mt-3 text-center">{loadError ?? t("prod_not_found")}</Text>
         <Pressable onPress={() => goBackOr("/(main)/shop")} className="mt-4">
-          <Text className="font-bodyMedium text-sm text-olive">Kthehu mbrapa</Text>
+          <Text className="font-bodyMedium text-sm text-olive">{t("prod_back")}</Text>
         </Pressable>
       </SafeAreaView>
     );
@@ -182,7 +184,7 @@ export default function ProductDetailsScreen() {
         {/* Related products */}
         {related.length > 0 && (
           <>
-            <Text className="font-bodySemibold text-lg text-ink px-5 mt-7 mb-3">Vlerësime</Text>
+            <Text className="font-bodySemibold text-lg text-ink px-5 mt-7 mb-3">{t("prod_ratings")}</Text>
             <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ paddingHorizontal: 20 }}>
               {related.map((p) => (
                 <RelatedCard key={p.id} product={p} onPress={() => router.push(`/shop/${p.id}`)} />
@@ -192,7 +194,7 @@ export default function ProductDetailsScreen() {
         )}
 
         {/* Reviews — vijnë kur shtojmë tabelën `reviews` te Supabase */}
-        <Text className="font-bodySemibold text-lg text-ink px-5 mt-7 mb-3">Vlerësime</Text>
+        <Text className="font-bodySemibold text-lg text-ink px-5 mt-7 mb-3">{t("prod_ratings")}</Text>
         <View className="px-5">
           <Text className="font-body text-sm text-ink-soft">
             Ende s’ka vlerësime reale për këtë produkt (kërkon tabelë `reviews` shtesë te Supabase — hap tjetër i mundshëm).
@@ -216,7 +218,7 @@ export default function ProductDetailsScreen() {
           }}
           className="flex-1 bg-surface border border-olive rounded-xl2 py-3.5 items-center mr-3"
         >
-          <Text className="font-bodyMedium text-sm text-olive">Shto në Shportë</Text>
+          <Text className="font-bodyMedium text-sm text-olive">{t("prod_add_to_cart")}</Text>
         </Pressable>
         <Pressable
           onPress={() => {
@@ -232,7 +234,7 @@ export default function ProductDetailsScreen() {
           }}
           className="flex-1 bg-olive rounded-xl2 py-3.5 items-center"
         >
-          <Text className="font-bodyMedium text-sm text-on-accent">Bli Tani</Text>
+          <Text className="font-bodyMedium text-sm text-on-accent">{t("prod_buy_now")}</Text>
         </Pressable>
       </View>
     </SafeAreaView>

@@ -7,6 +7,7 @@ import Svg, { Path } from "react-native-svg";
 import { supabase } from "@/lib/supabase/client";
 import { parseOAuthRedirect } from "@/lib/auth/oauthRedirect";
 import { useThemeColors } from "@/lib/theme/useThemeColors";
+import { useTranslation } from "@/lib/i18n/LanguageContext";
 
 // Nevojitet vetëm në web (mbyll popup-in e OAuth-it); në native s'bën asgjë.
 WebBrowser.maybeCompleteAuthSession();
@@ -33,6 +34,7 @@ const buttonClass =
  * this generic OAuth flow) — swap the Apple handler for that when ready.
  */
 export function SocialAuthRow({ onEmailSelect, onSignedIn, beforeStart }: SocialAuthRowProps) {
+  const { t } = useTranslation();
   const [pressedKey, setPressedKey] = useState<string | null>(null);
   // Ref (jo state) që dy shtypje të shpejta të mos hapin dy sesione OAuth.
   const inFlight = useRef(false);
@@ -57,7 +59,7 @@ export function SocialAuthRow({ onEmailSelect, onSignedIn, beforeStart }: Social
       });
 
       if (error || !data?.url) {
-        Alert.alert("Gabim", error?.message ?? "Nuk u hap dot login-i.");
+        Alert.alert(t("mod_error_title"), error?.message ?? t("auth_open_failed"));
         return;
       }
 
@@ -72,13 +74,13 @@ export function SocialAuthRow({ onEmailSelect, onSignedIn, beforeStart }: Social
       let userId: string | undefined;
 
       if (parsed.type === "error") {
-        Alert.alert("Gabim", parsed.message);
+        Alert.alert(t("mod_error_title"), parsed.message);
         return;
       } else if (parsed.type === "code") {
         const { data: exchanged, error: exchangeError } =
           await supabase.auth.exchangeCodeForSession(parsed.code);
         if (exchangeError) {
-          Alert.alert("Gabim", exchangeError.message);
+          Alert.alert(t("mod_error_title"), exchangeError.message);
           return;
         }
         userId = exchanged.user?.id;
@@ -88,12 +90,12 @@ export function SocialAuthRow({ onEmailSelect, onSignedIn, beforeStart }: Social
           refresh_token: parsed.refreshToken,
         });
         if (sessionError) {
-          Alert.alert("Gabim", sessionError.message);
+          Alert.alert(t("mod_error_title"), sessionError.message);
           return;
         }
         userId = sessionData.user?.id;
       } else {
-        Alert.alert("Gabim", "Serveri nuk e ktheu sesionin.");
+        Alert.alert(t("mod_error_title"), t("auth_no_session"));
         return;
       }
 
@@ -101,7 +103,7 @@ export function SocialAuthRow({ onEmailSelect, onSignedIn, beforeStart }: Social
         await onSignedIn?.(userId);
       }
     } catch (e) {
-      Alert.alert("Gabim", e instanceof Error ? e.message : "Login-i dështoi. Provo përsëri.");
+      Alert.alert(t("mod_error_title"), e instanceof Error ? e.message : t("auth_login_failed"));
     } finally {
       inFlight.current = false;
     }

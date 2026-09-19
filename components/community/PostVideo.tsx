@@ -1,6 +1,7 @@
 import { Linking, Pressable, Text, View } from "react-native";
 import { requireOptionalNativeModule } from "expo-modules-core";
 import { Icon } from "@/components/ui/Icon";
+import { useTranslation } from "@/lib/i18n/LanguageContext";
 
 /**
  * `expo-video` kërkon modulin nativ në import. Build-et e vjetra (para se të
@@ -36,6 +37,7 @@ type Props = {
 };
 
 export function PostVideo({ url, aspectRatio, duration, interactive, onPressPreview }: Props) {
+  const { t } = useTranslation();
   if (interactive && ExpoVideo) {
     return <NativeVideo module={ExpoVideo} url={url} aspectRatio={aspectRatio} />;
   }
@@ -45,7 +47,7 @@ export function PostVideo({ url, aspectRatio, duration, interactive, onPressPrev
     <Pressable
       onPress={interactive ? () => Linking.openURL(url) : onPressPreview}
       accessibilityRole="button"
-      accessibilityLabel="Luaj videon"
+      accessibilityLabel={t("video_play")}
       style={{ aspectRatio }}
       className="w-full items-center justify-center overflow-hidden rounded-xl bg-black"
     >
