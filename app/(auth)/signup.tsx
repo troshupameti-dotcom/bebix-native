@@ -91,7 +91,7 @@ export default function SignupScreen() {
       await syncPendingProfileToSupabase(userId);
     }
     await markOnboardingSeen();
-    router.replace((redirect as string | undefined) ?? "/(main)/home");
+    router.replace((redirect as string | undefined) ?? "/(main)/baby");
   }
 
   return (

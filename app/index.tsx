@@ -24,7 +24,7 @@ export default function Index() {
 
   // 2. Redirects të sigurta, deklarative, pasi u ngarkua statusi
   if (isAuthenticated) {
-    return <Redirect href="/(main)/home" />;
+    return <Redirect href="/(main)/baby" />;
   }
 
   if (isGuest) {

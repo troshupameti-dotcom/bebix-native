@@ -12,7 +12,6 @@ import { registerForPushNotificationsAsync } from "@/lib/notifications";
 import { useBabyRecordsSync } from "@/lib/hooks/useBabyRecordsSync";
 
 const TABS: { name: string; icon: IconName; labelKey: TranslationKey }[] = [
-  { name: "home", icon: "home", labelKey: "nav_home" },
   { name: "baby", icon: "baby", labelKey: "nav_baby" },
   { name: "shop", icon: "shop", labelKey: "nav_shop" },
   { name: "community", icon: "community", labelKey: "nav_community" },
@@ -104,7 +103,7 @@ export default function MainLayout() {
   return (
     <View style={{ flex: 1 }}>
       <Tabs
-        initialRouteName={isAuthenticated ? "home" : "shop"}
+        initialRouteName={isAuthenticated ? "baby" : "shop"}
         screenOptions={{
           headerShown: false,
           tabBarActiveTintColor: colors.active,

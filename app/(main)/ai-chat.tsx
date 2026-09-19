@@ -55,7 +55,7 @@ export default function AiChatScreen() {
     <SafeAreaView className="flex-1 bg-cream" edges={["top"]}>
       {/* Header */}
       <View className="flex-row items-center px-5 pt-2 pb-4">
-        <BackButton fallback="/(main)/home" className="mr-3" />
+        <BackButton fallback="/(main)/baby" className="mr-3" />
         <View className="flex-1">
           <Text className="font-bodySemibold text-lg text-ink">{t("ai_chat_title")}</Text>
           <Text className="font-body text-xs text-ink-soft">{t("ai_chat_subtitle")}</Text>

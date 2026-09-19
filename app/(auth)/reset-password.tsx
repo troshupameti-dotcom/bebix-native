@@ -35,7 +35,7 @@ export default function ResetPasswordScreen() {
     try {
       const { error: updateError } = await supabase.auth.updateUser({ password });
       if (updateError) throw new Error(updateError.message);
-      router.replace("/(main)/home");
+      router.replace("/(main)/baby");
     } catch (e: any) {
       const message: string = e?.message ?? "";
       setError(

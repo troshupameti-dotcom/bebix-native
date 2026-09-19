@@ -20,6 +20,10 @@ import { haptics } from "@/lib/haptics";
 import { computeAgeText, formatDate, formatTime } from "@/lib/dateUtils";
 import { shadows } from "@/lib/shadows";
 import { useThemeColors } from "@/lib/theme/useThemeColors";
+import { NowCard } from "@/components/baby/NowCard";
+import { DayRhythm } from "@/components/baby/DayRhythm";
+import { buildDayRhythm, todayTotals, liveStatus } from "@/lib/baby/dayStats";
+import { useInbox } from "@/lib/notifications/useInbox";
 
 // Ridizajnim: 4 tabe → 2. "Sot" (dikur "Profili") mbetet pamja e qetë e
 // gjendjes aktuale. "Ditari" bashkon Kronologjinë, Shëndetin (linqet) dhe
@@ -52,6 +56,29 @@ export default function BabyProfileScreen() {
   const theme = useThemeColors();
 
   const [activeTab, setActiveTab] = useState<TabKey>("today");
+
+  // Ritmi i dites llogaritet nje here per render: tre lista te njejta
+  // perdoren nga tri pamje.
+  const feedings = active(b.feedingLog);
+  const sleeps = active(b.sleepLog);
+  const diapers = active(b.diaperLog);
+  const rhythm = useMemo(() => buildDayRhythm(feedings, sleeps, diapers), [feedings, sleeps, diapers]);
+  const totals = useMemo(() => todayTotals(feedings, sleeps, diapers), [feedings, sleeps, diapers]);
+  const status = useMemo(() => liveStatus(feedings, sleeps, diapers), [feedings, sleeps, diapers]);
+  const { unreadCount } = useInbox();
+
+  function toggleSleep() {
+    const ongoing = sleeps.find((entry) => !entry.endAt);
+    if (ongoing) baby.endSleep(ongoing.id);
+    else baby.startSleep(true);
+  }
+
+  function greeting() {
+    const hour = new Date().getHours();
+    if (hour < 12) return t("greeting_morning");
+    if (hour < 18) return t("greeting_day");
+    return t("greeting_evening");
+  }
   const [editGrowth, setEditGrowth] = useState(false);
   const [editMedical, setEditMedical] = useState(false);
   const [editMilestones, setEditMilestones] = useState(false);
@@ -309,10 +336,25 @@ export default function BabyProfileScreen() {
   return (
     <SafeAreaView className="flex-1 bg-cream" edges={["top"]}>
       <View className="flex-row items-center justify-between px-5 pb-2 pt-2">
-        <Text className="font-display text-2xl text-ink">{babyName}</Text>
+        <View>
+          <Text className="font-body text-xs text-ink-faint">
+            {greeting()}{profile.parentName ? `, ${profile.parentName.split(" ")[0]}` : ""}
+          </Text>
+          <Text className="font-display text-2xl text-ink">{babyName}</Text>
+        </View>
         <View className="flex-row gap-2">
-          <Pressable className="h-9 w-9 items-center justify-center rounded-full bg-surface" style={shadows.press}>
-            <Icon name="share" size={16} color={isDark ? "#F7F1E4" : "#2C271F"} />
+          <Pressable
+            onPress={() => router.push("/(main)/notifications")}
+            hitSlop={6}
+            accessibilityRole="button"
+            accessibilityLabel={t("inbox_title")}
+            className="h-9 w-9 items-center justify-center rounded-full bg-surface"
+            style={shadows.press}
+          >
+            <Icon name="bell" size={16} color={isDark ? "#F7F1E4" : "#2C271F"} />
+            {unreadCount > 0 && (
+              <View className="absolute right-1.5 top-1.5 h-2 w-2 rounded-full bg-orange" />
+            )}
           </Pressable>
           <Pressable
             onPress={() => router.push("/(main)/baby/settings")}
@@ -380,6 +422,13 @@ export default function BabyProfileScreen() {
                 </Text>
               )}
             </View>
+
+            {/* Gjendja e castit dhe tre veprimet e perditshme — kjo pjese
+                vinte nga faqja e vjeter kryesore, ku rrinte nje tab larg
+                nga bebi dhe e perzier me produkte. */}
+            <NowCard status={status} onToggleSleep={toggleSleep} />
+
+            <DayRhythm rhythm={rhythm} totals={totals} />
 
             {/* Sugjerim i vetëm, kontekstual — jo 8 butona */}
             {suggestion && (

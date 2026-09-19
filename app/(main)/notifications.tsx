@@ -27,7 +27,7 @@ export default function NotificationsInboxScreen() {
   return (
     <SafeAreaView className="flex-1 bg-cream" edges={["top"]}>
       <View className="flex-row items-center px-5 pt-2 mb-4">
-        <BackButton fallback="/(main)/home" className="mr-3" />
+        <BackButton fallback="/(main)/baby" className="mr-3" />
         <Text className="flex-1 font-display text-xl text-ink">{t("inbox_title")}</Text>
       </View>
 

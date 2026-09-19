@@ -73,7 +73,6 @@ export const translations = {
     signup_error_terms: "Prano Kushtet për të vazhduar.",
 
     // ---- Bottom tab bar ----
-    nav_home: "Ballina",
     nav_baby: "Bebi",
     nav_shop: "Shop",
     nav_community: "Komuniteti",
@@ -163,6 +162,21 @@ export const translations = {
     notif_quiet_from: "Nga",
     notif_quiet_to: "Deri",
     notif_quiet_off: "Pa orë të qeta",
+    now_asleep_for: "Po fle prej {t}",
+    now_awake_for: "Zgjuar prej {t}",
+    now_no_sleep: "Ende s'ka gjumë të shënuar",
+    now_last_feeding: "Ushqyerja e fundit:",
+    now_last_diaper: "Pelena e fundit:",
+    now_wake: "Zgjo",
+    rhythm_title: "24 orët e fundit",
+    rhythm_until_now: "{from} → tani",
+    rhythm_empty: "Shëno diçka dhe dita nis të marrë formë këtu.",
+    rhythm_sleep: "Gjumë",
+    rhythm_feeding: "Ushqyerje",
+    rhythm_diaper: "Pelenë",
+    totals_feedings: "Ushqyerje",
+    totals_sleep: "Gjumë",
+    totals_diapers: "Pelena",
     notif_title: "Njoftimet",
     notif_channels: "Kanalet",
     notif_push: "Njoftime",
@@ -198,7 +212,6 @@ export const translations = {
     greeting_morning: "Mirëmëngjes",
     greeting_day: "Mirëdita",
     greeting_evening: "Mirëmbrëma",
-    home_add_baby_name: "Shto emrin e bebit",
 
     age_days: "{n} ditë",
     age_months: "{n} muaj",
@@ -211,30 +224,13 @@ export const translations = {
     time_hr_ago: "{n} orë më parë",
     time_day_ago: "{n} ditë më parë",
 
-    next_feeding_first_title: "Regjistro ushqyerjen e parë",
-    next_feeding_first_sub: "Nis ndjekjen e ushqyerjes",
-    next_feeding_title: "{n} orë pa ushqyerje",
-    next_feeding_sub: "Koha për ushqyerjen tjetër",
 
-    next_sleep_first_title: "Regjistro gjumin e parë",
-    next_sleep_first_sub: "Nis ndjekjen e gjumit",
-    next_sleep_title: "{n} orë zgjuar",
-    next_sleep_sub: "Ndoshta i duhet pushim",
 
-    next_diaper_first_title: "Regjistro ndërrimin e parë",
-    next_diaper_first_sub: "Nis ndjekjen e pelenave",
-    next_diaper_title: "{n} orë nga ndërrimi i fundit",
-    next_diaper_sub: "Kontrollo pelenën",
 
     qa_feeding_label: "Ushqyerje",
     qa_sleep_label: "Gjumë",
     qa_diaper_label: "Pelenë",
-    qa_x_today: "{n}x sot",
 
-    home_all_categories: "Të gjitha kategoritë →",
-    home_ai_prompt: "Ke pyetje? Pyet asistentin",
-    home_for_you: "Për ty",
-    home_shop_link: "Dyqani →",
 
     // ---- Baby screen ----
     baby_born: "Lindur më",
@@ -547,8 +543,6 @@ export const translations = {
     signup_error_password: "Use at least 8 characters.",
     signup_error_confirm_password: "Passwords don't match.",
     signup_error_terms: "Please accept the Terms to continue.",
-
-    nav_home: "Home",
     nav_baby: "Baby",
     nav_shop: "Shop",
     nav_community: "Community",
@@ -637,6 +631,21 @@ export const translations = {
     notif_quiet_from: "From",
     notif_quiet_to: "To",
     notif_quiet_off: "No quiet hours",
+    now_asleep_for: "Asleep for {t}",
+    now_awake_for: "Awake for {t}",
+    now_no_sleep: "No sleep logged yet",
+    now_last_feeding: "Last feeding:",
+    now_last_diaper: "Last diaper:",
+    now_wake: "Wake",
+    rhythm_title: "Last 24 hours",
+    rhythm_until_now: "{from} → now",
+    rhythm_empty: "Log something and the day starts taking shape here.",
+    rhythm_sleep: "Sleep",
+    rhythm_feeding: "Feeding",
+    rhythm_diaper: "Diaper",
+    totals_feedings: "Feedings",
+    totals_sleep: "Sleep",
+    totals_diapers: "Diapers",
     notif_title: "Notifications",
     notif_channels: "Channels",
     notif_push: "Push Notifications",
@@ -670,7 +679,6 @@ export const translations = {
     greeting_morning: "Good morning",
     greeting_day: "Good afternoon",
     greeting_evening: "Good evening",
-    home_add_baby_name: "Add baby's name",
 
     age_days: "{n} days",
     age_months: "{n} months",
@@ -683,30 +691,13 @@ export const translations = {
     time_hr_ago: "{n} hr ago",
     time_day_ago: "{n} days ago",
 
-    next_feeding_first_title: "Log the first feeding",
-    next_feeding_first_sub: "Start tracking feeding",
-    next_feeding_title: "{n} hrs since feeding",
-    next_feeding_sub: "It might be time for the next one",
 
-    next_sleep_first_title: "Log the first sleep",
-    next_sleep_first_sub: "Start tracking sleep",
-    next_sleep_title: "{n} hrs awake",
-    next_sleep_sub: "Check if baby needs rest",
 
-    next_diaper_first_title: "Log the first change",
-    next_diaper_first_sub: "Start tracking diapers",
-    next_diaper_title: "{n} hrs since last change",
-    next_diaper_sub: "Might be worth checking",
 
     qa_feeding_label: "Feeding",
     qa_sleep_label: "Sleep",
     qa_diaper_label: "Diaper",
-    qa_x_today: "{n}x today",
 
-    home_all_categories: "All baby categories →",
-    home_ai_prompt: "Have a question? Chat with the assistant",
-    home_for_you: "For you",
-    home_shop_link: "Shop →",
 
     // ---- Baby screen ----
     baby_born: "Born on",
