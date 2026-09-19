@@ -75,6 +75,19 @@ export async function createMedicationSchedule(input: {
   if (error) throw new Error(error.message);
 }
 
+/**
+ * Doza u dha tani: kujtesa e radhes shtyhet me nje interval.
+ * Pa kete, prindi qe e jep dozen para kohe do te merrte kujtesen gjithsesi.
+ */
+export async function markDoseGiven(id: string): Promise<void> {
+  const { error } = await supabase
+    .from("medication_schedules")
+    .update({ last_sent_at: new Date().toISOString(), updated_at: new Date().toISOString() })
+    .eq("id", id);
+
+  if (error) throw new Error(error.message);
+}
+
 export async function stopMedicationSchedule(id: string): Promise<void> {
   const { error } = await supabase
     .from("medication_schedules")

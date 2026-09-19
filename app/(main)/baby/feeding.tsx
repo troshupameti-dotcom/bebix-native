@@ -16,6 +16,10 @@ import { formatTime } from "@/lib/dateUtils";
 import { shadows } from "@/lib/shadows";
 import { FeedingEntry, FeedingType, BreastSide } from "@/lib/state/types";
 import { BackButton } from "@/components/ui/BackButton";
+import { QuickLog, AmountChips } from "@/components/baby/QuickLog";
+
+/** Sasite qe zgjidhen me shpesh; e fundit e perdorur del e para. */
+const COMMON_ML = [60, 90, 120, 150, 180];
 
 const TYPES: FeedingType[] = ["breast", "bottle", "formula", "solid", "water", "medicine"];
 const TYPE_ICON: Record<FeedingType, "droplet" | "bath" | "spoon" | "pill"> = {
@@ -89,6 +93,20 @@ export default function FeedingScreen() {
     };
   }, [log]);
 
+  // Shenim me nje prekje: koha eshte tani, llojin e zgjedh butoni.
+  // Detajet mbeten te formulari i plote, por nuk jane kusht per te
+  // mbajtur historikun.
+  function quickLog(entry: Partial<FeedingEntry>, message: string) {
+    baby.addFeedingEntry(entry);
+    showToast(message);
+  }
+
+  /** Sasia e fundit e shishes: prindi jep te njejten disa dite me radhe. */
+  const lastBottleMl = useMemo(() => {
+    const last = log.find((e) => e.amountMl != null && (e.type === "bottle" || e.type === "formula"));
+    return last?.amountMl ?? null;
+  }, [log]);
+
   function openNew() {
     haptics.tap();
     setForm(emptyForm());
@@ -156,6 +174,39 @@ export default function FeedingScreen() {
       </View>
 
       <ScrollView className="flex-1 px-5" contentContainerStyle={{ paddingBottom: 24 }}>
+        <QuickLog
+          title={t("quick_log_title")}
+          actions={[
+            {
+              key: "breast-left",
+              label: t("feeding_type_breast"),
+              sub: t("feeding_side_left"),
+              icon: "droplet",
+              onPress: () => quickLog({ type: "breast", side: "left" }, t("quick_saved")),
+            },
+            {
+              key: "breast-right",
+              label: t("feeding_type_breast"),
+              sub: t("feeding_side_right"),
+              icon: "droplet",
+              onPress: () => quickLog({ type: "breast", side: "right" }, t("quick_saved")),
+            },
+            {
+              key: "solid",
+              label: t("feeding_type_solid"),
+              icon: "spoon",
+              onPress: () => quickLog({ type: "solid" }, t("quick_saved")),
+            },
+          ]}
+        />
+
+        <AmountChips
+          label={t("quick_bottle_title")}
+          amounts={COMMON_ML}
+          lastUsed={lastBottleMl}
+          onPick={(ml) => quickLog({ type: "bottle", amountMl: ml }, t("quick_saved"))}
+        />
+
         <StatsRow
           stats={[
             { label: t("feeding_stats_today"), value: String(stats.today) },
@@ -209,7 +260,7 @@ export default function FeedingScreen() {
       <View className="px-5 pb-6">
         <Pressable onPress={openNew} className="flex-row items-center justify-center gap-2 rounded-2xl bg-ink py-4">
           <Icon name="plus" size={16} color="#FBF6EE" />
-          <Text className="font-bodyMedium text-[15px] text-cream">{t("feeding_add")}</Text>
+          <Text className="font-bodyMedium text-[15px] text-cream">{t("add_with_details")}</Text>
         </Pressable>
       </View>
 

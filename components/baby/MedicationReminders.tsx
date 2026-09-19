@@ -6,7 +6,7 @@ import { shadows } from "@/lib/shadows";
 import { haptics } from "@/lib/haptics";
 import { useThemeColors } from "@/lib/theme/useThemeColors";
 import {
-  fetchMedicationSchedules, createMedicationSchedule, stopMedicationSchedule,
+  fetchMedicationSchedules, createMedicationSchedule, stopMedicationSchedule, markDoseGiven,
   type MedicationSchedule,
 } from "@/lib/baby/medicationSchedules";
 
@@ -211,9 +211,18 @@ export function MedicationReminders() {
                 Çdo {schedule.intervalHours} orë · tjetra {nextDose(schedule)}
               </Text>
             </View>
-            <Pressable onPress={() => confirmStop(schedule)} hitSlop={8} accessibilityRole="button">
-              <Text className="font-bodyMedium text-xs text-orange">Ndalo</Text>
-            </Pressable>
+            <View className="items-end">
+              <Pressable
+                onPress={async () => { haptics.tap(); await markDoseGiven(schedule.id); await load(); }}
+                accessibilityRole="button"
+                className="bg-olive rounded-full px-3 py-1.5 mb-1.5"
+              >
+                <Text className="font-bodyMedium text-[11px] text-on-accent">Dhashë</Text>
+              </Pressable>
+              <Pressable onPress={() => confirmStop(schedule)} hitSlop={8} accessibilityRole="button">
+                <Text className="font-bodyMedium text-[11px] text-ink-faint">Ndalo</Text>
+              </Pressable>
+            </View>
           </View>
         ))
       )}

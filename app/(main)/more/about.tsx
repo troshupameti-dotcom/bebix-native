@@ -47,7 +47,7 @@ export default function AboutScreen() {
           <View style={shadows.soft} className="bg-surface rounded-xl2 overflow-hidden">
             <ActionRow icon="sparkle" label="Vlerëso Bebix" onPress={() => { /* Linking.openURL(url-i i App Store/Play Store kur të publikohet) */ }} />
             <ActionRow icon="share" label="Ndaj Bebix me Miq" onPress={shareApp} />
-            <ActionRow icon="globe" label="Website" onPress={() => { /* Linking.openURL("https://bebix.app") — vendos domain-in real */ }} />
+            <ActionRow icon="globe" label="Faqja jonë" onPress={() => { /* Linking.openURL("https://bebix.app") — vendos domain-in real */ }} />
           </View>
         </View>
 

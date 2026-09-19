@@ -16,6 +16,7 @@ import { formatTime } from "@/lib/dateUtils";
 import { shadows } from "@/lib/shadows";
 import { DiaperEntry, DiaperType } from "@/lib/state/types";
 import { BackButton } from "@/components/ui/BackButton";
+import { QuickLog } from "@/components/baby/QuickLog";
 
 const TYPES: DiaperType[] = ["wet", "dirty", "both"];
 
@@ -33,6 +34,13 @@ export default function DiaperScreen() {
   const [sheetOpen, setSheetOpen] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [form, setForm] = useState<FormShape | null>(null);
+
+  // Nje prekje mjafton: lloji dhe koha. Ngjyra dhe qendrueshmeria
+  // kane rendesi vetem kur dicka shkon keq — atehere hapet formulari.
+  function quickLog(type: DiaperType, message: string) {
+    baby.addDiaperEntry({ type });
+    showToast(message);
+  }
 
   const stats = useMemo(() => {
     const now = new Date();
@@ -83,6 +91,15 @@ export default function DiaperScreen() {
       </View>
 
       <ScrollView className="flex-1 px-5" contentContainerStyle={{ paddingBottom: 24 }}>
+        <QuickLog
+          title={t("quick_log_title")}
+          actions={[
+            { key: "wet",   label: t("diaper_type_wet"),   icon: "droplet", onPress: () => quickLog("wet", t("quick_saved")) },
+            { key: "dirty", label: t("diaper_type_dirty"), icon: "diaper",  onPress: () => quickLog("dirty", t("quick_saved")) },
+            { key: "both",  label: t("diaper_type_both"),  icon: "repeat",  onPress: () => quickLog("both", t("quick_saved")) },
+          ]}
+        />
+
         <StatsRow
           stats={[
             { label: t("diaper_stats_today"), value: String(stats.today) },

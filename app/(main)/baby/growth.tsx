@@ -15,6 +15,7 @@ import { shadows } from "@/lib/shadows";
 import { useThemeColors } from "@/lib/theme/useThemeColors";
 import { GrowthHistoryEntry } from "@/lib/state/types";
 import { BackButton } from "@/components/ui/BackButton";
+import { QuickMeasure } from "@/components/baby/QuickMeasure";
 
 type Metric = "weight" | "height";
 const CHART_WIDTH = Dimensions.get("window").width - 72;
@@ -156,6 +157,15 @@ export default function GrowthScreen() {
       </View>
 
       <ScrollView className="flex-1 px-5" contentContainerStyle={{ paddingBottom: 24 }}>
+        {/* Matja e shpejte: tre numra dhe nje prekje. Formulari i plote
+            mbetet per nje mates te vjeter ose me shenim. */}
+        <QuickMeasure
+          onSave={(values) => {
+            baby.addGrowthHistoryEntry({ date: new Date().toISOString(), note: "", ...values });
+            showToast(t("quick_saved"));
+          }}
+        />
+
         <Text className="mb-2 font-bodySemibold text-base text-ink">{t("baby_growth_summary")}</Text>
 
         {history.length === 0 ? (

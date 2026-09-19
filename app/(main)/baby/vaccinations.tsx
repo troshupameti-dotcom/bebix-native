@@ -163,9 +163,12 @@ export default function VaccinationsScreen() {
                         haptics.success();
                         baby.markVaccineDone(v.id);
                       }}
-                      className="rounded-full bg-ink px-3 py-1.5"
+                      hitSlop={8}
+                      accessibilityRole="button"
+                      accessibilityLabel={t("vaccine_mark_done")}
+                      className="rounded-full bg-olive px-4 py-2.5"
                     >
-                      <Text className="font-bodyMedium text-[11px] text-cream">{t("vaccine_mark_done")}</Text>
+                      <Text className="font-bodySemibold text-xs text-on-accent">{t("vaccine_mark_done")}</Text>
                     </Pressable>
                   ) : (
                     <Icon name="check" size={16} color="#6E7452" />
