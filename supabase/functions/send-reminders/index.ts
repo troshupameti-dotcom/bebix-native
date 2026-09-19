@@ -2,151 +2,216 @@ import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 
 /**
- * Kujtesat ditore për vaksinat.
+ * Kujtesat e bebit. Xhiron cdo 30 minuta.
  *
- * Zilja te faqja kryesore llogaritej vetëm në telefon: prindi e mësonte
- * vonesën e vaksinës kur e hapte app-in, jo përpara. Ky funksion e kthen
- * atë në njoftim që arrin vetë.
+ * Dy lloje:
+ *  - BOSHLLEQE (ushqyerje, pelena, gjume): kontrollohen sa here xhiron.
+ *    Kane skadence — nje kujtese "4 ore pa ushqyerje" e derguar 5 ore me
+ *    vone eshte zhurme.
+ *  - DITORE (vaksina, matje, muaj i ri): vetem kur ora lokale eshte 7.
  *
- * Kalendarin e vaksinave nuk e rindërtojmë këtu — regjistrimet vijnë të
- * sinkronizuara te `baby_records` me `dueDate` dhe `givenDate` brenda
- * payload-it, pra serveri lexon të njëjtën të vërtetë që sheh app-i.
- *
- * Nuk dërgohet e njëjta gjë dy herë: çdo dërgesë shënohet te
- * `notification_log`, dhe çelësi është regjistrimi + dita e kujtesës.
+ * Asgje nuk dergohet prej ketu: gjithcka shkruhet ne `notification_outbox`
+ * dhe e dergon `send-notifications`. Nje rruge e vetme, me cilesimet e
+ * perdoruesit dhe oret e qeta te zbatuara ne nje vend.
  */
 
 const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
 const serviceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
 const supabase = createClient(supabaseUrl, serviceKey, { auth: { persistSession: false } });
 
-/** Sa ditë përpara dhe pas kujtojmë. Jo çdo ditë — kujtesa e përditshme bëhet zhurmë. */
+// Pragjet e boshlleqeve, ne ore.
+const FEEDING_GAP_H = 4;
+const DIAPER_GAP_H = 4;
+const AWAKE_GAP_H = 3;
+
 const REMIND_DAYS_BEFORE = [1, 0];
 const REMIND_DAYS_AFTER = [3, 7];
 
-type VaccineRow = { user_id: string; id: string; payload: Record<string, unknown> };
-type PushMessage = { to: string; title: string; body: string; sound: string; data?: unknown };
+type Row = { user_id: string; id: string; payload: Record<string, unknown>; occurred_at: string; kind: string };
 
-function startOfDay(date: Date): number {
-  return new Date(date.getFullYear(), date.getMonth(), date.getDate()).getTime();
+function hoursSince(iso: string | null | undefined): number {
+  if (!iso) return Number.POSITIVE_INFINITY;
+  const t = new Date(iso).getTime();
+  if (Number.isNaN(t)) return Number.POSITIVE_INFINITY;
+  return (Date.now() - t) / 3600000;
 }
 
-/** Ditë nga sot deri te data e caktuar; negative = ka kaluar. */
+function startOfDay(d: Date): number {
+  return new Date(d.getFullYear(), d.getMonth(), d.getDate()).getTime();
+}
+
 function daysUntil(dueDate: string, today: Date): number | null {
   const due = new Date(dueDate);
   if (Number.isNaN(due.getTime())) return null;
   return Math.round((startOfDay(due) - startOfDay(today)) / 86400000);
 }
 
-function messageFor(name: string, days: number): { title: string; body: string } | null {
-  if (days === 1) return { title: "Vaksinë nesër", body: `${name} është nesër. Kontrollo orarin e qendrës.` };
-  if (days === 0) return { title: "Vaksinë sot", body: `${name} është sot.` };
-  if (days < 0) return { title: "Vaksinë me vonesë", body: `${name} kishte afat ${Math.abs(days)} ditë më parë.` };
-  return null;
+async function enqueue(
+  userId: string, key: string, title: string, body: string,
+  data: Record<string, unknown>, dedupe: string, expiresInMinutes?: number
+) {
+  await supabase.rpc("enqueue_notification", {
+    p_user: userId,
+    p_key: key,
+    p_title: title,
+    p_body: body,
+    p_data: data,
+    p_dedupe: dedupe,
+    p_send_after: new Date().toISOString(),
+    p_expires_at: expiresInMinutes
+      ? new Date(Date.now() + expiresInMinutes * 60000).toISOString()
+      : null,
+  });
+}
+
+/** Regjistrimi i fundit per cdo perdorues, per nje lloj te dhene. */
+async function lastByUser(kind: string): Promise<Map<string, Row>> {
+  const { data } = await supabase
+    .from("baby_records")
+    .select("user_id, id, payload, occurred_at, kind")
+    .eq("kind", kind)
+    .is("deleted_at", null)
+    .order("occurred_at", { ascending: false })
+    .limit(3000);
+
+  const map = new Map<string, Row>();
+  for (const row of (data ?? []) as Row[]) {
+    if (!map.has(row.user_id)) map.set(row.user_id, row);
+  }
+  return map;
 }
 
 serve(async () => {
-  const today = new Date();
-
-  // Vetëm vaksinat e pabëra. Filtrimi i datës bëhet këtu, sepse `dueDate`
-  // rri brenda JSON-it dhe formatet mund të ndryshojnë; nëse baza rritet,
-  // kjo do të kërkojë kolonë të veçantë me indeks.
-  const { data, error } = await supabase
-    .from("baby_records")
-    .select("user_id, id, payload")
-    .eq("kind", "vaccine")
-    .is("deleted_at", null)
-    .filter("payload->>givenDate", "is", null)
-    .limit(5000);
-
-  if (error) {
-    return new Response(JSON.stringify({ error: error.message }), { status: 500 });
-  }
-
-  const candidates: { userId: string; recordId: string; name: string; days: number }[] = [];
-
-  for (const row of (data ?? []) as VaccineRow[]) {
-    const dueDate = row.payload?.dueDate;
-    if (typeof dueDate !== "string") continue;
-
-    const days = daysUntil(dueDate, today);
-    if (days === null) continue;
-
-    const wanted = days >= 0 ? REMIND_DAYS_BEFORE.includes(days) : REMIND_DAYS_AFTER.includes(-days);
-    if (!wanted) continue;
-
-    const name = typeof row.payload?.name === "string" ? row.payload.name : "Vaksina";
-    candidates.push({ userId: row.user_id, recordId: row.id, name, days });
-  }
-
-  if (candidates.length === 0) {
-    return new Response(JSON.stringify({ checked: data?.length ?? 0, sent: 0 }), {
-      headers: { "Content-Type": "application/json" },
-    });
-  }
-
-  // Cilësimet: mungesa e rreshtit do të thotë "po" (parazgjedhja e app-it).
-  const userIds = [...new Set(candidates.map((c) => c.userId))];
-  const { data: settings } = await supabase
-    .from("notification_settings")
-    .select("user_id, vaccine_reminders")
-    .in("user_id", userIds);
-
-  const disabled = new Set(
-    (settings ?? []).filter((s) => s.vaccine_reminders === false).map((s) => s.user_id)
+  const now = new Date();
+  const localHour = Number(
+    new Intl.DateTimeFormat("en-GB", { timeZone: "Europe/Belgrade", hour: "numeric", hour12: false }).format(now)
   );
+  const counts: Record<string, number> = {};
+  const bump = (k: string) => { counts[k] = (counts[k] ?? 0) + 1; };
 
-  const { data: tokenRows } = await supabase
-    .from("push_tokens")
-    .select("user_id, expo_push_token")
-    .in("user_id", userIds);
+  // =============== BOSHLLEQET ===============
+  const [feedings, diapers, sleeps] = await Promise.all([
+    lastByUser("feeding"),
+    lastByUser("diaper"),
+    lastByUser("sleep"),
+  ]);
 
-  const tokensByUser = new Map<string, string[]>();
-  for (const row of tokenRows ?? []) {
-    const list = tokensByUser.get(row.user_id) ?? [];
-    list.push(row.expo_push_token);
-    tokensByUser.set(row.user_id, list);
-  }
-
-  const messages: PushMessage[] = [];
-  const logRows: { user_id: string; kind: string; ref: string }[] = [];
-
-  for (const c of candidates) {
-    if (disabled.has(c.userId)) continue;
-
-    const tokens = tokensByUser.get(c.userId) ?? [];
-    if (tokens.length === 0) continue;
-
-    const text = messageFor(c.name, c.days);
-    if (!text) continue;
-
-    // Çelësi i mospërsëritjes: ky regjistrim, kjo pikë e kujtesës.
-    const ref = `${c.recordId}:${c.days}`;
-    const { error: logError } = await supabase
-      .from("notification_log")
-      .insert({ user_id: c.userId, kind: "vaccine", ref });
-
-    // 23505 = e dërguar më parë. Çdo gabim tjetër: mos dërgo, që të mos
-    // rrezikojmë dërgim të përsëritur pa gjurmë.
-    if (logError) continue;
-
-    logRows.push({ user_id: c.userId, kind: "vaccine", ref });
-    for (const token of tokens) {
-      messages.push({ to: token, title: text.title, body: text.body, sound: "default", data: { type: "vaccine" } });
+  for (const [userId, row] of feedings) {
+    const gap = hoursSince(row.occurred_at);
+    if (gap >= FEEDING_GAP_H && gap < 24) {
+      // Dedupe mbi regjistrimin e fundit: nje kujtese per boshllek, jo nje
+      // per cdo xhirim.
+      await enqueue(userId, "baby_feeding", "Koha e ushqyerjes?",
+        `Kane kaluar ${Math.floor(gap)} ore nga ushqyerja e fundit.`,
+        { type: "feeding" }, `feed:${row.id}`, 90);
+      bump("feeding");
     }
   }
 
-  // Expo pranon deri në 100 mesazhe për kërkesë.
-  for (let i = 0; i < messages.length; i += 100) {
-    await fetch("https://exp.host/--/api/v2/push/send", {
-      method: "POST",
-      headers: { "Content-Type": "application/json", Accept: "application/json" },
-      body: JSON.stringify(messages.slice(i, i + 100)),
-    });
+  for (const [userId, row] of diapers) {
+    const gap = hoursSince(row.occurred_at);
+    if (gap >= DIAPER_GAP_H && gap < 24) {
+      await enqueue(userId, "baby_diaper", "Pelena",
+        `Kane kaluar ${Math.floor(gap)} ore nga pelena e fundit.`,
+        { type: "diaper" }, `diaper:${row.id}`, 90);
+      bump("diaper");
+    }
   }
 
-  return new Response(
-    JSON.stringify({ checked: data?.length ?? 0, reminders: logRows.length, messages: messages.length }),
-    { headers: { "Content-Type": "application/json" } }
-  );
+  for (const [userId, row] of sleeps) {
+    const endAt = row.payload?.endAt;
+    if (typeof endAt !== "string") continue; // ende duke fjetur
+    const awake = hoursSince(endAt);
+    if (awake >= AWAKE_GAP_H && awake < 12) {
+      await enqueue(userId, "baby_sleep", "Koha e gjumit?",
+        `Bebi eshte zgjuar prej ${Math.floor(awake)} oresh.`,
+        { type: "sleep" }, `sleep:${row.id}`, 90);
+      bump("sleep");
+    }
+  }
+
+  // =============== ILACET ===============
+  const { data: dueMeds } = await supabase.rpc("due_medications");
+  const medIds: string[] = [];
+  for (const med of (dueMeds ?? []) as { id: string; user_id: string; name: string; dose: string | null; slot: string }[]) {
+    await enqueue(med.user_id, "baby_medicine", "Koha e ilacit",
+      med.dose ? `${med.name} — ${med.dose}` : med.name,
+      { type: "medicine", scheduleId: med.id }, `med:${med.id}:${med.slot}`, 120);
+    medIds.push(med.id);
+    bump("medicine");
+  }
+  if (medIds.length > 0) {
+    await supabase.rpc("mark_medication_sent", { p_ids: medIds });
+  }
+
+  // =============== DITORET (vetem ne oren 7) ===============
+  if (localHour === 7) {
+    const { data: vaccines } = await supabase
+      .from("baby_records")
+      .select("user_id, id, payload")
+      .eq("kind", "vaccine")
+      .is("deleted_at", null)
+      .filter("payload->>givenDate", "is", null)
+      .limit(5000);
+
+    for (const row of (vaccines ?? []) as Row[]) {
+      const dueDate = row.payload?.dueDate;
+      if (typeof dueDate !== "string") continue;
+      const days = daysUntil(dueDate, now);
+      if (days === null) continue;
+
+      const wanted = days >= 0 ? REMIND_DAYS_BEFORE.includes(days) : REMIND_DAYS_AFTER.includes(-days);
+      if (!wanted) continue;
+
+      const name = typeof row.payload?.name === "string" ? row.payload.name : "Vaksina";
+      const title = days === 1 ? "Vaksine neser" : days === 0 ? "Vaksine sot" : "Vaksine me vonese";
+      const body = days === 1
+        ? `${name} eshte neser. Kontrollo orarin e qendres.`
+        : days === 0
+          ? `${name} eshte sot.`
+          : `${name} kishte afat ${Math.abs(days)} dite me pare.`;
+
+      await enqueue(row.user_id, "baby_vaccine", title, body, { type: "vaccine" }, `vaccine:${row.id}:${days}`);
+      bump("vaccine");
+    }
+
+    const { data: profiles } = await supabase
+      .from("baby_profiles")
+      .select("user_id, baby_name, baby_dob")
+      .not("baby_dob", "is", null)
+      .limit(5000);
+
+    const growth = await lastByUser("growth");
+
+    for (const p of (profiles ?? []) as { user_id: string; baby_name: string | null; baby_dob: string }[]) {
+      const name = p.baby_name?.trim() || "Bebi";
+      const dob = new Date(p.baby_dob);
+      if (Number.isNaN(dob.getTime())) continue;
+
+      // Matjet: asnje e re prej 30 ditesh.
+      const last = growth.get(p.user_id);
+      const sinceGrowth = hoursSince(last?.occurred_at) / 24;
+      if (sinceGrowth >= 30) {
+        await enqueue(p.user_id, "baby_growth", "Koha per matje",
+          `Ka kaluar nje muaj nga matja e fundit e ${name}. Pesha dhe gjatesia ndihmojne te shihet ecuria.`,
+          { type: "growth" }, `growth:${p.user_id}:${now.getFullYear()}-${now.getMonth() + 1}`);
+        bump("growth");
+      }
+
+      // Muaji i ri: dita e muajit perputhet me datelindjen.
+      if (dob.getDate() === now.getDate()) {
+        const months = (now.getFullYear() - dob.getFullYear()) * 12 + (now.getMonth() - dob.getMonth());
+        if (months >= 1 && months <= 36) {
+          await enqueue(p.user_id, "baby_milestone", `${name} mbushi ${months} muaj`,
+            "Shiko cfare pritet ne kete moshe dhe shenoje peshen e re.",
+            { type: "milestone", months }, `milestone:${p.user_id}:${months}`);
+          bump("milestone");
+        }
+      }
+    }
+  }
+
+  return new Response(JSON.stringify({ localHour, queued: counts }), {
+    headers: { "Content-Type": "application/json" },
+  });
 });

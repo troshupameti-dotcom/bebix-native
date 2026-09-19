@@ -1,65 +1,87 @@
-import { View, Text, ScrollView } from "react-native";
-import { ThemedSwitch } from "@/components/ui/ThemedSwitch";
+import { View, Text, ScrollView, Pressable } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
-import { BackButton } from "@/components/ui/BackButton";
 import { useAppState } from "@/lib/state/AppStateContext";
-import { useLanguage } from "@/lib/i18n/LanguageContext";
-import { Icon, IconName } from "@/components/ui/Icon";
+import { useTranslation } from "@/lib/i18n/LanguageContext";
+import { Icon } from "@/components/ui/Icon";
+import { ThemedSwitch } from "@/components/ui/ThemedSwitch";
 import { shadows } from "@/lib/shadows";
-import type { NotificationPrefs } from "@/lib/state/types";
-import type { TranslationKey } from "@/lib/i18n/translations";
+import { BackButton } from "@/components/ui/BackButton";
+import { useThemeColors } from "@/lib/theme/useThemeColors";
+import {
+  NOTIFICATION_CATALOG, NOTIFICATION_GROUPS, isNotificationEnabled,
+  type NotificationEntry, type NotificationKey,
+} from "@/lib/notifications/catalog";
 
-type ToggleRow = {
-  key: keyof NotificationPrefs;
-  icon: IconName;
-  labelKey: TranslationKey;
-};
+function hourLabel(hour: number): string {
+  return `${String(hour).padStart(2, "0")}:00`;
+}
 
-function ToggleGroup({
-  title,
-  rows,
-  prefs,
-  onToggle,
-  t,
-  isLast,
+function Row({
+  entry, enabled, disabled, onToggle, t,
 }: {
-  title: string;
-  rows: ToggleRow[];
-  prefs: NotificationPrefs;
-  onToggle: (key: keyof NotificationPrefs, value: boolean) => void;
-  t: (k: TranslationKey) => string;
-  isLast?: boolean;
+  entry: NotificationEntry;
+  enabled: boolean;
+  disabled: boolean;
+  onToggle: (key: NotificationKey, value: boolean) => void;
+  t: (key: any) => string;
 }) {
+  const theme = useThemeColors();
   return (
-    <View className={isLast ? "mb-2" : "mb-6"}>
-      <Text className="font-bodyMedium text-xs text-ink-faint uppercase px-5 mb-2">{title}</Text>
-      <View className="mx-5 bg-surface rounded-xl2 overflow-hidden" style={shadows.soft}>
-        {rows.map((r, i) => (
-          <View
-            key={r.key}
-            className={`flex-row items-center px-4 py-3.5 ${
-              i < rows.length - 1 ? "border-b border-cream-line" : ""
-            }`}
-          >
-            <View className="w-8 h-8 rounded-full bg-cream-soft items-center justify-center mr-3">
-              <Icon name={r.icon} size={16} color="#6E7452" />
-            </View>
-            <Text className="font-bodyMedium text-sm text-ink flex-1">{t(r.labelKey)}</Text>
-            <ThemedSwitch
-              value={prefs[r.key]}
-              onValueChange={(value) => onToggle(r.key, value)}
-            />
-          </View>
-        ))}
+    <View className="flex-row items-center py-3 border-t border-cream-line" style={{ opacity: disabled ? 0.45 : 1 }}>
+      <View className="w-8 h-8 rounded-full bg-cream-soft items-center justify-center mr-3">
+        <Icon name={entry.icon} size={15} color={theme.inkSoft} />
+      </View>
+      <View className="flex-1 mr-3">
+        <Text className="font-bodyMedium text-sm text-ink">{t(entry.labelKey)}</Text>
+        <Text className="font-body text-[11px] text-ink-faint leading-4 mt-0.5">{t(entry.hintKey)}</Text>
+      </View>
+      <ThemedSwitch
+        value={enabled}
+        disabled={disabled}
+        onValueChange={(value) => onToggle(entry.key, value)}
+      />
+    </View>
+  );
+}
+
+/** Zgjedhës orësh pa varësi të re: një hap para/prapa mjafton. */
+function HourStepper({ label, value, onChange }: { label: string; value: number; onChange: (h: number) => void }) {
+  const theme = useThemeColors();
+  return (
+    <View className="flex-1 items-center">
+      <Text className="font-body text-[11px] text-ink-faint mb-1.5">{label}</Text>
+      <View className="flex-row items-center">
+        <Pressable
+          onPress={() => onChange((value + 23) % 24)}
+          hitSlop={8}
+          accessibilityRole="button"
+          accessibilityLabel={`${label} -1`}
+          className="w-8 h-8 rounded-full bg-cream-soft items-center justify-center"
+        >
+          <Text className="font-bodyMedium text-base text-ink">–</Text>
+        </Pressable>
+        <Text className="font-bodySemibold text-base text-ink mx-3 w-14 text-center">{hourLabel(value)}</Text>
+        <Pressable
+          onPress={() => onChange((value + 1) % 24)}
+          hitSlop={8}
+          accessibilityRole="button"
+          accessibilityLabel={`${label} +1`}
+          className="w-8 h-8 rounded-full bg-cream-soft items-center justify-center"
+        >
+          <Icon name="plus" size={14} color={theme.ink} />
+        </Pressable>
       </View>
     </View>
   );
 }
 
 export default function NotificationsScreen() {
-  const { state, setNotificationPref } = useAppState();
-  const { t } = useLanguage();
+  const { state, setNotificationPref, setQuietHours } = useAppState();
+  const { t } = useTranslation();
   const prefs = state.notificationPrefs;
+
+  const pushOn = isNotificationEnabled(prefs, "push");
+  const quietOff = prefs.quietFrom === prefs.quietTo;
 
   return (
     <SafeAreaView className="flex-1 bg-cream" edges={["top"]}>
@@ -67,76 +89,78 @@ export default function NotificationsScreen() {
         <BackButton fallback="/(main)/more" className="mr-3" />
         <Text className="font-display text-xl text-ink">{t("notif_title")}</Text>
       </View>
+
       <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={{ paddingTop: 8, paddingBottom: 40 }}>
-        <ToggleGroup
-          title={t("notif_channels")}
-          t={t}
-          prefs={prefs}
-          onToggle={setNotificationPref}
-          rows={[
-            { key: "pushEnabled", icon: "bell", labelKey: "notif_push" },
-            { key: "emailEnabled", icon: "comment", labelKey: "notif_email" },
-            { key: "smsEnabled", icon: "comment", labelKey: "notif_sms" },
-          ]}
-        />
+        {/* Çelësi kryesor */}
+        <View style={shadows.soft} className="mx-5 bg-surface rounded-xl2 p-4 mb-4">
+          <View className="flex-row items-center">
+            <View className="flex-1 mr-3">
+              <Text className="font-bodySemibold text-sm text-ink">{t("notif_master")}</Text>
+              <Text className="font-body text-[11px] text-ink-faint leading-4 mt-0.5">{t("notif_master_hint")}</Text>
+            </View>
+            <ThemedSwitch value={pushOn} onValueChange={(value) => setNotificationPref("push", value)} />
+          </View>
+        </View>
 
-        <ToggleGroup
-          title={t("notif_baby")}
-          t={t}
-          prefs={prefs}
-          onToggle={setNotificationPref}
-          rows={[
-            { key: "medicineReminders", icon: "shield", labelKey: "notif_medicine" },
-            { key: "vaccinationReminders", icon: "syringe", labelKey: "notif_vaccination" },
-            { key: "sleepReminders", icon: "moon", labelKey: "notif_sleep" },
-            { key: "feedingReminders", icon: "sparkle", labelKey: "notif_feeding" },
-          ]}
-        />
+        {/* Orët e qeta */}
+        <View style={[shadows.soft, { opacity: pushOn ? 1 : 0.45 }]} className="mx-5 bg-surface rounded-xl2 p-4 mb-4">
+          <Text className="font-bodySemibold text-sm text-ink mb-1">{t("notif_quiet_title")}</Text>
+          <Text className="font-body text-[11px] text-ink-faint leading-4 mb-4">{t("notif_quiet_hint")}</Text>
 
-        <ToggleGroup
-          title={t("notif_shopping")}
-          t={t}
-          prefs={prefs}
-          onToggle={setNotificationPref}
-          rows={[
-            { key: "shoppingNotifications", icon: "cube", labelKey: "notif_shopping_updates" },
-            { key: "deliveryUpdates", icon: "cube", labelKey: "notif_delivery" },
-          ]}
-        />
+          {quietOff ? (
+            <Pressable
+              onPress={() => setQuietHours(22, 7)}
+              className="bg-cream-soft rounded-xl2 py-2.5 items-center"
+            >
+              <Text className="font-bodyMedium text-sm text-ink">{t("notif_quiet_off")}</Text>
+            </Pressable>
+          ) : (
+            <>
+              <View className="flex-row">
+                <HourStepper
+                  label={t("notif_quiet_from")}
+                  value={prefs.quietFrom}
+                  onChange={(h) => setQuietHours(h, prefs.quietTo)}
+                />
+                <HourStepper
+                  label={t("notif_quiet_to")}
+                  value={prefs.quietTo}
+                  onChange={(h) => setQuietHours(prefs.quietFrom, h)}
+                />
+              </View>
+              <Pressable onPress={() => setQuietHours(0, 0)} className="items-center mt-3">
+                <Text className="font-bodyMedium text-xs text-olive">{t("notif_quiet_off")}</Text>
+              </Pressable>
+            </>
+          )}
+        </View>
 
-        <ToggleGroup
-          title={t("notif_community")}
-          t={t}
-          prefs={prefs}
-          onToggle={setNotificationPref}
-          rows={[
-            { key: "communityNotifications", icon: "family", labelKey: "notif_community_notif" },
-            { key: "aiRecommendations", icon: "sparkle", labelKey: "notif_ai" },
-          ]}
-        />
+        {/* Grupet */}
+        {NOTIFICATION_GROUPS.map(({ group, titleKey }) => {
+          const entries = NOTIFICATION_CATALOG.filter((e) => e.group === group);
+          return (
+            <View key={group} className="mb-4">
+              <Text className="font-bodyMedium text-xs text-ink-faint uppercase px-5 mb-2">{t(titleKey)}</Text>
+              <View style={shadows.soft} className="mx-5 bg-surface rounded-xl2 px-4 pb-1">
+                {entries.map((entry) => (
+                  <Row
+                    key={entry.key}
+                    entry={entry}
+                    enabled={isNotificationEnabled(prefs, entry.key)}
+                    disabled={!pushOn}
+                    onToggle={setNotificationPref}
+                    t={t}
+                  />
+                ))}
+              </View>
+            </View>
+          );
+        })}
 
-        <ToggleGroup
-          title={t("notif_reports")}
-          t={t}
-          prefs={prefs}
-          onToggle={setNotificationPref}
-          rows={[
-            { key: "weeklyReports", icon: "chart", labelKey: "notif_weekly" },
-            { key: "monthlyReports", icon: "chart", labelKey: "notif_monthly" },
-          ]}
-        />
-
-        <ToggleGroup
-          title={t("notif_other")}
-          t={t}
-          prefs={prefs}
-          onToggle={setNotificationPref}
-          isLast
-          rows={[
-            { key: "marketing", icon: "flame", labelKey: "notif_marketing" },
-            { key: "emergencyAlerts", icon: "shield", labelKey: "notif_emergency" },
-          ]}
-        />
+        <Text className="font-body text-[11px] text-ink-faint px-6 leading-4">
+          Njoftimet e para kërkojnë leje nga telefoni. Nëse i ke refuzuar një herë, duhen lejuar nga
+          cilësimet e telefonit.
+        </Text>
       </ScrollView>
     </SafeAreaView>
   );

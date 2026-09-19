@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { View, Text, ScrollView, Pressable } from "react-native";
+import { MedicationReminders } from "@/components/baby/MedicationReminders";
 import { MotiView } from "moti";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { Icon, IconName } from "@/components/ui/Icon";
@@ -128,6 +129,11 @@ export default function MedicalScreen() {
             </MotiView>
           ))
         )}
+
+        {/* Oraret e ilaceve: kujtesat i dergon serveri, jo telefoni. */}
+        <View className="-mx-5">
+          <MedicationReminders />
+        </View>
       </ScrollView>
 
       <View className="px-5 pb-6">

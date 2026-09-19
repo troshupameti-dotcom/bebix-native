@@ -3,6 +3,7 @@ import type { IconName } from "@/components/ui/Icon";
 import type { TranslationKey } from "@/lib/i18n/translations";
 import type { BabyModuleState, NotificationPrefs } from "@/lib/state/types";
 import { computeVaccineStatus } from "@/lib/baby/vaccineStatus";
+import { isNotificationEnabled } from "@/lib/notifications/catalog";
 import { formatTime } from "@/lib/dateUtils";
 
 type T = (key: TranslationKey, params?: Record<string, string | number>) => string;
@@ -59,7 +60,7 @@ export function buildInbox({ baby, prefs, t, lang, now = new Date() }: Input): I
   const nowMs = now.getTime();
 
   // ---- Vaksinat ----
-  if (prefs.vaccinationReminders) {
+  if (isNotificationEnabled(prefs, "baby_vaccine")) {
     for (const v of active(baby.vaccines)) {
       if (!v.reminderEnabled) continue;
       const status = computeVaccineStatus(v, now);
@@ -103,7 +104,7 @@ export function buildInbox({ baby, prefs, t, lang, now = new Date() }: Input): I
   }
 
   // ---- Ushqyerja (ilaçet s'numërohen si ushqyerje) ----
-  if (prefs.feedingReminders) {
+  if (isNotificationEnabled(prefs, "baby_feeding")) {
     const last = active(baby.feedingLog).find((f) => f.type !== "medicine");
     if (last) {
       const hours = Math.floor((nowMs - new Date(last.at).getTime()) / HOUR);
@@ -122,7 +123,7 @@ export function buildInbox({ baby, prefs, t, lang, now = new Date() }: Input): I
   }
 
   // ---- Gjumi: sa kohë zgjuar që nga gjumi i fundit i mbaruar ----
-  if (prefs.sleepReminders) {
+  if (isNotificationEnabled(prefs, "baby_sleep")) {
     const lastSleep = active(baby.sleepLog)[0];
     if (lastSleep?.endAt) {
       const hours = Math.floor((nowMs - new Date(lastSleep.endAt).getTime()) / HOUR);

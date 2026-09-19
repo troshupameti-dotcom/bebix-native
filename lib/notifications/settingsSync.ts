@@ -1,31 +1,15 @@
 import { supabase } from "@/lib/supabase/client";
-import type { NotificationPrefs } from "@/lib/state/types";
+import { NOTIFICATION_CATALOG, isNotificationEnabled, type NotificationPrefs } from "@/lib/notifications/catalog";
 
 /**
  * Cilësimet e njoftimeve, te serveri.
  *
- * Deri tani rrinin vetëm në AsyncStorage. Kjo mjaftonte sa kohë njoftimet
- * ndërtoheshin në telefon — por tani kujtesat e vaksinave dhe statusi i
- * porosisë dërgohen nga serveri, dhe serveri s'ka si ta dijë që përdoruesi
- * i ka fikur nëse nuk ia themi.
+ * Kujtesat dhe njoftimet e komunitetit i dërgon serveri, jo telefoni — pra
+ * ai duhet t'i dijë këto zgjedhje. Pa këtë, një prind që i fik kujtesat e
+ * ushqyerjes do t'i merrte prapë.
  *
- * Mungesa e rreshtit do të thotë "të ndezura", njësoj si parazgjedhja e
- * app-it — pra një përdorues që nuk i prek kurrë cilësimet i merr.
- */
-
-/** Ç'pjesë e cilësimeve ka kuptim për serverin. */
-function toRow(prefs: NotificationPrefs) {
-  return {
-    // Push-i i fikur fare do të thotë asgjë nuk dërgohet.
-    vaccine_reminders: prefs.pushEnabled && prefs.vaccinationReminders,
-    order_updates: prefs.pushEnabled,
-    updated_at: new Date().toISOString(),
-  };
-}
-
-/**
- * Ruan cilësimet për përdoruesin aktual. Heshtazi: nëse s'ka rrjet ose
- * s'ka sesion, app-i vazhdon — dhe sinkronizohet herën tjetër.
+ * Dërgohet harta e plotë, jo vetëm ndryshimet: serveri nuk ka pse të dijë
+ * parazgjedhjet e app-it, dhe kështu të dyja anët tregojnë të njëjtën gjë.
  */
 export async function syncNotificationSettings(prefs: NotificationPrefs): Promise<void> {
   try {
@@ -33,9 +17,23 @@ export async function syncNotificationSettings(prefs: NotificationPrefs): Promis
     const userId = data?.user?.id;
     if (!userId) return;
 
-    await supabase
-      .from("notification_settings")
-      .upsert({ user_id: userId, ...toRow(prefs) }, { onConflict: "user_id" });
+    const keys: Record<string, boolean> = {
+      push: isNotificationEnabled(prefs, "push"),
+    };
+    for (const entry of NOTIFICATION_CATALOG) {
+      keys[entry.key] = isNotificationEnabled(prefs, entry.key);
+    }
+
+    await supabase.from("notification_settings").upsert(
+      {
+        user_id: userId,
+        prefs: keys,
+        quiet_from: prefs.quietFrom,
+        quiet_to: prefs.quietTo,
+        updated_at: new Date().toISOString(),
+      },
+      { onConflict: "user_id" }
+    );
   } catch {
     // Cilësimet mbeten lokale; provohet sërish në ndryshimin tjetër.
   }

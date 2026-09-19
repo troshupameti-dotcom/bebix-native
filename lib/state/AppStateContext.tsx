@@ -3,6 +3,7 @@ import { useColorScheme } from "react-native";
 import { useColorScheme as useNativeWindColorScheme } from "nativewind";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { syncNotificationSettings } from "@/lib/notifications/settingsSync";
+import { migrateNotificationPrefs, type NotificationKey } from "@/lib/notifications/catalog";
 import {
   AppState,
   initialAppState,
@@ -30,7 +31,6 @@ import {
   growthCatalog,
   medicalCatalog,
   milestoneCatalog,
-  NotificationPrefs,
 } from "./types";
 
 const STORAGE_KEY = "bebix_app_state_v3";
@@ -133,7 +133,8 @@ type Action =
   | { type: "UPDATE_CART_QTY"; id: string; qty: number }
   | { type: "CLEAR_CART" }
   | { type: "SET_BABY"; value: Partial<BabyModuleState> }
-  | { type: "SET_NOTIFICATION_PREF"; key: keyof NotificationPrefs; value: boolean }
+  | { type: "SET_NOTIFICATION_PREF"; key: NotificationKey; value: boolean }
+  | { type: "SET_QUIET_HOURS"; from: number; to: number }
   | { type: "SET_READ_NOTIFICATIONS"; ids: string[] }
   | { type: "HYDRATE"; state: AppState };
 
@@ -180,7 +181,19 @@ function reducer(state: AppState, action: Action): AppState {
     case "SET_BABY":
       return { ...state, baby: { ...state.baby, ...action.value } };
     case "SET_NOTIFICATION_PREF":
-      return { ...state, notificationPrefs: { ...state.notificationPrefs, [action.key]: action.value } };
+      return {
+        ...state,
+        notificationPrefs: {
+          ...state.notificationPrefs,
+          keys: { ...state.notificationPrefs.keys, [action.key]: action.value },
+        },
+      };
+
+    case "SET_QUIET_HOURS":
+      return {
+        ...state,
+        notificationPrefs: { ...state.notificationPrefs, quietFrom: action.from, quietTo: action.to },
+      };
     case "SET_READ_NOTIFICATIONS":
       return { ...state, readNotificationIds: action.ids };
     case "HYDRATE":
@@ -191,7 +204,9 @@ function reducer(state: AppState, action: Action): AppState {
         ...initialAppState,
         ...action.state,
         cartItems: (action.state as AppState).cartItems ?? initialAppState.cartItems,
-        notificationPrefs: { ...initialAppState.notificationPrefs, ...(action.state as AppState).notificationPrefs },
+        // Instalimet e vjetra kane celesa si `feedingReminders`; pa migrim,
+        // zgjedhjet e tyre do te zhdukeshin pa zhurme.
+        notificationPrefs: migrateNotificationPrefs((action.state as AppState).notificationPrefs),
         readNotificationIds: (action.state as AppState).readNotificationIds ?? [],
       };
     default:
@@ -295,7 +310,8 @@ function buildValue(state: AppState, dispatch: React.Dispatch<Action>) {
       const next = new Set([...state.readNotificationIds, ...ids].filter((id) => current.has(id)));
       dispatch({ type: "SET_READ_NOTIFICATIONS", ids: [...next] });
     },
-    setNotificationPref: (key: keyof NotificationPrefs, value: boolean) =>
+    setQuietHours: (from: number, to: number) => dispatch({ type: "SET_QUIET_HOURS", from, to }),
+    setNotificationPref: (key: NotificationKey, value: boolean) =>
       // Dergimi te serveri behet nga efekti me poshte, qe mbulon edhe
       // ngarkimin e pare — jo ketu, qe te mos kete dy rruge per te njejten gje.
       dispatch({ type: "SET_NOTIFICATION_PREF", key, value }),

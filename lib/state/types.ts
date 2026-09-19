@@ -1,4 +1,6 @@
 import { BabyModuleState, initialBabyState, BloodType } from "./babyTypes";
+import type { NotificationPrefs } from "@/lib/notifications/catalog";
+import { initialNotificationPrefs } from "@/lib/notifications/catalog";
 
 export type BabyGender = "girl" | "boy" | "other" | null;
 export type ParentRelation = "mom" | "dad" | "guardian" | null;
@@ -40,41 +42,11 @@ export type CartItem = {
   qty: number;
 };
 
-export type NotificationPrefs = {
-  pushEnabled: boolean;
-  emailEnabled: boolean;
-  smsEnabled: boolean;
-  medicineReminders: boolean;
-  vaccinationReminders: boolean;
-  sleepReminders: boolean;
-  feedingReminders: boolean;
-  shoppingNotifications: boolean;
-  deliveryUpdates: boolean;
-  communityNotifications: boolean;
-  aiRecommendations: boolean;
-  marketing: boolean;
-  weeklyReports: boolean;
-  monthlyReports: boolean;
-  emergencyAlerts: boolean;
-};
-
-export const initialNotificationPrefs: NotificationPrefs = {
-  pushEnabled: true,
-  emailEnabled: true,
-  smsEnabled: false,
-  medicineReminders: true,
-  vaccinationReminders: true,
-  sleepReminders: true,
-  feedingReminders: true,
-  shoppingNotifications: true,
-  deliveryUpdates: true,
-  communityNotifications: true,
-  aiRecommendations: true,
-  marketing: false,
-  weeklyReports: true,
-  monthlyReports: false,
-  emergencyAlerts: true,
-};
+// Cilesimet e njoftimeve rrine te katalogu, bashke me celesat, parazgjedhjet
+// dhe migrimin nga forma e vjeter. Ketu vetem ri-eksportohen, qe gjendja te
+// mos kete nje kopje te dyte te se njejtes te vertete.
+export type { NotificationPrefs };
+export { initialNotificationPrefs };
 
 export type AppState = {
   darkMode: boolean;
