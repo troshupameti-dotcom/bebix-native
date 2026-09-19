@@ -3,6 +3,8 @@ import { ActivityIndicator, Alert, Pressable, Text, View } from "react-native";
 import { BottomSheet } from "@/components/ui/BottomSheet";
 import { Icon, type IconName } from "@/components/ui/Icon";
 import { haptics } from "@/lib/haptics";
+import { useTranslation } from "@/lib/i18n/LanguageContext";
+import type { TranslationKey } from "@/lib/i18n/translations";
 import { blockUser, reportComment, reportPost, type ReportReason } from "@/lib/communityData";
 
 export type ModerationTarget =
@@ -18,12 +20,12 @@ type Props = {
   onBlocked?: () => void;
 };
 
-const REASONS: { value: ReportReason; label: string }[] = [
-  { value: "spam", label: "Spam ose reklamë" },
-  { value: "harassment", label: "Ngacmim ose gjuhë fyese" },
-  { value: "inappropriate", label: "Përmbajtje e papërshtatshme" },
-  { value: "misinformation", label: "Informacion i rremë shëndetësor" },
-  { value: "other", label: "Diçka tjetër" },
+const REASONS: { value: ReportReason; labelKey: TranslationKey }[] = [
+  { value: "spam", labelKey: "mod_reason_spam" },
+  { value: "harassment", labelKey: "mod_reason_harassment" },
+  { value: "inappropriate", labelKey: "mod_reason_inappropriate" },
+  { value: "misinformation", labelKey: "mod_reason_misinformation" },
+  { value: "other", labelKey: "mod_reason_other" },
 ];
 
 /**
@@ -38,9 +40,10 @@ export function ModerationSheet(props: Props) {
 }
 
 function SheetBody({ target, onClose, onDelete, onBlocked }: Props & { target: ModerationTarget }) {
+  const { t } = useTranslation();
   const [step, setStep] = useState<"actions" | "reasons">("actions");
   const [busy, setBusy] = useState(false);
-  const noun = target.kind === "post" ? "postimin" : "komentin";
+  const isPost = target?.kind === "post";
 
   async function run(action: () => Promise<void>, done: () => void) {
     setBusy(true);
@@ -48,17 +51,17 @@ function SheetBody({ target, onClose, onDelete, onBlocked }: Props & { target: M
       await action();
       done();
     } catch (e) {
-      Alert.alert("Gabim", e instanceof Error ? e.message : "Diçka shkoi keq. Provo përsëri.");
+      Alert.alert(t("mod_error_title"), e instanceof Error ? e.message : t("mod_error_body"));
     } finally {
       setBusy(false);
     }
   }
 
   function confirmDelete() {
-    Alert.alert(`Fshi ${noun}?`, "Nuk mund të kthehet.", [
-      { text: "Anulo", style: "cancel" },
+    Alert.alert(isPost ? t("mod_delete_post_q") : t("mod_delete_comment_q"), t("mod_cannot_undo"), [
+      { text: t("cancel_action"), style: "cancel" },
       {
-        text: "Fshi",
+        text: t("mod_delete"),
         style: "destructive",
         onPress: () =>
           run(
@@ -77,12 +80,12 @@ function SheetBody({ target, onClose, onDelete, onBlocked }: Props & { target: M
   function confirmBlock() {
     const name = target.authorName;
     Alert.alert(
-      `Blloko ${name}?`,
-      "Nuk do t'i shohësh më postimet dhe komentet e këtij përdoruesi. Mund ta zhbllokosh më vonë.",
+      t("mod_block_q", { name }),
+      t("mod_block_body"),
       [
-        { text: "Anulo", style: "cancel" },
+        { text: t("cancel_action"), style: "cancel" },
         {
-          text: "Blloko",
+          text: t("mod_block"),
           style: "destructive",
           onPress: () =>
             run(
@@ -99,13 +102,13 @@ function SheetBody({ target, onClose, onDelete, onBlocked }: Props & { target: M
   }
 
   function sendReport(reason: ReportReason) {
-    const t = target;
+    const item = target;
     run(
-      () => (t.kind === "post" ? reportPost(t.id, reason) : reportComment(t.id, reason)),
+      () => (item.kind === "post" ? reportPost(item.id, reason) : reportComment(item.id, reason)),
       () => {
         haptics.success();
         onClose();
-        Alert.alert("Faleminderit", "Raportimi u dërgua. Ekipi ynë do ta shqyrtojë.");
+        Alert.alert(t("mod_thanks"), t("mod_report_sent"));
       }
     );
   }
@@ -119,21 +122,21 @@ function SheetBody({ target, onClose, onDelete, onBlocked }: Props & { target: M
       ) : step === "actions" ? (
         <View className="pb-2">
           {target.isMine ? (
-            <Row icon="close" label={`Fshi ${noun}`} destructive onPress={confirmDelete} />
+            <Row icon="close" label={isPost ? t("mod_delete_post") : t("mod_delete_comment")} destructive onPress={confirmDelete} />
           ) : (
             <>
-              <Row icon="shield" label={`Raporto ${noun}`} onPress={() => setStep("reasons")} />
-              <Row icon="eyeOff" label={`Blloko ${target.authorName}`} destructive onPress={confirmBlock} />
+              <Row icon="shield" label={isPost ? t("mod_report_post") : t("mod_report_comment")} onPress={() => setStep("reasons")} />
+              <Row icon="eyeOff" label={t("mod_block_who", { name: target.authorName })} destructive onPress={confirmBlock} />
             </>
           )}
-          <Row icon="chevronLeft" label="Anulo" onPress={onClose} />
+          <Row icon="chevronLeft" label={t("cancel_action")} onPress={onClose} />
         </View>
       ) : (
         <View className="pb-2">
-          <Text className="mb-1 font-bodySemibold text-base text-ink">Pse po e raporton?</Text>
-          <Text className="mb-3 font-body text-xs text-ink-soft">Raportimi është anonim për autorin.</Text>
+          <Text className="mb-1 font-bodySemibold text-base text-ink">{t("mod_why_report")}</Text>
+          <Text className="mb-3 font-body text-xs text-ink-soft">{t("mod_anonymous")}</Text>
           {REASONS.map((r) => (
-            <Row key={r.value} icon="chevronRight" label={r.label} onPress={() => sendReport(r.value)} />
+            <Row key={r.value} icon="chevronRight" label={t(r.labelKey)} onPress={() => sendReport(r.value)} />
           ))}
         </View>
       )}

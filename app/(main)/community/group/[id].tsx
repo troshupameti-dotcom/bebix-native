@@ -6,10 +6,12 @@ import { Icon } from "@/components/ui/Icon";
 import { PostCard } from "@/components/community/PostCard";
 import { fetchGroupById, fetchPostsByGroup, toggleJoinGroup, CommunityGroup, CommunityPost } from "@/lib/communityData";
 import { BackButton, goBackOr } from "@/components/ui/BackButton";
+import { useTranslation } from "@/lib/i18n/LanguageContext";
 
 export default function GroupProfileScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const router = useRouter();
+  const { t } = useTranslation();
   const [loading, setLoading] = useState(true);
   const [group, setGroup] = useState<CommunityGroup | null>(null);
   const [posts, setPosts] = useState<CommunityPost[]>([]);
@@ -51,9 +53,9 @@ export default function GroupProfileScreen() {
   if (!group) {
     return (
       <SafeAreaView className="flex-1 bg-cream items-center justify-center px-8">
-        <Text className="font-bodySemibold text-sm text-ink mb-2">Grupi s’u gjet</Text>
+        <Text className="font-bodySemibold text-sm text-ink mb-2">{t("cgrp_not_found")}</Text>
         <Pressable onPress={() => goBackOr("/(main)/community")} className="bg-olive px-5 py-3 rounded-full mt-2">
-          <Text className="font-bodySemibold text-sm text-on-accent">Kthehu</Text>
+          <Text className="font-bodySemibold text-sm text-on-accent">{t("cpost_back")}</Text>
         </Pressable>
       </SafeAreaView>
     );
@@ -66,7 +68,7 @@ export default function GroupProfileScreen() {
     <SafeAreaView className="flex-1 bg-cream" edges={["top"]}>
       <View className="flex-row items-center px-5 pt-2 mb-2">
         <BackButton fallback="/(main)/community" />
-        <Text className="font-bodySemibold text-base text-ink">Grupi</Text>
+        <Text className="font-bodySemibold text-base text-ink">{t("cgrp_title")}</Text>
       </View>
 
       <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={{ paddingBottom: 40 }}>
@@ -88,7 +90,7 @@ export default function GroupProfileScreen() {
           <Text className="font-bodySemibold text-sm text-ink">Postimet ({posts.length})</Text>
         </View>
         {posts.length === 0 ? (
-          <Text className="font-body text-xs text-ink-faint px-5">Ende nuk ka postime në këtë grup.</Text>
+          <Text className="font-body text-xs text-ink-faint px-5">{t("cgrp_no_posts")}</Text>
         ) : (
           posts.map((p) => <PostCard key={p.id} post={p} onOpen={() => router.push(`/community/post/${p.id}`)} onRemoved={(id, reason) => (reason === "blocked" ? load() : setPosts((prev) => prev.filter((x) => x.id !== id)))} />)
         )}

@@ -4,6 +4,7 @@ import { SafeAreaView } from "react-native-safe-area-context";
 import { useFocusEffect } from "expo-router";
 import * as ImagePicker from "expo-image-picker";
 import { useAppState } from "@/lib/state/AppStateContext";
+import { useTranslation } from "@/lib/i18n/LanguageContext";
 import { shadows } from "@/lib/shadows";
 import { haptics } from "@/lib/haptics";
 import { Icon } from "@/components/ui/Icon";
@@ -29,6 +30,7 @@ function toLocalMedia(a: ImagePicker.ImagePickerAsset): LocalMedia {
 
 export default function NewPostScreen() {
   const { state } = useAppState();
+  const { t } = useTranslation();
   const [text, setText] = useState("");
   const [media, setMedia] = useState<LocalMedia[]>([]);
   const [selectedTag, setSelectedTag] = useState<string | null>(null);
@@ -75,7 +77,7 @@ export default function NewPostScreen() {
       haptics.tap();
       setMedia((prev) => [...prev, ...accepted].slice(0, MAX_POST_MEDIA));
     }
-    if (rejected.length) Alert.alert("Disa skedarë nuk u shtuan", [...new Set(rejected)].join("\n"));
+    if (rejected.length) Alert.alert(t("cnew_rejected"), [...new Set(rejected)].join("\n"));
   }
 
   async function pickFromLibrary() {
@@ -94,7 +96,7 @@ export default function NewPostScreen() {
     if (slotsLeft <= 0) return;
     const perm = await ImagePicker.requestCameraPermissionsAsync();
     if (!perm.granted) {
-      Alert.alert("Kamera e bllokuar", "Lejo qasjen në kamerë te cilësimet e telefonit.");
+      Alert.alert(t("cnew_camera_blocked"), t("cnew_camera_blocked_body"));
       return;
     }
     const result = await ImagePicker.launchCameraAsync({
@@ -133,7 +135,7 @@ export default function NewPostScreen() {
     <SafeAreaView className="flex-1 bg-cream" edges={["top"]}>
       <View className="flex-row items-center justify-between px-5 pt-2 mb-4">
         <BackButton fallback="/(main)/community" variant="close" />
-        <Text className="font-bodySemibold text-base text-ink">Postim i ri</Text>
+        <Text className="font-bodySemibold text-base text-ink">{t("cnew_title")}</Text>
         <Pressable
           onPress={handlePost}
           disabled={!canPost}
@@ -143,7 +145,7 @@ export default function NewPostScreen() {
           {posting ? (
             <ActivityIndicator className="text-on-accent" size="small" />
           ) : (
-            <Text className={`font-bodySemibold text-xs ${canPost ? "text-on-accent" : "text-ink-faint"}`}>Posto</Text>
+            <Text className={`font-bodySemibold text-xs ${canPost ? "text-on-accent" : "text-ink-faint"}`}>{t("cnew_post")}</Text>
           )}
         </Pressable>
       </View>
@@ -154,7 +156,7 @@ export default function NewPostScreen() {
             <TextInput
               value={text}
               onChangeText={setText}
-              placeholder="Çfarë do të ndash?"
+              placeholder={t("cnew_ph")}
               placeholderClassName="text-ink-faint"
               multiline
               autoFocus
@@ -187,7 +189,7 @@ export default function NewPostScreen() {
                       onPress={() => setMedia((prev) => prev.filter((_, idx) => idx !== i))}
                       hitSlop={8}
                       accessibilityRole="button"
-                      accessibilityLabel="Hiq"
+                      accessibilityLabel={t("cnew_remove")}
                       className="absolute right-1.5 top-1.5 h-6 w-6 items-center justify-center rounded-full bg-black/60"
                     >
                       <Icon name="close" size={12} color="#FEFEFE" />
@@ -199,22 +201,22 @@ export default function NewPostScreen() {
           )}
 
           <View className="mt-4 flex-row gap-2.5 px-5">
-            <MediaButton icon="camera" label="Kamera" disabled={slotsLeft <= 0 || posting} onPress={takeWithCamera} />
-            <MediaButton icon="plus" label="Nga galeria" disabled={slotsLeft <= 0 || posting} onPress={pickFromLibrary} />
+            <MediaButton icon="camera" label={t("cnew_camera")} disabled={slotsLeft <= 0 || posting} onPress={takeWithCamera} />
+            <MediaButton icon="plus" label={t("cnew_gallery")} disabled={slotsLeft <= 0 || posting} onPress={pickFromLibrary} />
           </View>
           <Text className="mt-2 px-5 font-body text-[11px] text-ink-faint">
-            Deri në {MAX_POST_MEDIA} foto ose video · videot deri në {MAX_VIDEO_SECONDS} sekonda
+            {t("cnew_media_limit", { n: MAX_POST_MEDIA, s: MAX_VIDEO_SECONDS })}
           </Text>
 
           {posting && media.length > 0 ? (
-            <Text className="mt-3 px-5 font-body text-xs text-ink-soft">Po ngarkohen skedarët, mos e mbyll ekranin...</Text>
+            <Text className="mt-3 px-5 font-body text-xs text-ink-soft">{t("cnew_uploading")}</Text>
           ) : null}
 
           {error && <Text className="font-body text-xs text-red-600 px-5 mt-3">{error}</Text>}
 
           {!loading && topics.length > 0 && (
             <>
-              <Text className="font-bodySemibold text-xs text-ink-soft px-5 mt-6 mb-2">Shto etiketë (opsionale)</Text>
+              <Text className="font-bodySemibold text-xs text-ink-soft px-5 mt-6 mb-2">{t("cnew_tag")}</Text>
               <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ paddingHorizontal: 20 }}>
                 {topics.map((t) => {
                   const active = selectedTag === t.label;
@@ -234,7 +236,7 @@ export default function NewPostScreen() {
 
           {!loading && groups.length > 0 && (
             <>
-              <Text className="font-bodySemibold text-xs text-ink-soft px-5 mt-6 mb-2">Posto në grup (opsionale)</Text>
+              <Text className="font-bodySemibold text-xs text-ink-soft px-5 mt-6 mb-2">{t("cnew_group")}</Text>
               <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ paddingHorizontal: 20 }}>
                 {groups.map((g) => {
                   const active = selectedGroupId === g.id;
@@ -253,7 +255,7 @@ export default function NewPostScreen() {
           )}
 
           <Text className="mt-8 px-5 font-body text-[11px] leading-4 text-ink-faint">
-            Postimet janë publike për komunitetin. Mos ndaj të dhëna personale të bebit dhe respekto të tjerët — përmbajtja fyese hiqet.
+            {t("cnew_rules")}
           </Text>
         </ScrollView>
       </KeyboardAvoidingView>

@@ -6,9 +6,11 @@ import { Icon } from "@/components/ui/Icon";
 import { PostCard } from "@/components/community/PostCard";
 import { fetchSavedPosts, CommunityPost } from "@/lib/communityData";
 import { BackButton } from "@/components/ui/BackButton";
+import { useTranslation } from "@/lib/i18n/LanguageContext";
 
 export default function SavedPostsScreen() {
   const router = useRouter();
+  const { t } = useTranslation();
   const [loading, setLoading] = useState(true);
   const [posts, setPosts] = useState<CommunityPost[]>([]);
 
@@ -37,7 +39,7 @@ export default function SavedPostsScreen() {
     <SafeAreaView className="flex-1 bg-cream" edges={["top"]}>
       <View className="flex-row items-center px-5 pt-2 mb-4">
         <BackButton fallback="/(main)/community" />
-        <Text className="font-display text-xl text-ink ml-1">Postime të ruajtura</Text>
+        <Text className="font-display text-xl text-ink ml-1">{t("community_saved_title")}</Text>
       </View>
 
       {posts.length === 0 ? (
@@ -45,9 +47,9 @@ export default function SavedPostsScreen() {
           <View className="w-16 h-16 rounded-full bg-olive-bg items-center justify-center mb-4">
             <Icon name="bookmark" size={26} color="#6E7452" />
           </View>
-          <Text className="font-bodySemibold text-sm text-ink mb-1">Ende nuk ke ruajtur asgjë</Text>
+          <Text className="font-bodySemibold text-sm text-ink mb-1">{t("csaved_empty_title")}</Text>
           <Text className="font-body text-xs text-ink-soft text-center leading-5">
-            Kur gjen një postim që do ta lexosh sërish, shtyp ikonën e faqeshënuesit.
+            {t("csaved_empty_body")}
           </Text>
         </View>
       ) : (

@@ -5,6 +5,7 @@ import { useRouter, useFocusEffect } from "expo-router";
 import { Icon } from "@/components/ui/Icon";
 import { shadows } from "@/lib/shadows";
 import { BackButton } from "@/components/ui/BackButton";
+import { useTranslation } from "@/lib/i18n/LanguageContext";
 import {
   fetchExperts, fetchGroups,
   toggleFollowExpert as apiToggleFollowExpert, toggleJoinGroup as apiToggleJoinGroup,
@@ -65,6 +66,7 @@ function GroupRow({ group, onOpen, onToggleJoin }: { group: CommunityGroup; onOp
 
 export default function ExploreScreen() {
   const router = useRouter();
+  const { t } = useTranslation();
   const [tab, setTab] = useState<Tab>("experts");
   const [loading, setLoading] = useState(true);
   const [experts, setExperts] = useState<CommunityExpert[]>([]);
@@ -107,7 +109,7 @@ export default function ExploreScreen() {
     <SafeAreaView className="flex-1 bg-cream" edges={["top"]}>
       <View className="flex-row items-center px-5 pt-2 mb-4">
         <BackButton fallback="/(main)/community" />
-        <Text className="font-display text-xl text-ink ml-1">Ekspertë dhe grupe</Text>
+        <Text className="font-display text-xl text-ink ml-1">{t("community_experts_groups")}</Text>
       </View>
 
       <View className="flex-row mx-5 mb-4 bg-cream-soft rounded-full p-1">
@@ -122,14 +124,14 @@ export default function ExploreScreen() {
       <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={{ paddingHorizontal: 20, paddingBottom: 40 }}>
         {tab === "experts" ? (
           experts.length === 0 ? (
-            <Text className="font-body text-xs text-ink-faint">Ende nuk ka ekspertë.</Text>
+            <Text className="font-body text-xs text-ink-faint">{t("cexplore_no_experts")}</Text>
           ) : (
             experts.map((e) => (
               <ExpertRow key={e.id} expert={e} onOpen={() => router.push(`/community/expert/${e.id}`)} onToggleFollow={() => handleFollow(e)} />
             ))
           )
         ) : groups.length === 0 ? (
-          <Text className="font-body text-xs text-ink-faint">Ende nuk ka grupe.</Text>
+          <Text className="font-body text-xs text-ink-faint">{t("cexplore_no_groups")}</Text>
         ) : (
           groups.map((g) => (
             <GroupRow key={g.id} group={g} onOpen={() => router.push(`/community/group/${g.id}`)} onToggleJoin={() => handleJoin(g)} />

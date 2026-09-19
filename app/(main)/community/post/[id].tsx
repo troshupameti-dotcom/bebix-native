@@ -7,7 +7,9 @@ import { shadows } from "@/lib/shadows";
 import { haptics } from "@/lib/haptics";
 import { useCurrentUserId } from "@/lib/hooks/useCurrentUserId";
 import { Icon } from "@/components/ui/Icon";
-import { Avatar, PostCard, timeAgoLabel } from "@/components/community/PostCard";
+import { Avatar, PostCard } from "@/components/community/PostCard";
+import { timeAgoLabel } from "@/lib/i18n/timeAgo";
+import { useTranslation } from "@/lib/i18n/LanguageContext";
 import { ModerationSheet, type ModerationTarget } from "@/components/community/ModerationSheet";
 import { BackButton, goBackOr } from "@/components/ui/BackButton";
 import {
@@ -22,11 +24,13 @@ function CommentRow({
   isReply,
   onReply,
   onMore,
+  t,
 }: {
   comment: CommunityComment;
   isReply?: boolean;
   onReply: (comment: CommunityComment) => void;
   onMore: (comment: CommunityComment) => void;
+  t: (key: any, params?: Record<string, string | number>) => string;
 }) {
   const initial = comment.authorName.trim().charAt(0).toUpperCase() || "?";
   return (
@@ -46,15 +50,15 @@ function CommentRow({
           <Text className="font-body text-xs text-ink-soft leading-5">{comment.text}</Text>
         </Pressable>
         <View className="flex-row items-center mt-1.5 ml-1">
-          <Text className="font-body text-[10px] text-ink-faint">{timeAgoLabel(comment.at)}</Text>
+          <Text className="font-body text-[10px] text-ink-faint">{timeAgoLabel(comment.at, t)}</Text>
           <Pressable onPress={() => onReply(comment)} hitSlop={8} className="ml-3">
-            <Text className="font-bodyMedium text-[10px] text-olive">Përgjigju</Text>
+            <Text className="font-bodyMedium text-[10px] text-olive">{t("cpost_reply")}</Text>
           </Pressable>
           <Pressable
             onPress={() => onMore(comment)}
             hitSlop={8}
             accessibilityRole="button"
-            accessibilityLabel="Më shumë veprime për komentin"
+            accessibilityLabel={t("cpost_more_comment")}
             className="ml-3"
           >
             <Text className="font-bodySemibold text-xs leading-3 text-ink-faint">⋯</Text>
@@ -66,6 +70,7 @@ function CommentRow({
 }
 
 export default function PostDetailScreen() {
+  const { t } = useTranslation();
   const { id } = useLocalSearchParams<{ id: string }>();
   const { state } = useAppState();
   const myId = useCurrentUserId();
@@ -112,7 +117,7 @@ export default function PostDetailScreen() {
       setReplyTo(null);
       setComments(await fetchComments(id));
     } catch (err) {
-      Alert.alert("Gabim", err instanceof Error ? err.message : "Komenti nuk u dërgua. Provo përsëri.");
+      Alert.alert(t("mod_error_title"), err instanceof Error ? err.message : t("cpost_comment_failed"));
     } finally {
       setSending(false);
     }
@@ -133,10 +138,10 @@ export default function PostDetailScreen() {
   if (!post) {
     return (
       <SafeAreaView className="flex-1 bg-cream items-center justify-center px-8">
-        <Text className="font-bodySemibold text-base text-ink mb-2">Postimi nuk u gjet</Text>
-        <Text className="font-body text-sm text-ink-soft text-center mb-6">Mund të jetë fshirë, ose lidhja është e gabuar.</Text>
+        <Text className="font-bodySemibold text-base text-ink mb-2">{t("cpost_not_found")}</Text>
+        <Text className="font-body text-sm text-ink-soft text-center mb-6">{t("cpost_not_found_body")}</Text>
         <Pressable onPress={() => goBackOr("/(main)/community")} className="bg-olive px-5 py-3 rounded-full">
-          <Text className="font-bodySemibold text-sm text-on-accent">Kthehu</Text>
+          <Text className="font-bodySemibold text-sm text-on-accent">{t("cpost_back")}</Text>
         </Pressable>
       </SafeAreaView>
     );
@@ -146,7 +151,7 @@ export default function PostDetailScreen() {
     <SafeAreaView className="flex-1 bg-cream" edges={["top"]}>
       <View className="flex-row items-center px-5 pt-2 mb-2">
         <BackButton fallback="/(main)/community" className="mr-3" />
-        <Text className="font-display text-xl text-ink">Postimi</Text>
+        <Text className="font-display text-xl text-ink">{t("cpost_title")}</Text>
       </View>
 
       <KeyboardAvoidingView className="flex-1" behavior={Platform.OS === "ios" ? "padding" : undefined} keyboardVerticalOffset={90}>
@@ -161,16 +166,16 @@ export default function PostDetailScreen() {
 
           <View className="px-5">
             <Text className="font-bodySemibold text-sm text-ink mb-4">
-              Komente {comments.length > 0 ? `(${comments.length})` : ""}
+              {t("cpost_comments")} {comments.length > 0 ? `(${comments.length})` : ""}
             </Text>
             {topLevel.length === 0 ? (
-              <Text className="font-body text-xs text-ink-faint mb-4">Bëhu i pari që komenton.</Text>
+              <Text className="font-body text-xs text-ink-faint mb-4">{t("cpost_first_comment")}</Text>
             ) : (
               topLevel.map((c) => (
                 <View key={c.id}>
-                  <CommentRow comment={c} onReply={setReplyTo} onMore={openCommentMenu} />
+                  <CommentRow comment={c} onReply={setReplyTo} onMore={openCommentMenu} t={t} />
                   {repliesOf(c.id).map((r) => (
-                    <CommentRow key={r.id} comment={r} isReply onReply={setReplyTo} onMore={openCommentMenu} />
+                    <CommentRow key={r.id} comment={r} isReply onReply={setReplyTo} onMore={openCommentMenu} t={t} />
                   ))}
                 </View>
               ))
@@ -181,8 +186,8 @@ export default function PostDetailScreen() {
         <View className="px-5 pt-2 pb-3 border-t border-cream-line bg-cream">
           {replyTo && (
             <View className="flex-row items-center justify-between mb-2 px-1">
-              <Text className="font-body text-[11px] text-ink-faint">Përgjigje për {replyTo.authorName}</Text>
-              <Pressable onPress={() => setReplyTo(null)} hitSlop={10} accessibilityRole="button" accessibilityLabel="Anulo përgjigjen">
+              <Text className="font-body text-[11px] text-ink-faint">{t("cpost_reply_to", { name: replyTo.authorName })}</Text>
+              <Pressable onPress={() => setReplyTo(null)} hitSlop={10} accessibilityRole="button" accessibilityLabel={t("cpost_cancel_reply")}>
                 <Icon name="close" size={14} color="#7A7062" />
               </Pressable>
             </View>
@@ -191,7 +196,7 @@ export default function PostDetailScreen() {
             <TextInput
               value={draft}
               onChangeText={setDraft}
-              placeholder={replyTo ? "Shkruaj një përgjigje..." : "Shkruaj një koment..."}
+              placeholder={replyTo ? t("cpost_ph_reply") : t("cpost_ph_comment")}
               placeholderClassName="text-ink-faint"
               multiline
               maxLength={MAX_COMMENT}
@@ -201,7 +206,7 @@ export default function PostDetailScreen() {
               onPress={handleSend}
               disabled={!canSend}
               accessibilityRole="button"
-              accessibilityLabel="Dërgo komentin"
+              accessibilityLabel={t("cpost_send")}
               className={`ml-2 w-9 h-9 rounded-full items-center justify-center ${canSend ? "bg-olive" : "bg-cream-line"}`}
             >
               {sending ? (

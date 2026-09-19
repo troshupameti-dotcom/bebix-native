@@ -3,6 +3,7 @@ import { View, Text, ScrollView, Pressable, ActivityIndicator } from "react-nati
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useRouter, useFocusEffect } from "expo-router";
 import { useAppState } from "@/lib/state/AppStateContext";
+import { useTranslation } from "@/lib/i18n/LanguageContext";
 import { Icon } from "@/components/ui/Icon";
 import { Avatar, PostCard } from "@/components/community/PostCard";
 import { BackButton } from "@/components/ui/BackButton";
@@ -11,6 +12,7 @@ import { getCurrentUserId, fetchPostsByAuthor, fetchExpertByUserId, CommunityExp
 export default function MyProfileScreen() {
   const router = useRouter();
   const { state } = useAppState();
+  const { t } = useTranslation();
   const [loading, setLoading] = useState(true);
   const [posts, setPosts] = useState<CommunityPost[]>([]);
   const [expert, setExpert] = useState<CommunityExpert | null>(null);
@@ -49,7 +51,7 @@ export default function MyProfileScreen() {
     <SafeAreaView className="flex-1 bg-cream" edges={["top"]}>
       <View className="flex-row items-center px-5 pt-2 mb-2">
         <BackButton fallback="/(main)/community" />
-        <Text className="font-display text-xl text-ink ml-1">Profili im</Text>
+        <Text className="font-display text-xl text-ink ml-1">{t("community_profile_title")}</Text>
       </View>
 
       <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={{ paddingBottom: 40 }}>
@@ -63,39 +65,39 @@ export default function MyProfileScreen() {
           {expert ? (
             <View className="flex-row items-center bg-olive-bg rounded-full px-3 py-1 mb-2">
               <Icon name="shield" size={12} color="#6E7452" />
-              <Text className="font-bodySemibold text-[11px] text-olive ml-1.5">{expert.kind} i verifikuar</Text>
+              <Text className="font-bodySemibold text-[11px] text-olive ml-1.5">{t("cprof_verified_kind", { kind: expert.kind })}</Text>
             </View>
           ) : (
             <Pressable onPress={() => router.push("/more/doctor-registration")}>
-              <Text className="font-bodyMedium text-xs text-olive mb-2">Bëhu ekspert i verifikuar →</Text>
+              <Text className="font-bodyMedium text-xs text-olive mb-2">{t("cprof_become_expert")}</Text>
             </Pressable>
           )}
 
           <View className="flex-row mt-3">
             <View className="items-center mx-4">
               <Text className="font-bodySemibold text-base text-ink">{posts.length}</Text>
-              <Text className="font-body text-[11px] text-ink-faint">Postime</Text>
+              <Text className="font-body text-[11px] text-ink-faint">{t("cprof_posts")}</Text>
             </View>
             <View className="items-center mx-4">
               <Text className="font-bodySemibold text-base text-ink">{totalLikes}</Text>
-              <Text className="font-body text-[11px] text-ink-faint">M’ndihmoi</Text>
+              <Text className="font-body text-[11px] text-ink-faint">{t("cprof_helped")}</Text>
             </View>
             <View className="items-center mx-4">
               <Text className="font-bodySemibold text-base text-ink">{totalComments}</Text>
-              <Text className="font-body text-[11px] text-ink-faint">Komente</Text>
+              <Text className="font-body text-[11px] text-ink-faint">{t("cprof_comments")}</Text>
             </View>
           </View>
         </View>
 
         <View className="px-5 mb-3">
-          <Text className="font-bodySemibold text-sm text-ink">Postimet e mia</Text>
+          <Text className="font-bodySemibold text-sm text-ink">{t("cprof_my_posts")}</Text>
         </View>
 
         {posts.length === 0 ? (
           <View className="px-5">
-            <Text className="font-body text-xs text-ink-faint mb-4">Ende nuk ke postuar asgjë.</Text>
+            <Text className="font-body text-xs text-ink-faint mb-4">{t("cprof_empty")}</Text>
             <Pressable onPress={() => router.push("/community/new")} className="bg-olive px-5 py-3 rounded-full self-start">
-              <Text className="font-bodySemibold text-xs text-on-accent">Posto diçka</Text>
+              <Text className="font-bodySemibold text-xs text-on-accent">{t("cprof_post_something")}</Text>
             </Pressable>
           </View>
         ) : (
