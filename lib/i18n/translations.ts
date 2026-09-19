@@ -73,6 +73,7 @@ export const translations = {
     signup_error_terms: "Prano Kushtet për të vazhduar.",
 
     // ---- Bottom tab bar ----
+    nav_ai: "AI",
     nav_baby: "Bebi",
     nav_shop: "Shop",
     nav_community: "Komuniteti",
@@ -543,6 +544,7 @@ export const translations = {
     signup_error_password: "Use at least 8 characters.",
     signup_error_confirm_password: "Passwords don't match.",
     signup_error_terms: "Please accept the Terms to continue.",
+    nav_ai: "AI",
     nav_baby: "Baby",
     nav_shop: "Shop",
     nav_community: "Community",

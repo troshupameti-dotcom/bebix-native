@@ -1,15 +1,32 @@
 import { Pressable } from "react-native";
 import { router, type Href } from "expo-router";
+import { previousPath, currentPath, decideBack } from "@/lib/navigation/history";
 import { Icon } from "@/components/ui/Icon";
 import { haptics } from "@/lib/haptics";
 import { shadows } from "@/lib/shadows";
 
 /**
- * Kthehet një ekran mbrapa; nëse s'ka histori (ekrani u hap direkt nga një
- * njoftim, deep link, ose pas një `router.replace`), shkon te `fallback`.
- * Pa këtë, `router.back()` thjesht s'bën asgjë dhe përdoruesi ngec.
+ * Kthehet aty ku ishte perdoruesi vertet.
+ *
+ * Tre raste, me kete radhe:
+ *
+ * 1. Erdhi nga nje pjese tjeter e app-it (p.sh. "Me shume" -> "Porosite e
+ *    mia", qe rri te Dyqani). `router.back()` do ta kthente brenda
+ *    Dyqanit, sepse aty u shtua ekrani — jo te "Me shume". Prandaj
+ *    kthehemi shprehimisht te rruga e meparshme.
+ * 2. Levizje brenda se njejtes pjese: `router.back()` eshte i sakte dhe
+ *    ruan animacionin e sistemit.
+ * 3. S'ka histori fare (ekrani u hap nga njoftim, deep link ose pas nje
+ *    `replace`): shkohet te `fallback`.
  */
 export function goBackOr(fallback: Href) {
+  const decision = decideBack(previousPath(), currentPath());
+
+  if (decision.kind === "goto") {
+    router.replace(decision.path as Href);
+    return;
+  }
+
   if (router.canGoBack()) router.back();
   else router.replace(fallback);
 }

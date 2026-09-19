@@ -4,7 +4,7 @@ import { SafeAreaView } from "react-native-safe-area-context";
 import { router } from "expo-router";
 import { Icon } from "@/components/ui/Icon";
 import { shadows } from "@/lib/shadows";
-import { BackButton } from "@/components/ui/BackButton";
+import { BackButton, goBackOr } from "@/components/ui/BackButton";
 import { useThemeColors } from "@/lib/theme/useThemeColors";
 import { deleteAccount } from "@/lib/account/deleteAccount";
 import { SUPPORT_EMAIL } from "@/lib/support";
@@ -110,7 +110,7 @@ export default function DeleteAccountScreen() {
             )}
           </Pressable>
 
-          <Pressable onPress={() => router.back()} className="items-center mt-4">
+          <Pressable onPress={() => goBackOr("/(main)/more")} className="items-center mt-4">
             <Text className="font-bodyMedium text-sm text-olive">Jo, kthehu mbrapa</Text>
           </Pressable>
 

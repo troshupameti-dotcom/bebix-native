@@ -1,19 +1,21 @@
 import { useEffect, useRef } from "react";
 import { Tabs, router } from "expo-router";
-import { View, Pressable } from "react-native";
+import { View } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { Icon, IconName } from "@/components/ui/Icon";
 import { useTranslation } from "@/lib/i18n/LanguageContext";
 import { TranslationKey } from "@/lib/i18n/translations";
 import { useOnboardingStatus } from "@/lib/hooks/useOnboardingStatus";
-import { shadows } from "@/lib/shadows";
 import { useThemeColors } from "@/lib/theme/useThemeColors";
 import { registerForPushNotificationsAsync } from "@/lib/notifications";
 import { useBabyRecordsSync } from "@/lib/hooks/useBabyRecordsSync";
 
+// AI-ja rri ne mes: aty ku ishte butoni rrethor, pra duart e mesuara e
+// gjejne ne te njejtin vend, dhe eshte pika me e arritshme me gisht.
 const TABS: { name: string; icon: IconName; labelKey: TranslationKey }[] = [
   { name: "baby", icon: "baby", labelKey: "nav_baby" },
   { name: "shop", icon: "shop", labelKey: "nav_shop" },
+  { name: "ai-chat", icon: "sparkle", labelKey: "nav_ai" },
   { name: "community", icon: "community", labelKey: "nav_community" },
   { name: "more", icon: "more", labelKey: "nav_more" },
 ];
@@ -23,8 +25,6 @@ const TABS: { name: string; icon: IconName; labelKey: TranslationKey }[] = [
 const GUEST_ALLOWED_TABS = new Set(["shop"]);
 
 
-const AI_BUTTON_SIZE = 56;
-const AI_OVERLAP = 16;
 
 /**
  * Bottom tab bar for the app.
@@ -92,13 +92,6 @@ export default function MainLayout() {
     });
   }
 
-  function handleAiPress() {
-    if (!isAuthenticated) {
-      router.push({ pathname: "/(auth)/require-account", params: { redirect: "/ai-chat" } });
-      return;
-    }
-    router.push("/ai-chat");
-  }
 
   return (
     <View style={{ flex: 1 }}>
@@ -137,30 +130,9 @@ export default function MainLayout() {
           />
         ))}
 
-        <Tabs.Screen name="ai-chat" options={{ href: null }} />
         <Tabs.Screen name="notifications" options={{ href: null }} />
       </Tabs>
 
-      <Pressable
-        onPress={handleAiPress}
-        style={[
-          shadows.softLg,
-          {
-            position: "absolute",
-            bottom: tabBarHeight - AI_OVERLAP,
-            left: "50%",
-            marginLeft: -AI_BUTTON_SIZE / 2,
-            width: AI_BUTTON_SIZE,
-            height: AI_BUTTON_SIZE,
-            borderRadius: AI_BUTTON_SIZE / 2,
-            borderWidth: 4,
-            borderColor: colors.background,
-          },
-        ]}
-        className="bg-olive items-center justify-center"
-      >
-        <Icon name="sparkle" size={24} color="#FFFFFF" />
-      </Pressable>
     </View>
   );
 }
