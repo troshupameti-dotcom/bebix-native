@@ -7,6 +7,7 @@ import { Icon } from "@/components/ui/Icon";
 import { shadows } from "@/lib/shadows";
 import { BackButton } from "@/components/ui/BackButton";
 import { useThemeColors } from "@/lib/theme/useThemeColors";
+import { useTranslation } from "@/lib/i18n/LanguageContext";
 
 /**
  * Ekrani i fjalëkalimit të harruar.
@@ -20,6 +21,7 @@ import { useThemeColors } from "@/lib/theme/useThemeColors";
  */
 export default function ForgotPasswordScreen() {
   const theme = useThemeColors();
+  const { t } = useTranslation();
   const [email, setEmail] = useState("");
   const [loading, setLoading] = useState(false);
   const [sent, setSent] = useState(false);
@@ -38,7 +40,7 @@ export default function ForgotPasswordScreen() {
       if (resetError) throw new Error(resetError.message);
       setSent(true);
     } catch (e: any) {
-      setError(e?.message ?? "Email-i nuk u dërgua. Provo përsëri.");
+      setError(e?.message ?? t("fp_err"));
     } finally {
       setLoading(false);
     }
@@ -54,13 +56,12 @@ export default function ForgotPasswordScreen() {
           <View className="w-16 h-16 rounded-full bg-olive-bg items-center justify-center mb-4">
             <Icon name="send" size={26} color="#6E7452" />
           </View>
-          <Text className="font-display text-xl text-ink text-center mb-2">Kontrollo email-in</Text>
+          <Text className="font-display text-xl text-ink text-center mb-2">{t("fp_sent_title")}</Text>
           <Text className="font-body text-sm text-ink-soft text-center leading-6">
-            Nëse ka një llogari me <Text className="font-bodySemibold text-ink">{email.trim()}</Text>, do të
-            marrësh një link për të vendosur fjalëkalim të ri. Hape linkun në këtë telefon.
+            {t("fp_sent_body", { email: email.trim() })}
           </Text>
           <Text className="font-body text-xs text-ink-faint text-center mt-4 leading-5">
-            Nuk erdhi? Shiko te spam-i, ose provo përsëri pas pak minutash.
+            {t("fp_spam_note")}
           </Text>
         </View>
       </SafeAreaView>
@@ -73,16 +74,15 @@ export default function ForgotPasswordScreen() {
         <ScrollView keyboardShouldPersistTaps="handled" contentContainerStyle={{ flexGrow: 1 }}>
           <View className="flex-row items-center px-5 pt-2 mb-6">
             <BackButton fallback="/(auth)/login" className="mr-3" />
-            <Text className="font-display text-2xl text-ink">Fjalëkalimi i harruar</Text>
+            <Text className="font-display text-2xl text-ink">{t("fp_title")}</Text>
           </View>
 
           <View className="px-6">
             <Text className="font-body text-sm text-ink-soft leading-6 mb-6">
-              Shkruaj email-in me të cilin je regjistruar. Do të dërgojmë një link për të vendosur
-              fjalëkalim të ri.
+              {t("fp_intro")}
             </Text>
 
-            <Text className="font-bodyMedium text-sm text-ink-soft mb-2">Email</Text>
+            <Text className="font-bodyMedium text-sm text-ink-soft mb-2">{t("login_email_label")}</Text>
             <TextInput
               value={email}
               onChangeText={setEmail}
@@ -112,7 +112,7 @@ export default function ForgotPasswordScreen() {
               {loading ? (
                 <ActivityIndicator color={theme.onAccent} />
               ) : (
-                <Text className="font-bodySemibold text-sm text-on-accent">Dërgo linkun</Text>
+                <Text className="font-bodySemibold text-sm text-on-accent">{t("fp_send")}</Text>
               )}
             </Pressable>
           </View>

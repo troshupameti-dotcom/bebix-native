@@ -6,6 +6,7 @@ import { Icon } from "@/components/ui/Icon";
 import { shadows } from "@/lib/shadows";
 import { BackButton, goBackOr } from "@/components/ui/BackButton";
 import { useThemeColors } from "@/lib/theme/useThemeColors";
+import { useTranslation } from "@/lib/i18n/LanguageContext";
 import { deleteAccount } from "@/lib/account/deleteAccount";
 import { SUPPORT_EMAIL } from "@/lib/support";
 
@@ -26,6 +27,7 @@ function Row({ icon, text }: { icon: Parameters<typeof Icon>[0]["name"]; text: s
 
 export default function DeleteAccountScreen() {
   const theme = useThemeColors();
+  const { t } = useTranslation();
   const [confirm, setConfirm] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -52,16 +54,16 @@ export default function DeleteAccountScreen() {
       <KeyboardAvoidingView className="flex-1" behavior={Platform.OS === "ios" ? "padding" : undefined}>
         <View className="flex-row items-center px-5 pt-2 mb-4">
           <BackButton fallback="/(main)/more" className="mr-3" />
-          <Text className="font-display text-xl text-ink">Fshi llogarinë</Text>
+          <Text className="font-display text-xl text-ink">{t("delete_account")}</Text>
         </View>
 
         <ScrollView className="px-5" keyboardShouldPersistTaps="handled" contentContainerStyle={{ paddingBottom: 40 }}>
           <Text className="font-body text-sm text-ink-soft leading-6 mb-5">
-            Fshirja është e menjëhershme dhe e pakthyeshme. Nuk ka mundësi rikuperimi.
+            {t("del_intro")}
           </Text>
 
           <View style={shadows.soft} className="bg-surface rounded-xl2 p-4 mb-4">
-            <Text className="font-bodySemibold text-sm text-ink mb-3">Çfarë fshihet</Text>
+            <Text className="font-bodySemibold text-sm text-ink mb-3">{t("del_what_goes")}</Text>
             <Row icon="baby" text="Profili i bebit dhe i gjithë historiku: ushqyerjet, gjumi, pelenat, rritja, vaksinat dhe të dhënat mjekësore." />
             <Row icon="camera" text="Fotot e momenteve, nga telefoni dhe nga serveri." />
             <Row icon="comment" text="Postimet, komentet, pëlqimet dhe të ruajturat te Komuniteti." />
@@ -69,7 +71,7 @@ export default function DeleteAccountScreen() {
           </View>
 
           <View style={shadows.soft} className="bg-surface rounded-xl2 p-4 mb-5">
-            <Text className="font-bodySemibold text-sm text-ink mb-3">Çfarë mbetet</Text>
+            <Text className="font-bodySemibold text-sm text-ink mb-3">{t("del_what_stays")}</Text>
             <Row
               icon="cube"
               text="Porositë e bëra nga dyqani mbeten si regjistrim tregtar, sepse na kërkohen nga kontabiliteti dhe nga partnerët që i dërguan. Emri, telefoni dhe adresa hiqen prej tyre — porosia nuk lidhet më me ty."
@@ -106,12 +108,12 @@ export default function DeleteAccountScreen() {
             {loading ? (
               <ActivityIndicator color={theme.onAccent} />
             ) : (
-              <Text className="font-bodySemibold text-sm text-on-accent">Fshi llogarinë përgjithmonë</Text>
+              <Text className="font-bodySemibold text-sm text-on-accent">{t("del_confirm_action")}</Text>
             )}
           </Pressable>
 
           <Pressable onPress={() => goBackOr("/(main)/more")} className="items-center mt-4">
-            <Text className="font-bodyMedium text-sm text-olive">Jo, kthehu mbrapa</Text>
+            <Text className="font-bodyMedium text-sm text-olive">{t("del_cancel")}</Text>
           </Pressable>
 
           <Text className="font-body text-[11px] text-ink-faint text-center leading-5 mt-8">

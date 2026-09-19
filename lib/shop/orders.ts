@@ -1,4 +1,5 @@
 import { supabase } from "@/lib/supabase/client";
+import type { TranslationKey } from "@/lib/i18n/translations";
 
 /**
  * Porositë e klientit. Statusi ndryshohet nga paneli i adminit; këtu
@@ -118,25 +119,26 @@ export async function fetchSavedContact(): Promise<SavedContact | null> {
   };
 }
 
-export function orderStatusLabel(status: OrderStatus): string {
+/** Celesi i perkthimit per statusin; teksti zgjidhet nga ekrani. */
+export function orderStatusLabelKey(status: OrderStatus): TranslationKey {
   return {
-    pending: "Në pritje",
-    confirmed: "E konfirmuar",
-    shipped: "Nisur për dërgesë",
-    delivered: "Dorëzuar",
-    cancelled: "Anuluar",
-  }[status];
+    pending: "order_status_pending",
+    confirmed: "order_status_confirmed",
+    shipped: "order_status_shipped",
+    delivered: "order_status_delivered",
+    cancelled: "order_status_cancelled",
+  }[status] as TranslationKey;
 }
 
-/** Çfarë pret klienti tani — shpjegim, jo vetëm etiketë. */
-export function orderStatusHint(status: OrderStatus): string {
+/** Cfare pret klienti tani — shpjegim, jo vetem etikete. */
+export function orderStatusHintKey(status: OrderStatus): TranslationKey {
   return {
-    pending: "Porosia u regjistrua. Do të kontaktohesh për konfirmim.",
-    confirmed: "Porosia u konfirmua dhe po përgatitet.",
-    shipped: "Porosia është nisur. Paguan kur ta marrësh.",
-    delivered: "Porosia u dorëzua. Faleminderit!",
-    cancelled: "Porosia u anulua.",
-  }[status];
+    pending: "order_hint_pending",
+    confirmed: "order_hint_confirmed",
+    shipped: "order_hint_shipped",
+    delivered: "order_hint_delivered",
+    cancelled: "order_hint_cancelled",
+  }[status] as TranslationKey;
 }
 
 /** Hapat e dukshëm te ekrani; "cancelled" s'ka vijë kohore. */

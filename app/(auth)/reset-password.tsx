@@ -6,6 +6,7 @@ import { supabase } from "@/lib/supabase/client";
 import { Icon } from "@/components/ui/Icon";
 import { shadows } from "@/lib/shadows";
 import { useThemeColors } from "@/lib/theme/useThemeColors";
+import { useTranslation } from "@/lib/i18n/LanguageContext";
 
 const MIN_PASSWORD = 6;
 
@@ -18,6 +19,7 @@ const MIN_PASSWORD = 6;
  */
 export default function ResetPasswordScreen() {
   const theme = useThemeColors();
+  const { t } = useTranslation();
   const [password, setPassword] = useState("");
   const [confirm, setConfirm] = useState("");
   const [visible, setVisible] = useState(false);
@@ -40,8 +42,8 @@ export default function ResetPasswordScreen() {
       const message: string = e?.message ?? "";
       setError(
         message.toLowerCase().includes("session")
-          ? "Linku ka skaduar. Kërko një link të ri te 'Fjalëkalimi i harruar'."
-          : message || "Fjalëkalimi nuk u ndryshua. Provo përsëri."
+          ? t("rp_expired")
+          : message || t("rp_err")
       );
     } finally {
       setLoading(false);
@@ -53,12 +55,12 @@ export default function ResetPasswordScreen() {
       <KeyboardAvoidingView className="flex-1" behavior={Platform.OS === "ios" ? "padding" : undefined}>
         <ScrollView keyboardShouldPersistTaps="handled" contentContainerStyle={{ flexGrow: 1 }}>
           <View className="px-6 pt-10">
-            <Text className="font-display text-2xl text-ink mb-2">Fjalëkalim i ri</Text>
+            <Text className="font-display text-2xl text-ink mb-2">{t("rp_title")}</Text>
             <Text className="font-body text-sm text-ink-soft leading-6 mb-6">
               Zgjidh një fjalëkalim të ri për llogarinë tënde. Të paktën {MIN_PASSWORD} karaktere.
             </Text>
 
-            <Text className="font-bodyMedium text-sm text-ink-soft mb-2">Fjalëkalimi i ri</Text>
+            <Text className="font-bodyMedium text-sm text-ink-soft mb-2">{t("rp_title")}</Text>
             <View style={shadows.soft} className="flex-row items-center bg-surface rounded-xl2 px-4 mb-1">
               <TextInput
                 value={password}
@@ -77,7 +79,7 @@ export default function ResetPasswordScreen() {
               {tooShort ? `Të paktën ${MIN_PASSWORD} karaktere.` : ""}
             </Text>
 
-            <Text className="font-bodyMedium text-sm text-ink-soft mb-2">Përsërite</Text>
+            <Text className="font-bodyMedium text-sm text-ink-soft mb-2">{t("rp_repeat")}</Text>
             <TextInput
               value={confirm}
               onChangeText={setConfirm}
@@ -89,7 +91,7 @@ export default function ResetPasswordScreen() {
               className="bg-surface rounded-xl2 px-4 py-3 font-body text-sm text-ink mb-1"
             />
             <Text className="font-body text-[11px] text-orange mb-3 h-4">
-              {mismatch ? "Fjalëkalimet nuk përputhen." : ""}
+              {mismatch ? t("rp_mismatch") : ""}
             </Text>
 
             {error && (
@@ -107,12 +109,12 @@ export default function ResetPasswordScreen() {
               {loading ? (
                 <ActivityIndicator color={theme.onAccent} />
               ) : (
-                <Text className="font-bodySemibold text-sm text-on-accent">Ruaj fjalëkalimin</Text>
+                <Text className="font-bodySemibold text-sm text-on-accent">{t("rp_save")}</Text>
               )}
             </Pressable>
 
             <Pressable onPress={() => router.replace("/(auth)/login")} className="items-center mt-5">
-              <Text className="font-body text-xs text-ink-faint">Anulo dhe kthehu te kyçja</Text>
+              <Text className="font-body text-xs text-ink-faint">{t("rp_cancel")}</Text>
             </Pressable>
           </View>
         </ScrollView>

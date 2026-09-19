@@ -3,34 +3,32 @@ import { View, Text, Pressable, TextInput, ScrollView, ActivityIndicator } from 
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useRouter } from "expo-router";
 import { useAppState } from "@/lib/state/AppStateContext";
+import { useTranslation } from "@/lib/i18n/LanguageContext";
 import { Icon } from "@/components/ui/Icon";
 import { shadows } from "@/lib/shadows";
 import { supabase } from "@/lib/supabase/client";
 import { BackButton } from "@/components/ui/BackButton";
 import { fetchSavedContact } from "@/lib/shop/orders";
+import type { TranslationKey } from "@/lib/i18n/translations";
 import { track } from "@/lib/analytics/posthog";
 
 /**
  * Gabimet e bazës vijnë si tekst teknik (p.sh. kufizime stoku). Klienti
  * duhet të kuptojë çfarë të bëjë, jo çfarë tha Postgres-i.
  */
-function friendlyError(message: string): string {
+/** Kthen nje CELES perkthimi, ose null nese mesazhi s'njihet. */
+function friendlyErrorKey(message: string): TranslationKey | null {
   const m = message.toLowerCase();
-  if (m.includes("stock") || m.includes("stok")) {
-    return "Njëri nga produktet sapo mbaroi nga stoku. Hiqe nga shporta dhe provo përsëri.";
-  }
-  if (m.includes("jwt") || m.includes("auth") || m.includes("loguar")) {
-    return "Sesioni skadoi. Kyçu përsëri dhe porosia ruhet në shportë.";
-  }
-  if (m.includes("network") || m.includes("fetch")) {
-    return "S'ka lidhje me internetin. Kontrollo lidhjen dhe provo përsëri.";
-  }
-  return message;
+  if (m.includes("stock") || m.includes("stok")) return "co_err_stock";
+  if (m.includes("jwt") || m.includes("auth") || m.includes("loguar")) return "co_err_session";
+  if (m.includes("network") || m.includes("fetch")) return "co_err_network";
+  return null;
 }
 
 export default function CheckoutScreen() {
   const router = useRouter();
   const { state, cartTotal, clearCart } = useAppState();
+  const { t } = useTranslation();
   // "loading" derisa lexohet sesioni lokal — pa këtë, ekrani i kyçjes
   // pulsonte për një moment edhe për përdoruesit e kyçur.
   const [authState, setAuthState] = useState<"loading" | "in" | "out">("loading");
@@ -111,13 +109,14 @@ export default function CheckoutScreen() {
       clearCart();
       setDone(true);
     } catch (e: any) {
-      const message = e?.message ?? "Diçka shkoi keq, provo përsëri.";
-      track("order_failed", { reason: String(message).slice(0, 120) });
-      setError(friendlyError(message));
+      const message = e?.message ?? "";
+      track("order_failed", { reason: String(message).slice(0, 120) || "unknown" });
+      const key = friendlyErrorKey(message);
+      setError(key ? t(key) : message || t("co_err_generic"));
     } finally {
       setLoading(false);
     }
-  }, [canSubmit, fullName, phone, address, city, state.cartItems, clearCart, cartTotal]);
+  }, [canSubmit, fullName, phone, address, city, state.cartItems, clearCart, cartTotal, t]);
 
   // --- Kyçja kërkohet PARA formularit, jo pasi e mbush.
   if (authState === "loading") {
@@ -133,22 +132,21 @@ export default function CheckoutScreen() {
       <SafeAreaView className="flex-1 bg-cream" edges={["top"]}>
         <View className="flex-row items-center px-5 pt-2 mb-4">
           <BackButton fallback="/(main)/shop/cart" className="mr-3" />
-          <Text className="font-display text-2xl text-ink">Përfundo Porosinë</Text>
+          <Text className="font-display text-2xl text-ink">{t("co_title")}</Text>
         </View>
         <View className="flex-1 items-center justify-center px-8 -mt-16">
           <View className="w-14 h-14 rounded-full bg-olive-bg items-center justify-center mb-4">
             <Icon name="lock" size={24} color="#6E7452" />
           </View>
-          <Text className="font-bodySemibold text-base text-ink mb-2 text-center">Kyçu për të porositur</Text>
+          <Text className="font-bodySemibold text-base text-ink mb-2 text-center">{t("co_login_title")}</Text>
           <Text className="font-body text-sm text-ink-soft text-center leading-5 mb-6">
-            Na duhet llogaria jote që ta ndjekësh porosinë dhe të mos e rishkruash adresën herën tjetër.
-            Shporta të ruhet.
+            {t("co_login_body")}
           </Text>
           <Pressable
             onPress={() => router.push({ pathname: "/(auth)/login", params: { redirect: "/shop/checkout" } })}
             className="bg-olive rounded-xl2 py-3.5 px-8"
           >
-            <Text className="font-bodySemibold text-sm text-on-accent">Kyçu</Text>
+            <Text className="font-bodySemibold text-sm text-on-accent">{t("co_login_action")}</Text>
           </Pressable>
         </View>
       </SafeAreaView>
@@ -161,15 +159,15 @@ export default function CheckoutScreen() {
         <View className="w-16 h-16 rounded-full bg-olive-bg items-center justify-center mb-4">
           <Icon name="check" size={28} color="#6E7452" />
         </View>
-        <Text className="font-display text-xl text-ink text-center mb-2">Faleminderit!</Text>
+        <Text className="font-display text-xl text-ink text-center mb-2">{t("co_thanks")}</Text>
         <Text className="font-body text-sm text-ink-soft text-center mb-6 leading-5">
-          Porosia jote u regjistrua. Do të kontaktohesh për konfirmimin dhe koston e dërgesës.
+          {t("co_placed_body")}
         </Text>
         <Pressable onPress={() => router.replace("/shop/orders")} className="bg-olive rounded-xl2 py-3 px-6 mb-3">
-          <Text className="font-bodyMedium text-sm text-on-accent">Shiko porosinë</Text>
+          <Text className="font-bodyMedium text-sm text-on-accent">{t("co_see_order")}</Text>
         </Pressable>
         <Pressable onPress={() => router.replace("/shop")}>
-          <Text className="font-bodyMedium text-sm text-olive">Kthehu te Dyqani</Text>
+          <Text className="font-bodyMedium text-sm text-olive">{t("co_back_to_shop")}</Text>
         </Pressable>
       </SafeAreaView>
     );
@@ -179,7 +177,7 @@ export default function CheckoutScreen() {
     <SafeAreaView className="flex-1 bg-cream" edges={["top"]}>
       <View className="flex-row items-center px-5 pt-2 mb-4">
         <BackButton fallback="/(main)/shop/cart" className="mr-3" />
-        <Text className="font-display text-2xl text-ink">Përfundo Porosinë</Text>
+        <Text className="font-display text-2xl text-ink">{t("co_title")}</Text>
       </View>
 
       <ScrollView className="px-5" showsVerticalScrollIndicator={false} contentContainerStyle={{ paddingBottom: 40 }}>
@@ -194,50 +192,50 @@ export default function CheckoutScreen() {
             </View>
           ))}
           <View className="flex-row items-center justify-between pt-2 mt-1 border-t border-cream-line">
-            <Text className="font-bodyMedium text-sm text-ink-soft">Totali i produkteve</Text>
+            <Text className="font-bodyMedium text-sm text-ink-soft">{t("co_products_total")}</Text>
             <Text className="font-bodySemibold text-lg text-ink">€{cartTotal().toFixed(2)}</Text>
           </View>
           <Text className="font-body text-[11px] text-ink-faint mt-2 leading-4">
-            Dërgesa llogaritet me konfirmimin e porosisë. Paguan në dorëzim.
+            {t("co_delivery_note")}
           </Text>
         </View>
 
-        <Text className="font-bodyMedium text-sm text-ink-soft mb-2">Emri i plotë</Text>
+        <Text className="font-bodyMedium text-sm text-ink-soft mb-2">{t("co_full_name")}</Text>
         <TextInput
           value={fullName}
           onChangeText={setFullName}
-          placeholder="p.sh. Arta Krasniqi"
+          placeholder={t("co_ph_name")}
           placeholderClassName="text-ink-faint"
           style={shadows.soft}
           className="bg-surface rounded-xl2 px-4 py-3 font-body text-sm text-ink mb-4"
         />
 
-        <Text className="font-bodyMedium text-sm text-ink-soft mb-2">Numri i telefonit</Text>
+        <Text className="font-bodyMedium text-sm text-ink-soft mb-2">{t("co_phone")}</Text>
         <TextInput
           value={phone}
           onChangeText={setPhone}
-          placeholder="p.sh. 044 123 456"
+          placeholder={t("co_ph_phone")}
           placeholderClassName="text-ink-faint"
           keyboardType="phone-pad"
           style={shadows.soft}
           className="bg-surface rounded-xl2 px-4 py-3 font-body text-sm text-ink mb-4"
         />
 
-        <Text className="font-bodyMedium text-sm text-ink-soft mb-2">Adresa</Text>
+        <Text className="font-bodyMedium text-sm text-ink-soft mb-2">{t("co_address")}</Text>
         <TextInput
           value={address}
           onChangeText={setAddress}
-          placeholder="Rruga, numri"
+          placeholder={t("co_ph_address")}
           placeholderClassName="text-ink-faint"
           style={shadows.soft}
           className="bg-surface rounded-xl2 px-4 py-3 font-body text-sm text-ink mb-4"
         />
 
-        <Text className="font-bodyMedium text-sm text-ink-soft mb-2">Qyteti</Text>
+        <Text className="font-bodyMedium text-sm text-ink-soft mb-2">{t("co_city")}</Text>
         <TextInput
           value={city}
           onChangeText={setCity}
-          placeholder="p.sh. Prishtinë"
+          placeholder={t("co_ph_city")}
           placeholderClassName="text-ink-faint"
           style={shadows.soft}
           className="bg-surface rounded-xl2 px-4 py-3 font-body text-sm text-ink mb-6"
@@ -258,7 +256,7 @@ export default function CheckoutScreen() {
           {loading ? (
             <ActivityIndicator className="text-on-accent" />
           ) : (
-            <Text className="font-bodySemibold text-sm text-on-accent">Konfirmo Porosinë</Text>
+            <Text className="font-bodySemibold text-sm text-on-accent">{t("co_confirm")}</Text>
           )}
         </Pressable>
       </ScrollView>

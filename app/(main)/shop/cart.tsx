@@ -2,6 +2,7 @@ import { View, Text, Pressable, Image, ScrollView } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useRouter } from "expo-router";
 import { useAppState } from "@/lib/state/AppStateContext";
+import { useTranslation } from "@/lib/i18n/LanguageContext";
 import { Icon } from "@/components/ui/Icon";
 import { shadows } from "@/lib/shadows";
 import { ZoomScreen } from "@/components/ZoomScreen";
@@ -10,21 +11,22 @@ import { BackButton } from "@/components/ui/BackButton";
 export default function CartScreen() {
   const router = useRouter();
   const { state, updateCartQty, removeFromCart, clearCart, cartTotal } = useAppState();
+  const { t } = useTranslation();
 
   return (
     <SafeAreaView className="flex-1 bg-cream" edges={["top"]}>
       <ZoomScreen>
         <View className="flex-row items-center px-5 pt-2 mb-4">
           <BackButton fallback="/(main)/shop" className="mr-3" />
-          <Text className="font-display text-2xl text-ink">Shporta</Text>
+          <Text className="font-display text-2xl text-ink">{t("cart_title")}</Text>
         </View>
 
         {state.cartItems.length === 0 ? (
           <View className="items-center mt-16 px-8">
             <Icon name="cart" size={28} color="#A79D8A" />
-            <Text className="font-body text-sm text-ink-soft mt-3 text-center">Shporta jote është bosh.</Text>
+            <Text className="font-body text-sm text-ink-soft mt-3 text-center">{t("cart_empty")}</Text>
             <Pressable onPress={() => router.push("/shop")} className="mt-4">
-              <Text className="font-bodyMedium text-sm text-olive">Shiko produktet</Text>
+              <Text className="font-bodyMedium text-sm text-olive">{t("cart_see_products")}</Text>
             </Pressable>
           </View>
         ) : (
@@ -60,7 +62,7 @@ export default function CartScreen() {
                       </Pressable>
 
                       <Pressable onPress={() => removeFromCart(item.id)} className="ml-auto">
-                        <Text className="font-bodyMedium text-xs text-orange">Hiqe</Text>
+                        <Text className="font-bodyMedium text-xs text-orange">{t("cart_remove")}</Text>
                       </Pressable>
                     </View>
                   </View>
@@ -68,20 +70,20 @@ export default function CartScreen() {
               ))}
 
               <Pressable onPress={clearCart} style={shadows.soft} className="bg-surface rounded-xl2 py-3 items-center mt-1">
-                <Text className="font-bodyMedium text-sm text-orange">Zbraz shportën</Text>
+                <Text className="font-bodyMedium text-sm text-orange">{t("cart_clear")}</Text>
               </Pressable>
             </ScrollView>
 
             <View className="px-5 pt-3 pb-6 bg-cream" style={shadows.softLg}>
               <View className="flex-row items-center justify-between mb-3">
-                <Text className="font-bodyMedium text-sm text-ink-soft">Totali</Text>
+                <Text className="font-bodyMedium text-sm text-ink-soft">{t("cart_total")}</Text>
                 <Text className="font-display text-xl text-ink">€{cartTotal().toFixed(2)}</Text>
               </View>
               <Pressable
                 onPress={() => router.push("/shop/checkout")}
                 className="bg-olive rounded-xl2 py-3.5 items-center"
               >
-                <Text className="font-bodyMedium text-sm text-on-accent">Vazhdo me Porosinë</Text>
+                <Text className="font-bodyMedium text-sm text-on-accent">{t("cart_continue")}</Text>
               </Pressable>
             </View>
           </>

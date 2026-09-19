@@ -7,9 +7,10 @@ import { shadows } from "@/lib/shadows";
 import { useThemeColors } from "@/lib/theme/useThemeColors";
 import { BackButton } from "@/components/ui/BackButton";
 import {
-  fetchMyOrders, orderStatusLabel, orderStatusHint, ORDER_TIMELINE,
+  fetchMyOrders, orderStatusLabelKey, orderStatusHintKey, ORDER_TIMELINE,
   MyOrder, OrderStatus,
 } from "@/lib/shop/orders";
+import { useTranslation } from "@/lib/i18n/LanguageContext";
 
 function statusStyle(status: OrderStatus): { bg: string; text: string } {
   if (status === "delivered") return { bg: "bg-olive-bg", text: "text-olive" };
@@ -17,8 +18,10 @@ function statusStyle(status: OrderStatus): { bg: string; text: string } {
   return { bg: "bg-orange-bg", text: "text-orange" };
 }
 
-function orderDate(iso: string): string {
-  return new Date(iso).toLocaleDateString("sq-AL", { day: "numeric", month: "long", year: "numeric" });
+function orderDate(iso: string, lang: string): string {
+  return new Date(iso).toLocaleDateString(lang === "en" ? "en-GB" : "sq-AL", {
+    day: "numeric", month: "long", year: "numeric",
+  });
 }
 
 /** Vijë kohore e thjeshtë: ku është porosia tani, pa data të sajuara. */
@@ -45,6 +48,7 @@ function Timeline({ status }: { status: OrderStatus }) {
 
 function OrderCard({ order }: { order: MyOrder }) {
   const theme = useThemeColors();
+  const { t, language } = useTranslation();
   const badge = statusStyle(order.status);
   const itemCount = order.items.reduce((sum, i) => sum + i.qty, 0);
 
@@ -53,13 +57,13 @@ function OrderCard({ order }: { order: MyOrder }) {
       <View className="flex-row items-center justify-between mb-1">
         <Text className="font-bodySemibold text-sm text-ink">#{order.id.slice(0, 8).toUpperCase()}</Text>
         <View className={`rounded-full px-2.5 py-1 ${badge.bg}`}>
-          <Text className={`font-bodySemibold text-[11px] ${badge.text}`}>{orderStatusLabel(order.status)}</Text>
+          <Text className={`font-bodySemibold text-[11px] ${badge.text}`}>{t(orderStatusLabelKey(order.status))}</Text>
         </View>
       </View>
-      <Text className="font-body text-xs text-ink-faint">{orderDate(order.createdAt)}</Text>
+      <Text className="font-body text-xs text-ink-faint">{orderDate(order.createdAt, language)}</Text>
 
       <Timeline status={order.status} />
-      <Text className="font-body text-xs text-ink-soft leading-5 mt-2.5">{orderStatusHint(order.status)}</Text>
+      <Text className="font-body text-xs text-ink-soft leading-5 mt-2.5">{t(orderStatusHintKey(order.status))}</Text>
 
       <View className="mt-3 pt-3 border-t border-cream-line">
         {order.items.map((item) => (
@@ -80,7 +84,7 @@ function OrderCard({ order }: { order: MyOrder }) {
 
       <View className="flex-row items-center justify-between pt-2 border-t border-cream-line">
         <Text className="font-body text-xs text-ink-soft">
-          {itemCount} {itemCount === 1 ? "artikull" : "artikuj"} · paguhet në dorëzim
+          {itemCount} {itemCount === 1 ? t("myorders_items_one") : t("myorders_items_many")} · {t("myorders_cod")}
         </Text>
         <Text className="font-bodySemibold text-base text-ink">€{order.total.toFixed(2)}</Text>
       </View>
@@ -94,6 +98,7 @@ function OrderCard({ order }: { order: MyOrder }) {
 
 export default function MyOrdersScreen() {
   const router = useRouter();
+  const { t } = useTranslation();
   const [orders, setOrders] = useState<MyOrder[]>([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
@@ -104,12 +109,12 @@ export default function MyOrdersScreen() {
       setError(null);
       setOrders(await fetchMyOrders());
     } catch (e) {
-      setError(e instanceof Error ? e.message : "Porositë nuk u ngarkuan.");
+      setError(e instanceof Error ? e.message : t("myorders_load_error"));
     } finally {
       setLoading(false);
       setRefreshing(false);
     }
-  }, []);
+  }, [t]);
 
   useFocusEffect(useCallback(() => { load(); }, [load]));
 
@@ -117,7 +122,7 @@ export default function MyOrdersScreen() {
     <SafeAreaView className="flex-1 bg-cream" edges={["top"]}>
       <View className="flex-row items-center px-5 pt-2 mb-4">
         <BackButton fallback="/(main)/shop" className="mr-3" />
-        <Text className="font-display text-2xl text-ink">Porositë e mia</Text>
+        <Text className="font-display text-2xl text-ink">{t("myorders_title")}</Text>
       </View>
 
       {loading ? (
@@ -137,18 +142,18 @@ export default function MyOrdersScreen() {
             <View style={shadows.soft} className="bg-surface rounded-xl2 p-4">
               <Text className="font-body text-sm text-ink-soft mb-3">{error}</Text>
               <Pressable onPress={load}>
-                <Text className="font-bodyMedium text-sm text-olive">Provo përsëri</Text>
+                <Text className="font-bodyMedium text-sm text-olive">{t("myorders_retry")}</Text>
               </Pressable>
             </View>
           ) : orders.length === 0 ? (
             <View className="items-center mt-16 px-6">
               <Icon name="cube" size={28} color="#A79D8A" />
-              <Text className="font-bodySemibold text-sm text-ink mt-3 mb-1">Ende nuk ke porosi</Text>
+              <Text className="font-bodySemibold text-sm text-ink mt-3 mb-1">{t("myorders_empty_title")}</Text>
               <Text className="font-body text-xs text-ink-soft text-center leading-5 mb-4">
-                Porositë që bën te dyqani shfaqen këtu, bashkë me statusin e tyre.
+                {t("myorders_empty_body")}
               </Text>
               <Pressable onPress={() => router.push("/shop")} className="bg-olive px-5 py-2.5 rounded-full">
-                <Text className="font-bodySemibold text-xs text-on-accent">Shiko produktet</Text>
+                <Text className="font-bodySemibold text-xs text-on-accent">{t("cart_see_products")}</Text>
               </Pressable>
             </View>
           ) : (
