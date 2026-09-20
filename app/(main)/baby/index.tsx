@@ -21,8 +21,9 @@ import { computeAgeText, formatDate, formatTime } from "@/lib/dateUtils";
 import { shadows } from "@/lib/shadows";
 import { useThemeColors } from "@/lib/theme/useThemeColors";
 import { NowCard } from "@/components/baby/NowCard";
-import { DayRhythm } from "@/components/baby/DayRhythm";
-import { buildDayRhythm, todayTotals, liveStatus, longestSleepMinutes, durationLabel } from "@/lib/baby/dayStats";
+import { DayClock } from "@/components/baby/DayClock";
+import { liveStatus, durationLabel } from "@/lib/baby/dayStats";
+import { buildDayClock, clockTotals } from "@/lib/baby/dayClock";
 import { groupByDay, dayLabelKind, type DiaryEntry, type DiaryKind } from "@/lib/baby/diary";
 import type { TranslationKey } from "@/lib/i18n/translations";
 import { useInbox } from "@/lib/notifications/useInbox";
@@ -77,10 +78,9 @@ export default function BabyProfileScreen() {
   const feedings = active(b.feedingLog);
   const sleeps = active(b.sleepLog);
   const diapers = active(b.diaperLog);
-  const rhythm = useMemo(() => buildDayRhythm(feedings, sleeps, diapers), [feedings, sleeps, diapers]);
-  const totals = useMemo(() => todayTotals(feedings, sleeps, diapers), [feedings, sleeps, diapers]);
+  const clock = useMemo(() => buildDayClock(feedings, sleeps, diapers), [feedings, sleeps, diapers]);
+  const totals = useMemo(() => clockTotals(feedings, sleeps, diapers), [feedings, sleeps, diapers]);
   const status = useMemo(() => liveStatus(feedings, sleeps, diapers), [feedings, sleeps, diapers]);
-  const longestSleep = useMemo(() => longestSleepMinutes(sleeps), [sleeps]);
   const { unreadCount } = useInbox();
 
   function toggleSleep() {
@@ -475,7 +475,7 @@ export default function BabyProfileScreen() {
                 nga bebi dhe e perzier me produkte. */}
             <NowCard status={status} onToggleSleep={toggleSleep} />
 
-            <DayRhythm rhythm={rhythm} totals={totals} longestSleep={longestSleep} />
+            <DayClock clock={clock} totals={totals} gender={profile.babyGender} />
 
             {/* Sugjerim i vetëm, kontekstual — jo 8 butona */}
             {suggestion && (
