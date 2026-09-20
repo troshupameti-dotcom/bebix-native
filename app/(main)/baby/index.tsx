@@ -22,29 +22,44 @@ import { shadows } from "@/lib/shadows";
 import { useThemeColors } from "@/lib/theme/useThemeColors";
 import { NowCard } from "@/components/baby/NowCard";
 import { DayRhythm } from "@/components/baby/DayRhythm";
-import { buildDayRhythm, todayTotals, liveStatus } from "@/lib/baby/dayStats";
+import { buildDayRhythm, todayTotals, liveStatus, longestSleepMinutes, durationLabel } from "@/lib/baby/dayStats";
+import { groupByDay, dayLabelKind, type DiaryEntry, type DiaryKind } from "@/lib/baby/diary";
+import type { TranslationKey } from "@/lib/i18n/translations";
 import { useInbox } from "@/lib/notifications/useInbox";
 
-// Ridizajnim: 4 tabe → 2. "Sot" (dikur "Profili") mbetet pamja e qetë e
-// gjendjes aktuale. "Ditari" bashkon Kronologjinë, Shëndetin (linqet) dhe
-// Momentet-e-arritjes (Milestones) — s'ka arsye me qenë 3 vende të veçanta
-// për "gjëra që ndodhën në kohë".
+// Dy tabe, me një ndarje të vetme dhe të qartë: "Sot" është gjendja e
+// tanishme e bebit (foto, ritmi, rritja, momentet, info mjekësore), "Ditari"
+// është vetëm çfarë ndodhi, e renditur në kohë. Më parë Ditari mbante edhe
+// momentet e arritjes edhe info mjekësore mes rreshtave me orë e datë —
+// tri gjëra të ndryshme në një shtyllë të vetme.
 const TABS = ["today", "diary"] as const;
 type TabKey = (typeof TABS)[number];
 
 type SheetContext = "growth" | "medical" | "timeline" | "statEdit" | null;
-type FeedKind = "event" | "feeding" | "sleep" | "diaper" | "growth" | "vaccine" | "medical";
-type FeedEntry = {
-  id: string;
-  kind: FeedKind;
-  title: string;
-  subtitle: string;
-  sortTime: number;
-  icon: IconName;
-  tint: "olive" | "orange";
-};
 
-type RangeKey = "day" | "week" | "month";
+/** Etiketa e nje filtri — celesat ekzistojne, vetem hartohen ketu. */
+function filterLabelKey(kind: DiaryKind | "all"): TranslationKey {
+  switch (kind) {
+    case "all": return "timeline_filter_all";
+    case "feeding": return "tile_feeding";
+    case "sleep": return "tile_sleep";
+    case "diaper": return "diaper_title";
+    case "growth": return "tile_growth";
+    case "vaccine": return "qa_vaccinations";
+    case "medical": return "medical_screen_title";
+    case "event": return "baby_tab_timeline";
+  }
+}
+
+/** Nje numer i vetem ne titullin e dites: ikona plus vlera, pa fjale. */
+function DaySum({ icon, color, value }: { icon: IconName; color: string; value: string }) {
+  return (
+    <View className="flex-row items-center gap-1">
+      <Icon name={icon} size={12} color={color} />
+      <Text className="font-bodyMedium text-[11.5px] text-ink-soft">{value}</Text>
+    </View>
+  );
+}
 
 export default function BabyProfileScreen() {
   const { t, lang } = useTranslation();
@@ -65,6 +80,7 @@ export default function BabyProfileScreen() {
   const rhythm = useMemo(() => buildDayRhythm(feedings, sleeps, diapers), [feedings, sleeps, diapers]);
   const totals = useMemo(() => todayTotals(feedings, sleeps, diapers), [feedings, sleeps, diapers]);
   const status = useMemo(() => liveStatus(feedings, sleeps, diapers), [feedings, sleeps, diapers]);
+  const longestSleep = useMemo(() => longestSleepMinutes(sleeps), [sleeps]);
   const { unreadCount } = useInbox();
 
   function toggleSleep() {
@@ -90,15 +106,17 @@ export default function BabyProfileScreen() {
 
   const [showSearch, setShowSearch] = useState(false);
   const [search, setSearch] = useState("");
-  const [kindFilter, setKindFilter] = useState<FeedKind | "all">("all");
-  const [rangeView] = useState<RangeKey>("week");
+  const [kindFilter, setKindFilter] = useState<DiaryKind | "all">("all");
+  // Filtrat rrinë të mbyllur: shtatë çipa gjithmonë në ekran ishin zhurmë
+  // për një veprim që bëhet rrallë.
+  const [showFilters, setShowFilters] = useState(false);
   const [selectMode, setSelectMode] = useState(false);
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
 
-  function selectionKey(kind: FeedKind, id: string) {
+  function selectionKey(kind: DiaryKind, id: string) {
     return `${kind}-${id}`;
   }
-  function toggleSelect(kind: FeedKind, id: string) {
+  function toggleSelect(kind: DiaryKind, id: string) {
     haptics.select();
     const key = selectionKey(kind, id);
     setSelectedIds((prev) => {
@@ -108,7 +126,7 @@ export default function BabyProfileScreen() {
       return next;
     });
   }
-  function kindToRecordKind(k: FeedKind): "growthHistory" | "feeding" | "sleep" | "diaper" | "vaccine" | "moment" | "medical" | "timeline" {
+  function kindToRecordKind(k: DiaryKind): "growthHistory" | "feeding" | "sleep" | "diaper" | "vaccine" | "moment" | "medical" | "timeline" {
     if (k === "event") return "timeline";
     if (k === "growth") return "growthHistory";
     return k;
@@ -120,7 +138,7 @@ export default function BabyProfileScreen() {
   function selectedRecordRefs() {
     return Array.from(selectedIds).map((key: string) => {
       const [kind, ...rest] = key.split("-");
-      return { kind: kindToRecordKind(kind as FeedKind), id: rest.join("-") };
+      return { kind: kindToRecordKind(kind as DiaryKind), id: rest.join("-") };
     });
   }
   function bulkDeleteSelected() {
@@ -144,16 +162,29 @@ export default function BabyProfileScreen() {
     baby.bulkArchive(selectedRecordRefs());
     exitSelectMode();
   }
+  /** Hyrjet e zgjedhura, të rrafshuara nga ditët. */
+  function selectedEntries() {
+    return diaryDays.flatMap((d) => d.entries).filter((f) => selectedIds.has(selectionKey(f.kind, f.id)));
+  }
   function bulkShareSelected() {
     haptics.tap();
-    const items = filteredFeed.filter((f) => selectedIds.has(selectionKey(f.kind, f.id)));
-    const text = items.map((i) => `${i.title} — ${i.subtitle}`).join("\n");
+    const text = selectedEntries()
+      .map((i) => {
+        const iso = new Date(i.at).toISOString();
+        return [formatDate(iso, lang), formatTime(iso, lang), i.title, i.detail].filter(Boolean).join(" · ");
+      })
+      .join("\n");
     Share.share({ message: text || t("timeline_empty") });
   }
   function bulkExportSelected() {
     haptics.tap();
-    const items = filteredFeed.filter((f) => selectedIds.has(selectionKey(f.kind, f.id)));
-    const csv = ["Kind,Title,Details", ...items.map((i) => `${i.kind},"${i.title}","${i.subtitle}"`)].join("\n");
+    const csv = [
+      "Kind,Date,Time,Title,Details",
+      ...selectedEntries().map((i) => {
+        const iso = new Date(i.at).toISOString();
+        return `${i.kind},${formatDate(iso, lang)},${formatTime(iso, lang)},"${i.title}","${i.detail}"`;
+      }),
+    ].join("\n");
     Share.share({ message: csv });
   }
 
@@ -227,20 +258,23 @@ export default function BabyProfileScreen() {
     return { text: `Ka kalu ${hrsRounded} orë prej ${oldest.label} të fundit`, icon: oldest.icon, route: oldest.route };
   }, [b.feedingLog, b.diaperLog]);
 
-  // ---- Unified diary feed ----
-  const feed = useMemo<FeedEntry[]>(() => {
-    const items: FeedEntry[] = [];
+  // ---- Rryma e ditarit ----
+  // Çdo hyrje mban një "detail" të shkurtër në të djathtë (sasia, sa zgjati,
+  // lloji). Më parë këto rrinin të ngjitura pas datës në të njëjtin rresht,
+  // dhe rreshti lexohej si një varg i gjatë pa hierarki.
+  const feed = useMemo<DiaryEntry[]>(() => {
+    const items: DiaryEntry[] = [];
     active(b.timeline).forEach((ev) => {
       const ms = new Date(ev.date).getTime();
       items.push({
         id: ev.id,
         kind: "event",
         title: ev.title,
-        subtitle: isNaN(ms) ? ev.date : formatDate(ev.date, lang),
-        // Date.now() ne render: keto jane shfaqje relative ndaj kohes (sa ore nga
-        // ushqyerja/pelena e fundit) dhe duhet te rillogariten ne cdo render.
+        detail: "",
+        // Date.now() ne render: nje ngjarje pa date te vlefshme rri lart,
+        // jo ne fund te listes.
         // eslint-disable-next-line react-hooks/purity
-        sortTime: isNaN(ms) ? Date.now() : ms,
+        at: isNaN(ms) ? Date.now() : ms,
         icon: "sparkle",
         tint: ev.color,
       });
@@ -250,30 +284,39 @@ export default function BabyProfileScreen() {
         id: f.id,
         kind: "feeding",
         title: t(`feeding_type_${f.type === "medicine" ? "medicine_short" : f.type}` as never),
-        subtitle: `${formatDate(f.at, lang)} · ${formatTime(f.at, lang)}`,
-        sortTime: new Date(f.at).getTime(),
+        detail: f.amountMl
+          ? `${f.amountMl} ml`
+          : f.durationMin
+            ? durationLabel(f.durationMin, t)
+            : "",
+        at: new Date(f.at).getTime(),
         icon: "spoon",
         tint: "orange",
       })
     );
-    active(b.sleepLog).forEach((s) =>
+    active(b.sleepLog).forEach((sl) => {
+      const from = new Date(sl.startAt).getTime();
+      const to = sl.endAt ? new Date(sl.endAt).getTime() : null;
+      const minutes = to ? Math.max(0, Math.round((to - from) / 60000)) : undefined;
       items.push({
-        id: s.id,
+        id: sl.id,
         kind: "sleep",
         title: t("sleep_screen_title"),
-        subtitle: `${formatDate(s.startAt, lang)} · ${formatTime(s.startAt, lang)}`,
-        sortTime: new Date(s.startAt).getTime(),
+        // Gjumi pa kohezgjatje eshte gjumi qe vazhdon tani.
+        detail: minutes ? durationLabel(minutes, t) : t("diary_ongoing"),
+        at: from,
         icon: "moon",
         tint: "olive",
-      })
-    );
+        minutes,
+      });
+    });
     active(b.diaperLog).forEach((d) =>
       items.push({
         id: d.id,
         kind: "diaper",
-        title: t(`diaper_type_${d.type}` as never),
-        subtitle: `${formatDate(d.at, lang)} · ${formatTime(d.at, lang)}`,
-        sortTime: new Date(d.at).getTime(),
+        title: t("diaper_title"),
+        detail: t(`diaper_type_${d.type}` as never),
+        at: new Date(d.at).getTime(),
         icon: "baby",
         tint: "orange",
       })
@@ -283,8 +326,10 @@ export default function BabyProfileScreen() {
         id: g.id,
         kind: "growth",
         title: t("growth_screen_title"),
-        subtitle: `${g.weightKg ? g.weightKg + " kg " : ""}${g.heightCm ? g.heightCm + " cm" : ""} · ${formatDate(g.date, lang)}`,
-        sortTime: new Date(g.date).getTime(),
+        detail: [g.weightKg ? `${g.weightKg} kg` : "", g.heightCm ? `${g.heightCm} cm` : ""]
+          .filter(Boolean)
+          .join(" · "),
+        at: new Date(g.date).getTime(),
         icon: "chart",
         tint: "olive",
       })
@@ -296,8 +341,8 @@ export default function BabyProfileScreen() {
           id: v.id,
           kind: "vaccine",
           title: v.name,
-          subtitle: formatDate(v.givenDate!, lang),
-          sortTime: new Date(v.givenDate!).getTime(),
+          detail: "",
+          at: new Date(v.givenDate!).getTime(),
           icon: "syringe",
           tint: "olive",
         })
@@ -307,31 +352,33 @@ export default function BabyProfileScreen() {
         id: m.id,
         kind: "medical",
         title: m.title,
-        subtitle: `${t(`medical_type_${m.type}` as never)} · ${formatDate(m.at, lang)}`,
-        sortTime: new Date(m.at).getTime(),
+        detail: t(`medical_type_${m.type}` as never),
+        at: new Date(m.at).getTime(),
         icon: "shield",
         tint: "olive",
       })
     );
-    return items.sort((a, b2) => b2.sortTime - a.sortTime);
-  }, [b, lang, t]);
+    return items.filter((item) => !isNaN(item.at));
+  }, [b, t]);
 
-  const rangeStart = useMemo(() => {
-    // Date.now() ne render: keto jane shfaqje relative ndaj kohes (sa ore nga
-    // ushqyerja/pelena e fundit) dhe duhet te rillogariten ne cdo render.
-    // eslint-disable-next-line react-hooks/purity
-    const now = Date.now();
-    if (rangeView === "day") return now - 86400000;
-    if (rangeView === "week") return now - 7 * 86400000;
-    return now - 30 * 86400000;
-  }, [rangeView]);
+  // Më parë ditari priste në heshtje gjithçka më të vjetër se shtatë ditë:
+  // hyrjet ishin aty, por s'kishte asnjë mënyrë me i pa. Tash lista shkon
+  // deri në fund, e ndarë sipas ditës.
+  const searchQuery = search.trim().toLowerCase();
+  const diaryDays = groupByDay(
+    feed.filter((item) => {
+      if (kindFilter !== "all" && item.kind !== kindFilter) return false;
+      if (
+        searchQuery &&
+        !item.title.toLowerCase().includes(searchQuery) &&
+        !item.detail.toLowerCase().includes(searchQuery)
+      ) {
+        return false;
+      }
+      return true;
+    })
+  );
 
-  const filteredFeed = feed.filter((item) => {
-    if (kindFilter !== "all" && item.kind !== kindFilter) return false;
-    if (item.sortTime < rangeStart) return false;
-    if (search.trim() && !item.title.toLowerCase().includes(search.trim().toLowerCase())) return false;
-    return true;
-  });
 
   return (
     <SafeAreaView className="flex-1 bg-cream" edges={["top"]}>
@@ -391,7 +438,7 @@ export default function BabyProfileScreen() {
                 />
               )}
               <Text className={`text-center font-bodyMedium text-[13px] ${isActive ? "text-ink" : "text-ink-faint"}`}>
-                {tab === "today" ? "Sot" : "Ditari"}
+                {tab === "today" ? t("baby_tab_today") : t("baby_tab_diary")}
               </Text>
             </Pressable>
           );
@@ -428,7 +475,7 @@ export default function BabyProfileScreen() {
                 nga bebi dhe e perzier me produkte. */}
             <NowCard status={status} onToggleSleep={toggleSleep} />
 
-            <DayRhythm rhythm={rhythm} totals={totals} />
+            <DayRhythm rhythm={rhythm} totals={totals} longestSleep={longestSleep} />
 
             {/* Sugjerim i vetëm, kontekstual — jo 8 butona */}
             {suggestion && (
@@ -503,18 +550,11 @@ export default function BabyProfileScreen() {
             <Pressable onPress={() => router.push("/(main)/baby/growth")} className="mt-3 items-center rounded-2xl bg-ink py-3.5">
               <Text className="font-bodyMedium text-[14px] text-cream">{t("baby_see_chart")}</Text>
             </Pressable>
-          </MotiView>
-        )}
 
-        {activeTab === "diary" && (
-          <MotiView from={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ type: "timing", duration: 200 }}>
-            {/* Milestones — tash kompakte, lart te Ditari, jo tab e vet */}
-            <View className="mt-2 flex-row items-center justify-between">
-              <Text className="font-bodySemibold text-[15px] text-ink">{t("baby_tab_milestones")}</Text>
-              <Pressable onPress={() => toggleEdit(setEditMilestones)} hitSlop={8}>
-                <Text className="font-bodySemibold text-[12.5px] text-orange">{editMilestones ? t("done_action") : t("edit_action")}</Text>
-              </Pressable>
-            </View>
+            {/* Momentet e arritjes dhe info mjekësore rrinin te Ditari, mes
+                ngjarjeve me orë e datë. Por nuk janë ngjarje: janë gjendje
+                e tanishme e bebit, pra e kanë vendin te 'Sot'. */}
+            <SectionHeader title={t("baby_tab_milestones")} editable editing={editMilestones} onToggleEdit={() => toggleEdit(setEditMilestones)} />
             <ScrollView horizontal showsHorizontalScrollIndicator={false} className="mt-2.5" contentContainerStyle={{ gap: 8 }}>
               {b.milestones
                 .filter((m) => b.milestoneActiveKeys.includes(m.key))
@@ -544,143 +584,6 @@ export default function BabyProfileScreen() {
               </Pressable>
             </ScrollView>
 
-            {/* Rryma kronologjike — kontrollet tash ma kompakte */}
-            <View className="mt-6 flex-row items-center gap-2">
-              {showSearch ? (
-                <View className="flex-1 flex-row items-center gap-2 rounded-2xl bg-surface border border-ink/10 px-3.5 py-2.5">
-                  <Icon name="search" size={15} color="#A79D8A" />
-                  <TextInput
-                    autoFocus
-                    value={search}
-                    onChangeText={setSearch}
-                    placeholder={t("timeline_search_ph")}
-                    placeholderClassName="text-ink-faint"
-                    className="flex-1 font-body text-[13.5px] text-ink"
-                  />
-                  <Pressable onPress={() => { setShowSearch(false); setSearch(""); }} hitSlop={8}>
-                    <Icon name="close" size={14} color="#A79D8A" />
-                  </Pressable>
-                </View>
-              ) : (
-                <>
-                  <Text className="flex-1 font-bodySemibold text-[15px] text-ink">{t("baby_tab_timeline")}</Text>
-                  <Pressable onPress={() => setShowSearch(true)} hitSlop={8} className="h-9 w-9 items-center justify-center rounded-full bg-surface border border-ink/10">
-                    <Icon name="search" size={15} color={isDark ? "#F7F1E4" : "#2C271F"} />
-                  </Pressable>
-                </>
-              )}
-              <Pressable
-                onPress={() => {
-                  haptics.select();
-                  if (selectMode) exitSelectMode();
-                  else setSelectMode(true);
-                }}
-                className={`rounded-2xl px-3.5 py-2.5 ${selectMode ? "bg-ink" : "bg-surface border border-ink/10"}`}
-              >
-                <Text className={`font-bodyMedium text-[12px] ${selectMode ? "text-cream" : "text-ink"}`}>
-                  {selectMode ? t("bulk_cancel") : t("bulk_select_action")}
-                </Text>
-              </Pressable>
-            </View>
-
-            <ScrollView horizontal showsHorizontalScrollIndicator={false} className="mt-3" contentContainerStyle={{ gap: 8 }}>
-              {(["all", "feeding", "sleep", "diaper", "growth", "vaccine", "medical"] as const).map((k) => {
-                const isActive = kindFilter === k;
-                const labelKey = k === "all" ? "timeline_filter_all" : k === "feeding" ? "tile_feeding" : k === "sleep" ? "tile_sleep" : k === "diaper" ? "diaper_title" : k === "growth" ? "tile_growth" : k === "vaccine" ? "qa_vaccinations" : "medical_screen_title";
-                return (
-                  <Pressable
-                    key={k}
-                    onPress={() => {
-                      haptics.select();
-                      setKindFilter(k);
-                    }}
-                    className={`rounded-full border px-3.5 py-2 ${isActive ? "border-ink bg-ink" : "border-ink/10 bg-surface"}`}
-                  >
-                    <Text className={`font-bodyMedium text-[12px] ${isActive ? "text-cream" : "text-ink"}`}>{t(labelKey as never)}</Text>
-                  </Pressable>
-                );
-              })}
-            </ScrollView>
-
-            <View className="mt-4">
-              {filteredFeed.length === 0 ? (
-                <View className="items-center gap-2 py-14">
-                  <Icon name="sparkle" size={24} color="#E9DFCC" />
-                  <Text className="font-body text-sm text-ink-soft">{t("timeline_empty")}</Text>
-                </View>
-              ) : (
-                filteredFeed.map((item, i) => {
-                  const key = selectionKey(item.kind, item.id);
-                  const isSelected = selectedIds.has(key);
-                  return (
-                    <Pressable key={key} onPress={() => (selectMode ? toggleSelect(item.kind, item.id) : undefined)} className="flex-row gap-3">
-                      <View className="items-center">
-                        {selectMode ? (
-                          <View className={`mt-0.5 h-4 w-4 items-center justify-center rounded-full border ${isSelected ? "border-ink bg-ink" : "border-ink/25 bg-surface"}`}>
-                            {isSelected && <Icon name="check" size={9} color={isDark ? "#211D17" : "#FBF6EE"} />}
-                          </View>
-                        ) : (
-                          <View className={`${item.tint === "orange" ? "bg-orange" : "bg-olive"} mt-1.5 h-2.5 w-2.5 rounded-full`} />
-                        )}
-                        {i < filteredFeed.length - 1 && <View className="w-px flex-1 bg-ink/10" />}
-                      </View>
-                      <View className="flex-1 flex-row items-center justify-between pb-5">
-                        <View>
-                          <Text className="font-bodySemibold text-[14px] text-ink">{item.title}</Text>
-                          <Text className="font-body text-xs text-ink-soft">{item.subtitle}</Text>
-                        </View>
-                        {!selectMode && item.kind === "event" && (
-                          <Pressable
-                            onPress={() => {
-                              haptics.warning();
-                              baby.deleteTimelineEvent(item.id);
-                              showToast(t("deleted_toast"), () => baby.restoreTimelineEvent(item.id));
-                            }}
-                            hitSlop={8}
-                          >
-                            <Icon name="close" size={14} color="#A79D8A" />
-                          </Pressable>
-                        )}
-                      </View>
-                    </Pressable>
-                  );
-                })
-              )}
-            </View>
-
-            {selectMode && selectedIds.size > 0 && (
-              <MotiView
-                from={{ opacity: 0, translateY: 10 }}
-                animate={{ opacity: 1, translateY: 0 }}
-                transition={{ type: "timing", duration: 180 }}
-                style={shadows.softLg}
-                className="mt-2 flex-row items-center justify-between rounded-2xl bg-ink px-4 py-3"
-              >
-                <Text className="font-bodyMedium text-[12.5px] text-cream">
-                  {selectedIds.size} {t("bulk_selected_count")}
-                </Text>
-                <View className="flex-row gap-4">
-                  <Pressable onPress={bulkArchiveSelected} hitSlop={6}>
-                    <Icon name="download" size={17} color="#FBF6EE" />
-                  </Pressable>
-                  <Pressable onPress={bulkExportSelected} hitSlop={6}>
-                    <Icon name="chart" size={17} color="#FBF6EE" />
-                  </Pressable>
-                  <Pressable onPress={bulkShareSelected} hitSlop={6}>
-                    <Icon name="share" size={17} color="#FBF6EE" />
-                  </Pressable>
-                  <Pressable onPress={bulkDeleteSelected} hitSlop={6}>
-                    <Icon name="close" size={17} color="#F87171" />
-                  </Pressable>
-                </View>
-              </MotiView>
-            )}
-
-            <Pressable onPress={() => { setTimelineSheetPurpose("event"); setSheet("timeline"); }} className="mt-1 flex-row items-center gap-2 py-2">
-              <Icon name="plus" size={14} color="#6E7452" />
-              <Text className="font-bodyMedium text-[13.5px] text-olive">{t("add_action")}</Text>
-            </Pressable>
-
             {/* Info mjekësore — dikur ishte tab "Shëndeti", tash pjesë kompakte e Ditarit */}
             <SectionHeader title={t("baby_medical_info")} editable editing={editMedical} onToggleEdit={() => toggleEdit(setEditMedical)} />
             <View style={shadows.soft} className="rounded-xl2 border border-ink/10 bg-surface px-4">
@@ -706,6 +609,195 @@ export default function BabyProfileScreen() {
                 <Text className="font-bodyMedium text-[13.5px] text-olive">{t("add_action")}</Text>
               </Pressable>
             )}
+          </MotiView>
+        )}
+
+        {activeTab === "diary" && (
+          <MotiView from={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ type: "timing", duration: 200 }}>
+            {/* Një rresht kontrollesh. Më parë kërkimi, zgjedhja dhe shtatë
+                çipa filtri rrinin gjithmonë në ekran — më shumë vend se vetë
+                ditari. Tash filtrat hapen kur duhen. */}
+            <View className="mt-2 flex-row items-center gap-2">
+              {showSearch ? (
+                <View className="flex-1 flex-row items-center gap-2 rounded-2xl border border-ink/10 bg-surface px-3.5 py-2.5">
+                  <Icon name="search" size={15} color="#A79D8A" />
+                  <TextInput
+                    autoFocus
+                    value={search}
+                    onChangeText={setSearch}
+                    placeholder={t("timeline_search_ph")}
+                    placeholderClassName="text-ink-faint"
+                    className="flex-1 font-body text-[13.5px] text-ink"
+                  />
+                  <Pressable onPress={() => { setShowSearch(false); setSearch(""); }} hitSlop={8}>
+                    <Icon name="close" size={14} color="#A79D8A" />
+                  </Pressable>
+                </View>
+              ) : (
+                <>
+                  <Text className="flex-1 font-bodySemibold text-[15px] text-ink">{t("baby_tab_timeline")}</Text>
+                  <Pressable
+                    onPress={() => setShowSearch(true)}
+                    hitSlop={8}
+                    accessibilityRole="button"
+                    accessibilityLabel={t("timeline_search_ph")}
+                    className="h-9 w-9 items-center justify-center rounded-full border border-ink/10 bg-surface"
+                  >
+                    <Icon name="search" size={15} color={isDark ? "#F7F1E4" : "#2C271F"} />
+                  </Pressable>
+                  <Pressable
+                    onPress={() => {
+                      haptics.select();
+                      setShowFilters((v) => !v);
+                    }}
+                    className={`rounded-full px-3.5 py-2 ${kindFilter !== "all" ? "bg-ink" : "border border-ink/10 bg-surface"}`}
+                  >
+                    <Text className={`font-bodyMedium text-[12px] ${kindFilter !== "all" ? "text-cream" : "text-ink"}`}>
+                      {kindFilter === "all" ? t("diary_filter") : t(filterLabelKey(kindFilter))}
+                    </Text>
+                  </Pressable>
+                  <Pressable
+                    onPress={() => {
+                      haptics.select();
+                      if (selectMode) exitSelectMode();
+                      else setSelectMode(true);
+                    }}
+                    className={`h-9 w-9 items-center justify-center rounded-full ${selectMode ? "bg-ink" : "border border-ink/10 bg-surface"}`}
+                  >
+                    <Icon name="check" size={15} color={selectMode ? "#FBF6EE" : isDark ? "#F7F1E4" : "#2C271F"} />
+                  </Pressable>
+                </>
+              )}
+            </View>
+
+            {showFilters && (
+              <ScrollView horizontal showsHorizontalScrollIndicator={false} className="mt-3" contentContainerStyle={{ gap: 8 }}>
+                {(["all", "feeding", "sleep", "diaper", "growth", "vaccine", "medical"] as const).map((k) => {
+                  const isActive = kindFilter === k;
+                  return (
+                    <Pressable
+                      key={k}
+                      onPress={() => {
+                        haptics.select();
+                        setKindFilter(k);
+                      }}
+                      className={`rounded-full border px-3.5 py-2 ${isActive ? "border-ink bg-ink" : "border-ink/10 bg-surface"}`}
+                    >
+                      <Text className={`font-bodyMedium text-[12px] ${isActive ? "text-cream" : "text-ink"}`}>{t(filterLabelKey(k))}</Text>
+                    </Pressable>
+                  );
+                })}
+              </ScrollView>
+            )}
+
+            {/* Lista, e ndarë sipas ditës. Data del një herë si titull dhe
+                mban përmbledhjen e asaj dite; rreshti mban vetëm orën. */}
+            {diaryDays.length === 0 ? (
+              <View className="items-center gap-2 py-14">
+                <Icon name="sparkle" size={24} color="#E9DFCC" />
+                <Text className="font-body text-sm text-ink-soft">
+                  {search.trim() || kindFilter !== "all" ? t("diary_no_match") : t("timeline_empty")}
+                </Text>
+              </View>
+            ) : (
+              diaryDays.map((day) => {
+                const label = dayLabelKind(day);
+                return (
+                  <View key={day.key} className="mt-6">
+                    <View className="flex-row items-center justify-between border-b border-ink/10 pb-2">
+                      <Text className="font-bodySemibold text-[14px] text-ink">
+                        {label.kind === "today"
+                          ? t("diary_today")
+                          : label.kind === "yesterday"
+                            ? t("diary_yesterday")
+                            : formatDate(label.date.toISOString(), lang)}
+                      </Text>
+                      <View className="flex-row items-center gap-3">
+                        {day.feedings > 0 && <DaySum icon="spoon" color={theme.orange} value={String(day.feedings)} />}
+                        {day.sleepMinutes > 0 && <DaySum icon="moon" color={theme.olive} value={durationLabel(day.sleepMinutes, t)} />}
+                        {day.diapers > 0 && <DaySum icon="baby" color={theme.inkFaint} value={String(day.diapers)} />}
+                      </View>
+                    </View>
+
+                    {day.entries.map((item) => {
+                      const key = selectionKey(item.kind, item.id);
+                      const isSelected = selectedIds.has(key);
+                      return (
+                        <Pressable
+                          key={key}
+                          onPress={() => (selectMode ? toggleSelect(item.kind, item.id) : undefined)}
+                          className="flex-row items-center gap-3 py-2.5"
+                        >
+                          {selectMode && (
+                            <View className={`h-4 w-4 items-center justify-center rounded-full border ${isSelected ? "border-ink bg-ink" : "border-ink/25 bg-surface"}`}>
+                              {isSelected && <Icon name="check" size={9} color={isDark ? "#211D17" : "#FBF6EE"} />}
+                            </View>
+                          )}
+                          <Text className="w-11 font-body text-[12px] text-ink-faint">
+                            {formatTime(new Date(item.at).toISOString(), lang)}
+                          </Text>
+                          <View className={`${item.tint === "orange" ? "bg-orange" : "bg-olive"} h-2 w-2 rounded-full`} />
+                          <Text className="flex-1 font-bodyMedium text-[14px] text-ink" numberOfLines={1}>
+                            {item.title}
+                          </Text>
+                          {item.detail ? (
+                            <Text className="font-body text-[12.5px] text-ink-soft">{item.detail}</Text>
+                          ) : null}
+                          {!selectMode && item.kind === "event" && (
+                            <Pressable
+                              onPress={() => {
+                                haptics.warning();
+                                baby.deleteTimelineEvent(item.id);
+                                showToast(t("deleted_toast"), () => baby.restoreTimelineEvent(item.id));
+                              }}
+                              hitSlop={8}
+                            >
+                              <Icon name="close" size={14} color="#A79D8A" />
+                            </Pressable>
+                          )}
+                        </Pressable>
+                      );
+                    })}
+                  </View>
+                );
+              })
+            )}
+
+            {selectMode && selectedIds.size > 0 && (
+              <MotiView
+                from={{ opacity: 0, translateY: 10 }}
+                animate={{ opacity: 1, translateY: 0 }}
+                transition={{ type: "timing", duration: 180 }}
+                style={shadows.softLg}
+                className="mt-4 flex-row items-center justify-between rounded-2xl bg-ink px-4 py-3"
+              >
+                <Text className="font-bodyMedium text-[12.5px] text-cream">
+                  {selectedIds.size} {t("bulk_selected_count")}
+                </Text>
+                <View className="flex-row gap-4">
+                  <Pressable onPress={bulkArchiveSelected} hitSlop={6}>
+                    <Icon name="download" size={17} color="#FBF6EE" />
+                  </Pressable>
+                  <Pressable onPress={bulkExportSelected} hitSlop={6}>
+                    <Icon name="chart" size={17} color="#FBF6EE" />
+                  </Pressable>
+                  <Pressable onPress={bulkShareSelected} hitSlop={6}>
+                    <Icon name="share" size={17} color="#FBF6EE" />
+                  </Pressable>
+                  <Pressable onPress={bulkDeleteSelected} hitSlop={6}>
+                    <Icon name="close" size={17} color="#F87171" />
+                  </Pressable>
+                </View>
+              </MotiView>
+            )}
+
+            <Pressable
+              onPress={() => { setTimelineSheetPurpose("event"); setSheet("timeline"); }}
+              className="mt-5 flex-row items-center justify-center gap-2 rounded-2xl border border-dashed border-cream-line py-3.5"
+            >
+              <Icon name="plus" size={14} color="#6E7452" />
+              <Text className="font-bodyMedium text-[13.5px] text-olive">{t("add_action")}</Text>
+            </Pressable>
           </MotiView>
         )}
       </ScrollView>

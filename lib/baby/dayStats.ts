@@ -1,4 +1,5 @@
 import type { FeedingEntry, SleepEntry, DiaperEntry } from "@/lib/state/babyTypes";
+import type { TranslationKey } from "@/lib/i18n/translations";
 
 /**
  * Ritmi i ditës: çfarë ka ndodhur në 24 orët e fundit dhe ku është bebi tani.
@@ -11,6 +12,9 @@ import type { FeedingEntry, SleepEntry, DiaperEntry } from "@/lib/state/babyType
  */
 
 export const DAY_MS = 86400000;
+
+/** Perkthyesi i app-it, i pranuar si argument qe kjo skedare te mbetet e paster. */
+export type Translate = (key: TranslationKey, params?: Record<string, string | number>) => string;
 
 export type RhythmKind = "sleep" | "feeding" | "diaper";
 
@@ -153,18 +157,124 @@ export function liveStatus(
   };
 }
 
-/** "2 orë 15 min" ose "45 min" — pa sekonda, sepse askush nuk i lexon. */
-export function durationLabel(minutes: number): string {
-  if (minutes < 1) return "tani";
-  if (minutes < 60) return `${minutes} min`;
+/**
+ * "2 orë 15 min" ose "45 min" — pa sekonda, sepse askush nuk i lexon.
+ *
+ * Perkthyesi jepet nga jashte: kjo skedare nuk njeh React, dhe teksti i
+ * ngulitur ketu do te dilte shqip edhe kur app-i eshte ne anglisht.
+ */
+export function durationLabel(minutes: number, t: Translate): string {
+  if (minutes < 1) return t("dur_now");
+  if (minutes < 60) return t("dur_min", { n: minutes });
   const hours = Math.floor(minutes / 60);
   const rest = minutes % 60;
-  return rest === 0 ? `${hours} orë` : `${hours} orë ${rest} min`;
+  return rest === 0 ? t("dur_hours", { h: hours }) : t("dur_hours_min", { h: hours, m: rest });
 }
 
 /** Sa kohë ka kaluar nga një çast, si tekst i shkurtër. */
-export function sinceLabel(iso: string | null, now: Date = new Date()): string | null {
+export function sinceLabel(iso: string | null, t: Translate, now: Date = new Date()): string | null {
   const at = time(iso);
   if (at === null) return null;
-  return durationLabel(Math.max(0, Math.round((now.getTime() - at) / 60000)));
+  return durationLabel(Math.max(0, Math.round((now.getTime() - at) / 60000)), t);
+}
+
+/* ------------------------------------------------------------------ *
+ * Konteksti i shiritit 24-oresh
+ * ------------------------------------------------------------------ */
+
+/** Ora kur nis nata dhe ora kur mbaron — per hijezimin e shiritit. */
+export const NIGHT_FROM = 21;
+export const NIGHT_TO = 6;
+
+export type Band = { start: number; end: number };
+export type HourTick = { at: number; label: string };
+
+function isNightHour(hour: number): boolean {
+  return hour >= NIGHT_FROM || hour < NIGHT_TO;
+}
+
+/**
+ * Pjeset e dritares qe bien naten, si thyesa 0–1.
+ *
+ * Nje bllok gjumi pa kontekst nuk thote asgje: tri ore gjume ne mesdite dhe
+ * tri ore ne mesnate lexohen njesoj. Hijezimi i nates e tregon dallimin pa
+ * asnje fjale.
+ */
+export function nightBands(windowStart: Date, now: Date = new Date()): Band[] {
+  const startMs = windowStart.getTime();
+  const endMs = now.getTime();
+  const span = endMs - startMs;
+  if (span <= 0) return [];
+
+  const bands: Band[] = [];
+  let open: { from: number; to: number } | null = null;
+
+  const firstHour = new Date(startMs);
+  firstHour.setMinutes(0, 0, 0);
+
+  for (let ms = firstHour.getTime(); ms < endMs; ms += 3600000) {
+    // Ora ri-lexohet ne cdo hap, qe nderrimi i ores veres te mos e zhvendose.
+    if (!isNightHour(new Date(ms).getHours())) {
+      open = null;
+      continue;
+    }
+    const from = Math.max(ms, startMs);
+    const to = Math.min(ms + 3600000, endMs);
+    if (to <= from) continue;
+    if (open && open.to === from) open.to = to;
+    else {
+      open = { from, to };
+      bands.push({ start: 0, end: 0 });
+    }
+    bands[bands.length - 1] = { start: (open.from - startMs) / span, end: (open.to - startMs) / span };
+  }
+
+  return bands;
+}
+
+/** Oret e plota qe bien brenda dritares, ne pozicionin e tyre te vertete. */
+export function hourTicks(windowStart: Date, now: Date = new Date(), everyHours = 6): HourTick[] {
+  const startMs = windowStart.getTime();
+  const endMs = now.getTime();
+  const span = endMs - startMs;
+  if (span <= 0) return [];
+
+  const ticks: HourTick[] = [];
+  const firstHour = new Date(startMs);
+  firstHour.setMinutes(0, 0, 0);
+
+  for (let ms = firstHour.getTime(); ms <= endMs; ms += 3600000) {
+    if (ms < startMs) continue;
+    const d = new Date(ms);
+    if (d.getHours() % everyHours !== 0) continue;
+    ticks.push({ at: (ms - startMs) / span, label: `${String(d.getHours()).padStart(2, "0")}:00` });
+  }
+
+  return ticks;
+}
+
+/**
+ * Gjumi me i gjate brenda dritares, ne minuta.
+ *
+ * Totali i gjumit nuk e tregon naten: dymbedhjete ore te copetuara ne
+ * gjashte copa jane nje nate tjeter nga dymbedhjete ore rresht.
+ */
+export function longestSleepMinutes(
+  sleeps: SleepEntry[],
+  now: Date = new Date(),
+  windowMs: number = DAY_MS
+): number {
+  const end = now.getTime();
+  const start = end - windowMs;
+  let longest = 0;
+
+  for (const sleep of sleeps) {
+    const from = time(sleep.startAt);
+    if (from === null) continue;
+    const to = time(sleep.endAt) ?? end;
+    const overlap = Math.min(to, end) - Math.max(from, start);
+    if (overlap > longest) longest = overlap;
+  }
+
+  return Math.round(longest / 60000);
 }

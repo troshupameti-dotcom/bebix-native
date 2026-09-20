@@ -57,10 +57,10 @@ function Action({
 export function NowCard({ status, onToggleSleep, now = new Date() }: Props) {
   const { t } = useTranslation();
   const asleep = status.asleepSince !== null;
-  const sleepSince = sinceLabel(status.asleepSince, now);
-  const awakeSince = sinceLabel(status.awakeSince, now);
-  const feedingSince = sinceLabel(status.lastFeedingAt, now);
-  const diaperSince = sinceLabel(status.lastDiaperAt, now);
+  const sleepSince = sinceLabel(status.asleepSince, t, now);
+  const awakeSince = sinceLabel(status.awakeSince, t, now);
+  const feedingSince = sinceLabel(status.lastFeedingAt, t, now);
+  const diaperSince = sinceLabel(status.lastDiaperAt, t, now);
 
   const headline = asleep
     ? t("now_asleep_for", { t: sleepSince ?? "" })

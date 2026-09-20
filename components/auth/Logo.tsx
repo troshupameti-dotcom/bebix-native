@@ -1,13 +1,20 @@
 import { Image } from "expo-image";
 import { MotiView } from "moti";
+import { useThemeColors } from "@/lib/theme/useThemeColors";
 
 type LogoProps = {
   tagline?: string;
   size?: "md" | "lg";
 };
 
+// Permasat e vertetea te asetit. Kutia ndjek ato, qe shenja te mos dale
+// me e vogel se sa kerkohet dhe te mos rrije e shtyre nga qendra.
+const ASSET_WIDTH = 832;
+const ASSET_HEIGHT = 827;
+
 export function Logo({ size = "lg" }: LogoProps) {
-  const logoWidth = size === "lg" ? 220 : 160;
+  const { isDark } = useThemeColors();
+  const width = size === "lg" ? 240 : 180;
 
   return (
     <MotiView
@@ -17,8 +24,14 @@ export function Logo({ size = "lg" }: LogoProps) {
       className="items-center"
     >
       <Image
-        source={require("@/assets/images/logo.png")}
-        style={{ width: logoWidth, height: logoWidth * 0.9 }}
+        // Navy-ja e fjales "bebix" zhduket mbi sfondin e erret, ndaj tema e
+        // erret merr nje variant ku shkronjat jane krem.
+        source={
+          isDark
+            ? require("@/assets/images/logo-full-dark.png")
+            : require("@/assets/images/logo-full.png")
+        }
+        style={{ width, height: (width * ASSET_HEIGHT) / ASSET_WIDTH }}
         contentFit="contain"
       />
     </MotiView>
