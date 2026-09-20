@@ -20,6 +20,12 @@ export function useThemeColors(): ThemeColors {
  * Lejon që `<Icon color="#2C271F" />` të ndërrojë vetë me temën, pa i prekur
  * 150+ vende thirrjeje. Ngjyrat që s'janë këtu (logot e Google-it, e kuqja
  * e gabimeve) mbeten siç janë.
+ *
+ * KUJDES: këto hex-e janë emra historikë, jo ngjyra që ekzistojnë ende.
+ * Kur paleta kaloi nga krem/ulliri te blu-ja e logos, çelësat mbetën ashtu
+ * siç janë shkruar nëpër kod — ajo që u ndërrua është tokeni ku çojnë. Pra
+ * `"#6E7452"` sot jep blu-në e theksit, jo jeshilen e dikurshme. Mos i
+ * "rregullo" çelësat: ata duhet të përputhen me tekstin që rri në kod.
  */
 const LEGACY_HEX_TO_TOKEN: Record<string, ThemeToken> = {
   "#FBF6EE": "cream",

@@ -1,10 +1,12 @@
 import { View, Text, Pressable } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useLanguage } from "@/lib/i18n/LanguageContext";
+import { useThemeColors } from "@/lib/theme/useThemeColors";
 
 export function LanguageToggle() {
   const { language, setLanguage } = useLanguage();
   const insets = useSafeAreaInsets();
+  const theme = useThemeColors();
 
   return (
     <View
@@ -14,7 +16,7 @@ export function LanguageToggle() {
       <View
         className="flex-row rounded-full border border-ink/10 bg-cream-soft p-0.5"
         style={{
-          shadowColor: "#2C271F",
+          shadowColor: theme.ink,
           shadowOpacity: 0.1,
           shadowRadius: 6,
           shadowOffset: { width: 0, height: 2 },

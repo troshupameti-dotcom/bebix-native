@@ -1,4 +1,5 @@
 import { useRef, useState } from "react";
+import { useThemeColors } from "@/lib/theme/useThemeColors";
 import { View, Text, Pressable, ScrollView, Dimensions, NativeSyntheticEvent, NativeScrollEvent } from "react-native";
 import { router } from "expo-router";
 import { MotiView } from "moti";
@@ -22,6 +23,7 @@ const SLIDES: { taglineKey: TranslationKey; image: number }[] = [
 
 export default function WelcomeScreen() {
   const { t } = useTranslation();
+  const theme = useThemeColors();
   const [index, setIndex] = useState(0);
   const scrollRef = useRef<ScrollView>(null);
 
@@ -72,7 +74,7 @@ export default function WelcomeScreen() {
               transition={{ type: "timing", duration: 500, delay: 100 }}
               className="aspect-[3/4] w-full max-h-[70%] overflow-hidden rounded-xl3 bg-cream-soft"
               style={{
-                shadowColor: "#2C271F",
+                shadowColor: theme.ink,
                 shadowOpacity: 0.08,
                 shadowRadius: 12,
                 shadowOffset: { width: 0, height: 6 },
