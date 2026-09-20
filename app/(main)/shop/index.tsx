@@ -165,7 +165,10 @@ export default function ShopScreen() {
           showsHorizontalScrollIndicator={false}
           contentContainerStyle={{ paddingHorizontal: 20, gap: 10 }}
         >
-          {[{ id: "all", key: "all", label: t("shop_all_chip"), icon: "shop" as const }, ...categories].map((cat) => {
+          {[
+            { id: "all", key: "all", label: t("shop_all_chip"), icon: "shop" as const, emoji: "🛍️" },
+            ...categories,
+          ].map((cat) => {
             const isActive = category === cat.key;
             return (
               <Pressable
@@ -173,15 +176,25 @@ export default function ShopScreen() {
                 onPress={() => setCategory(isActive && cat.key !== "all" ? "all" : cat.key)}
                 accessibilityRole="button"
                 accessibilityState={{ selected: isActive }}
-                className="items-center w-[76px]"
+                className="w-[80px] items-center"
               >
                 <View
-                  className={`w-14 h-14 rounded-2xl items-center justify-center ${isActive ? "bg-ink" : "bg-cream-soft"}`}
+                  className={`h-[60px] w-[60px] items-center justify-center rounded-2xl ${
+                    isActive ? "bg-ink" : "bg-cream-soft"
+                  }`}
                 >
-                  <Icon name={cat.icon} size={22} color={isActive ? theme.onAccent : theme.inkSoft} />
+                  {/* Emoji-t mbajne ngjyren e vet dhe dallohen nga njeri-tjetri;
+                      ikona e njejte per cdo kategori nuk tregonte asgje. */}
+                  {cat.emoji ? (
+                    <Text style={{ fontSize: 28, lineHeight: 34 }}>{cat.emoji}</Text>
+                  ) : (
+                    <Icon name={cat.icon} size={22} color={isActive ? theme.onAccent : theme.inkSoft} />
+                  )}
                 </View>
                 <Text
-                  className={`font-bodyMedium text-[11px] mt-1.5 text-center ${isActive ? "text-ink" : "text-ink-soft"}`}
+                  className={`mt-1.5 text-center font-bodyMedium text-[11px] ${
+                    isActive ? "text-ink" : "text-ink-soft"
+                  }`}
                   numberOfLines={2}
                 >
                   {cat.label}

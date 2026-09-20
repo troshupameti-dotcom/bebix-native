@@ -21,6 +21,8 @@ export type Product = {
    */
   category: string;
   icon: IconName;
+  /** Emoji i kategorise, kur paneli ka vendosur nje te tille. */
+  emoji?: string | null;
   accent: "olive" | "orange";
   rating: number; // 0-5
   badge: "new" | "sale" | "bestseller" | null;

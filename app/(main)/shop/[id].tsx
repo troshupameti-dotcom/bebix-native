@@ -20,16 +20,20 @@ function RelatedCard({ product, onPress }: { product: Product; onPress: () => vo
   const bg = product.accent === "olive" ? "bg-olive-bg" : "bg-orange-bg";
   const fg = product.accent === "olive" ? "#6E7452" : "#C9702E";
   return (
-    <Pressable onPress={onPress} style={shadows.soft} className="w-32 bg-surface rounded-xl2 p-3 mr-3">
-      <View className={`w-full h-16 rounded-xl items-center justify-center mb-2 overflow-hidden ${bg}`}>
+    <Pressable onPress={onPress} style={shadows.soft} className="mr-3 w-[136px] rounded-xl2 bg-surface p-3">
+      <View className={`mb-2 h-[88px] w-full items-center justify-center overflow-hidden rounded-xl ${bg}`}>
         {product.imageUrl ? (
-          <Image source={{ uri: product.imageUrl }} className="w-full h-full" resizeMode="cover" />
+          <Image source={{ uri: product.imageUrl }} className="h-full w-full" resizeMode="cover" />
+        ) : product.emoji ? (
+          <Text style={{ fontSize: 30, lineHeight: 36 }}>{product.emoji}</Text>
         ) : (
-          <Icon name={product.icon} size={22} color={fg} />
+          <Icon name={product.icon} size={24} color={fg} />
         )}
       </View>
-      <Text className="font-bodyMedium text-xs text-ink" numberOfLines={2}>{product.name}</Text>
-      <Text className="font-bodySemibold text-xs text-ink mt-1">€{product.price.toFixed(2)}</Text>
+      <Text className="font-bodyMedium text-[13px] leading-4 text-ink" numberOfLines={2}>
+        {product.name}
+      </Text>
+      <Text className="mt-1 font-bodySemibold text-[14px] text-ink">€{product.price.toFixed(2)}</Text>
     </Pressable>
   );
 }
@@ -146,45 +150,58 @@ export default function ProductDetailsScreen() {
             </>
           ) : (
             <View style={{ width, height: 288 }} className={`items-center justify-center ${bg}`}>
-              <Icon name={product.icon} size={72} color={fg} />
+              {product.emoji ? (
+                <Text style={{ fontSize: 80, lineHeight: 96 }}>{product.emoji}</Text>
+              ) : (
+                <Icon name={product.icon} size={72} color={fg} />
+              )}
             </View>
           )}
         </View>
 
-        {/* Info */}
-        <View className="px-5 mt-5">
-          <Text className="font-body text-xs text-ink-faint mb-1">{product.brand}</Text>
-          <Text className="font-display text-xl text-ink mb-2">{product.name}</Text>
+        {/* Info — shkronjat u rriten: kjo âsht faqja ku klienti vendos, dhe
+            emri e çmimi lexoheshin si tekst dytësor. */}
+        <View className="mt-5 px-5">
+          <Text className="mb-1 font-body text-[13px] text-ink-faint">{product.brand}</Text>
+          <Text className="mb-2 font-display text-[26px] leading-8 text-ink">{product.name}</Text>
           {/* Pa vlerësime reale, "5.0 (0 vlerësime)" duket i sajuar. */}
           {(product.reviewCount ?? 0) > 0 && (
-            <View className="flex-row items-center mb-3">
+            <View className="mb-3 flex-row items-center">
               <Stars rating={avgRating} />
-              <Text className="font-body text-xs text-ink-soft ml-2">
-                {avgRating.toFixed(1)} · {product.reviewCount} vlerësime
+              <Text className="ml-2 font-body text-[13px] text-ink-soft">
+                {avgRating.toFixed(1)} · {t("prod_review_count", { n: product.reviewCount ?? 0 })}
               </Text>
             </View>
           )}
-          <View className="flex-row items-center">
-            <Text className="font-display text-2xl text-ink mr-2">€{product.price.toFixed(2)}</Text>
+          <View className="flex-row items-baseline">
+            <Text className="mr-2 font-display text-[30px] text-ink">€{product.price.toFixed(2)}</Text>
             {product.compareAtPrice && (
-              <Text className="font-body text-sm text-ink-faint line-through">€{product.compareAtPrice.toFixed(2)}</Text>
+              <Text className="font-body text-[15px] text-ink-faint line-through">
+                €{product.compareAtPrice.toFixed(2)}
+              </Text>
             )}
           </View>
         </View>
 
         {/* Përshkrimi i vërtetë nga paneli — asgjë e gjeneruar */}
         {product.description ? (
-          <View className="px-5 mt-5">
-            <Text className="font-body text-sm text-ink-soft leading-6">{product.description}</Text>
+          <View className="mt-5 px-5">
+            <Text className="font-body text-[15px] leading-7 text-ink-soft">{product.description}</Text>
           </View>
         ) : null}
 
         <ProductReviews productId={product.id} />
 
-        {/* Related products */}
+        {/* Produkte të ngjashme, në fund: pasi klienti e ka lexuar këtë,
+            jo mes përshkrimit dhe vlerësimeve.
+
+            Këtu rrinin dy blloqe: njëri titullohej "Vlerësime" por tregonte
+            produkte, tjetri ishte një shënim i mbetur nga zhvillimi që u
+            thoshte klientëve se vlerësimet "ende s'ekzistojnë" — ndërsa
+            vlerësimet e vërteta shfaqeshin një rresht më lart. */}
         {related.length > 0 && (
           <>
-            <Text className="font-bodySemibold text-lg text-ink px-5 mt-7 mb-3">{t("prod_ratings")}</Text>
+            <Text className="mb-3 mt-8 px-5 font-bodySemibold text-[17px] text-ink">{t("prod_similar")}</Text>
             <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ paddingHorizontal: 20 }}>
               {related.map((p) => (
                 <RelatedCard key={p.id} product={p} onPress={() => router.push(`/shop/${p.id}`)} />
@@ -192,14 +209,6 @@ export default function ProductDetailsScreen() {
             </ScrollView>
           </>
         )}
-
-        {/* Reviews — vijnë kur shtojmë tabelën `reviews` te Supabase */}
-        <Text className="font-bodySemibold text-lg text-ink px-5 mt-7 mb-3">{t("prod_ratings")}</Text>
-        <View className="px-5">
-          <Text className="font-body text-sm text-ink-soft">
-            Ende s’ka vlerësime reale për këtë produkt (kërkon tabelë `reviews` shtesë te Supabase — hap tjetër i mundshëm).
-          </Text>
-        </View>
       </ScrollView>
 
       {/* Sticky bottom actions */}
@@ -214,11 +223,11 @@ export default function ProductDetailsScreen() {
               icon: product.icon,
             });
             track("added_to_cart", { product_id: product.id, price: product.price });
-            showToast(`${product.name} u shtua në shportë`);
+            showToast(t("prod_added_to_cart", { name: product.name }));
           }}
           className="flex-1 bg-surface border border-olive rounded-xl2 py-3.5 items-center mr-3"
         >
-          <Text className="font-bodyMedium text-sm text-olive">{t("prod_add_to_cart")}</Text>
+          <Text className="font-bodyMedium text-[15px] text-olive">{t("prod_add_to_cart")}</Text>
         </Pressable>
         <Pressable
           onPress={() => {
@@ -234,7 +243,7 @@ export default function ProductDetailsScreen() {
           }}
           className="flex-1 bg-olive rounded-xl2 py-3.5 items-center"
         >
-          <Text className="font-bodyMedium text-sm text-on-accent">{t("prod_buy_now")}</Text>
+          <Text className="font-bodySemibold text-[15px] text-on-accent">{t("prod_buy_now")}</Text>
         </Pressable>
       </View>
     </SafeAreaView>

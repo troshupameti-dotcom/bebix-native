@@ -67,6 +67,9 @@ export function ProductCard({ product, onPress, cardWidth }: Props) {
         >
           {thumbnail ? (
             <Image source={{ uri: thumbnail }} className="w-full h-full" resizeMode="contain" />
+          ) : product.emoji ? (
+            // Pa foto, emoji i kategorise thote te pakten cfare lloji eshte.
+            <Text style={{ fontSize: 40, lineHeight: 48 }}>{product.emoji}</Text>
           ) : (
             <Icon name={product.icon} size={36} color={fg} />
           )}
