@@ -23,7 +23,7 @@
       "package": "com.bebix.app",
       "adaptiveIcon": {
         "foregroundImage": "./assets/adaptive-icon.png",
-        "backgroundColor": "#F6F9FC"
+        "backgroundColor": "#F8F6F2"
       },
       "permissions": [
         "android.permission.CAMERA",
@@ -36,7 +36,7 @@
         "expo-notifications",
         {
           "icon": "./assets/adaptive-icon.png",
-          "color": "#1F6193"
+          "color": "#1F3D38"
         }
       ],
       [
@@ -45,7 +45,7 @@
           "image": "./assets/splash.png",
           "imageWidth": 260,
           "resizeMode": "contain",
-          "backgroundColor": "#F6F9FC"
+          "backgroundColor": "#F8F6F2"
         }
       ],
       "@react-native-community/datetimepicker",
