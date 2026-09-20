@@ -25,7 +25,16 @@ function RelatedCard({ product, onPress }: { product: Product; onPress: () => vo
         {product.imageUrl ? (
           <Image source={{ uri: product.imageUrl }} className="h-full w-full" resizeMode="cover" />
         ) : product.emoji ? (
-          <Text style={{ fontSize: 30, lineHeight: 36 }}>{product.emoji}</Text>
+          <Text
+            style={{
+              fontSize: 56,
+              lineHeight: 66,
+              includeFontPadding: false,
+              textAlignVertical: "center",
+            }}
+          >
+            {product.emoji}
+          </Text>
         ) : (
           <Icon name={product.icon} size={24} color={fg} />
         )}
@@ -151,7 +160,16 @@ export default function ProductDetailsScreen() {
           ) : (
             <View style={{ width, height: 288 }} className={`items-center justify-center ${bg}`}>
               {product.emoji ? (
-                <Text style={{ fontSize: 80, lineHeight: 96 }}>{product.emoji}</Text>
+                <Text
+                  style={{
+                    fontSize: 150,
+                    lineHeight: 176,
+                    includeFontPadding: false,
+                    textAlignVertical: "center",
+                  }}
+                >
+                  {product.emoji}
+                </Text>
               ) : (
                 <Icon name={product.icon} size={72} color={fg} />
               )}

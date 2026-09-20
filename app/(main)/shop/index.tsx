@@ -179,21 +179,36 @@ export default function ShopScreen() {
                 className="w-[80px] items-center"
               >
                 <View
-                  className={`h-[60px] w-[60px] items-center justify-center rounded-2xl ${
-                    isActive ? "bg-ink" : "bg-cream-soft"
+                  className={`h-[64px] w-[64px] items-center justify-center overflow-hidden rounded-2xl ${
+                    isActive ? "border-2 border-ink bg-ink" : "bg-cream-soft"
                   }`}
                 >
                   {/* Emoji-t mbajne ngjyren e vet dhe dallohen nga njeri-tjetri;
-                      ikona e njejte per cdo kategori nuk tregonte asgje. */}
+                      ikona e njejte per cdo kategori nuk tregonte asgje.
+
+                      Emoji-ja mbush katrorin. `includeFontPadding` dhe
+                      `textAlignVertical` jane per Android, ku pa to teksti
+                      merr mbushje shtese lart e poshte dhe glifi pritet kur
+                      `lineHeight` eshte sa kutia. */}
                   {cat.emoji ? (
-                    <Text style={{ fontSize: 28, lineHeight: 34 }}>{cat.emoji}</Text>
+                    <Text
+                      style={{
+                        fontSize: 52,
+                        lineHeight: 60,
+                        textAlign: "center",
+                        includeFontPadding: false,
+                        textAlignVertical: "center",
+                      }}
+                    >
+                      {cat.emoji}
+                    </Text>
                   ) : (
-                    <Icon name={cat.icon} size={22} color={isActive ? theme.onAccent : theme.inkSoft} />
+                    <Icon name={cat.icon} size={26} color={isActive ? theme.onAccent : theme.inkSoft} />
                   )}
                 </View>
                 <Text
-                  className={`mt-1.5 text-center font-bodyMedium text-[11px] ${
-                    isActive ? "text-ink" : "text-ink-soft"
+                  className={`mt-1.5 text-center text-[11px] ${
+                    isActive ? "font-bodySemibold text-ink" : "font-bodyMedium text-ink-soft"
                   }`}
                   numberOfLines={2}
                 >

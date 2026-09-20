@@ -35,6 +35,9 @@ export function ProductCard({ product, onPress, cardWidth }: Props) {
 
   const bg = "bg-cream-soft";
   const fg = "#B5A78F";
+  // Vend-mbajtësi ndjek gjerësinë e kartelës, që raporti të mbetet i njëjti
+  // në çdo madhësi ekrani; 160 është gjerësia tipike kur nuk jepet.
+  const emojiSize = Math.round((cardWidth ?? 160) * 0.5);
   const discount = discountPercent(product);
   // Kartela eshte ~180px; pa kete shkarkohej foto origjinale per secilen.
   const thumbnail = productImage(product.imageUrl, 400);
@@ -69,7 +72,16 @@ export function ProductCard({ product, onPress, cardWidth }: Props) {
             <Image source={{ uri: thumbnail }} className="w-full h-full" resizeMode="contain" />
           ) : product.emoji ? (
             // Pa foto, emoji i kategorise thote te pakten cfare lloji eshte.
-            <Text style={{ fontSize: 40, lineHeight: 48 }}>{product.emoji}</Text>
+            <Text
+              style={{
+                fontSize: emojiSize,
+                lineHeight: Math.round(emojiSize * 1.16),
+                includeFontPadding: false,
+                textAlignVertical: "center",
+              }}
+            >
+              {product.emoji}
+            </Text>
           ) : (
             <Icon name={product.icon} size={36} color={fg} />
           )}
