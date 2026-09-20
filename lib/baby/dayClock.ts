@@ -21,6 +21,8 @@ export const DAY_MS = 86400000;
 export const NIGHT_FROM = 21;
 export const NIGHT_TO = 6;
 
+export type ClockKind = "sleep" | "feeding" | "diaper";
+
 export type ClockItem =
   | {
       kind: "sleep";
@@ -179,12 +181,15 @@ export function circularDistance(a: number, b: number): number {
 export function itemAtFraction(
   items: ClockItem[],
   fraction: number,
+  kind?: ClockKind,
   tolerance = 0.012
 ): ClockItem | null {
+  const pool = kind ? items.filter((i) => i.kind === kind) : items;
+
   let nearest: ClockItem | null = null;
   let nearestDistance = tolerance;
 
-  for (const item of items) {
+  for (const item of pool) {
     if (item.kind === "sleep") continue;
     const d = circularDistance(item.at, fraction);
     if (d <= nearestDistance) {
@@ -194,12 +199,37 @@ export function itemAtFraction(
   }
   if (nearest) return nearest;
 
-  for (const item of items) {
+  for (const item of pool) {
     if (item.kind !== "sleep") continue;
     if (fraction >= item.from && fraction <= item.to) return item;
   }
 
   return null;
+}
+
+/** Nje unaze e vetme: cfare mban dhe ku rri. */
+export type RingBand = { kind: ClockKind; radius: number; width: number };
+
+/**
+ * Cila unaze u prek.
+ *
+ * Merret ajo me e afert, jo ajo qe e permban saktesisht prekjen: mes dy
+ * unazave ka hapesire, dhe nje gisht qe bie ne hapesire duhet te kape
+ * unazen me te afert, jo asgje. `slack` eshte sa larg buzes lejohet.
+ */
+export function ringAtRadius(bands: RingBand[], distance: number, slack = 10): RingBand | null {
+  let best: RingBand | null = null;
+  let bestGap = Infinity;
+
+  for (const band of bands) {
+    const gap = Math.abs(distance - band.radius) - band.width / 2;
+    if (gap <= slack && gap < bestGap) {
+      best = band;
+      bestGap = gap;
+    }
+  }
+
+  return best;
 }
 
 /** Këndi i një prekjeje brenda rrethit, si thyesë 0–1 me 0 lart. */
@@ -213,11 +243,11 @@ export function fractionFromTouch(x: number, y: number, size: number): number {
   return fraction < 0 ? fraction + 1 : fraction;
 }
 
-/** Sa larg qendrës ra prekja, si pjesë e rrezes. */
-export function radiusFromTouch(x: number, y: number, size: number): number {
+/** Sa larg qendrës ra prekja, në piksele. */
+export function distanceFromTouch(x: number, y: number, size: number): number {
   const cx = size / 2;
   const cy = size / 2;
-  return Math.hypot(x - cx, y - cy) / (size / 2);
+  return Math.hypot(x - cx, y - cy);
 }
 
 /** Pjesët e rrethit që janë natë — pozicione fikse, sepse ora nuk rrëshqet. */

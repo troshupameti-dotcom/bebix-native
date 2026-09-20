@@ -9,13 +9,15 @@ import { shadows } from "@/lib/shadows";
 import { durationLabel } from "@/lib/baby/dayStats";
 import { clockPalette, type ClockPalette } from "@/lib/baby/clockPalette";
 import {
+  distanceFromTouch,
   fractionFromTouch,
   itemAtFraction,
   nightArcs,
-  radiusFromTouch,
+  ringAtRadius,
   type ClockItem,
   type ClockTotals,
   type DayClock as Clock,
+  type RingBand,
 } from "@/lib/baby/dayClock";
 import type { BabyGender } from "@/lib/state/types";
 import { formatTime } from "@/lib/dateUtils";
@@ -24,36 +26,51 @@ import type { TranslationKey } from "@/lib/i18n/translations";
 /**
  * Ora 24-orëshe.
  *
- * Mesnata rri lart, mesdita poshtë. Gjumi është unazë e trashë sepse është
- * gjendje që zgjat; ushqyerja, pelena dhe jashtëqitja janë vija të shkurtra
- * sepse janë çaste. Nata hijezohet në sfond, që forma e natës të lexohet pa
- * asnjë numër.
+ * Mesnata lart, mesdita poshtë, dhe orët shkojnë me akrepat. Çdo kategori ka
+ * unazën e vet, e vendosur njëra brenda tjetrës: më parë ushqyerja dhe pelena
+ * ndanin të njëjtën korsi nën gjumin, dhe pikërisht orët me shumë shënime —
+ * ato që kanë më shumë për të treguar — dilnin si një njollë e vetme.
  *
- * Prekja: kudo mbi rreth, këndi kthehet në orë dhe gjendet çfarë ka aty.
+ * Unazat janë të holla me qëllim. Një unazë e trashë e mbush rrethin me
+ * ngjyrë dhe e fsheh formën; e holla lë ajër dhe e nxjerr formën e natës.
+ *
+ * Prekja: kudo mbi rrathë, rrezja jep se cila unazë u prek dhe këndi jep orën.
  * Nuk përdoret `onPress` mbi format e SVG-së — hit-testing-u i tyre ndryshon
  * mes iOS dhe Android, dhe një vijë tre-pikselëshe s'kapet dot me gisht.
- * Një shtresë e vetme prekjeje mbi rreth e bën këtë njësoj kudo, dhe lejon
- * tolerancë rreth çdo shenje.
  *
  * Detajet hapen poshtë rrethit dhe mbyllen me një prekje jashtë tyre.
  */
 
-const SIZE = 268;
-const RING_WIDTH = 26;
-const MARK_INSET = 4;
+const SIZE = 300;
+const CENTER = SIZE / 2;
+
+/**
+ * Nga jashtë brenda: gjumi, ushqyerja, pelenat.
+ *
+ * Rrezet janë të llogaritura që etiketat e orëve të rrinë brenda kornizës
+ * 300x300: në 06:00 dhe 18:00 etiketa del anash, dhe me rreze më të mëdha
+ * do të pritej nga buza.
+ */
+const RINGS: RingBand[] = [
+  { kind: "sleep", radius: 104, width: 16 },
+  { kind: "feeding", radius: 81, width: 14 },
+  { kind: "diaper", radius: 58, width: 14 },
+];
+
+/** Hapësira e lirë në mes, pasi mbaron unaza më e brendshme. */
+const CORE_RADIUS = RINGS[RINGS.length - 1].radius - RINGS[RINGS.length - 1].width / 2;
+const LABEL_RADIUS = 130;
+const LABEL_WIDTH = 36;
 
 type Selection =
   | { type: "item"; item: ClockItem }
   | { type: "kind"; kind: "sleep" | "feeding" | "diaper" | "poop" }
   | null;
 
-/** Pika në rreth për një thyesë 0–1, me 0 lart. */
+/** Pika në rreth për një thyesë 0–1, me 0 lart dhe orët me akrepat. */
 function point(fraction: number, radius: number) {
   const angle = fraction * Math.PI * 2 - Math.PI / 2;
-  return {
-    x: SIZE / 2 + Math.cos(angle) * radius,
-    y: SIZE / 2 + Math.sin(angle) * radius,
-  };
+  return { x: CENTER + Math.cos(angle) * radius, y: CENTER + Math.sin(angle) * radius };
 }
 
 /** Rruga e një harku mes dy thyesave. */
@@ -84,29 +101,39 @@ export function DayClock({
   const colors = clockPalette(gender, theme);
   const [selection, setSelection] = useState<Selection>(null);
 
-  const ringRadius = SIZE / 2 - RING_WIDTH / 2 - 2;
-  const markOuter = ringRadius - RING_WIDTH / 2 - MARK_INSET;
-  const markInner = markOuter - 9;
-
   const sleeps = clock.items.filter((i) => i.kind === "sleep");
-  const marks = clock.items.filter((i) => i.kind !== "sleep");
+  const feedings = clock.items.filter((i) => i.kind === "feeding");
+  const diapers = clock.items.filter((i) => i.kind === "diaper");
   const hasAnything = clock.items.length > 0;
+
+  // Nata vizatohet një herë, si një brez i vetëm pas të tri unazave: ashtu
+  // lexohet si një copë e vetme e ditës, jo si tri hije të ndara.
+  const nightRadius = (RINGS[0].radius + RINGS[0].width / 2 + CORE_RADIUS) / 2;
+  const nightWidth = RINGS[0].radius + RINGS[0].width / 2 - CORE_RADIUS;
+
+  const ringColor = (kind: RingBand["kind"]) =>
+    kind === "sleep" ? colors.sleep : kind === "feeding" ? colors.feeding : colors.diaper;
 
   function handleRingPress(event: GestureResponderEvent) {
     const { locationX, locationY } = event.nativeEvent;
-    const radius = radiusFromTouch(locationX, locationY, SIZE);
-    // Brenda qendres: mbyll, sepse aty nuk ka asgje per te treguar.
-    if (radius < 0.45) {
+    const band = ringAtRadius(RINGS, distanceFromTouch(locationX, locationY, SIZE));
+    // Qendra ose jashtë unazave: mbyll, sepse aty s'ka çfarë të tregohet.
+    if (!band) {
       setSelection(null);
       return;
     }
-    const found = itemAtFraction(clock.items, fractionFromTouch(locationX, locationY, SIZE));
+    const found = itemAtFraction(clock.items, fractionFromTouch(locationX, locationY, SIZE), band.kind);
     if (found) haptics.select();
     setSelection(found ? { type: "item", item: found } : null);
   }
 
+  function toggleKind(kind: "sleep" | "feeding" | "diaper" | "poop") {
+    haptics.select();
+    setSelection((prev) => (prev?.type === "kind" && prev.kind === kind ? null : { type: "kind", kind }));
+  }
+
   return (
-    // Cdo prekje jashte kartelës së detajeve e mbyll atë.
+    // Çdo prekje jashtë kartelës së detajeve e mbyll atë.
     <Pressable onPress={() => setSelection(null)} className="mt-5">
       <View className="mb-3 flex-row items-baseline justify-between">
         <Text className="font-bodySemibold text-base text-ink">{t("clock_title")}</Text>
@@ -151,56 +178,61 @@ export function DayClock({
       <View className="items-center">
         <Pressable onPress={handleRingPress} accessibilityRole="button" accessibilityLabel={t("clock_title")}>
           <Svg width={SIZE} height={SIZE}>
-            {/* Unaza bosh */}
-            <Circle
-              cx={SIZE / 2}
-              cy={SIZE / 2}
-              r={ringRadius}
-              stroke={colors.track}
-              strokeWidth={RING_WIDTH}
-              fill="none"
-            />
-
-            {/* Nata */}
+            {/* Nata, pas gjithçkaje */}
             {nightArcs().map((band, i) => (
               <Path
                 key={`night-${i}`}
-                d={arcPath(band.from, band.to, ringRadius)}
+                d={arcPath(band.from, band.to, nightRadius)}
                 stroke={colors.night}
-                strokeOpacity={0.08}
-                strokeWidth={RING_WIDTH}
+                strokeOpacity={0.06}
+                strokeWidth={nightWidth}
                 fill="none"
               />
             ))}
 
-            {/* Orët */}
+            {/* Unazat bosh — secila në ngjyrën e vet, që të lexohet edhe pa shënime */}
+            {RINGS.map((ring) => (
+              <Circle
+                key={`track-${ring.kind}`}
+                cx={CENTER}
+                cy={CENTER}
+                r={ring.radius}
+                stroke={ringColor(ring.kind)}
+                strokeOpacity={theme.isDark ? 0.16 : 0.12}
+                strokeWidth={ring.width}
+                fill="none"
+              />
+            ))}
+
+            {/* Orët, si vija të shkurtra jashtë unazës së parë */}
             <G>
               {Array.from({ length: 24 }, (_, h) => {
-                const major = h % 6 === 0;
-                const outer = point(h / 24, ringRadius + RING_WIDTH / 2);
-                const inner = point(h / 24, ringRadius + RING_WIDTH / 2 - (major ? 7 : 4));
+                const major = h % 3 === 0;
+                const base = RINGS[0].radius + RINGS[0].width / 2 + 3;
+                const a = point(h / 24, base);
+                const b = point(h / 24, base + (major ? 5 : 3));
                 return (
                   <Line
                     key={`tick-${h}`}
-                    x1={outer.x}
-                    y1={outer.y}
-                    x2={inner.x}
-                    y2={inner.y}
+                    x1={a.x}
+                    y1={a.y}
+                    x2={b.x}
+                    y2={b.y}
                     stroke={theme.inkFaint}
-                    strokeOpacity={major ? 0.5 : 0.22}
+                    strokeOpacity={major ? 0.55 : 0.25}
                     strokeWidth={major ? 1.5 : 1}
                   />
                 );
               })}
             </G>
 
-            {/* Gjumi */}
+            {/* Gjumi — harqe, sepse zgjat */}
             {sleeps.map((item) => (
               <Path
                 key={item.key}
-                d={arcPath(item.from, Math.max(item.to, item.from + 0.004), ringRadius)}
+                d={arcPath(item.from, Math.max(item.to, item.from + 0.004), RINGS[0].radius)}
                 stroke={colors.sleep}
-                strokeWidth={RING_WIDTH}
+                strokeWidth={RINGS[0].width}
                 strokeLinecap="butt"
                 fill="none"
                 opacity={
@@ -211,62 +243,76 @@ export function DayClock({
               />
             ))}
 
-            {/* Çastet */}
-            {marks.map((item) => {
-              const a = point(item.at, markOuter);
-              const b = point(item.at, markInner);
-              const isPoop =
-                item.kind === "diaper" && (item.entry.type === "dirty" || item.entry.type === "both");
-              const color =
-                item.kind === "feeding" ? colors.feeding : isPoop ? colors.poop : colors.diaper;
-              const chosen = selection?.type === "item" && selection.item.key === item.key;
-              return (
-                <Line
-                  key={item.key}
-                  x1={a.x}
-                  y1={a.y}
-                  x2={b.x}
-                  y2={b.y}
-                  stroke={color}
-                  strokeWidth={chosen ? 6 : 3.5}
-                  strokeLinecap="round"
-                />
-              );
-            })}
+            {/* Ushqyerja — çaste */}
+            {feedings.map((item) => (
+              <Mark
+                key={item.key}
+                fraction={item.at}
+                ring={RINGS[1]}
+                color={colors.feeding}
+                chosen={selection?.type === "item" && selection.item.key === item.key}
+              />
+            ))}
 
-            {/* Tani */}
+            {/* Pelenat — jashtëqitja merr ngjyrën e vet brenda së njëjtës unazë */}
+            {diapers.map((item) => (
+              <Mark
+                key={item.key}
+                fraction={item.at}
+                ring={RINGS[2]}
+                color={
+                  item.kind === "diaper" && (item.entry.type === "dirty" || item.entry.type === "both")
+                    ? colors.poop
+                    : colors.diaper
+                }
+                chosen={selection?.type === "item" && selection.item.key === item.key}
+              />
+            ))}
+
+            {/* Tani — një vijë që pret të tria unazat */}
             <Line
-              x1={point(clock.now, ringRadius + RING_WIDTH / 2).x}
-              y1={point(clock.now, ringRadius + RING_WIDTH / 2).y}
-              x2={point(clock.now, ringRadius - RING_WIDTH / 2 - 6).x}
-              y2={point(clock.now, ringRadius - RING_WIDTH / 2 - 6).y}
+              x1={point(clock.now, RINGS[0].radius + RINGS[0].width / 2).x}
+              y1={point(clock.now, RINGS[0].radius + RINGS[0].width / 2).y}
+              x2={point(clock.now, CORE_RADIUS).x}
+              y2={point(clock.now, CORE_RADIUS).y}
               stroke={theme.ink}
-              strokeWidth={2}
+              strokeOpacity={0.55}
+              strokeWidth={1.5}
               strokeLinecap="round"
             />
-            <Circle cx={point(clock.now, ringRadius).x} cy={point(clock.now, ringRadius).y} r={3.5} fill={theme.ink} />
+            <Circle
+              cx={point(clock.now, RINGS[0].radius).x}
+              cy={point(clock.now, RINGS[0].radius).y}
+              r={3.5}
+              fill={theme.ink}
+            />
           </Svg>
 
-          {/* Qendra: numri që lexohet më shpesh */}
-          <View pointerEvents="none" className="absolute inset-0 items-center justify-center px-12">
-            <Text className="font-display text-[26px] leading-8 text-ink" numberOfLines={1}>
-              {totals.sleepMinutes > 0 ? durationLabel(totals.sleepMinutes, t) : "—"}
+          {/* Qendra */}
+          <View
+            pointerEvents="none"
+            style={{
+              position: "absolute",
+              left: CENTER - CORE_RADIUS + 6,
+              top: CENTER - CORE_RADIUS + 6,
+              width: (CORE_RADIUS - 6) * 2,
+              height: (CORE_RADIUS - 6) * 2,
+              alignItems: "center",
+              justifyContent: "center",
+            }}
+          >
+            <Text className="text-center font-display text-[19px] leading-6 text-ink" numberOfLines={2}>
+              {totals.longestSleepMinutes > 0 ? durationLabel(totals.longestSleepMinutes, t) : "—"}
             </Text>
-            <Text className="mt-0.5 text-center font-body text-[11px] leading-4 text-ink-faint">
-              {t("clock_center_label")}
+            <Text className="mt-1 text-center font-body text-[10px] leading-[13px] text-ink-faint">
+              {t("totals_longest_sleep")}
             </Text>
-            {totals.longestSleepMinutes > 0 && (
-              <Text className="mt-2 text-center font-body text-[10.5px] text-ink-faint">
-                {t("totals_longest_sleep")} {durationLabel(totals.longestSleepMinutes, t)}
-              </Text>
-            )}
           </View>
 
-          {/* Etiketat e orëve */}
-          <HourLabel fraction={0} label="00:00" />
-          <HourLabel fraction={0.25} label="06:00" />
-          <HourLabel fraction={0.5} label="12:00" />
-          <HourLabel fraction={0.75} label="18:00" />
+          {/* Orët */}
+          {[0, 3, 6, 9, 12, 15, 18, 21].map((h) => (
+            <HourLabel key={h} fraction={h / 24} label={`${String(h).padStart(2, "0")}:00`} />
+          ))}
         </Pressable>
       </View>
 
@@ -294,21 +340,43 @@ export function DayClock({
       )}
     </Pressable>
   );
+}
 
-  function toggleKind(kind: "sleep" | "feeding" | "diaper" | "poop") {
-    haptics.select();
-    setSelection((prev) => (prev?.type === "kind" && prev.kind === kind ? null : { type: "kind", kind }));
-  }
+/** Një çast mbi unazën e vet: vijë e shkurtër sa gjerësia e unazës. */
+function Mark({
+  fraction,
+  ring,
+  color,
+  chosen,
+}: {
+  fraction: number;
+  ring: RingBand;
+  color: string;
+  chosen: boolean;
+}) {
+  const a = point(fraction, ring.radius + ring.width / 2 - 1);
+  const b = point(fraction, ring.radius - ring.width / 2 + 1);
+  return (
+    <Line
+      x1={a.x}
+      y1={a.y}
+      x2={b.x}
+      y2={b.y}
+      stroke={color}
+      strokeWidth={chosen ? 6 : 3.5}
+      strokeLinecap="round"
+    />
+  );
 }
 
 function HourLabel({ fraction, label }: { fraction: number; label: string }) {
-  const p = point(fraction, SIZE / 2 - RING_WIDTH - 12);
+  const p = point(fraction, LABEL_RADIUS);
   return (
     <View
       pointerEvents="none"
-      style={{ position: "absolute", left: p.x - 24, top: p.y - 8, width: 48 }}
+      style={{ position: "absolute", left: p.x - LABEL_WIDTH / 2, top: p.y - 7, width: LABEL_WIDTH }}
     >
-      <Text className="text-center font-body text-[10px] text-ink-faint">{label}</Text>
+      <Text className="text-center font-body text-[9.5px] text-ink-faint">{label}</Text>
     </View>
   );
 }
