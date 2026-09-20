@@ -2,16 +2,20 @@ import type { BabyGender } from "@/lib/state/types";
 import type { ThemeColors } from "@/lib/theme/useThemeColors";
 
 /**
- * Ngjyrat e orës 24-orëshe.
+ * Ngjyrat e orës.
  *
- * Gjinia e zgjedhur te cilësimet e zhvendos tonin: kaltërt për djalë, rozë
- * për vajzë, dhe theksi i zakonshëm i app-it kur s'është shënuar asgjë.
- * Zhvendoset vetëm TONI — ngopja dhe errësira mbeten ato të paletës, që
- * rrethi të mos dalë si lodër mes një app-i të qetë.
+ * Katër ngjyra, secila për një gjë, dhe secila nga një familje tjetër tonesh.
+ * Kjo është e gjithë puna: më parë gjumi dhe pelena ndanin të njëjtin ton
+ * jeshil-blu, dhe ushqyerja me jashtëqitjen ishin të dyja të ngrohta — pra
+ * prindi duhej të lexonte legjendën çdo herë.
  *
- * Katër ngjyra, secila për një gjë: gjumi është bllok, tri të tjerat janë
- * çaste. Ngjyrat nuk përsëriten, sepse i njëjti ton për dy gjëra do ta bënte
- * rrethin të palexueshëm pikërisht atje ku ka më shumë shënime.
+ * Tonet janë zgjedhur duke matur dallimin mes çdo çifti dhe kontrastin me
+ * sfondin, në të dyja temat: asnjë çift nën 120 njësi dallimi, asnjë ngjyrë
+ * nën 3:1 kundrejt faqes.
+ *
+ * Gjinia e zgjedhur te cilësimet e zhvendos tonin — kaltërt për djalë, rozë
+ * për vajzë — por ndarja mes të katërtave ruhet gjithmonë. Një paletë ku
+ * gjithçka është rozë do të ishte e bukur dhe e palexueshme.
  */
 
 export type ClockPalette = {
@@ -21,42 +25,40 @@ export type ClockPalette = {
   poop: string;
   /** Hija e natës mbi rreth. */
   night: string;
-  /** Unaza bosh nën gjithçka. */
-  track: string;
 };
 
 export function clockPalette(gender: BabyGender, theme: ThemeColors): ClockPalette {
   const dark = theme.isDark;
 
   if (gender === "boy") {
+    // Blu / rozë / bruz / qelibar.
     return {
-      sleep: dark ? "#7FA6D4" : "#3F6795",
-      feeding: dark ? "#8FC4C6" : "#2F7F82",
-      diaper: dark ? "#9DB2C9" : "#5E7A96",
-      poop: dark ? "#C0A184" : "#8A6A4C",
+      sleep: dark ? "#8AA6E8" : "#2A4FA0",
+      feeding: dark ? "#EC8FAB" : "#B8496E",
+      diaper: dark ? "#5FC3B4" : "#137F73",
+      poop: dark ? "#D2A860" : "#8C6428",
       night: theme.ink,
-      track: theme.creamSoft,
     };
   }
 
   if (gender === "girl") {
+    // Manushaqe / rozë / blu / qelibar — dy nga katërt janë rozë-vjollcë,
+    // pra paleta lexohet rozë pa u bërë një ton i vetëm.
     return {
-      sleep: dark ? "#D79FB0" : "#8F4E68",
-      feeding: dark ? "#E0A5AE" : "#A85A62",
-      diaper: dark ? "#C8A9BC" : "#7D5C73",
-      poop: dark ? "#C0A184" : "#8A6A4C",
+      sleep: dark ? "#C08CE8" : "#7A3596",
+      feeding: dark ? "#F08CA3" : "#C03A5E",
+      diaper: dark ? "#7FB6E8" : "#2E6FA8",
+      poop: dark ? "#D2A860" : "#8C6428",
       night: theme.ink,
-      track: theme.creamSoft,
     };
   }
 
-  // Pa gjini të shënuar: ngjyrat e vetë app-it.
+  // Pa gjini të shënuar: bruz / rozë / indigo / qelibar.
   return {
-    sleep: theme.olive,
-    feeding: theme.orange,
-    diaper: dark ? "#8FBEC0" : "#3D7B7C",
-    poop: dark ? "#C0A184" : "#8A6A4C",
+    sleep: dark ? "#63C6B6" : "#1F6F65",
+    feeding: dark ? "#F08CA9" : "#BE3C68",
+    diaper: dark ? "#8EA4EE" : "#3A56A8",
+    poop: dark ? "#D2A860" : "#8C6428",
     night: theme.ink,
-    track: theme.creamSoft,
   };
 }

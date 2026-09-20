@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { View, Text, Pressable, type GestureResponderEvent } from "react-native";
+import { View, Text, Pressable, Alert, type GestureResponderEvent } from "react-native";
 import Svg, { Circle, Path, G, Line } from "react-native-svg";
 import { Icon, type IconName } from "@/components/ui/Icon";
 import { useThemeColors } from "@/lib/theme/useThemeColors";
@@ -12,24 +12,31 @@ import {
   distanceFromTouch,
   fractionFromTouch,
   itemAtFraction,
+  isCurrentPeriod,
   nightArcs,
+  periodFor,
   ringAtRadius,
+  shiftPeriod,
+  type ClockPeriod,
   type ClockItem,
   type ClockTotals,
   type DayClock as Clock,
   type RingBand,
 } from "@/lib/baby/dayClock";
 import type { BabyGender } from "@/lib/state/types";
-import { formatTime } from "@/lib/dateUtils";
+import { formatDate, formatTime } from "@/lib/dateUtils";
 import type { TranslationKey } from "@/lib/i18n/translations";
 
 /**
- * Ora 24-orëshe.
+ * Ora e bebit — një fytyrë ore e vërtetë: 12 lart, 3 djathtas, 6 poshtë, 9 majtas.
  *
- * Mesnata lart, mesdita poshtë, dhe orët shkojnë me akrepat. Çdo kategori ka
- * unazën e vet, e vendosur njëra brenda tjetrës: më parë ushqyerja dhe pelena
- * ndanin të njëjtën korsi nën gjumin, dhe pikërisht orët me shumë shënime —
- * ato që kanë më shumë për të treguar — dilnin si një njollë e vetme.
+ * Kjo e detyron rrethin të mbulojë 12 orë, jo 24 (shih `dayClock.ts`), prandaj
+ * dita shihet me gjysma dhe koka e komponentit mban navigimin mes tyre.
+ *
+ * Çdo kategori ka unazën e vet, e vendosur njëra brenda tjetrës: më parë
+ * ushqyerja dhe pelena ndanin të njëjtën korsi nën gjumin, dhe pikërisht orët
+ * me shumë shënime — ato që kanë më shumë për të treguar — dilnin si një
+ * njollë e vetme.
  *
  * Unazat janë të holla me qëllim. Një unazë e trashë e mbush rrethin me
  * ngjyrë dhe e fsheh formën; e holla lë ajër dhe e nxjerr formën e natës.
@@ -91,10 +98,16 @@ export function DayClock({
   clock,
   totals,
   gender,
+  onChangePeriod,
+  onDeletePeriod,
+  deletableCount,
 }: {
   clock: Clock;
   totals: ClockTotals;
   gender: BabyGender;
+  onChangePeriod: (period: ClockPeriod) => void;
+  onDeletePeriod: () => void;
+  deletableCount: number;
 }) {
   const theme = useThemeColors();
   const { t, lang } = useTranslation();
@@ -111,6 +124,8 @@ export function DayClock({
   const nightRadius = (RINGS[0].radius + RINGS[0].width / 2 + CORE_RADIUS) / 2;
   const nightWidth = RINGS[0].radius + RINGS[0].width / 2 - CORE_RADIUS;
 
+  const atLatest = isCurrentPeriod(clock.period);
+
   const ringColor = (kind: RingBand["kind"]) =>
     kind === "sleep" ? colors.sleep : kind === "feeding" ? colors.feeding : colors.diaper;
 
@@ -122,9 +137,11 @@ export function DayClock({
       setSelection(null);
       return;
     }
+    haptics.select();
     const found = itemAtFraction(clock.items, fractionFromTouch(locationX, locationY, SIZE), band.kind);
-    if (found) haptics.select();
-    setSelection(found ? { type: "item", item: found } : null);
+    // Mbi një shënim: ai shënim. Kudo tjetër mbi unazë: gjithë lista e saj —
+    // prekja e unazës duhet të tregojë diçka, jo të mbyllë.
+    setSelection(found ? { type: "item", item: found } : { type: "kind", kind: band.kind });
   }
 
   function toggleKind(kind: "sleep" | "feeding" | "diaper" | "poop") {
@@ -132,12 +149,69 @@ export function DayClock({
     setSelection((prev) => (prev?.type === "kind" && prev.kind === kind ? null : { type: "kind", kind }));
   }
 
+  function confirmDelete() {
+    if (deletableCount === 0) {
+      Alert.alert(t("clock_delete_period"), t("clock_delete_none"));
+      return;
+    }
+    const when = `${clock.period.isAm ? t("clock_am") : t("clock_pm")} · ${formatDate(
+      clock.period.start.toISOString(),
+      lang
+    )}`;
+    Alert.alert(t("clock_delete_q"), t("clock_delete_body", { n: deletableCount, when }), [
+      { text: t("cancel_action"), style: "cancel" },
+      { text: t("delete_action"), style: "destructive", onPress: onDeletePeriod },
+    ]);
+  }
+
   return (
     // Çdo prekje jashtë kartelës së detajeve e mbyll atë.
     <Pressable onPress={() => setSelection(null)} className="mt-5">
-      <View className="mb-3 flex-row items-baseline justify-between">
+      <View className="mb-1 flex-row items-baseline justify-between">
         <Text className="font-bodySemibold text-base text-ink">{t("clock_title")}</Text>
         <Text className="font-body text-[11px] text-ink-faint">{t("clock_hint")}</Text>
+      </View>
+
+      {/* Navigimi mes gjysmave. "Tani" del vetëm kur je larguar prej saj —
+          një buton që s'bën asgjë është më keq se asnjë buton. */}
+      <View className="mb-3 flex-row items-center gap-2">
+        <Pressable
+          onPress={() => onChangePeriod(shiftPeriod(clock.period, -1))}
+          hitSlop={8}
+          accessibilityRole="button"
+          accessibilityLabel={t("clock_prev")}
+          className="h-8 w-8 items-center justify-center rounded-full border border-ink/10 bg-surface"
+        >
+          <Icon name="chevronLeft" size={14} color={theme.ink} />
+        </Pressable>
+
+        <Text className="flex-1 text-center font-bodyMedium text-[13px] text-ink" numberOfLines={1}>
+          {clock.period.isAm ? t("clock_am") : t("clock_pm")} ·{" "}
+          {formatDate(clock.period.start.toISOString(), lang)}
+        </Text>
+
+        <Pressable
+          onPress={() => onChangePeriod(shiftPeriod(clock.period, 1))}
+          hitSlop={8}
+          disabled={atLatest}
+          accessibilityRole="button"
+          accessibilityLabel={t("clock_next")}
+          className={`h-8 w-8 items-center justify-center rounded-full border border-ink/10 bg-surface ${
+            atLatest ? "opacity-30" : ""
+          }`}
+        >
+          <Icon name="chevronRight" size={14} color={theme.ink} />
+        </Pressable>
+
+        {!atLatest && (
+          <Pressable
+            onPress={() => onChangePeriod(periodFor())}
+            accessibilityRole="button"
+            className="rounded-full bg-ink px-3 py-1.5"
+          >
+            <Text className="font-bodyMedium text-[12px] text-cream">{t("clock_now_btn")}</Text>
+          </Pressable>
+        )}
       </View>
 
       <View className="mb-4 flex-row gap-2">
@@ -179,7 +253,7 @@ export function DayClock({
         <Pressable onPress={handleRingPress} accessibilityRole="button" accessibilityLabel={t("clock_title")}>
           <Svg width={SIZE} height={SIZE}>
             {/* Nata, pas gjithçkaje */}
-            {nightArcs().map((band, i) => (
+            {nightArcs(clock.period).map((band, i) => (
               <Path
                 key={`night-${i}`}
                 d={arcPath(band.from, band.to, nightRadius)}
@@ -269,23 +343,27 @@ export function DayClock({
               />
             ))}
 
-            {/* Tani — një vijë që pret të tria unazat */}
-            <Line
-              x1={point(clock.now, RINGS[0].radius + RINGS[0].width / 2).x}
-              y1={point(clock.now, RINGS[0].radius + RINGS[0].width / 2).y}
-              x2={point(clock.now, CORE_RADIUS).x}
-              y2={point(clock.now, CORE_RADIUS).y}
-              stroke={theme.ink}
-              strokeOpacity={0.55}
-              strokeWidth={1.5}
-              strokeLinecap="round"
-            />
-            <Circle
-              cx={point(clock.now, RINGS[0].radius).x}
-              cy={point(clock.now, RINGS[0].radius).y}
-              r={3.5}
-              fill={theme.ink}
-            />
+            {/* Tani — vetëm kur çasti bie brenda kësaj gjysme dite */}
+            {clock.now !== null && (
+              <G>
+                <Line
+                  x1={point(clock.now, RINGS[0].radius + RINGS[0].width / 2).x}
+                  y1={point(clock.now, RINGS[0].radius + RINGS[0].width / 2).y}
+                  x2={point(clock.now, CORE_RADIUS).x}
+                  y2={point(clock.now, CORE_RADIUS).y}
+                  stroke={theme.ink}
+                  strokeOpacity={0.55}
+                  strokeWidth={1.5}
+                  strokeLinecap="round"
+                />
+                <Circle
+                  cx={point(clock.now, RINGS[0].radius).x}
+                  cy={point(clock.now, RINGS[0].radius).y}
+                  r={3.5}
+                  fill={theme.ink}
+                />
+              </G>
+            )}
           </Svg>
 
           {/* Qendra */}
@@ -309,9 +387,10 @@ export function DayClock({
             </Text>
           </View>
 
-          {/* Orët */}
-          {[0, 3, 6, 9, 12, 15, 18, 21].map((h) => (
-            <HourLabel key={h} fraction={h / 24} label={`${String(h).padStart(2, "0")}:00`} />
+          {/* Numrat e fytyrës: 12 lart, 3 djathtas, 6 poshtë, 9 majtas.
+              Të njëjtët për të dyja gjysmat, si te një orë dore. */}
+          {Array.from({ length: 12 }, (_, i) => (
+            <HourLabel key={i} fraction={i / 12} label={i === 0 ? "12" : String(i)} />
           ))}
         </Pressable>
       </View>
@@ -337,6 +416,19 @@ export function DayClock({
           t={t}
           onClose={() => setSelection(null)}
         />
+      )}
+
+      {/* Fshirja rri veçmas, poshtë një vije, pa ngjyrë alarmi dhe pa ikonë:
+          nuk duhet të bjerë në sy sa të shtypet pa dashje, por duhet të
+          gjendet kur kërkohet. Pyet gjithmonë, dhe fshirja kthehet mbrapsht. */}
+      {deletableCount > 0 && (
+        <View className="mt-5 items-center border-t border-ink/10 pt-4">
+          <Pressable onPress={confirmDelete} hitSlop={8} accessibilityRole="button">
+            <Text className="font-bodyMedium text-[12px] text-ink-faint">
+              {t("clock_delete_period")}
+            </Text>
+          </Pressable>
+        </View>
       )}
     </Pressable>
   );

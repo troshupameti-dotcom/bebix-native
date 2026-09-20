@@ -1,37 +1,41 @@
 import type { FeedingEntry, SleepEntry, DiaperEntry } from "@/lib/state/babyTypes";
 
 /**
- * Ora 24-orëshe e bebit.
+ * Ora e bebit — një fytyrë ore e vërtetë: 12 lart, 3 djathtas, 6 poshtë, 9 majtas.
  *
- * Shiriti i drejtë tregonte "sa larg nga tani", që do të thotë se e njëjta
- * orë e murit binte çdo ditë në një vend tjetër. Në një rreth pozicioni
- * është vetë ora: mesnata rri gjithmonë lart, mesdita poshtë. Prindi e njeh
- * formën e natës pa lexuar asnjë numër.
+ * Kjo e detyron rrethin të mbulojë 12 orë, jo 24. Nuk është zgjedhje stili:
+ * që 3:00 të bjerë djathtas, çereku i rrethit duhet të jetë tri orë. Me 24
+ * orë në rreth, çereku bëhet gjashtë orë, dhe djathtas do të binte 6:00.
  *
- * Dritarja mbetet 24 orët e fundit, pra çdo kënd i rrethit mbulohet saktësisht
- * një herë. Ajo që ndryshon është si lexohet, jo çfarë tregon.
+ * Prandaj dita ndahet në dy gjysma — paradite dhe pasdite — dhe prindi lëviz
+ * mes tyre. Numrat e fytyrës janë të njëjtët në të dyja (12,1,2…11), saktësisht
+ * si te një orë dore, pra asgjë nuk duhet rimësuar.
  *
  * Funksione të pastra: asnjë React, dhe "tani" jepet gjithmonë nga jashtë që
  * testet të mos varen nga ora kur xhirojnë.
  */
 
-export const DAY_MS = 86400000;
-
-/** Ora kur nis dhe mbaron nata — vetëm për hijezimin e rrethit. */
-export const NIGHT_FROM = 21;
-export const NIGHT_TO = 6;
+export const HALF_DAY_MS = 12 * 3600000;
 
 export type ClockKind = "sleep" | "feeding" | "diaper";
+
+/** Gjysma e ditës që po shihet. */
+export type ClockPeriod = {
+  start: Date;
+  end: Date;
+  /** E vërtetë për 00:00–12:00. */
+  isAm: boolean;
+};
 
 export type ClockItem =
   | {
       kind: "sleep";
-      /** `id` i regjistrimit; një gjumë që kapërcen mesnatën jep dy copa me të njëjtin id. */
       id: string;
       key: string;
       from: number;
       to: number;
       entry: SleepEntry;
+      /** Minuta brenda kësaj gjysme dite, jo gjithsej. */
       minutes: number;
     }
   | { kind: "feeding"; id: string; key: string; at: number; entry: FeedingEntry }
@@ -39,9 +43,9 @@ export type ClockItem =
 
 export type DayClock = {
   items: ClockItem[];
-  /** Pozicioni i çastit aktual në rreth, 0–1. */
-  now: number;
-  windowStart: Date;
+  /** Pozicioni i çastit aktual, 0–1; null kur "tani" s'bie në këtë gjysmë. */
+  now: number | null;
+  period: ClockPeriod;
 };
 
 export type ClockTotals = {
@@ -59,108 +63,168 @@ function ms(iso: string | null | undefined): number | null {
   return Number.isNaN(t) ? null : t;
 }
 
-/** Pjesa e ditës si thyesë 0–1, ku 0 është mesnata. */
-export function fractionOfDay(at: number): number {
-  const d = new Date(at);
-  return (d.getHours() * 3600 + d.getMinutes() * 60 + d.getSeconds()) / 86400;
+/* ------------------------------------------------------------------ *
+ * Gjysmat e ditës
+ * ------------------------------------------------------------------ */
+
+/** Gjysma e ditës ku bie `now`. */
+export function periodFor(now: Date = new Date()): ClockPeriod {
+  const isAm = now.getHours() < 12;
+  const start = new Date(now.getFullYear(), now.getMonth(), now.getDate(), isAm ? 0 : 12, 0, 0, 0);
+  return { start, end: new Date(start.getTime() + HALF_DAY_MS), isAm };
 }
 
 /**
- * Blloqet e gjumit që kapërcejnë mesnatën priten në dy copa.
+ * Lëviz `delta` gjysma dite.
  *
- * Pa këtë, një gjumë 22:00–06:00 do të kishte `from` 0.92 dhe `to` 0.25, dhe
- * do të vizatohej mbrapsht rreth 3/4 të rrethit.
+ * Nuk shtohen thjesht 12 orë: kalimi i orës së verës e bën një ditë 23 ose 25
+ * orë, dhe mbledhja e milisekondave do ta zhvendoste fytyrën e orës.
  */
-function pushSleepArcs(out: ClockItem[], entry: SleepEntry, from: number, to: number, minutes: number) {
-  const a = fractionOfDay(from);
-  const b = fractionOfDay(to);
-  // Nje gjume me i gjate se 24 ore mbulon gjithe rrethin.
-  if (to - from >= DAY_MS) {
-    out.push({ kind: "sleep", id: entry.id, key: `${entry.id}-full`, from: 0, to: 1, entry, minutes });
-    return;
-  }
-  if (b > a) {
-    out.push({ kind: "sleep", id: entry.id, key: entry.id, from: a, to: b, entry, minutes });
-    return;
-  }
-  // Kapercen mesnaten.
-  out.push({ kind: "sleep", id: entry.id, key: `${entry.id}-a`, from: a, to: 1, entry, minutes });
-  out.push({ kind: "sleep", id: entry.id, key: `${entry.id}-b`, from: 0, to: b, entry, minutes });
+export function shiftPeriod(period: ClockPeriod, delta: number): ClockPeriod {
+  const halves = (period.isAm ? 0 : 1) + delta;
+  const dayShift = Math.floor(halves / 2);
+  const isAm = ((halves % 2) + 2) % 2 === 0;
+  const start = new Date(
+    period.start.getFullYear(),
+    period.start.getMonth(),
+    period.start.getDate() + dayShift,
+    isAm ? 0 : 12,
+    0,
+    0,
+    0
+  );
+  return { start, end: new Date(start.getTime() + HALF_DAY_MS), isAm };
 }
+
+export function isCurrentPeriod(period: ClockPeriod, now: Date = new Date()): boolean {
+  return periodFor(now).start.getTime() === period.start.getTime();
+}
+
+/** Pozicioni i një çasti brenda gjysmës, 0–1. Null kur bie jashtë saj. */
+export function fractionInPeriod(at: number, period: ClockPeriod): number | null {
+  const start = period.start.getTime();
+  const span = period.end.getTime() - start;
+  const f = (at - start) / span;
+  return f < 0 || f > 1 ? null : f;
+}
+
+/* ------------------------------------------------------------------ *
+ * Ndërtimi
+ * ------------------------------------------------------------------ */
 
 export function buildDayClock(
   feedings: FeedingEntry[],
   sleeps: SleepEntry[],
   diapers: DiaperEntry[],
+  period: ClockPeriod,
   now: Date = new Date()
 ): DayClock {
-  const end = now.getTime();
-  const start = end - DAY_MS;
+  const start = period.start.getTime();
+  const end = period.end.getTime();
+  const span = end - start;
   const items: ClockItem[] = [];
 
   for (const sleep of sleeps) {
     const from = ms(sleep.startAt);
     if (from === null) continue;
-    // Gjumi që vazhdon shtrihet deri tani.
-    const to = ms(sleep.endAt) ?? end;
-    if (to <= start || from >= end) continue;
-    const clippedFrom = Math.max(from, start);
-    const clippedTo = Math.min(to, end);
-    if (clippedTo <= clippedFrom) continue;
-    pushSleepArcs(items, sleep, clippedFrom, clippedTo, Math.round((clippedTo - clippedFrom) / 60000));
+    // Gjumi që vazhdon shtrihet deri tani, jo deri në fund të gjysmës.
+    const to = ms(sleep.endAt) ?? now.getTime();
+    const a = Math.max(from, start);
+    const b = Math.min(to, end);
+    if (b <= a) continue;
+    items.push({
+      kind: "sleep",
+      id: sleep.id,
+      key: sleep.id,
+      from: (a - start) / span,
+      to: (b - start) / span,
+      entry: sleep,
+      minutes: Math.round((b - a) / 60000),
+    });
   }
 
   for (const feeding of feedings) {
     const at = ms(feeding.at);
-    if (at === null || at < start || at > end) continue;
-    items.push({ kind: "feeding", id: feeding.id, key: feeding.id, at: fractionOfDay(at), entry: feeding });
+    if (at === null) continue;
+    const f = fractionInPeriod(at, period);
+    if (f === null) continue;
+    items.push({ kind: "feeding", id: feeding.id, key: feeding.id, at: f, entry: feeding });
   }
 
   for (const diaper of diapers) {
     const at = ms(diaper.at);
-    if (at === null || at < start || at > end) continue;
-    items.push({ kind: "diaper", id: diaper.id, key: diaper.id, at: fractionOfDay(at), entry: diaper });
+    if (at === null) continue;
+    const f = fractionInPeriod(at, period);
+    if (f === null) continue;
+    items.push({ kind: "diaper", id: diaper.id, key: diaper.id, at: f, entry: diaper });
   }
 
-  return { items, now: fractionOfDay(end), windowStart: new Date(start) };
+  return { items, now: fractionInPeriod(now.getTime(), period), period };
 }
 
 export function clockTotals(
   feedings: FeedingEntry[],
   sleeps: SleepEntry[],
   diapers: DiaperEntry[],
+  period: ClockPeriod,
   now: Date = new Date()
 ): ClockTotals {
-  const end = now.getTime();
-  const start = end - DAY_MS;
+  const start = period.start.getTime();
+  const end = period.end.getTime();
 
   let sleepMs = 0;
   let longest = 0;
   for (const sleep of sleeps) {
     const from = ms(sleep.startAt);
     if (from === null) continue;
-    const to = ms(sleep.endAt) ?? end;
+    const to = ms(sleep.endAt) ?? now.getTime();
     const overlap = Math.min(to, end) - Math.max(from, start);
     if (overlap <= 0) continue;
     sleepMs += overlap;
     if (overlap > longest) longest = overlap;
   }
 
-  const inWindow = (iso: string) => {
+  const inPeriod = (iso: string) => {
     const at = ms(iso);
     return at !== null && at >= start && at <= end;
   };
 
-  const diapersIn = diapers.filter((d) => inWindow(d.at));
+  const diapersIn = diapers.filter((d) => inPeriod(d.at));
 
   return {
     sleepMinutes: Math.round(sleepMs / 60000),
     longestSleepMinutes: Math.round(longest / 60000),
-    feedings: feedings.filter((f) => inWindow(f.at)).length,
+    feedings: feedings.filter((f) => inPeriod(f.at)).length,
     diapers: diapersIn.length,
     poops: diapersIn.filter((d) => d.type === "dirty" || d.type === "both").length,
   };
 }
+
+/** Hyrjet e kësaj gjysme dite, për fshirje me një veprim. */
+export function entryRefsInPeriod(
+  feedings: FeedingEntry[],
+  sleeps: SleepEntry[],
+  diapers: DiaperEntry[],
+  period: ClockPeriod
+): { kind: "feeding" | "sleep" | "diaper"; id: string }[] {
+  const start = period.start.getTime();
+  const end = period.end.getTime();
+  const inside = (iso: string | null | undefined) => {
+    const at = ms(iso);
+    return at !== null && at >= start && at <= end;
+  };
+
+  return [
+    ...feedings.filter((f) => inside(f.at)).map((f) => ({ kind: "feeding" as const, id: f.id })),
+    // Gjumi numërohet aty ku nisi, që të mos fshihet dy herë nga dy gjysma.
+    ...sleeps.filter((s) => inside(s.startAt)).map((s) => ({ kind: "sleep" as const, id: s.id })),
+    ...diapers.filter((d) => inside(d.at)).map((d) => ({ kind: "diaper" as const, id: d.id })),
+  ];
+}
+
+/* ------------------------------------------------------------------ *
+ * Prekja
+ * ------------------------------------------------------------------ */
 
 /** Distanca mes dy pozicioneve në rreth: 0.99 dhe 0.01 janë afër, jo larg. */
 export function circularDistance(a: number, b: number): number {
@@ -169,14 +233,11 @@ export function circularDistance(a: number, b: number): number {
 }
 
 /**
- * Çfarë ndodhet te ky kënd i rrethit.
+ * Çfarë ndodhet te ky kënd i një unaze.
  *
  * Shenjat e çastit kontrollohen para blloqeve të gjumit sepse vizatohen mbi
- * to: nëse prindi shtyp mbi një ushqyerje që bie brenda një gjumi, pret të
- * shohë ushqyerjen, jo gjumin nën të.
- *
- * `tolerance` është sa larg lejohet gishti — 0.012 e rrethit janë rreth 17
- * minuta, gjerësia e një gishti mbi një rreth të kësaj madhësie.
+ * to. `tolerance` është sa larg lejohet gishti — 0.012 e rrethit janë rreth
+ * tetë minuta mbi një fytyrë 12-orëshe.
  */
 export function itemAtFraction(
   items: ClockItem[],
@@ -207,15 +268,15 @@ export function itemAtFraction(
   return null;
 }
 
-/** Nje unaze e vetme: cfare mban dhe ku rri. */
+/** Një unazë e vetme: çfarë mban dhe ku rri. */
 export type RingBand = { kind: ClockKind; radius: number; width: number };
 
 /**
- * Cila unaze u prek.
+ * Cila unazë u prek.
  *
- * Merret ajo me e afert, jo ajo qe e permban saktesisht prekjen: mes dy
- * unazave ka hapesire, dhe nje gisht qe bie ne hapesire duhet te kape
- * unazen me te afert, jo asgje. `slack` eshte sa larg buzes lejohet.
+ * Merret ajo më e afërt, jo ajo që e përmban saktësisht prekjen: mes dy
+ * unazave ka hapësirë, dhe një gisht që bie në hapësirë duhet të kapë unazën
+ * më të afërt, jo asgjë. `slack` është sa larg buzës lejohet.
  */
 export function ringAtRadius(bands: RingBand[], distance: number, slack = 10): RingBand | null {
   let best: RingBand | null = null;
@@ -234,26 +295,26 @@ export function ringAtRadius(bands: RingBand[], distance: number, slack = 10): R
 
 /** Këndi i një prekjeje brenda rrethit, si thyesë 0–1 me 0 lart. */
 export function fractionFromTouch(x: number, y: number, size: number): number {
-  const cx = size / 2;
-  const cy = size / 2;
+  const c = size / 2;
   // atan2 nis nga djathtas dhe shkon kundër akrepave; ora nis lart dhe shkon
   // me akrepat, prandaj boshtet ndërrohen.
-  const angle = Math.atan2(x - cx, cy - y);
+  const angle = Math.atan2(x - c, c - y);
   const fraction = angle / (Math.PI * 2);
   return fraction < 0 ? fraction + 1 : fraction;
 }
 
 /** Sa larg qendrës ra prekja, në piksele. */
 export function distanceFromTouch(x: number, y: number, size: number): number {
-  const cx = size / 2;
-  const cy = size / 2;
-  return Math.hypot(x - cx, y - cy);
+  const c = size / 2;
+  return Math.hypot(x - c, y - c);
 }
 
-/** Pjesët e rrethit që janë natë — pozicione fikse, sepse ora nuk rrëshqet. */
-export function nightArcs(): { from: number; to: number }[] {
-  return [
-    { from: NIGHT_FROM / 24, to: 1 },
-    { from: 0, to: NIGHT_TO / 24 },
-  ];
+/**
+ * Pjesët e gjysmës që janë natë.
+ *
+ * Nata është 21:00–06:00. Paradite zë orët 0–6, pra gjysmën e parë të
+ * fytyrës; pasdite zë orët 21–24, pra çerekun e fundit.
+ */
+export function nightArcs(period: ClockPeriod): { from: number; to: number }[] {
+  return period.isAm ? [{ from: 0, to: 6 / 12 }] : [{ from: 9 / 12, to: 1 }];
 }

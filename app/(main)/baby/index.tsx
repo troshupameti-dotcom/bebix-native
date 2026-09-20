@@ -23,7 +23,13 @@ import { useThemeColors } from "@/lib/theme/useThemeColors";
 import { NowCard } from "@/components/baby/NowCard";
 import { DayClock } from "@/components/baby/DayClock";
 import { liveStatus, durationLabel } from "@/lib/baby/dayStats";
-import { buildDayClock, clockTotals } from "@/lib/baby/dayClock";
+import {
+  buildDayClock,
+  clockTotals,
+  entryRefsInPeriod,
+  periodFor,
+  type ClockPeriod,
+} from "@/lib/baby/dayClock";
 import { groupByDay, dayLabelKind, type DiaryEntry, type DiaryKind } from "@/lib/baby/diary";
 import type { TranslationKey } from "@/lib/i18n/translations";
 import { useInbox } from "@/lib/notifications/useInbox";
@@ -78,8 +84,27 @@ export default function BabyProfileScreen() {
   const feedings = active(b.feedingLog);
   const sleeps = active(b.sleepLog);
   const diapers = active(b.diaperLog);
-  const clock = useMemo(() => buildDayClock(feedings, sleeps, diapers), [feedings, sleeps, diapers]);
-  const totals = useMemo(() => clockTotals(feedings, sleeps, diapers), [feedings, sleeps, diapers]);
+  // Gjysma e ditës që po shihet te ora. Nis te e tanishmja dhe ndryshon
+  // vetëm kur prindi lëviz vetë.
+  const [clockPeriod, setClockPeriod] = useState<ClockPeriod>(() => periodFor());
+  const clock = useMemo(
+    () => buildDayClock(feedings, sleeps, diapers, clockPeriod),
+    [feedings, sleeps, diapers, clockPeriod]
+  );
+  const totals = useMemo(
+    () => clockTotals(feedings, sleeps, diapers, clockPeriod),
+    [feedings, sleeps, diapers, clockPeriod]
+  );
+  const clockRefs = useMemo(
+    () => entryRefsInPeriod(feedings, sleeps, diapers, clockPeriod),
+    [feedings, sleeps, diapers, clockPeriod]
+  );
+
+  function deleteClockPeriod() {
+    haptics.warning();
+    baby.bulkDelete(clockRefs);
+    showToast(t("deleted_toast"), () => baby.bulkRestore(clockRefs));
+  }
   const status = useMemo(() => liveStatus(feedings, sleeps, diapers), [feedings, sleeps, diapers]);
   const { unreadCount } = useInbox();
 
@@ -475,7 +500,14 @@ export default function BabyProfileScreen() {
                 nga bebi dhe e perzier me produkte. */}
             <NowCard status={status} onToggleSleep={toggleSleep} />
 
-            <DayClock clock={clock} totals={totals} gender={profile.babyGender} />
+            <DayClock
+              clock={clock}
+              totals={totals}
+              gender={profile.babyGender}
+              onChangePeriod={setClockPeriod}
+              onDeletePeriod={deleteClockPeriod}
+              deletableCount={clockRefs.length}
+            />
 
             {/* Sugjerim i vetëm, kontekstual — jo 8 butona */}
             {suggestion && (
