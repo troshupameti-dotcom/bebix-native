@@ -11,6 +11,12 @@ export type BabyProfile = {
   babyDob: string | null;
   babyGender: BabyGender;
   babyPhoto: string | null;
+  /**
+   * Rruga e qendrueshme ne Supabase Storage. `babyPhoto` mban vetem ate qe
+   * shfaqet tani (URI lokale ose URL e nenshkruar) dhe mund te skadoje a te
+   * fshihet me cache-in; kjo mbetet dhe e rikthen foton ne cdo pajisje.
+   */
+  babyPhotoPath: string | null;
   bloodType: BloodType;
   allergies: string;
   pediatrician: string;
@@ -19,6 +25,7 @@ export type BabyProfile = {
   parentName: string | null;
   relation: ParentRelation;
   parentPhoto: string | null;
+  parentPhotoPath: string | null;
 };
 
 export type FavoriteItem = {
@@ -67,6 +74,7 @@ export const emptyProfile: BabyProfile = {
   babyDob: null,
   babyGender: null,
   babyPhoto: null,
+  babyPhotoPath: null,
   bloodType: null,
   allergies: "",
   pediatrician: "",
@@ -75,6 +83,7 @@ export const emptyProfile: BabyProfile = {
   parentName: null,
   relation: null,
   parentPhoto: null,
+  parentPhotoPath: null,
 };
 
 export const initialAppState: AppState = {

@@ -9,6 +9,8 @@ import { shadows } from "@/lib/shadows";
 import { useAuthUser } from "@/lib/hooks/useAuthUser";
 import { supabase } from "@/lib/supabase/client";
 import { BackButton, goBackOr } from "@/components/ui/BackButton";
+import { uploadProfilePhoto } from "@/lib/baby/profilePhotos";
+import { useCurrentUserId } from "@/lib/hooks/useCurrentUserId";
 import { useTranslation } from "@/lib/i18n/LanguageContext";
 import type { TranslationKey } from "@/lib/i18n/translations";
 
@@ -27,10 +29,12 @@ const PROVIDER_KEYS: Record<string, TranslationKey> = {
 export default function ProfileScreen() {
   const { state, updateProfile } = useAppState();
   const { t } = useTranslation();
+  const userId = useCurrentUserId();
   const { email, provider, loading: authLoading } = useAuthUser();
   const [name, setName] = useState(state.profile.parentName || "");
   const [relation, setRelation] = useState<ParentRelation>(state.profile.relation);
   const [photo, setPhoto] = useState(state.profile.parentPhoto);
+  const [photoPath, setPhotoPath] = useState(state.profile.parentPhotoPath);
 
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
@@ -41,11 +45,19 @@ export default function ProfileScreen() {
     const perm = await ImagePicker.requestMediaLibraryPermissionsAsync();
     if (!perm.granted) return;
     const result = await ImagePicker.launchImageLibraryAsync({ mediaTypes: ImagePicker.MediaTypeOptions.Images, quality: 0.8, allowsEditing: true, aspect: [1, 1] });
-    if (!result.canceled) setPhoto(result.assets[0].uri);
+    if (result.canceled || !result.assets[0]) return;
+
+    // Shfaqet menjehere nga cache-i, por ngarkohet sakaq: URI-ja e
+    // ImagePicker vdes bashke me cache-in e app-it.
+    const localUri = result.assets[0].uri;
+    setPhoto(localUri);
+    if (!userId) return;
+    const path = await uploadProfilePhoto(userId, "parent", localUri);
+    if (path) setPhotoPath(path);
   };
 
   const save = () => {
-    updateProfile({ parentName: name.trim() || null, relation, parentPhoto: photo });
+    updateProfile({ parentName: name.trim() || null, relation, parentPhoto: photo, parentPhotoPath: photoPath });
     goBackOr("/(main)/more");
   };
 

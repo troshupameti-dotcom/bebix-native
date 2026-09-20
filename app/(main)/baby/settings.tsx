@@ -13,6 +13,8 @@ import { shadows } from "@/lib/shadows";
 import { BabyGender, BloodType } from "@/lib/state/types";
 import { syncBabyProfileToSupabase } from "@/lib/babySync";
 import { BackButton, goBackOr } from "@/components/ui/BackButton";
+import { uploadProfilePhoto } from "@/lib/baby/profilePhotos";
+import { useCurrentUserId } from "@/lib/hooks/useCurrentUserId";
 
 const GENDERS: BabyGender[] = ["girl", "boy", "other"];
 const BLOOD_TYPES: BloodType[] = ["0+", "0-", "A+", "A-", "B+", "B-", "AB+", "AB-"];
@@ -41,6 +43,7 @@ function formatDobDisplay(d: Date | null): string {
 
 export default function BabySettingsScreen() {
   const { t } = useTranslation();
+  const userId = useCurrentUserId();
   const { state, updateProfile, baby, resetBabyData } = useAppState();
   const { profile } = state;
 
@@ -70,7 +73,17 @@ export default function BabySettingsScreen() {
       allowsEditing: true,
       aspect: [1, 1],
     });
-    if (!result.canceled && result.assets[0]) updateProfile({ babyPhoto: result.assets[0].uri });
+    if (result.canceled || !result.assets[0]) return;
+
+    // URI-ja e ImagePicker rri në dosjen `cache` të app-it, që sistemi e
+    // pastron kur do. Shfaqet menjëherë prej andej, por fotoja ngarkohet
+    // sakaq — përndryshe zhduket pa asnjë shenjë kur cache-i pastrohet.
+    const localUri = result.assets[0].uri;
+    updateProfile({ babyPhoto: localUri });
+
+    if (!userId) return;
+    const path = await uploadProfilePhoto(userId, "baby", localUri);
+    if (path) updateProfile({ babyPhotoPath: path });
   }
 
   function openDobPicker() {

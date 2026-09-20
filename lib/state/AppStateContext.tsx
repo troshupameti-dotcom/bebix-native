@@ -3,6 +3,7 @@ import { useColorScheme } from "react-native";
 import { useColorScheme as useNativeWindColorScheme } from "nativewind";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { syncNotificationSettings } from "@/lib/notifications/settingsSync";
+import { signedUrlForProfilePhoto } from "@/lib/baby/profilePhotos";
 import { migrateNotificationPrefs, type NotificationKey } from "@/lib/notifications/catalog";
 import {
   AppState,
@@ -254,6 +255,35 @@ export function AppStateProvider({ children }: { children: ReactNode }) {
     if (!hydrated) return;
     void syncNotificationSettings(state.notificationPrefs);
   }, [hydrated, state.notificationPrefs]);
+
+  // Fotot e profilit: URI-ja e ruajtur tregon nga dosja `cache` e app-it,
+  // qe sistemi e pastron kur do dhe qe zhduket ne ri-instalim. Nese ka nje
+  // rruge ne Storage, ajo eshte burimi i vertete — kerkohet nje URL e re
+  // sapo hapet app-i, qe fotoja te mos "zhduket" pa asnje shenje.
+  useEffect(() => {
+    if (!hydrated) return;
+    let alive = true;
+
+    const wanted: { path: string | null; key: "babyPhoto" | "parentPhoto" }[] = [
+      { path: state.profile.babyPhotoPath, key: "babyPhoto" },
+      { path: state.profile.parentPhotoPath, key: "parentPhoto" },
+    ];
+
+    void (async () => {
+      for (const { path, key } of wanted) {
+        if (!path) continue;
+        const url = await signedUrlForProfilePhoto(path);
+        if (alive && url) dispatch({ type: "UPDATE_PROFILE", value: { [key]: url } });
+      }
+    })();
+
+    return () => {
+      alive = false;
+    };
+    // Vetem nje here pas ngarkimit: URL-ja vlen nje jave dhe rifreskohet ne
+    // hapjen tjeter. Varesia te vete rruget do te rinisej ne cdo ndryshim.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [hydrated]);
 
   // Real dark mode: whenever the user's chosen darkMode value changes,
   // sync NativeWind's color scheme so every `dark:` class in the app
