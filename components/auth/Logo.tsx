@@ -10,7 +10,7 @@ type LogoProps = {
 // Permasat e vertetea te asetit. Kutia ndjek ato, qe shenja te mos dale
 // me e vogel se sa kerkohet dhe te mos rrije e shtyre nga qendra.
 const ASSET_WIDTH = 832;
-const ASSET_HEIGHT = 827;
+const ASSET_HEIGHT = 840;
 
 export function Logo({ size = "lg" }: LogoProps) {
   const { isDark } = useThemeColors();
