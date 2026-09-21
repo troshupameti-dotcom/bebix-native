@@ -90,8 +90,26 @@ function emojiForCategory(icon: string | null | undefined): string | null {
   if (!icon) return null;
   if (VALID_ICONS.has(icon as IconName)) return null;
   const trimmed = icon.trim();
+  if (isImageUrl(trimmed)) return null;
   // Cdo gje jo-ASCII trajtohet si emoji; emrat e ikonave jane ASCII.
   return trimmed && /[^\u0000-\u007F]/.test(trimmed) ? trimmed : null;
+}
+
+/**
+ * Fusha `icon` mban tashme ose nje emer ikone, ose nje emoji, ose nje URL.
+ *
+ * Tre kuptime ne nje kolone eshte nje me shume se sa do te doja, por kjo i
+ * lejon panelit ta nderroje figuren e nje kategorie duke ngjitur nje link,
+ * pikerisht si behet me produktet, pa migrim skeme.
+ */
+function isImageUrl(value: string | null | undefined): boolean {
+  if (!value) return false;
+  return /^https?:\/\//i.test(value.trim());
+}
+
+function imageUrlForCategory(icon: string | null | undefined): string | null {
+  const trimmed = icon?.trim() ?? "";
+  return isImageUrl(trimmed) ? trimmed : null;
 }
 
 const VALID_ICONS = new Set<IconName>([
@@ -153,6 +171,8 @@ export type ShopCategory = {
   icon: IconName;
   /** Emoji nga paneli; kur eshte null, perdoret `icon`. */
   emoji: string | null;
+  /** URL figure nga paneli; ka perparesi mbi figuren e app-it. */
+  imageUrl: string | null;
 };
 
 let categoryCache: ShopCategory[] | null = null;
@@ -167,6 +187,7 @@ export async function fetchCategories(): Promise<ShopCategory[]> {
     label: c.label,
     icon: iconForCategory(c.icon),
     emoji: emojiForCategory(c.icon),
+    imageUrl: imageUrlForCategory(c.icon),
   }));
   return categoryCache;
 }
