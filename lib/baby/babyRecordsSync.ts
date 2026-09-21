@@ -11,6 +11,7 @@ import {
   SyncedRecordKind,
 } from "@/lib/baby/recordTypes";
 import { isLocalFileUri, signedUrlForMoment, uploadMomentFile } from "@/lib/baby/momentPhotos";
+import { toTimestamp } from "@/lib/baby/timestamps";
 
 const TABLE = "baby_records";
 const LAST_SYNC_KEY = "bebix_baby_records_last_sync";
@@ -57,7 +58,7 @@ function toRow(userId: string, item: AnyBabyRecord): BabyRecordRow {
     baby_id: null,
     kind,
     payload,
-    occurred_at: typeof occurredRaw === "string" && occurredRaw ? occurredRaw : null,
+    occurred_at: toTimestamp(occurredRaw),
     created_at: record.createdAt,
     updated_at: record.updatedAt,
     edit_count: record.editCount,
