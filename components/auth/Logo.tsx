@@ -7,14 +7,24 @@ type LogoProps = {
   size?: "md" | "lg";
 };
 
-// Permasat e vertetea te asetit. Kutia ndjek ato, qe shenja te mos dale
-// me e vogel se sa kerkohet dhe te mos rrije e shtyre nga qendra.
-const ASSET_WIDTH = 832;
-const ASSET_HEIGHT = 840;
+/**
+ * Fjala "bebix", e njëjta si te webi.
+ *
+ * Është figurë, jo tekst: shkronjat e logos janë të vizatuara dhe asnjë
+ * font nuk ua jep atë trashësi të rrumbullakët. Sfondi është i tejdukshëm,
+ * pra fjala rri drejtpërdrejt mbi ngjyrën e ekranit — më parë asetit i
+ * vinte pas një drejtkëndësh kremi, i cili dukej si njollë sapo sfondi
+ * ndryshonte.
+ *
+ * Tema e errët merr variantin ku shkronjat janë krem: navy-ja e ditës
+ * zhduket mbi sfondin e natës. "x"-i blu mbetet i njëjtë në të dyja.
+ */
+const ASSET_WIDTH = 804;
+const ASSET_HEIGHT = 229;
 
 export function Logo({ size = "lg" }: LogoProps) {
   const { isDark } = useThemeColors();
-  const width = size === "lg" ? 240 : 180;
+  const width = size === "lg" ? 200 : 160;
 
   return (
     <MotiView
@@ -24,12 +34,10 @@ export function Logo({ size = "lg" }: LogoProps) {
       className="items-center"
     >
       <Image
-        // Navy-ja e fjales "bebix" zhduket mbi sfondin e erret, ndaj tema e
-        // erret merr nje variant ku shkronjat jane krem.
         source={
           isDark
-            ? require("@/assets/images/logo-full-dark.png")
-            : require("@/assets/images/logo-full.png")
+            ? require("@/assets/images/wordmark-dark.png")
+            : require("@/assets/images/wordmark.png")
         }
         style={{ width, height: (width * ASSET_HEIGHT) / ASSET_WIDTH }}
         contentFit="contain"

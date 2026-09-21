@@ -39,6 +39,20 @@ export function SocialAuthRow({ onEmailSelect, onSignedIn, beforeStart }: Social
   // Ref (jo state) që dy shtypje të shpejta të mos hapin dy sesione OAuth.
   const inFlight = useRef(false);
 
+  /**
+   * Asnje mesazh bosh.
+   *
+   * Kur kthimi deshton, Supabase ndonjehere nuk jep fare tekst, dhe alert-i
+   * dilte me "null" — gje qe s'i thote perdoruesit asgje dhe as neve. Ketu
+   * cdo gabim pa tekst zevendesohet me shkakun e vertete me te shpeshte:
+   * adresa e kthimit nuk eshte ne listen e lejuar te Supabase-it.
+   */
+  function describe(message: string | null | undefined): string {
+    const text = typeof message === "string" ? message.trim() : "";
+    if (!text || text === "null" || text === "undefined") return t("auth_redirect_blocked");
+    return text;
+  }
+
   async function handleOAuth(provider: "apple" | "google") {
     if (inFlight.current) return;
     if (beforeStart && !beforeStart()) return;
@@ -59,7 +73,7 @@ export function SocialAuthRow({ onEmailSelect, onSignedIn, beforeStart }: Social
       });
 
       if (error || !data?.url) {
-        Alert.alert(t("mod_error_title"), error?.message ?? t("auth_open_failed"));
+        Alert.alert(t("mod_error_title"), describe(error?.message) || t("auth_open_failed"));
         return;
       }
 
@@ -74,13 +88,13 @@ export function SocialAuthRow({ onEmailSelect, onSignedIn, beforeStart }: Social
       let userId: string | undefined;
 
       if (parsed.type === "error") {
-        Alert.alert(t("mod_error_title"), parsed.message);
+        Alert.alert(t("mod_error_title"), describe(parsed.message));
         return;
       } else if (parsed.type === "code") {
         const { data: exchanged, error: exchangeError } =
           await supabase.auth.exchangeCodeForSession(parsed.code);
         if (exchangeError) {
-          Alert.alert(t("mod_error_title"), exchangeError.message);
+          Alert.alert(t("mod_error_title"), describe(exchangeError.message));
           return;
         }
         userId = exchanged.user?.id;
@@ -90,7 +104,7 @@ export function SocialAuthRow({ onEmailSelect, onSignedIn, beforeStart }: Social
           refresh_token: parsed.refreshToken,
         });
         if (sessionError) {
-          Alert.alert(t("mod_error_title"), sessionError.message);
+          Alert.alert(t("mod_error_title"), describe(sessionError.message));
           return;
         }
         userId = sessionData.user?.id;
@@ -103,7 +117,7 @@ export function SocialAuthRow({ onEmailSelect, onSignedIn, beforeStart }: Social
         await onSignedIn?.(userId);
       }
     } catch (e) {
-      Alert.alert(t("mod_error_title"), e instanceof Error ? e.message : t("auth_login_failed"));
+      Alert.alert(t("mod_error_title"), e instanceof Error ? describe(e.message) : t("auth_login_failed"));
     } finally {
       inFlight.current = false;
     }
