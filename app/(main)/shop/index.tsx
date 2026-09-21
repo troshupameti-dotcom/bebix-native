@@ -5,7 +5,6 @@ import { useRouter } from "expo-router";
 import { useAppState } from "@/lib/state/AppStateContext";
 import { useTranslation } from "@/lib/i18n/LanguageContext";
 import { Icon } from "@/components/ui/Icon";
-import { categoryPhoto } from "@/lib/shop/categoryPhotos";
 import { useThemeColors } from "@/lib/theme/useThemeColors";
 import { Product, Brand } from "@/lib/homeContent";
 import {
@@ -14,7 +13,6 @@ import {
 } from "@/lib/shopData";
 import { ProductCard, ProductCardSkeleton } from "@/components/ProductCard";
 import { track } from "@/lib/analytics/posthog";
-import { reportError } from "@/lib/errors/reporter";
 
 const PADDING_X = 20;
 const GRID_GAP = 12;
@@ -78,8 +76,6 @@ export default function ShopScreen() {
   const [brands, setBrands] = useState<Brand[]>([]);
   const [onSale, setOnSale] = useState<Product[]>([]);
   const [categories, setCategories] = useState<ShopCategory[]>([]);
-  // Gabimet e tri shiritave dytesore, secila me vete.
-  const [sideErrors, setSideErrors] = useState<Record<string, string>>({});
 
   // Çdo ndryshim filtri nis një kërkesë; përgjigjet e vona nga filtrat e
   // mëparshëm duhen injoruar, përndryshe lista "kërcen" mbrapsht.
@@ -136,37 +132,23 @@ export default function ShopScreen() {
   }, [loadingMore, loading, hasMore, page, search, category, sort]);
 
 
-  // Markat, kategoritë dhe ofertat ngarkohen një herë; nuk varen nga filtrat.
-  //
-  // Tri kërkesa të pavarura, jo një `Promise.all` i vetëm. Më parë ishin
-  // bashkë, dhe `catch`-i i përbashkët i fshihte të trija nëse dështonte
-  // njëra: shiriti dilte bosh pa asnjë shenjë se përse. Tash secila rri më
-  // vete, dhe gabimi shihet në ekran në vend që të zhduket.
+  // Markat dhe ofertat ngarkohen një herë; nuk varen nga filtrat.
   useEffect(() => {
     let active = true;
-
-    function loadSide<T>(
-      what: string,
-      run: () => Promise<T>,
-      apply: (value: T) => void
-    ) {
-      run()
-        .then((value) => {
-          if (active) apply(value);
-        })
-        .catch((e: unknown) => {
-          reportError(e, `shop_${what}`);
-          const message = e instanceof Error ? e.message : String(e);
-          if (active) setSideErrors((prev) => ({ ...prev, [what]: message }));
-        });
-    }
-
-    loadSide("categories", fetchCategories, setCategories);
-    loadSide("brands", fetchBrands, setBrands);
-    loadSide("onSale", () => fetchProductPage({ onSaleOnly: true, pageSize: 8 }), (r) =>
-      setOnSale(r.items)
-    );
-
+    Promise.all([
+      fetchBrands(),
+      fetchProductPage({ onSaleOnly: true, pageSize: 8 }),
+      fetchCategories(),
+    ])
+      .then(([brandList, sale, categoryList]) => {
+        if (!active) return;
+        setBrands(brandList);
+        setOnSale(sale.items);
+        setCategories(categoryList);
+      })
+      .catch(() => {
+        // Seksione dytësore: nëse dështojnë, grid-i kryesor mjafton.
+      });
     track("shop_opened");
     return () => { active = false; };
   }, []);
@@ -174,18 +156,6 @@ export default function ShopScreen() {
 
   const renderHeader = useCallback(() => (
     <View>
-      {/* Kur një shirit dështon, arsyeja shihet. Një shirit që thjesht
-          mungon nuk dallohet dot nga një shirit bosh. */}
-      {Object.keys(sideErrors).length > 0 && (
-        <View className="mx-5 mb-3 rounded-xl2 border border-orange/30 bg-orange-bg px-4 py-3">
-          {Object.entries(sideErrors).map(([what, message]) => (
-            <Text key={what} className="font-body text-[11.5px] text-orange" selectable>
-              {what}: {message}
-            </Text>
-          ))}
-        </View>
-      )}
-
       {/* Kategorite vijne nga paneli, jo nga kodi: mund te shtohen pa
           prekur app-in, prandaj shiriti rreshqet ne vend te nje rrjeti
           me numer te fiksuar. */}
@@ -200,31 +170,27 @@ export default function ShopScreen() {
             ...categories,
           ].map((cat) => {
             const isActive = category === cat.key;
-            const photo = categoryPhoto(cat.key, "imageUrl" in cat ? cat.imageUrl : null);
             return (
               <Pressable
                 key={cat.id}
                 onPress={() => setCategory(isActive && cat.key !== "all" ? "all" : cat.key)}
                 accessibilityRole="button"
                 accessibilityState={{ selected: isActive }}
-                className="w-[88px] items-center"
+                className="w-[80px] items-center"
               >
                 <View
-                  className={`h-[76px] w-[76px] items-center justify-center overflow-hidden rounded-2xl ${
+                  className={`h-[64px] w-[64px] items-center justify-center overflow-hidden rounded-2xl ${
                     isActive ? "border-2 border-ink bg-ink" : "bg-cream-soft"
                   }`}
                 >
-                  {/* Foto e vërtetë kur ka; emoji kur s'ka; ikona si rezervë
-                      e fundit. Kategoritë e reja nga paneli s'kanë foto në
-                      app dhe bien te dy hapat e tjerë pa u prishur asgjë.
+                  {/* Emoji-t mbajne ngjyren e vet dhe dallohen nga njeri-tjetri;
+                      ikona e njejte per cdo kategori nuk tregonte asgje.
 
                       Emoji-ja mbush katrorin. `includeFontPadding` dhe
                       `textAlignVertical` jane per Android, ku pa to teksti
                       merr mbushje shtese lart e poshte dhe glifi pritet kur
                       `lineHeight` eshte sa kutia. */}
-                  {photo ? (
-                    <Image source={photo} style={{ width: "100%", height: "100%" }} resizeMode="cover" />
-                  ) : cat.emoji ? (
+                  {cat.emoji ? (
                     <Text
                       style={{
                         fontSize: 52,
@@ -258,15 +224,15 @@ export default function ShopScreen() {
           <Text className="font-bodySemibold text-base text-ink px-5 mt-6 mb-3">{t("shop_brands")}</Text>
           <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ paddingHorizontal: 20 }}>
             {brands.map((b) => (
-              <Pressable key={b.id} onPress={() => router.push(`/shop/brand/${b.id}`)} className="mr-3 w-[88px] items-center">
-                <View className="h-[76px] w-[76px] items-center justify-center overflow-hidden rounded-2xl border border-cream-line bg-surface">
+              <Pressable key={b.id} onPress={() => router.push(`/shop/brand/${b.id}`)} className="items-center mr-4 w-[72px]">
+                <View className="w-[72px] h-[72px] rounded-2xl bg-surface border border-cream-line items-center justify-center overflow-hidden">
                   {b.logoUrl ? (
                     <Image source={{ uri: b.logoUrl }} className="w-full h-full" resizeMode="cover" />
                   ) : (
-                    <Icon name={b.icon} size={28} color={theme.inkFaint} />
+                    <Icon name={b.icon} size={24} color={theme.inkFaint} />
                   )}
                 </View>
-                <Text className="mt-1.5 text-center font-bodyMedium text-[11px] text-ink-soft" numberOfLines={1}>{b.name}</Text>
+                <Text className="font-body text-[11px] text-ink-soft text-center mt-2" numberOfLines={1}>{b.name}</Text>
               </Pressable>
             ))}
           </ScrollView>
@@ -308,7 +274,7 @@ export default function ShopScreen() {
         </ScrollView>
       )}
     </View>
-  ), [brands, onSale, categories, sideErrors, category, isFiltering, showSort, sort, total, router, t, theme]);
+  ), [brands, onSale, categories, category, isFiltering, showSort, sort, total, router, t, theme]);
 
   const renderFooter = useCallback(() => {
     if (loadingMore) {
