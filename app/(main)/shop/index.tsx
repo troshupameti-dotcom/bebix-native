@@ -14,6 +14,7 @@ import {
 } from "@/lib/shopData";
 import { ProductCard, ProductCardSkeleton } from "@/components/ProductCard";
 import { track } from "@/lib/analytics/posthog";
+import { reportError } from "@/lib/errors/reporter";
 
 const PADDING_X = 20;
 const GRID_GAP = 12;
@@ -77,6 +78,8 @@ export default function ShopScreen() {
   const [brands, setBrands] = useState<Brand[]>([]);
   const [onSale, setOnSale] = useState<Product[]>([]);
   const [categories, setCategories] = useState<ShopCategory[]>([]);
+  // Gabimet e tri shiritave dytesore, secila me vete.
+  const [sideErrors, setSideErrors] = useState<Record<string, string>>({});
 
   // Çdo ndryshim filtri nis një kërkesë; përgjigjet e vona nga filtrat e
   // mëparshëm duhen injoruar, përndryshe lista "kërcen" mbrapsht.
@@ -133,23 +136,37 @@ export default function ShopScreen() {
   }, [loadingMore, loading, hasMore, page, search, category, sort]);
 
 
-  // Markat dhe ofertat ngarkohen një herë; nuk varen nga filtrat.
+  // Markat, kategoritë dhe ofertat ngarkohen një herë; nuk varen nga filtrat.
+  //
+  // Tri kërkesa të pavarura, jo një `Promise.all` i vetëm. Më parë ishin
+  // bashkë, dhe `catch`-i i përbashkët i fshihte të trija nëse dështonte
+  // njëra: shiriti dilte bosh pa asnjë shenjë se përse. Tash secila rri më
+  // vete, dhe gabimi shihet në ekran në vend që të zhduket.
   useEffect(() => {
     let active = true;
-    Promise.all([
-      fetchBrands(),
-      fetchProductPage({ onSaleOnly: true, pageSize: 8 }),
-      fetchCategories(),
-    ])
-      .then(([brandList, sale, categoryList]) => {
-        if (!active) return;
-        setBrands(brandList);
-        setOnSale(sale.items);
-        setCategories(categoryList);
-      })
-      .catch(() => {
-        // Seksione dytësore: nëse dështojnë, grid-i kryesor mjafton.
-      });
+
+    function loadSide<T>(
+      what: string,
+      run: () => Promise<T>,
+      apply: (value: T) => void
+    ) {
+      run()
+        .then((value) => {
+          if (active) apply(value);
+        })
+        .catch((e: unknown) => {
+          reportError(e, `shop_${what}`);
+          const message = e instanceof Error ? e.message : String(e);
+          if (active) setSideErrors((prev) => ({ ...prev, [what]: message }));
+        });
+    }
+
+    loadSide("categories", fetchCategories, setCategories);
+    loadSide("brands", fetchBrands, setBrands);
+    loadSide("onSale", () => fetchProductPage({ onSaleOnly: true, pageSize: 8 }), (r) =>
+      setOnSale(r.items)
+    );
+
     track("shop_opened");
     return () => { active = false; };
   }, []);
@@ -157,6 +174,18 @@ export default function ShopScreen() {
 
   const renderHeader = useCallback(() => (
     <View>
+      {/* Kur një shirit dështon, arsyeja shihet. Një shirit që thjesht
+          mungon nuk dallohet dot nga një shirit bosh. */}
+      {Object.keys(sideErrors).length > 0 && (
+        <View className="mx-5 mb-3 rounded-xl2 border border-orange/30 bg-orange-bg px-4 py-3">
+          {Object.entries(sideErrors).map(([what, message]) => (
+            <Text key={what} className="font-body text-[11.5px] text-orange" selectable>
+              {what}: {message}
+            </Text>
+          ))}
+        </View>
+      )}
+
       {/* Kategorite vijne nga paneli, jo nga kodi: mund te shtohen pa
           prekur app-in, prandaj shiriti rreshqet ne vend te nje rrjeti
           me numer te fiksuar. */}
@@ -279,7 +308,7 @@ export default function ShopScreen() {
         </ScrollView>
       )}
     </View>
-  ), [brands, onSale, categories, category, isFiltering, showSort, sort, total, router, t, theme]);
+  ), [brands, onSale, categories, sideErrors, category, isFiltering, showSort, sort, total, router, t, theme]);
 
   const renderFooter = useCallback(() => {
     if (loadingMore) {
