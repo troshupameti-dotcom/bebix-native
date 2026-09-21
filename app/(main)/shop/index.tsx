@@ -178,10 +178,10 @@ export default function ShopScreen() {
                 onPress={() => setCategory(isActive && cat.key !== "all" ? "all" : cat.key)}
                 accessibilityRole="button"
                 accessibilityState={{ selected: isActive }}
-                className="w-[80px] items-center"
+                className="w-[88px] items-center"
               >
                 <View
-                  className={`h-[64px] w-[64px] items-center justify-center overflow-hidden rounded-2xl ${
+                  className={`h-[76px] w-[76px] items-center justify-center overflow-hidden rounded-2xl ${
                     isActive ? "border-2 border-ink bg-ink" : "bg-cream-soft"
                   }`}
                 >
@@ -229,15 +229,15 @@ export default function ShopScreen() {
           <Text className="font-bodySemibold text-base text-ink px-5 mt-6 mb-3">{t("shop_brands")}</Text>
           <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ paddingHorizontal: 20 }}>
             {brands.map((b) => (
-              <Pressable key={b.id} onPress={() => router.push(`/shop/brand/${b.id}`)} className="items-center mr-4 w-[72px]">
-                <View className="w-[72px] h-[72px] rounded-2xl bg-surface border border-cream-line items-center justify-center overflow-hidden">
+              <Pressable key={b.id} onPress={() => router.push(`/shop/brand/${b.id}`)} className="mr-3 w-[88px] items-center">
+                <View className="h-[76px] w-[76px] items-center justify-center overflow-hidden rounded-2xl border border-cream-line bg-surface">
                   {b.logoUrl ? (
                     <Image source={{ uri: b.logoUrl }} className="w-full h-full" resizeMode="cover" />
                   ) : (
-                    <Icon name={b.icon} size={24} color={theme.inkFaint} />
+                    <Icon name={b.icon} size={28} color={theme.inkFaint} />
                   )}
                 </View>
-                <Text className="font-body text-[11px] text-ink-soft text-center mt-2" numberOfLines={1}>{b.name}</Text>
+                <Text className="mt-1.5 text-center font-bodyMedium text-[11px] text-ink-soft" numberOfLines={1}>{b.name}</Text>
               </Pressable>
             ))}
           </ScrollView>
