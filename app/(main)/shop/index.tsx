@@ -5,6 +5,7 @@ import { useRouter } from "expo-router";
 import { useAppState } from "@/lib/state/AppStateContext";
 import { useTranslation } from "@/lib/i18n/LanguageContext";
 import { Icon } from "@/components/ui/Icon";
+import { categoryPhoto } from "@/lib/shop/categoryPhotos";
 import { useThemeColors } from "@/lib/theme/useThemeColors";
 import { Product, Brand } from "@/lib/homeContent";
 import {
@@ -170,6 +171,7 @@ export default function ShopScreen() {
             ...categories,
           ].map((cat) => {
             const isActive = category === cat.key;
+            const photo = categoryPhoto(cat.key, "imageUrl" in cat ? cat.imageUrl : null);
             return (
               <Pressable
                 key={cat.id}
@@ -183,14 +185,17 @@ export default function ShopScreen() {
                     isActive ? "border-2 border-ink bg-ink" : "bg-cream-soft"
                   }`}
                 >
-                  {/* Emoji-t mbajne ngjyren e vet dhe dallohen nga njeri-tjetri;
-                      ikona e njejte per cdo kategori nuk tregonte asgje.
+                  {/* Foto e vërtetë kur ka; emoji kur s'ka; ikona si rezervë
+                      e fundit. Kategoritë e reja nga paneli s'kanë foto në
+                      app dhe bien te dy hapat e tjerë pa u prishur asgjë.
 
                       Emoji-ja mbush katrorin. `includeFontPadding` dhe
                       `textAlignVertical` jane per Android, ku pa to teksti
                       merr mbushje shtese lart e poshte dhe glifi pritet kur
                       `lineHeight` eshte sa kutia. */}
-                  {cat.emoji ? (
+                  {photo ? (
+                    <Image source={photo} style={{ width: "100%", height: "100%" }} resizeMode="cover" />
+                  ) : cat.emoji ? (
                     <Text
                       style={{
                         fontSize: 52,
