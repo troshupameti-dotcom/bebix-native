@@ -10,7 +10,6 @@ import { AddTile } from "@/components/baby/AddTile";
 import { FormField } from "@/components/baby/FormField";
 import { DateTimeField } from "@/components/baby/DateTimeField";
 import { InfoRow } from "@/components/baby/InfoRow";
-import { MilestoneChip } from "@/components/baby/MilestoneChip";
 import { BottomSheet } from "@/components/ui/BottomSheet";
 import { PickerSheetContent, PickerOption } from "@/components/baby/PickerSheetContent";
 import { useAppState, active } from "@/lib/state/AppStateContext";
@@ -55,6 +54,22 @@ function filterLabelKey(kind: DiaryKind | "all"): TranslationKey {
     case "vaccine": return "qa_vaccinations";
     case "medical": return "medical_screen_title";
     case "event": return "baby_tab_timeline";
+  }
+}
+
+/** Ikona dhe ngjyra e cdo lloj matjeje ne "Permbledhja e rritjes" — pesha,
+ *  gjatesia dhe rrethi i kokes duhet te dallohen me nje veshtrim, jo vetem
+ *  nga teksti. */
+function growthAccent(key: string): { icon: IconName; tint: string; tintBg: string } {
+  switch (key) {
+    case "weight":
+      return { icon: "cube", tint: "#B23A1C", tintBg: "#F3DCCF" };
+    case "height":
+      return { icon: "chart", tint: "#2E6FA8", tintBg: "#D9E7F2" };
+    case "head":
+      return { icon: "sparkle", tint: "#7A3596", tintBg: "#E7DAEF" };
+    default:
+      return { icon: "star", tint: "#6E7452", tintBg: "#E4E7DA" };
   }
 }
 
@@ -122,7 +137,6 @@ export default function BabyProfileScreen() {
   }
   const [editGrowth, setEditGrowth] = useState(false);
   const [editMedical, setEditMedical] = useState(false);
-  const [editMilestones, setEditMilestones] = useState(false);
   const [sheet, setSheet] = useState<SheetContext>(null);
   const [timelineSheetPurpose, setTimelineSheetPurpose] = useState<"milestone" | "event">("event");
   const [editingStatKey, setEditingStatKey] = useState<string | null>(null);
@@ -570,6 +584,7 @@ export default function BabyProfileScreen() {
                     onChangeValue={(v) => baby.updateGrowthStat(g.key, { value: v })}
                     onChangeLabel={(v) => baby.updateGrowthStat(g.key, { label: v })}
                     onRemove={() => baby.removeGrowthStat(g.key)}
+                    {...growthAccent(g.key)}
                   />
                 </Pressable>
               ))}
@@ -582,39 +597,6 @@ export default function BabyProfileScreen() {
             <Pressable onPress={() => router.push("/(main)/baby/growth")} className="mt-3 items-center rounded-2xl bg-ink py-3.5">
               <Text className="font-bodyMedium text-[14px] text-cream">{t("baby_see_chart")}</Text>
             </Pressable>
-
-            {/* Momentet e arritjes dhe info mjekësore rrinin te Ditari, mes
-                ngjarjeve me orë e datë. Por nuk janë ngjarje: janë gjendje
-                e tanishme e bebit, pra e kanë vendin te 'Sot'. */}
-            <SectionHeader title={t("baby_tab_milestones")} editable editing={editMilestones} onToggleEdit={() => toggleEdit(setEditMilestones)} />
-            <ScrollView horizontal showsHorizontalScrollIndicator={false} className="mt-2.5" contentContainerStyle={{ gap: 8 }}>
-              {b.milestones
-                .filter((m) => b.milestoneActiveKeys.includes(m.key))
-                .map((m) => (
-                  <MilestoneChip
-                    key={m.key}
-                    label={m.isCustom ? m.label ?? "" : t(m.labelKey as never)}
-                    done={m.done}
-                    isCustom={m.isCustom}
-                    editing={editMilestones}
-                    onToggle={() => {
-                      haptics.success();
-                      baby.toggleMilestone(m.key);
-                    }}
-                    onChangeLabel={(v) => baby.updateMilestoneLabel(m.key, v)}
-                    onRemove={() => baby.removeMilestone(m.key)}
-                  />
-                ))}
-              <Pressable
-                onPress={() => {
-                  setTimelineSheetPurpose("milestone");
-                  setSheet("timeline");
-                }}
-                className="items-center justify-center rounded-2xl border border-dashed border-cream-line px-4 py-2"
-              >
-                <Icon name="plus" size={16} color="#A79D8A" />
-              </Pressable>
-            </ScrollView>
 
             {/* Info mjekësore — dikur ishte tab "Shëndeti", tash pjesë kompakte e Ditarit */}
             <SectionHeader title={t("baby_medical_info")} editable editing={editMedical} onToggleEdit={() => toggleEdit(setEditMedical)} />
@@ -751,42 +733,65 @@ export default function BabyProfileScreen() {
                       </View>
                     </View>
 
-                    {day.entries.map((item) => {
+                    {day.entries.map((item, idx) => {
                       const key = selectionKey(item.kind, item.id);
                       const isSelected = selectedIds.has(key);
+                      const isLast = idx === day.entries.length - 1;
+                      const badgeBg = item.tint === "orange" ? theme.orangeBg : theme.oliveBg;
+                      const badgeFg = item.tint === "orange" ? theme.orange : theme.olive;
                       return (
                         <Pressable
                           key={key}
                           onPress={() => (selectMode ? toggleSelect(item.kind, item.id) : undefined)}
-                          className="flex-row items-center gap-3 py-2.5"
+                          className="flex-row items-start gap-3"
                         >
-                          {selectMode && (
-                            <View className={`h-4 w-4 items-center justify-center rounded-full border ${isSelected ? "border-ink bg-ink" : "border-ink/25 bg-surface"}`}>
-                              {isSelected && <Icon name="check" size={9} color={isDark ? "#211D17" : "#FBF6EE"} />}
-                            </View>
-                          )}
-                          <Text className="w-11 font-body text-[12px] text-ink-faint">
-                            {formatTime(new Date(item.at).toISOString(), lang)}
-                          </Text>
-                          <View className={`${item.tint === "orange" ? "bg-orange" : "bg-olive"} h-2 w-2 rounded-full`} />
-                          <Text className="flex-1 font-bodyMedium text-[14px] text-ink" numberOfLines={1}>
-                            {item.title}
-                          </Text>
-                          {item.detail ? (
-                            <Text className="font-body text-[12.5px] text-ink-soft">{item.detail}</Text>
-                          ) : null}
-                          {!selectMode && item.kind === "event" && (
-                            <Pressable
-                              onPress={() => {
-                                haptics.warning();
-                                baby.deleteTimelineEvent(item.id);
-                                showToast(t("deleted_toast"), () => baby.restoreTimelineEvent(item.id));
-                              }}
-                              hitSlop={8}
+                          {/* Shirit kohe: koha dhe nje vije e vazhdueshme qe lidh
+                              ikonat — si te aplikacionet e tjera te ndjekjes,
+                              jo vetem nje rresht teksti. */}
+                          <View className="items-center" style={{ width: 40 }}>
+                            <Text className="mb-1.5 font-body text-[11px] text-ink-faint">
+                              {formatTime(new Date(item.at).toISOString(), lang)}
+                            </Text>
+                            <View
+                              className="h-8 w-8 items-center justify-center rounded-full"
+                              style={{ backgroundColor: badgeBg }}
                             >
-                              <Icon name="close" size={14} color="#A79D8A" />
-                            </Pressable>
-                          )}
+                              <Icon name={item.icon} size={14} color={badgeFg} />
+                            </View>
+                            {!isLast && <View className="mt-1 w-px flex-1 bg-ink/10" style={{ minHeight: 14 }} />}
+                          </View>
+
+                          <View
+                            className="mb-3 flex-1 flex-row items-center justify-between rounded-xl2 border border-ink/10 bg-surface px-3.5 py-3"
+                            style={shadows.soft}
+                          >
+                            <View className="flex-1 flex-row items-center gap-2">
+                              {selectMode && (
+                                <View className={`h-4 w-4 items-center justify-center rounded-full border ${isSelected ? "border-ink bg-ink" : "border-ink/25 bg-surface"}`}>
+                                  {isSelected && <Icon name="check" size={9} color={isDark ? "#211D17" : "#FBF6EE"} />}
+                                </View>
+                              )}
+                              <Text className="flex-1 font-bodyMedium text-[14px] text-ink" numberOfLines={1}>
+                                {item.title}
+                              </Text>
+                            </View>
+                            {item.detail ? (
+                              <Text className="ml-2 font-body text-[12.5px] text-ink-soft">{item.detail}</Text>
+                            ) : null}
+                            {!selectMode && item.kind === "event" && (
+                              <Pressable
+                                onPress={() => {
+                                  haptics.warning();
+                                  baby.deleteTimelineEvent(item.id);
+                                  showToast(t("deleted_toast"), () => baby.restoreTimelineEvent(item.id));
+                                }}
+                                hitSlop={8}
+                                className="ml-2"
+                              >
+                                <Icon name="close" size={14} color="#A79D8A" />
+                              </Pressable>
+                            )}
+                          </View>
                         </Pressable>
                       );
                     })}

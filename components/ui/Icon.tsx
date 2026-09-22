@@ -8,6 +8,7 @@ export type IconName =
   | "shop"
   | "community"
   | "more"
+  | "settings"
   | "chevronLeft"
   | "chevronRight"
   | "share"
@@ -125,6 +126,22 @@ const GLYPHS: Record<IconName, (p: CommonProps) => React.ReactNode> = {
       <Circle cx="5" cy="12" r="1.6" fill={p.stroke} />
       <Circle cx="12" cy="12" r="1.6" fill={p.stroke} />
       <Circle cx="19" cy="12" r="1.6" fill={p.stroke} />
+    </>
+  ),
+  // Ingranazh, si simboli i Cilesimeve ne iOS: nje trup i rrumbullaket
+  // plus tete "dhembe" — jo tri pika, qe nuk lidhen dot me "cilesimet".
+  settings: (p) => (
+    <>
+      <Circle cx="12" cy="12" r="5" {...p} />
+      <Circle cx="12" cy="12" r="1.5" fill={p.stroke} />
+      <Line x1="18" y1="12" x2="20.5" y2="12" {...p} />
+      <Line x1="16.24" y1="16.24" x2="18.01" y2="18.01" {...p} />
+      <Line x1="12" y1="18" x2="12" y2="20.5" {...p} />
+      <Line x1="7.76" y1="16.24" x2="5.99" y2="18.01" {...p} />
+      <Line x1="6" y1="12" x2="3.5" y2="12" {...p} />
+      <Line x1="7.76" y1="7.76" x2="5.99" y2="5.99" {...p} />
+      <Line x1="12" y1="6" x2="12" y2="3.5" {...p} />
+      <Line x1="16.24" y1="7.76" x2="18.01" y2="5.99" {...p} />
     </>
   ),
   chevronLeft: (p) => <Path d="M15 18l-6-6 6-6" {...p} />,

@@ -10,6 +10,7 @@ import { useAuthUser } from "@/lib/hooks/useAuthUser";
 import { supabase } from "@/lib/supabase/client";
 import { BackButton, goBackOr } from "@/components/ui/BackButton";
 import { uploadProfilePhoto } from "@/lib/baby/profilePhotos";
+import { syncProfilePhotoToSupabase } from "@/lib/babySync";
 import { useCurrentUserId } from "@/lib/hooks/useCurrentUserId";
 import { useTranslation } from "@/lib/i18n/LanguageContext";
 import type { TranslationKey } from "@/lib/i18n/translations";
@@ -53,7 +54,10 @@ export default function ProfileScreen() {
     setPhoto(localUri);
     if (!userId) return;
     const path = await uploadProfilePhoto(userId, "parent", localUri);
-    if (path) setPhotoPath(path);
+    if (path) {
+      setPhotoPath(path);
+      void syncProfilePhotoToSupabase("parent", path);
+    }
   };
 
   const save = () => {

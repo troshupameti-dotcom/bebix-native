@@ -49,12 +49,12 @@ const DOCS: { title: string; body: string }[] = [
       "SA KOHË\n" +
       "Të dhënat e llogarisë dhe të bebit rrinë derisa ta fshish llogarinë. Porositë ruhen edhe pas fshirjes, të anonimizuara, sepse na kërkohen për kontabilitet.\n\n" +
       "TË DREJTAT E TUA\n" +
-      "Mund të shohësh dhe të ndryshosh të dhënat brenda app-it, t'i eksportosh si PDF, CSV ose JSON nga Bebi → Cilësimet → Eksporto, dhe ta fshish llogarinë nga Më shumë → Fshi llogarinë. Për çdo kërkesë tjetër — akses, korrigjim, kufizim, kundërshtim — shkruajna te " + SUPPORT_EMAIL + " dhe përgjigjemi brenda 30 ditëve.",
+      "Mund të shohësh dhe të ndryshosh të dhënat brenda app-it, t'i eksportosh si PDF, CSV ose JSON nga Bebi → Cilësimet → Eksporto, dhe ta fshish llogarinë nga Cilësimet → Fshi llogarinë. Për çdo kërkesë tjetër — akses, korrigjim, kufizim, kundërshtim — shkruajna te " + SUPPORT_EMAIL + " dhe përgjigjemi brenda 30 ditëve.",
   },
   {
     title: "Fshirja e llogarisë dhe e të dhënave",
     body:
-      "Llogarinë mund ta fshish vetë, brenda app-it: Më shumë → Fshi llogarinë. Nuk kërkohet email, nuk kërkohet leje nga ne.\n\n" +
+      "Llogarinë mund ta fshish vetë, brenda app-it: Cilësimet → Fshi llogarinë. Nuk kërkohet email, nuk kërkohet leje nga ne.\n\n" +
       "FSHIHET MENJËHERË DHE PËRGJITHMONË:\n" +
       "• Profili i bebit dhe i gjithë historiku: ushqyerjet, gjumi, pelenat, rritja, vaksinat, të dhënat mjekësore.\n" +
       "• Fotot e momenteve, nga telefoni dhe nga serveri.\n" +
@@ -105,7 +105,7 @@ const DOCS: { title: string; body: string }[] = [
     title: "Njoftimet",
     body:
       "Njoftimet brenda app-it (zilja te faqja kryesore) ndërtohen në telefonin tënd nga të dhënat e bebit — vonesa vaksinash, kohë nga ushqyerja e fundit, e të ngjashme.\n\n" +
-      "Njoftimet push kërkojnë lejen tënde dhe mund t'i fikësh në çdo kohë nga Më shumë → Njoftimet, ose nga cilësimet e telefonit.",
+      "Njoftimet push kërkojnë lejen tënde dhe mund t'i fikësh në çdo kohë nga Cilësimet → Njoftimet, ose nga cilësimet e telefonit.",
   },
   {
     title: "Ndryshimet e këtyre kushteve",

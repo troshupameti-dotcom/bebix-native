@@ -17,7 +17,7 @@ const TABS: { name: string; icon: IconName; labelKey: TranslationKey }[] = [
   { name: "shop", icon: "shop", labelKey: "nav_shop" },
   { name: "ai-chat", icon: "sparkle", labelKey: "nav_ai" },
   { name: "community", icon: "community", labelKey: "nav_community" },
-  { name: "more", icon: "more", labelKey: "nav_more" },
+  { name: "more", icon: "settings", labelKey: "nav_more" },
 ];
 
 // Tabet që s'kërkojnë profil — një guest mund t'i shohë pa login.

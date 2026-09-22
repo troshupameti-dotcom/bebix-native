@@ -55,7 +55,7 @@ export default function WelcomeScreen() {
   return (
     <SafeAreaView className="flex-1 bg-cream" edges={["top", "bottom"]}>
       <View className="items-center pt-4">
-        <Logo tagline={undefined} size="md" />
+        <Logo tagline={undefined} size="lg" />
       </View>
 
       <ScrollView

@@ -77,10 +77,10 @@ export const translations = {
     nav_baby: "Bebi",
     nav_shop: "Dyqani",
     nav_community: "Komuniteti",
-    nav_more: "Më shumë",
+    nav_more: "Cilësimet",
 
     // ---- More / Settings ----
-    more_title: "Më shumë",
+    more_title: "Cilësimet",
     profile_hint: "Shiko profilin",
     add_your_name: "Shto emrin tënd",
 
@@ -882,9 +882,9 @@ export const translations = {
     nav_baby: "Baby",
     nav_shop: "Shop",
     nav_community: "Community",
-    nav_more: "More",
+    nav_more: "Settings",
 
-    more_title: "More",
+    more_title: "Settings",
     profile_hint: "View and edit your profile",
     add_your_name: "Add your name",
 

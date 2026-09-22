@@ -4,6 +4,7 @@ import { useColorScheme as useNativeWindColorScheme } from "nativewind";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { syncNotificationSettings } from "@/lib/notifications/settingsSync";
 import { signedUrlForProfilePhoto } from "@/lib/baby/profilePhotos";
+import { fetchProfilePhotoPaths } from "@/lib/babySync";
 import { migrateNotificationPrefs, type NotificationKey } from "@/lib/notifications/catalog";
 import {
   AppState,
@@ -256,24 +257,39 @@ export function AppStateProvider({ children }: { children: ReactNode }) {
     void syncNotificationSettings(state.notificationPrefs);
   }, [hydrated, state.notificationPrefs]);
 
-  // Fotot e profilit: URI-ja e ruajtur tregon nga dosja `cache` e app-it,
-  // qe sistemi e pastron kur do dhe qe zhduket ne ri-instalim. Nese ka nje
-  // rruge ne Storage, ajo eshte burimi i vertete — kerkohet nje URL e re
-  // sapo hapet app-i, qe fotoja te mos "zhduket" pa asnje shenje.
+  // Fotot e profilit. Rruga lokale (nga ky telefon) dhe ajo e serverit
+  // (e ruajtur qe prindi/bebi ta rigjejne edhe ne nje pajisje tjeter, ose
+  // pas nje ri-instalimi) merren te dyja; e serverit fiton kur ndryshojne,
+  // sepse ajo eshte burimi i qendrueshem. Pastaj kerkohet nje URL e re per
+  // shfaqje, qe fotoja te mos "zhduket" pa asnje shenje kur URL-ja e vjeter
+  // skadon.
   useEffect(() => {
     if (!hydrated) return;
     let alive = true;
 
-    const wanted: { path: string | null; key: "babyPhoto" | "parentPhoto" }[] = [
-      { path: state.profile.babyPhotoPath, key: "babyPhoto" },
-      { path: state.profile.parentPhotoPath, key: "parentPhoto" },
-    ];
-
     void (async () => {
-      for (const { path, key } of wanted) {
-        if (!path) continue;
+      const remote = await fetchProfilePhotoPaths();
+
+      const paths: { path: string | null; pathKey: "babyPhotoPath" | "parentPhotoPath"; urlKey: "babyPhoto" | "parentPhoto" }[] = [
+        {
+          path: remote?.babyPhotoPath ?? state.profile.babyPhotoPath,
+          pathKey: "babyPhotoPath",
+          urlKey: "babyPhoto",
+        },
+        {
+          path: remote?.parentPhotoPath ?? state.profile.parentPhotoPath,
+          pathKey: "parentPhotoPath",
+          urlKey: "parentPhoto",
+        },
+      ];
+
+      for (const { path, pathKey, urlKey } of paths) {
+        if (!path || !alive) continue;
+        if (path !== state.profile[pathKey]) {
+          dispatch({ type: "UPDATE_PROFILE", value: { [pathKey]: path } });
+        }
         const url = await signedUrlForProfilePhoto(path);
-        if (alive && url) dispatch({ type: "UPDATE_PROFILE", value: { [key]: url } });
+        if (alive && url) dispatch({ type: "UPDATE_PROFILE", value: { [urlKey]: url } });
       }
     })();
 

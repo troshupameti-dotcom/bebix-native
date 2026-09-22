@@ -11,7 +11,7 @@ import { useTranslation } from "@/lib/i18n/LanguageContext";
 import { haptics } from "@/lib/haptics";
 import { shadows } from "@/lib/shadows";
 import { BabyGender, BloodType } from "@/lib/state/types";
-import { syncBabyProfileToSupabase } from "@/lib/babySync";
+import { syncBabyProfileToSupabase, syncProfilePhotoToSupabase } from "@/lib/babySync";
 import { BackButton, goBackOr } from "@/components/ui/BackButton";
 import { uploadProfilePhoto } from "@/lib/baby/profilePhotos";
 import { useCurrentUserId } from "@/lib/hooks/useCurrentUserId";
@@ -83,7 +83,12 @@ export default function BabySettingsScreen() {
 
     if (!userId) return;
     const path = await uploadProfilePhoto(userId, "baby", localUri);
-    if (path) updateProfile({ babyPhotoPath: path });
+    if (path) {
+      updateProfile({ babyPhotoPath: path });
+      // Qe fotoja te mos jetoje vetem ne kete pajisje: nese ri-instalohet
+      // app-i ose hyhet ne nje telefon tjeter, e rikthen kete rruge.
+      void syncProfilePhotoToSupabase("baby", path);
+    }
   }
 
   function openDobPicker() {

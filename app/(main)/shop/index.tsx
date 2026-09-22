@@ -229,15 +229,15 @@ export default function ShopScreen() {
           <Text className="font-bodySemibold text-base text-ink px-5 mt-6 mb-3">{t("shop_brands")}</Text>
           <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ paddingHorizontal: 20 }}>
             {brands.map((b) => (
-              <Pressable key={b.id} onPress={() => router.push(`/shop/brand/${b.id}`)} className="mr-3 w-[88px] items-center">
-                <View className="h-[76px] w-[76px] items-center justify-center overflow-hidden rounded-2xl border border-cream-line bg-surface">
+              <Pressable key={b.id} onPress={() => router.push(`/shop/brand/${b.id}`)} className="mr-3 w-[64px] items-center">
+                <View className="h-[52px] w-[52px] items-center justify-center overflow-hidden rounded-2xl border border-cream-line bg-surface">
                   {b.logoUrl ? (
                     <Image source={{ uri: b.logoUrl }} className="w-full h-full" resizeMode="cover" />
                   ) : (
-                    <Icon name={b.icon} size={28} color={theme.inkFaint} />
+                    <Icon name={b.icon} size={20} color={theme.inkFaint} />
                   )}
                 </View>
-                <Text className="mt-1.5 text-center font-bodyMedium text-[11px] text-ink-soft" numberOfLines={1}>{b.name}</Text>
+                <Text className="mt-1.5 text-center font-bodyMedium text-[10.5px] text-ink-soft" numberOfLines={1}>{b.name}</Text>
               </Pressable>
             ))}
           </ScrollView>

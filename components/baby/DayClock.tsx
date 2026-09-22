@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { View, Text, Pressable, Alert, type GestureResponderEvent } from "react-native";
 import Svg, { Circle, Path, G, Line } from "react-native-svg";
-import { Icon, type IconName } from "@/components/ui/Icon";
+import { Icon } from "@/components/ui/Icon";
 import { useThemeColors } from "@/lib/theme/useThemeColors";
 import { useTranslation } from "@/lib/i18n/LanguageContext";
 import { haptics } from "@/lib/haptics";
@@ -144,11 +144,6 @@ export function DayClock({
     setSelection(found ? { type: "item", item: found } : { type: "kind", kind: band.kind });
   }
 
-  function toggleKind(kind: "sleep" | "feeding" | "diaper" | "poop") {
-    haptics.select();
-    setSelection((prev) => (prev?.type === "kind" && prev.kind === kind ? null : { type: "kind", kind }));
-  }
-
   function confirmDelete() {
     if (deletableCount === 0) {
       Alert.alert(t("clock_delete_period"), t("clock_delete_none"));
@@ -185,10 +180,15 @@ export function DayClock({
           <Icon name="chevronLeft" size={14} color={theme.ink} />
         </Pressable>
 
-        <Text className="flex-1 text-center font-bodyMedium text-[13px] text-ink" numberOfLines={1}>
-          {clock.period.isAm ? t("clock_am") : t("clock_pm")} ·{" "}
-          {formatDate(clock.period.start.toISOString(), lang)}
-        </Text>
+        <View
+          className="flex-1 items-center justify-center rounded-full py-1.5"
+          style={{ backgroundColor: theme.isDark ? "#3D2E1A" : "#F0DDBE" }}
+        >
+          <Text className="text-center font-bodySemibold text-[13px] text-ink" numberOfLines={1}>
+            {clock.period.isAm ? t("clock_am") : t("clock_pm")} ·{" "}
+            {formatDate(clock.period.start.toISOString(), lang)}
+          </Text>
+        </View>
 
         <Pressable
           onPress={() => onChangePeriod(shiftPeriod(clock.period, 1))}
@@ -212,41 +212,6 @@ export function DayClock({
             <Text className="font-bodyMedium text-[12px] text-cream">{t("clock_now_btn")}</Text>
           </Pressable>
         )}
-      </View>
-
-      <View className="mb-4 flex-row gap-2">
-        <StatCard
-          icon="moon"
-          color={colors.sleep}
-          label={t("rhythm_sleep")}
-          value={totals.sleepMinutes > 0 ? durationLabel(totals.sleepMinutes, t) : "—"}
-          active={selection?.type === "kind" && selection.kind === "sleep"}
-          onPress={() => toggleKind("sleep")}
-        />
-        <StatCard
-          icon="spoon"
-          color={colors.feeding}
-          label={t("rhythm_feeding")}
-          value={String(totals.feedings)}
-          active={selection?.type === "kind" && selection.kind === "feeding"}
-          onPress={() => toggleKind("feeding")}
-        />
-        <StatCard
-          icon="baby"
-          color={colors.diaper}
-          label={t("diaper_title")}
-          value={String(totals.diapers)}
-          active={selection?.type === "kind" && selection.kind === "diaper"}
-          onPress={() => toggleKind("diaper")}
-        />
-        <StatCard
-          icon="droplet"
-          color={colors.poop}
-          label={t("clock_poop")}
-          value={String(totals.poops)}
-          active={selection?.type === "kind" && selection.kind === "poop"}
-          onPress={() => toggleKind("poop")}
-        />
       </View>
 
       <View className="items-center">
@@ -396,9 +361,9 @@ export function DayClock({
       </View>
 
       <View className="mt-4 flex-row flex-wrap items-center gap-x-4 gap-y-1.5">
-        <Legend color={colors.sleep} label={t("rhythm_sleep")} block />
-        <Legend color={colors.feeding} label={t("rhythm_feeding")} />
-        <Legend color={colors.diaper} label={t("diaper_title")} />
+        <Legend color={colors.sleep} label={t("rhythm_sleep")} block big />
+        <Legend color={colors.feeding} label={t("rhythm_feeding")} big />
+        <Legend color={colors.diaper} label={t("diaper_title")} big />
         <Legend color={colors.poop} label={t("clock_poop")} />
         <Legend color={theme.ink} label={t("clock_night")} block faded />
       </View>
@@ -478,61 +443,36 @@ function Legend({
   label,
   block,
   faded,
+  big,
 }: {
   color: string;
   label: string;
   block?: boolean;
   faded?: boolean;
+  /** Gjumi, ushqyerja, pelena: te tria kryesoret, me tekst me te madh. */
+  big?: boolean;
 }) {
   return (
     <View className="flex-row items-center gap-1.5">
       <View
         style={{
-          width: block ? 14 : 4,
-          height: block ? 10 : 12,
+          width: block ? (big ? 18 : 14) : big ? 6 : 4,
+          height: block ? (big ? 13 : 10) : big ? 14 : 12,
           borderRadius: block ? 3 : 2,
           backgroundColor: color,
           opacity: faded ? 0.12 : 1,
         }}
       />
-      <Text className="font-body text-[11px] text-ink-soft">{label}</Text>
-    </View>
-  );
-}
-
-function StatCard({
-  icon,
-  color,
-  label,
-  value,
-  active,
-  onPress,
-}: {
-  icon: IconName;
-  color: string;
-  label: string;
-  value: string;
-  active: boolean;
-  onPress: () => void;
-}) {
-  return (
-    <Pressable
-      onPress={onPress}
-      accessibilityRole="button"
-      accessibilityState={{ selected: active }}
-      style={shadows.soft}
-      className={`flex-1 rounded-xl2 border px-2.5 py-3 ${
-        active ? "border-ink bg-surface-alt" : "border-ink/10 bg-surface"
-      }`}
-    >
-      <Icon name={icon} size={15} color={color} />
-      <Text className="mt-1.5 font-bodySemibold text-[15px] leading-5 text-ink" numberOfLines={1}>
-        {value}
-      </Text>
-      <Text className="font-body text-[10px] text-ink-faint" numberOfLines={1}>
+      <Text
+        className={
+          big
+            ? "font-bodySemibold text-[14px] text-ink"
+            : "font-body text-[11px] text-ink-soft"
+        }
+      >
         {label}
       </Text>
-    </Pressable>
+    </View>
   );
 }
 
