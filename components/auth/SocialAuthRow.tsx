@@ -47,9 +47,15 @@ export function SocialAuthRow({ onEmailSelect, onSignedIn, beforeStart }: Social
    * cdo gabim pa tekst zevendesohet me shkakun e vertete me te shpeshte:
    * adresa e kthimit nuk eshte ne listen e lejuar te Supabase-it.
    */
-  function describe(message: string | null | undefined): string {
+  function describe(message: string | null | undefined, redirectTo?: string): string {
     const text = typeof message === "string" ? message.trim() : "";
-    if (!text || text === "null" || text === "undefined") return t("auth_redirect_blocked");
+    if (!text || text === "null" || text === "undefined") {
+      // Adresa shfaqet e plote: ajo eshte pikerisht rreshti qe duhet
+      // ngjitur te Supabase, dhe te Expo Go ndryshon me IP-ne e rrjetit.
+      return redirectTo ? `${t("auth_redirect_blocked")}
+
+${redirectTo}` : t("auth_redirect_blocked");
+    }
     return text;
   }
 
@@ -73,7 +79,7 @@ export function SocialAuthRow({ onEmailSelect, onSignedIn, beforeStart }: Social
       });
 
       if (error || !data?.url) {
-        Alert.alert(t("mod_error_title"), describe(error?.message) || t("auth_open_failed"));
+        Alert.alert(t("mod_error_title"), describe(error?.message, redirectTo));
         return;
       }
 
@@ -88,13 +94,13 @@ export function SocialAuthRow({ onEmailSelect, onSignedIn, beforeStart }: Social
       let userId: string | undefined;
 
       if (parsed.type === "error") {
-        Alert.alert(t("mod_error_title"), describe(parsed.message));
+        Alert.alert(t("mod_error_title"), describe(parsed.message, redirectTo));
         return;
       } else if (parsed.type === "code") {
         const { data: exchanged, error: exchangeError } =
           await supabase.auth.exchangeCodeForSession(parsed.code);
         if (exchangeError) {
-          Alert.alert(t("mod_error_title"), describe(exchangeError.message));
+          Alert.alert(t("mod_error_title"), describe(exchangeError.message, redirectTo));
           return;
         }
         userId = exchanged.user?.id;
@@ -104,12 +110,16 @@ export function SocialAuthRow({ onEmailSelect, onSignedIn, beforeStart }: Social
           refresh_token: parsed.refreshToken,
         });
         if (sessionError) {
-          Alert.alert(t("mod_error_title"), describe(sessionError.message));
+          Alert.alert(t("mod_error_title"), describe(sessionError.message, redirectTo));
           return;
         }
         userId = sessionData.user?.id;
       } else {
-        Alert.alert(t("mod_error_title"), t("auth_no_session"));
+        // Shfletuesi u kthye pa asnje token: pothuajse gjithmone sepse
+        // Supabase e dergoi te Site URL-ja, jo te appi.
+        Alert.alert(t("mod_error_title"), `${t("auth_no_session")}
+
+${redirectTo}`);
         return;
       }
 
