@@ -4,6 +4,7 @@ import { Icon, IconName } from "@/components/ui/Icon";
 import { shadows } from "@/lib/shadows";
 import { BackButton } from "@/components/ui/BackButton";
 import { useTranslation } from "@/lib/i18n/LanguageContext";
+import { useToast } from "@/lib/toast/ToastContext";
 
 function ActionRow({ icon, label, onPress }: { icon: IconName; label: string; onPress: () => void }) {
   return (
@@ -19,6 +20,7 @@ function ActionRow({ icon, label, onPress }: { icon: IconName; label: string; on
 
 export default function AboutScreen() {
   const { t } = useTranslation();
+  const { showToast } = useToast();
 
   const shareApp = () => {
     Share.share({ message: t("about_share_message") });
@@ -47,9 +49,9 @@ export default function AboutScreen() {
 
         <View className="px-5 mb-6">
           <View style={shadows.soft} className="bg-surface rounded-xl2 overflow-hidden">
-            <ActionRow icon="sparkle" label={t("about_rate")} onPress={() => { /* Linking.openURL(url-i i App Store/Play Store kur të publikohet) */ }} />
+            <ActionRow icon="sparkle" label={t("about_rate")} onPress={() => showToast(t("about_rate_soon"))} />
             <ActionRow icon="share" label={t("about_share")} onPress={shareApp} />
-            <ActionRow icon="globe" label={t("about_website")} onPress={() => { /* Linking.openURL("https://bebix.app") — vendos domain-in real */ }} />
+            <ActionRow icon="globe" label={t("about_website")} onPress={() => showToast(t("about_website_soon"))} />
           </View>
         </View>
 
