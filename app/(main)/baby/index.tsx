@@ -114,6 +114,17 @@ export default function BabyProfileScreen() {
     () => entryRefsInPeriod(feedings, sleeps, diapers, clockPeriod),
     [feedings, sleeps, diapers, clockPeriod]
   );
+  // Lista e detajuar e nje lloji (p.sh. "te gjitha gjumet") vjen nga 24 oret
+  // e fundit, jo vetem nga gjysma qe po shihet: nje gjume mund te fillojë
+  // paradite dhe te vazhdojë pasdite, dhe prindi qe pyet "sa here fjeti sot"
+  // pret pergjigjen per gjithe diten, jo per gjysmen e treguar ne rreth.
+  const itemsLast24h = useMemo(() => {
+    // Dritarja e fundit 24-oreshe rillogaritet ne cdo thirrje te memo-s
+    // (kur ndryshojne te dhenat), jo vetem ne montim.
+    const now = new Date();
+    const period = { start: new Date(now.getTime() - 24 * 3600000), end: now, isAm: true };
+    return buildDayClock(feedings, sleeps, diapers, period, now).items;
+  }, [feedings, sleeps, diapers]);
 
   function deleteClockPeriod() {
     haptics.warning();
@@ -521,6 +532,7 @@ export default function BabyProfileScreen() {
               onChangePeriod={setClockPeriod}
               onDeletePeriod={deleteClockPeriod}
               deletableCount={clockRefs.length}
+              itemsLast24h={itemsLast24h}
             />
 
             {/* Sugjerim i vetëm, kontekstual — jo 8 butona */}

@@ -101,6 +101,7 @@ export function DayClock({
   onChangePeriod,
   onDeletePeriod,
   deletableCount,
+  itemsLast24h,
 }: {
   clock: Clock;
   totals: ClockTotals;
@@ -108,6 +109,10 @@ export function DayClock({
   onChangePeriod: (period: ClockPeriod) => void;
   onDeletePeriod: () => void;
   deletableCount: number;
+  /** Për listën e një lloji të vetëm (p.sh. "të gjitha gjumet"): 24 orët e
+   *  fundit, jo vetëm gjysma e treguar në rreth — një gjumë mund të fillojë
+   *  paradite dhe të vazhdojë pasdite. */
+  itemsLast24h: ClockItem[];
 }) {
   const theme = useThemeColors();
   const { t, lang } = useTranslation();
@@ -229,7 +234,13 @@ export function DayClock({
               />
             ))}
 
-            {/* Unazat bosh — secila në ngjyrën e vet, që të lexohet edhe pa shënime */}
+            {/* Unazat bosh — secila në ngjyrën e vet, që të lexohet edhe pa
+                shënime. Gjumi mbetet i zbehtë: gjendja e tij shfaqet nga
+                harqet plot poshtë, dhe ta ngjyroste edhe track-un do të
+                dilte i dyfishtë atje ku ka gjumë. Ushqyerja dhe pelena janë
+                çaste të vockla (vija të holla), jo harqe — pa një track të
+                dukshëm në ngjyrën e vet, unaza e tyre dukej thuajse bosh
+                gjatë gjithë kohës mes shënimeve. */}
             {RINGS.map((ring) => (
               <Circle
                 key={`track-${ring.kind}`}
@@ -237,7 +248,9 @@ export function DayClock({
                 cy={CENTER}
                 r={ring.radius}
                 stroke={ringColor(ring.kind)}
-                strokeOpacity={theme.isDark ? 0.16 : 0.12}
+                strokeOpacity={
+                  ring.kind === "sleep" ? (theme.isDark ? 0.16 : 0.12) : theme.isDark ? 0.4 : 0.32
+                }
                 strokeWidth={ring.width}
                 fill="none"
               />
@@ -353,10 +366,14 @@ export function DayClock({
           </View>
 
           {/* Numrat e fytyrës: 12 lart, 3 djathtas, 6 poshtë, 9 majtas.
-              Të njëjtët për të dyja gjysmat, si te një orë dore. */}
-          {Array.from({ length: 12 }, (_, i) => (
-            <HourLabel key={i} fraction={i / 12} label={i === 0 ? "12" : String(i)} />
-          ))}
+              Paradite janë 1–11 (një shifër), pasdite 13–23 (dy shifra) —
+              si një orë 24-orëshe. Kështu dallohet menjëherë cila gjysmë
+              po shihet pa lexuar fare pilulën "Paradite/Pasdite" sipër;
+              më parë të dyja gjysmat kishin saktësisht të njëjtat numra. */}
+          {Array.from({ length: 12 }, (_, i) => {
+            const hour = i === 0 ? 12 : clock.period.isAm ? i : 12 + i;
+            return <HourLabel key={i} fraction={i / 12} label={String(hour)} />;
+          })}
         </Pressable>
       </View>
 
@@ -375,7 +392,7 @@ export function DayClock({
       {selection && (
         <DetailCard
           selection={selection}
-          clock={clock}
+          itemsLast24h={itemsLast24h}
           colors={colors}
           lang={lang}
           t={t}
@@ -519,40 +536,43 @@ function rowsForItem(item: ClockItem, lang: "sq" | "en", t: Translate): { title:
   return { title: t(`diaper_type_${e.type}` as TranslationKey), rows };
 }
 
-function itemsOfKind(clock: Clock, kind: "sleep" | "feeding" | "diaper" | "poop"): ClockItem[] {
+function itemsOfKind(items: ClockItem[], kind: "sleep" | "feeding" | "diaper" | "poop"): ClockItem[] {
   if (kind === "sleep") {
     // Nje gjume i ndare ne mesnate do te dilte dy here ne liste.
     const seen = new Set<string>();
-    return clock.items.filter((i) => {
+    return items.filter((i) => {
       if (i.kind !== "sleep" || seen.has(i.id)) return false;
       seen.add(i.id);
       return true;
     });
   }
-  if (kind === "feeding") return clock.items.filter((i) => i.kind === "feeding");
-  if (kind === "diaper") return clock.items.filter((i) => i.kind === "diaper");
-  return clock.items.filter(
+  if (kind === "feeding") return items.filter((i) => i.kind === "feeding");
+  if (kind === "diaper") return items.filter((i) => i.kind === "diaper");
+  return items.filter(
     (i) => i.kind === "diaper" && (i.entry.type === "dirty" || i.entry.type === "both")
   );
 }
 
 function DetailCard({
   selection,
-  clock,
+  itemsLast24h,
   colors,
   lang,
   t,
   onClose,
 }: {
   selection: NonNullable<Selection>;
-  clock: Clock;
+  /** Lista e agreguar e nje lloji vjen nga 24 oret e fundit, jo nga gjysma
+   *  aktuale — shih komentin te DayClock. Nje hyrje e vetme (jo agreguar)
+   *  eshte vetvetja, s'ka nevoje per kete dritare. */
+  itemsLast24h: ClockItem[];
   colors: ClockPalette;
   lang: "sq" | "en";
   t: Translate;
   onClose: () => void;
 }) {
   const single = selection.type === "item" ? rowsForItem(selection.item, lang, t) : null;
-  const list = selection.type === "kind" ? itemsOfKind(clock, selection.kind) : [];
+  const list = selection.type === "kind" ? itemsOfKind(itemsLast24h, selection.kind) : [];
   const kindColor =
     selection.type === "kind"
       ? colors[selection.kind]

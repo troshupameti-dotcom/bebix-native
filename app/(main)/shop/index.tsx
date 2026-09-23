@@ -226,7 +226,7 @@ export default function ShopScreen() {
       )}
       {!isFiltering && brands.length > 0 && (
         <>
-          <Text className="font-bodySemibold text-base text-ink px-5 mt-6 mb-3">{t("shop_brands")}</Text>
+          <Text className="font-bodySemibold text-base text-ink px-5 mt-3 mb-3">{t("shop_brands")}</Text>
           <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ paddingHorizontal: 20 }}>
             {brands.map((b) => (
               <Pressable key={b.id} onPress={() => router.push(`/shop/brand/${b.id}`)} className="mr-3 w-[64px] items-center">
