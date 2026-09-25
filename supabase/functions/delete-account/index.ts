@@ -160,6 +160,14 @@ serve(async (req) => {
     .eq("user_id", userId);
   report.orders_anonymised = ordersError ? `gabim: ${ordersError.message}` : anonymised ?? 0;
 
+  // place_order shënon blerësin te ndryshimi i stokut; lidhja pa `on delete`
+  // drejt auth.users bllokonte fshirjen e çdo klienti që kishte porositur.
+  const { count: inventoryAnonymised, error: inventoryError } = await admin
+    .from("inventory_logs")
+    .update({ user_id: null }, { count: "exact" })
+    .eq("user_id", userId);
+  report.inventory_logs_anonymised = inventoryError ? `gabim: ${inventoryError.message}` : inventoryAnonymised ?? 0;
+
   // --- 4. Vetë llogaria. E fundit: nëse diçka më lart dështon, përdoruesi
   // ende mund të kyçet dhe ta provojë sërish.
   const { error: deleteError } = await admin.auth.admin.deleteUser(userId);
