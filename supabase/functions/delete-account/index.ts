@@ -36,14 +36,22 @@ function json(body: unknown, status = 200): Response {
   });
 }
 
-/** Fshin gjithçka nën `<userId>/` në një bucket, faqe pas faqeje. */
-async function removeUserFiles(bucket: string, userId: string): Promise<number> {
+/** Fshin gjithçka nën `<prefix>/` në një bucket, faqe pas faqeje, bashkë me nënfolderat. */
+async function removeUserFiles(bucket: string, prefix: string): Promise<number> {
   let removed = 0;
   for (let page = 0; page < 50; page++) {
-    const { data, error } = await admin.storage.from(bucket).list(userId, { limit: 100, offset: 0 });
+    const { data, error } = await admin.storage.from(bucket).list(prefix, { limit: 100, offset: 0 });
     if (error || !data || data.length === 0) break;
 
-    const paths = data.map((file) => `${userId}/${file.name}`);
+    // Storage i kthen nënfolderat si hyrje pa id (p.sh. fotot e profilit te
+    // `<userId>/profile/`); një remove() mbi to nuk bën asgjë.
+    for (const folder of data.filter((entry) => entry.id === null)) {
+      removed += await removeUserFiles(bucket, `${prefix}/${folder.name}`);
+    }
+
+    const paths = data.filter((entry) => entry.id !== null).map((file) => `${prefix}/${file.name}`);
+    if (paths.length === 0) break;
+
     const { error: removeError } = await admin.storage.from(bucket).remove(paths);
     if (removeError) break;
 
@@ -102,6 +110,8 @@ serve(async (req) => {
     { table: "baby_records", column: "user_id" },
     { table: "baby_profiles", column: "user_id" },
     { table: "push_tokens", column: "user_id" },
+    // E vetmja tabelë e njoftimeve pa `on delete cascade` drejt auth.users.
+    { table: "notification_log", column: "user_id" },
     // Komuniteti: reagimet e veta para përmbajtjes, që të mos mbeten të varura.
     { table: "community_post_likes", column: "user_id" },
     { table: "community_post_saves", column: "user_id" },

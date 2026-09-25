@@ -10,7 +10,7 @@
  * Play kërkon kontakt funksional, dhe GDPR kërkon një rrugë ku përdoruesi
  * të kërkojë të dhënat ose fshirjen e tyre.
  */
-export const SUPPORT_EMAIL = "support@bebix.app";
+export const SUPPORT_EMAIL = "info.bebix@gmail.com";
 
 /** Adresa për kërkesa të privatësisë; njësoj derisa të ketë ekip të veçantë. */
 export const PRIVACY_EMAIL = SUPPORT_EMAIL;
