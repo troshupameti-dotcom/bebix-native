@@ -61,6 +61,22 @@ export function decideBack(previous: string | null, current: string | null): Bac
   return { kind: "pop" };
 }
 
+/**
+ * Rruga e fundit që i përket një pjese TJETËR të app-it, duke kërkuar prapa
+ * në krejt historikun — jo vetëm një hap. Përdoret kur stiva nismore (pop)
+ * mbaron (canGoBack() = false) por ekrani aktual u arrit përmes disa
+ * ekraneve brenda së njëjtës pjesë (p.sh. shportë -> arkëtim -> porositë,
+ * të tria "shop"), ndërkohë që përdoruesi vinte nga një pjesë krejt tjetër
+ * më parë (p.sh. "më shumë" ose "bebi").
+ */
+export function lastPathInOtherSection(current: string | null): string | null {
+  const currentSection = sectionOf(current);
+  for (let i = history.length - 2; i >= 0; i--) {
+    if (sectionOf(history[i]) !== currentSection) return history[i];
+  }
+  return null;
+}
+
 /** Vetëm për teste. */
 export function resetHistory(paths: string[] = []): void {
   history = [...paths];

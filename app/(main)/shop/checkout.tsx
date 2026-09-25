@@ -163,10 +163,25 @@ export default function CheckoutScreen() {
         <Text className="font-body text-sm text-ink-soft text-center mb-6 leading-5">
           {t("co_placed_body")}
         </Text>
-        <Pressable onPress={() => router.replace("/shop/orders")} className="bg-olive rounded-xl2 py-3 px-6 mb-3">
+        <Pressable
+          onPress={() => {
+            // Heq shportën/arketimin nga stiva, jo vetëm ekranin aktual —
+            // përndryshe "mbrapa" nga porositë të çon te një shportë e
+            // zbrazët (porosia sapo u dërgua), në vend të vendit të vërtetë
+            // ku ishte përdoruesi para se të fillonte blerjen.
+            router.dismissAll();
+            router.replace("/shop/orders");
+          }}
+          className="bg-olive rounded-xl2 py-3 px-6 mb-3"
+        >
           <Text className="font-bodyMedium text-sm text-on-accent">{t("co_see_order")}</Text>
         </Pressable>
-        <Pressable onPress={() => router.replace("/shop")}>
+        <Pressable
+          onPress={() => {
+            router.dismissAll();
+            router.replace("/shop");
+          }}
+        >
           <Text className="font-bodyMedium text-sm text-olive">{t("co_back_to_shop")}</Text>
         </Pressable>
       </SafeAreaView>

@@ -1,6 +1,6 @@
 import { Pressable } from "react-native";
 import { router, type Href } from "expo-router";
-import { previousPath, currentPath, decideBack } from "@/lib/navigation/history";
+import { previousPath, currentPath, decideBack, lastPathInOtherSection } from "@/lib/navigation/history";
 import { Icon } from "@/components/ui/Icon";
 import { haptics } from "@/lib/haptics";
 import { shadows } from "@/lib/shadows";
@@ -20,15 +20,24 @@ import { shadows } from "@/lib/shadows";
  *    `replace`): shkohet te `fallback`.
  */
 export function goBackOr(fallback: Href) {
-  const decision = decideBack(previousPath(), currentPath());
+  const current = currentPath();
+  const decision = decideBack(previousPath(), current);
 
   if (decision.kind === "goto") {
     router.replace(decision.path as Href);
     return;
   }
 
-  if (router.canGoBack()) router.back();
-  else router.replace(fallback);
+  if (router.canGoBack()) {
+    router.back();
+    return;
+  }
+
+  // Fundi i stivës native, por ekrani mund të jetë arritur përmes disa
+  // hapave brenda së njëjtës pjesë (shih lastPathInOtherSection) — kërko
+  // më thellë në histori para se të dorëzohesh te fallback-u statik.
+  const other = lastPathInOtherSection(current);
+  router.replace((other ?? fallback) as Href);
 }
 
 type BackButtonProps = {
