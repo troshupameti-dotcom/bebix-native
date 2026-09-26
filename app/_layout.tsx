@@ -1,6 +1,7 @@
 import "../global.css";
 import "@/lib/theme/interop";
 import { installErrorReporter } from "@/lib/errors/reporter";
+import { initSentry, wrapWithSentry } from "@/lib/errors/sentry";
 import { useEffect } from "react";
 import { Stack, usePathname } from "expo-router";
 import { StatusBar } from "expo-status-bar";
@@ -17,9 +18,12 @@ import { recordPath } from "@/lib/navigation/history";
 SplashScreen.preventAutoHideAsync();
 
 // Lidhet para se te renderohet cdo gje: nje gabim ne montim duhet kapur.
+initSentry();
 installErrorReporter();
 
-export default function RootLayout() {
+export default wrapWithSentry(RootLayout);
+
+function RootLayout() {
   const [fontsLoaded] = useFonts({
     Inter_400Regular,
     Inter_500Medium,

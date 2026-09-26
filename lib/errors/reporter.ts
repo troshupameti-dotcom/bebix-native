@@ -1,15 +1,13 @@
 import { track } from "@/lib/analytics/posthog";
+import { captureToSentry } from "@/lib/errors/sentry";
 
 /**
  * Raportimi i gabimeve.
  *
  * Pa këtë, për rrëzimet mësohej vetëm nga recensionet me një yll.
  *
- * KUFIRI: kjo kap gabimet e JavaScript-it (React, kodi ynë, thirrjet e
- * dështuara), JO rrëzimet native. Për ato duhet Sentry ose Crashlytics, që
- * sjellin module native dhe kërkojnë build të ri — hapi i radhës kur të
- * bëhet build-i i produksionit. Deri atëherë, kjo mbulon pjesën ku ndodhin
- * shumica e gabimeve tona.
+ * PostHog-u numëron gabimet e JavaScript-it; Sentry-u (lib/errors/sentry.ts)
+ * kap edhe rrëzimet native dhe e ruan gjurmën e plotë, kur ka DSN.
  *
  * Dërgohet vetëm lloji, mesazhi dhe fillimi i gjurmës — pa të dhëna të
  * përdoruesit.
@@ -30,6 +28,7 @@ function shortStack(error: Error): string {
 
 export function reportError(error: unknown, context?: string): void {
   const err = error instanceof Error ? error : new Error(String(error));
+  captureToSentry(err, context);
   track("app_error", {
     name: err.name,
     message: err.message.slice(0, 200),
