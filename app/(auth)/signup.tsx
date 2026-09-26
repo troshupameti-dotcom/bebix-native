@@ -15,6 +15,7 @@ import { syncPendingProfileToSupabase } from "@/lib/babyProfile";
 import { useTranslation } from "@/lib/i18n/LanguageContext";
 import type { SignupFormValues, FormErrors } from "@/types/auth";
 import { BackButton } from "@/components/ui/BackButton";
+import { Logo } from "@/components/auth/Logo";
 
 const initialValues: SignupFormValues = {
   fullName: "",
@@ -107,6 +108,9 @@ export default function SignupScreen() {
             animate={{ opacity: 1, translateY: 0 }}
             transition={{ type: "timing", duration: 400 }}
           >
+            <View className="mb-6 mt-1 items-center">
+              <Logo variant="full" size="md" />
+            </View>
             <Text className="font-display text-3xl text-ink">{t("signup_title")}</Text>
             <Text className="mt-2 font-body text-sm text-ink-soft">{t("signup_subtitle")}</Text>
 

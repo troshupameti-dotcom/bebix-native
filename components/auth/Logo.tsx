@@ -5,7 +5,12 @@ import { useThemeColors } from "@/lib/theme/useThemeColors";
 type LogoProps = {
   tagline?: string;
   size?: "md" | "lg";
+  /** "full" = shenja "b" me fjalën poshtë, për ekranet e hyrjes. */
+  variant?: "wordmark" | "full";
 };
+
+/** Logoja e plotë (832×840, e tejdukshme): mjaft e madhe për ekranet 3x. */
+const FULL_RATIO = 840 / 832;
 
 /**
  * Fjala "bebix", e njëjta si te webi.
@@ -22,8 +27,28 @@ type LogoProps = {
 const ASSET_WIDTH = 804;
 const ASSET_HEIGHT = 229;
 
-export function Logo({ size = "lg" }: LogoProps) {
+export function Logo({ size = "lg", variant = "wordmark" }: LogoProps) {
   const { isDark } = useThemeColors();
+
+  if (variant === "full") {
+    const fullWidth = size === "lg" ? 150 : 116;
+    return (
+      <MotiView
+        from={{ opacity: 0, scale: 0.94 }}
+        animate={{ opacity: 1, scale: 1 }}
+        transition={{ type: "timing", duration: 600 }}
+        className="items-center"
+      >
+        <Image
+          source={isDark ? require("@/assets/images/logo-full-dark.png") : require("@/assets/images/logo-full.png")}
+          style={{ width: fullWidth, height: fullWidth * FULL_RATIO }}
+          contentFit="contain"
+          accessibilityLabel="Bebix"
+        />
+      </MotiView>
+    );
+  }
+
   const width = size === "lg" ? 200 : 160;
 
   return (

@@ -14,6 +14,7 @@ import { syncPendingProfileToSupabase } from "@/lib/babyProfile";
 import { useTranslation } from "@/lib/i18n/LanguageContext";
 import type { LoginFormValues, FormErrors } from "@/types/auth";
 import { BackButton } from "@/components/ui/BackButton";
+import { Logo } from "@/components/auth/Logo";
 
 const initialValues: LoginFormValues = { email: "", password: "", rememberMe: true };
 
@@ -76,6 +77,9 @@ export default function LoginScreen() {
             animate={{ opacity: 1, translateY: 0 }}
             transition={{ type: "timing", duration: 400 }}
           >
+            <View className="mb-6 mt-1 items-center">
+              <Logo variant="full" size="lg" />
+            </View>
             <Text className="font-display text-3xl text-ink">{t("login_title")}</Text>
             <Text className="mt-2 font-body text-sm text-ink-soft">{t("login_subtitle")}</Text>
 
