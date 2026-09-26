@@ -6,6 +6,7 @@ import { MotiView } from "moti";
 import { Logo } from "@/components/auth/Logo";
 import { supabase } from "@/lib/supabase/client";
 import { parseOAuthRedirect } from "@/lib/auth/oauthRedirect";
+import { consumeRecoveryRequest } from "@/lib/auth/localDataOwner";
 
 // Sa pritet që SocialAuthRow ta mbarojë shkëmbimin e token-it para fallback-ut.
 const FALLBACK_MS = 10000;
@@ -40,6 +41,14 @@ export default function AuthCallback() {
 
       handled.current = true;
       clearTimeout(timer);
+
+      // Pranohet vetëm kur rikthimi u kërkua nga ky telefon: përndryshe një
+      // link me sesionin e dikujt tjetër do ta kalonte këtë telefon në
+      // llogarinë e tij, dhe shënimet e bebit do të shkonin atje.
+      if (!(await consumeRecoveryRequest())) {
+        if (active) router.replace("/(auth)/forgot-password");
+        return;
+      }
 
       const { error } = await supabase.auth.setSession({
         access_token: parsed.accessToken,

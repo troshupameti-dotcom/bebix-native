@@ -1,7 +1,9 @@
 import { useEffect, useRef } from "react";
 import { AppState } from "react-native";
 import { useAppState } from "@/lib/state/AppStateContext";
-import { syncBabyRecords } from "@/lib/baby/babyRecordsSync";
+import { resetBabyRecordsSyncState, syncBabyRecords } from "@/lib/baby/babyRecordsSync";
+import { claimLocalData } from "@/lib/auth/localDataOwner";
+import { supabase } from "@/lib/supabase/client";
 
 /** Sa shpesh kontrollohet serveri kur app-i është i hapur (ndryshimet nga webi). */
 const INTERVAL_MS = 30_000;
@@ -23,19 +25,23 @@ const DEBOUNCE_MS = 2_500;
  * punon, ai nis sapo mbaron i pari.
  */
 export function useBabyRecordsSync(isAuthenticated: boolean) {
-  const { state, hydrated, applyBabyRecordsPatch } = useAppState();
+  const { state, hydrated, applyBabyRecordsPatch, resetBabyData } = useAppState();
 
   // Refs, që efektet të mos rinisen në çdo shkrim (react-hooks/refs: shkrimi
   // bëhet në efekt, jo gjatë render-it).
   const latestBaby = useRef(state.baby);
   const apply = useRef(applyBabyRecordsPatch);
+  const reset = useRef(resetBabyData);
   useEffect(() => {
     latestBaby.current = state.baby;
     apply.current = applyBabyRecordsPatch;
+    reset.current = resetBabyData;
   });
 
   const running = useRef(false);
   const queued = useRef(false);
+  // Asnjë sync para se të dihet që të dhënat lokale i përkasin kësaj llogarie.
+  const ownerReady = useRef(false);
   // Ndryshimi i state-it që vjen nga vetë sync-u s'duhet të nisë sync tjetër.
   const applyingRemote = useRef(false);
   const enabled = isAuthenticated && hydrated;
@@ -48,7 +54,7 @@ export function useBabyRecordsSync(isAuthenticated: boolean) {
   useEffect(() => {
     runSync.current = () => {
       if (!enabledRef.current) return;
-      if (running.current) {
+      if (running.current || !ownerReady.current) {
         queued.current = true;
         return;
       }
@@ -78,7 +84,32 @@ export function useBabyRecordsSync(isAuthenticated: boolean) {
   // Hapja, kthimi në plan të parë dhe kontrolli periodik.
   useEffect(() => {
     if (!enabled) return;
-    runSync.current();
+    let cancelled = false;
+
+    // Para sync-ut të parë: a i përkasin të dhënat lokale kësaj llogarie?
+    // Nëse jo (hyri dikush tjetër në këtë telefon), pastrohen, dhe sync-u nis
+    // vetëm pasi state-i i pastër të jetë renderuar — efekti i shkrimeve
+    // lokale më poshtë e nis vetë. Pa këtë pritje, sync-u do të dërgonte
+    // historikun e llogarisë së mëparshme te kjo.
+    ownerReady.current = false;
+    (async () => {
+      const { data } = await supabase.auth.getSession();
+      const userId = data.session?.user.id;
+      if (userId && (await claimLocalData(userId)) === "switched") {
+        await resetBabyRecordsSyncState();
+        if (cancelled) return;
+        reset.current();
+        queued.current = false;
+        // Sync-u i parë e pret state-in e pastër: e nis efekti i shkrimeve
+        // lokale, sapo pastrimi të renderohet.
+        ownerReady.current = true;
+        return;
+      }
+      if (cancelled) return;
+      ownerReady.current = true;
+      queued.current = false;
+      runSync.current();
+    })();
 
     const interval = setInterval(() => {
       if (AppState.currentState === "active") runSync.current();
@@ -88,6 +119,7 @@ export function useBabyRecordsSync(isAuthenticated: boolean) {
     });
 
     return () => {
+      cancelled = true;
       clearInterval(interval);
       subscription.remove();
     };

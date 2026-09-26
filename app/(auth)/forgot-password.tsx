@@ -8,6 +8,7 @@ import { shadows } from "@/lib/shadows";
 import { BackButton } from "@/components/ui/BackButton";
 import { useThemeColors } from "@/lib/theme/useThemeColors";
 import { useTranslation } from "@/lib/i18n/LanguageContext";
+import { markRecoveryRequested } from "@/lib/auth/localDataOwner";
 
 /**
  * Ekrani i fjalëkalimit të harruar.
@@ -34,6 +35,8 @@ export default function ForgotPasswordScreen() {
     setLoading(true);
     setError(null);
     try {
+      // Linku i email-it pranohet vetëm në telefonin që e kërkoi (shih callback).
+      await markRecoveryRequested();
       const { error: resetError } = await supabase.auth.resetPasswordForEmail(email.trim(), {
         redirectTo: Linking.createURL("auth/callback"),
       });
