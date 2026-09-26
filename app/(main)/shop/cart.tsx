@@ -34,9 +34,12 @@ export default function CartScreen() {
             <ScrollView className="px-5" showsVerticalScrollIndicator={false} contentContainerStyle={{ paddingBottom: 20 }}>
               {state.cartItems.map((item) => (
                 <View key={item.id} style={shadows.soft} className="bg-surface rounded-xl2 p-3 flex-row items-center mb-3">
-                  <View className="w-16 h-16 rounded-xl bg-olive-bg items-center justify-center overflow-hidden mr-3">
+                  <View
+                    className={`w-16 h-16 rounded-xl items-center justify-center overflow-hidden mr-3 ${item.imageUrl ? "" : "bg-olive-bg"}`}
+                    style={item.imageUrl ? { backgroundColor: "#FFFFFF", padding: 4 } : undefined}
+                  >
                     {item.imageUrl ? (
-                      <Image source={{ uri: item.imageUrl }} className="w-full h-full" resizeMode="cover" />
+                      <Image source={{ uri: item.imageUrl }} className="w-full h-full" resizeMode="contain" />
                     ) : (
                       <Icon name={item.icon as any} size={22} color="#6E7452" />
                     )}

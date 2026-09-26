@@ -21,9 +21,12 @@ function RelatedCard({ product, onPress }: { product: Product; onPress: () => vo
   const fg = product.accent === "olive" ? "#6E7452" : "#C9702E";
   return (
     <Pressable onPress={onPress} style={shadows.soft} className="mr-3 w-[136px] rounded-xl2 bg-surface p-3">
-      <View className={`mb-2 h-[88px] w-full items-center justify-center overflow-hidden rounded-xl ${bg}`}>
+      <View
+        className={`mb-2 h-[88px] w-full items-center justify-center overflow-hidden rounded-xl ${product.imageUrl ? "" : bg}`}
+        style={product.imageUrl ? { backgroundColor: "#FFFFFF", padding: 6 } : undefined}
+      >
         {product.imageUrl ? (
-          <Image source={{ uri: product.imageUrl }} className="h-full w-full" resizeMode="cover" />
+          <Image source={{ uri: product.imageUrl }} className="h-full w-full" resizeMode="contain" />
         ) : product.emoji ? (
           <Text
             style={{
@@ -143,7 +146,11 @@ export default function ProductDetailsScreen() {
                 }}
                 scrollEventThrottle={16}
                 renderItem={({ item }) => (
-                  <Image source={{ uri: item }} style={{ width, height: 288 }} resizeMode="cover" />
+                  // `contain` mbi të bardhë: fotot e produkteve kanë sfond të bardhë,
+                  // dhe me `cover` një shishe e gjatë dilte e prerë lart e poshtë.
+                  <View style={{ width, height: 320, backgroundColor: "#FFFFFF", padding: 20 }}>
+                    <Image source={{ uri: item }} style={{ width: "100%", height: "100%" }} resizeMode="contain" />
+                  </View>
                 )}
               />
               {gallerySlides.length > 1 && (

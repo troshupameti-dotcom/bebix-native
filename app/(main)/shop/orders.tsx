@@ -68,9 +68,12 @@ function OrderCard({ order }: { order: MyOrder }) {
       <View className="mt-3 pt-3 border-t border-cream-line">
         {order.items.map((item) => (
           <View key={item.id} className="flex-row items-center mb-2.5">
-            <View className="w-11 h-11 rounded-xl bg-cream-soft items-center justify-center overflow-hidden mr-3">
+            <View
+              className={`w-11 h-11 rounded-xl items-center justify-center overflow-hidden mr-3 ${item.imageUrl ? "" : "bg-cream-soft"}`}
+              style={item.imageUrl ? { backgroundColor: "#FFFFFF", padding: 3 } : undefined}
+            >
               {item.imageUrl ? (
-                <Image source={{ uri: item.imageUrl }} className="w-full h-full" resizeMode="cover" />
+                <Image source={{ uri: item.imageUrl }} className="w-full h-full" resizeMode="contain" />
               ) : (
                 <Icon name="cube" size={18} color={theme.inkFaint} />
               )}
