@@ -29,7 +29,20 @@ import {
   periodFor,
   type ClockPeriod,
 } from "@/lib/baby/dayClock";
-import { groupByDay, dayLabelKind, type DiaryEntry, type DiaryKind } from "@/lib/baby/diary";
+import {
+  groupByDay,
+  dayLabelKind,
+  dayKeyOf,
+  dayMarks,
+  startOfDay,
+  SPECIAL_KINDS,
+  type DiaryDay,
+  type DiaryEntry,
+  type DiaryKind,
+} from "@/lib/baby/diary";
+import { DiaryCalendar } from "@/components/baby/DiaryCalendar";
+import { DiaryWeek } from "@/components/baby/DiaryWeek";
+import { clockPalette } from "@/lib/baby/clockPalette";
 import type { TranslationKey } from "@/lib/i18n/translations";
 import { useInbox } from "@/lib/notifications/useInbox";
 
@@ -79,6 +92,18 @@ function DaySum({ icon, color, value }: { icon: IconName; color: string; value: 
     <View className="flex-row items-center gap-1">
       <Icon name={icon} size={12} color={color} />
       <Text className="font-bodyMedium text-[11.5px] text-ink-soft">{value}</Text>
+    </View>
+  );
+}
+
+/** Pllakë e përmbledhjes së ditës: e njëjta ngjyrë si pika e kalendarit. */
+function DayTile({ color, label, value }: { color: string; label: string; value: string }) {
+  return (
+    <View className="rounded-2xl px-3.5 py-3" style={{ backgroundColor: `${color}1F`, width: "48.5%" }}>
+      <Text className="font-bodySemibold text-[11px] uppercase" style={{ color }}>
+        {label}
+      </Text>
+      <Text className="mt-1 font-display text-[17px] text-ink">{value}</Text>
     </View>
   );
 }
@@ -163,6 +188,17 @@ export default function BabyProfileScreen() {
   const [selectMode, setSelectMode] = useState(false);
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
 
+  // Ditari hapet te kalendari, në ditën e sotme. "Javë" është raporti.
+  const [diaryView, setDiaryView] = useState<"day" | "week">("day");
+  const [diaryToday] = useState(() => startOfDay(new Date()));
+  const [selectedDay, setSelectedDay] = useState<Date>(diaryToday);
+  const [calMonth, setCalMonth] = useState({ y: diaryToday.getFullYear(), m: diaryToday.getMonth() });
+
+  function pickDiaryDay(day: Date) {
+    setSelectedDay(startOfDay(day));
+    setCalMonth({ y: day.getFullYear(), m: day.getMonth() });
+  }
+
   function selectionKey(kind: DiaryKind, id: string) {
     return `${kind}-${id}`;
   }
@@ -212,9 +248,9 @@ export default function BabyProfileScreen() {
     baby.bulkArchive(selectedRecordRefs());
     exitSelectMode();
   }
-  /** Hyrjet e zgjedhura, të rrafshuara nga ditët. */
+  /** Hyrjet e zgjedhura, nga të gjitha ditët — zgjedhja mund të kalojë disa ditë. */
   function selectedEntries() {
-    return diaryDays.flatMap((d) => d.entries).filter((f) => selectedIds.has(selectionKey(f.kind, f.id)));
+    return allDiaryDays.flatMap((d) => d.entries).filter((f) => selectedIds.has(selectionKey(f.kind, f.id)));
   }
   function bulkShareSelected() {
     haptics.tap();
@@ -415,19 +451,113 @@ export default function BabyProfileScreen() {
   // hyrjet ishin aty, por s'kishte asnjë mënyrë me i pa. Tash lista shkon
   // deri në fund, e ndarë sipas ditës.
   const searchQuery = search.trim().toLowerCase();
-  const diaryDays = groupByDay(
-    feed.filter((item) => {
-      if (kindFilter !== "all" && item.kind !== kindFilter) return false;
-      if (
-        searchQuery &&
-        !item.title.toLowerCase().includes(searchQuery) &&
-        !item.detail.toLowerCase().includes(searchQuery)
-      ) {
-        return false;
-      }
-      return true;
-    })
-  );
+  // React Compiler i memorizon vetë; `useMemo` manual këtu e bllokonte.
+  const filteredFeed = kindFilter === "all" ? feed : feed.filter((item) => item.kind === kindFilter);
+  // Kalendari dhe java lexojnë nga kjo; kërkimi shkon në gjithë historikun.
+  const allDiaryDays = groupByDay(filteredFeed);
+  const diaryDaysByKey = new Map<string, DiaryDay>(allDiaryDays.map((d) => [d.key, d]));
+  const diaryMarks = dayMarks(allDiaryDays);
+  const diaryDays = searchQuery
+    ? groupByDay(
+        filteredFeed.filter(
+          (item) => item.title.toLowerCase().includes(searchQuery) || item.detail.toLowerCase().includes(searchQuery)
+        )
+      )
+    : allDiaryDays;
+  const selectedDiaryDay = diaryDaysByKey.get(dayKeyOf(selectedDay.getTime()));
+  // Dita lexohet nga mëngjesi në mbrëmje; lista e kërkimit mbetet më e reja lart.
+  const selectedDayEntries = selectedDiaryDay ? [...selectedDiaryDay.entries].sort((a, b) => a.at - b.at) : [];
+  const diaryColors = clockPalette(profile.babyGender, theme);
+
+  function changeDiaryMonth(delta: -1 | 1) {
+    const next = new Date(calMonth.y, calMonth.m + delta, 1);
+    const y = next.getFullYear();
+    const m = next.getMonth();
+    setCalMonth({ y, m });
+    // Zgjidh ditën më të fundit me shënime në atë muaj, që poshtë kalendarit
+    // të mos mbetet dita e muajit tjetër.
+    if (y === diaryToday.getFullYear() && m === diaryToday.getMonth()) {
+      setSelectedDay(diaryToday);
+      return;
+    }
+    const lastLogged = allDiaryDays.find((d) => d.date.getFullYear() === y && d.date.getMonth() === m);
+    setSelectedDay(lastLogged ? lastLogged.date : new Date(y, m + 1, 0));
+  }
+
+  function changeDiaryWeek(delta: -1 | 1) {
+    const next = new Date(selectedDay.getFullYear(), selectedDay.getMonth(), selectedDay.getDate() + delta * 7);
+    pickDiaryDay(next.getTime() > diaryToday.getTime() ? diaryToday : next);
+  }
+
+  const diaryWeekdaysLong = t("diary_weekdays_long").split(",");
+  const diaryMonthsOf = t("diary_months_of").split(",");
+  const selectedDayTitle = t("diary_day_title", {
+    weekday: diaryWeekdaysLong[(selectedDay.getDay() + 6) % 7],
+    day: selectedDay.getDate(),
+    month: diaryMonthsOf[selectedDay.getMonth()],
+  });
+  const selectedIsToday = selectedDay.getTime() === diaryToday.getTime();
+
+  /** Një rresht i ditarit: ora, ikona në shiritin e kohës dhe kartela. */
+  function renderDiaryEntry(item: DiaryEntry, idx: number, list: DiaryEntry[]) {
+    const key = selectionKey(item.kind, item.id);
+    const isSelected = selectedIds.has(key);
+    const isLast = idx === list.length - 1;
+    const badgeBg = item.tint === "orange" ? theme.orangeBg : theme.oliveBg;
+    const badgeFg = item.tint === "orange" ? theme.orange : theme.olive;
+    return (
+      <Pressable
+        key={key}
+        onPress={() => (selectMode ? toggleSelect(item.kind, item.id) : undefined)}
+        className="flex-row items-start gap-3"
+      >
+        {/* Shirit kohe: koha dhe nje vije e vazhdueshme qe lidh
+            ikonat — si te aplikacionet e tjera te ndjekjes,
+            jo vetem nje rresht teksti. */}
+        <View className="items-center" style={{ width: 40 }}>
+          <Text className="mb-1.5 font-body text-[11px] text-ink-faint">
+            {formatTime(new Date(item.at).toISOString(), lang)}
+          </Text>
+          <View className="h-8 w-8 items-center justify-center rounded-full" style={{ backgroundColor: badgeBg }}>
+            <Icon name={item.icon} size={14} color={badgeFg} />
+          </View>
+          {!isLast && <View className="mt-1 w-px flex-1 bg-ink/10" style={{ minHeight: 14 }} />}
+        </View>
+
+        <View
+          className="mb-3 flex-1 flex-row items-center justify-between rounded-xl2 border border-ink/10 bg-surface px-3.5 py-3"
+          style={shadows.soft}
+        >
+          <View className="flex-1 flex-row items-center gap-2">
+            {selectMode && (
+              <View className={`h-4 w-4 items-center justify-center rounded-full border ${isSelected ? "border-ink bg-ink" : "border-ink/25 bg-surface"}`}>
+                {isSelected && <Icon name="check" size={9} color={isDark ? "#211D17" : "#FBF6EE"} />}
+              </View>
+            )}
+            <Text className="flex-1 font-bodyMedium text-[14px] text-ink" numberOfLines={1}>
+              {item.title}
+            </Text>
+          </View>
+          {item.detail ? <Text className="ml-2 font-body text-[12.5px] text-ink-soft">{item.detail}</Text> : null}
+          {!selectMode && item.kind === "event" && (
+            <Pressable
+              onPress={() => {
+                haptics.warning();
+                baby.deleteTimelineEvent(item.id);
+                showToast(t("deleted_toast"), () => baby.restoreTimelineEvent(item.id));
+              }}
+              hitSlop={8}
+              accessibilityRole="button"
+              accessibilityLabel={t("delete_action")}
+              className="ml-2"
+            >
+              <Icon name="close" size={14} color="#A79D8A" />
+            </Pressable>
+          )}
+        </View>
+      </Pressable>
+    );
+  }
 
 
   return (
@@ -661,7 +791,30 @@ export default function BabyProfileScreen() {
                 </View>
               ) : (
                 <>
-                  <Text className="flex-1 font-bodySemibold text-[15px] text-ink">{t("baby_tab_timeline")}</Text>
+                  <View className="flex-1 flex-row">
+                    <View className="flex-row rounded-full bg-cream-soft p-1">
+                      {(["day", "week"] as const).map((v) => {
+                        const on = diaryView === v;
+                        return (
+                          <Pressable
+                            key={v}
+                            onPress={() => {
+                              haptics.select();
+                              setDiaryView(v);
+                            }}
+                            accessibilityRole="tab"
+                            accessibilityState={{ selected: on }}
+                            className={`rounded-full px-4 py-2 ${on ? "bg-surface" : ""}`}
+                            style={on ? shadows.soft : undefined}
+                          >
+                            <Text className={`text-[13px] ${on ? "font-bodySemibold text-ink" : "font-bodyMedium text-ink-soft"}`}>
+                              {t(v === "day" ? "diary_view_day" : "diary_view_week")}
+                            </Text>
+                          </Pressable>
+                        );
+                      })}
+                    </View>
+                  </View>
                   <Pressable
                     onPress={() => setShowSearch(true)}
                     hitSlop={8}
@@ -716,100 +869,129 @@ export default function BabyProfileScreen() {
               </ScrollView>
             )}
 
-            {/* Lista, e ndarë sipas ditës. Data del një herë si titull dhe
-                mban përmbledhjen e asaj dite; rreshti mban vetëm orën. */}
-            {diaryDays.length === 0 ? (
-              <View className="items-center gap-2 py-14">
-                <Icon name="sparkle" size={24} color="#E9DFCC" />
-                <Text className="font-body text-sm text-ink-soft">
-                  {search.trim() || kindFilter !== "all" ? t("diary_no_match") : t("timeline_empty")}
-                </Text>
+            {searchQuery ? (
+              // Kërkimi shkon në gjithë historikun, prandaj rezultatet dalin si
+              // listë e ndarë sipas ditës, jo te kalendari.
+              <>
+                <Text className="mt-5 font-bodySemibold text-[13px] uppercase text-ink-faint">{t("diary_search_results")}</Text>
+                {diaryDays.length === 0 ? (
+                  <View className="items-center gap-2 py-14">
+                    <Icon name="sparkle" size={24} color="#E9DFCC" />
+                    <Text className="font-body text-sm text-ink-soft">{t("diary_no_match")}</Text>
+                  </View>
+                ) : (
+                  diaryDays.map((day) => {
+                    const label = dayLabelKind(day);
+                    return (
+                      <View key={day.key} className="mt-5">
+                        <View className="flex-row items-center justify-between border-b border-ink/10 pb-2">
+                          <Text className="font-bodySemibold text-[14px] text-ink">
+                            {label.kind === "today"
+                              ? t("diary_today")
+                              : label.kind === "yesterday"
+                                ? t("diary_yesterday")
+                                : formatDate(label.date.toISOString(), lang)}
+                          </Text>
+                          <View className="flex-row items-center gap-3">
+                            {day.feedings > 0 && <DaySum icon="spoon" color={theme.orange} value={String(day.feedings)} />}
+                            {day.sleepMinutes > 0 && <DaySum icon="moon" color={theme.olive} value={durationLabel(day.sleepMinutes, t)} />}
+                            {day.diapers > 0 && <DaySum icon="baby" color={theme.inkFaint} value={String(day.diapers)} />}
+                          </View>
+                        </View>
+                        <View className="mt-3">{day.entries.map(renderDiaryEntry)}</View>
+                      </View>
+                    );
+                  })
+                )}
+              </>
+            ) : diaryView === "day" ? (
+              <View className="mt-4 gap-4">
+                <DiaryCalendar
+                  year={calMonth.y}
+                  month={calMonth.m}
+                  selected={selectedDay}
+                  today={diaryToday}
+                  marks={diaryMarks}
+                  gender={profile.babyGender}
+                  onSelect={pickDiaryDay}
+                  onChangeMonth={changeDiaryMonth}
+                />
+
+                <View className="rounded-xl2 border border-cream-line bg-surface p-4">
+                  <View className="flex-row items-center justify-between">
+                    <Text className="flex-1 font-display text-lg text-ink">{selectedDayTitle}</Text>
+                    {selectedIsToday ? (
+                      <View className="rounded-full bg-olive-bg px-2.5 py-1">
+                        <Text className="font-bodySemibold text-[11px] text-olive">{t("diary_today")}</Text>
+                      </View>
+                    ) : (
+                      <Pressable
+                        onPress={() => {
+                          haptics.select();
+                          pickDiaryDay(diaryToday);
+                        }}
+                        accessibilityRole="button"
+                        className="rounded-full border border-cream-line px-3 py-1.5"
+                      >
+                        <Text className="font-bodySemibold text-[12px] text-ink">{t("diary_back_today")}</Text>
+                      </Pressable>
+                    )}
+                  </View>
+
+                  {selectedDiaryDay ? (
+                    <View className="mt-3 flex-row flex-wrap gap-2">
+                      <DayTile
+                        color={diaryColors.sleep}
+                        label={t("diary_sum_sleep")}
+                        value={selectedDiaryDay.sleepMinutes ? durationLabel(selectedDiaryDay.sleepMinutes, t) : "—"}
+                      />
+                      <DayTile
+                        color={diaryColors.feeding}
+                        label={t("diary_sum_feeds")}
+                        value={t("diary_times", { n: selectedDiaryDay.feedings })}
+                      />
+                      <DayTile color={diaryColors.diaper} label={t("diary_sum_diapers")} value={String(selectedDiaryDay.diapers)} />
+                      <DayTile
+                        color={diaryColors.poop}
+                        label={t("diary_sum_events")}
+                        value={String(selectedDiaryDay.entries.filter((e) => SPECIAL_KINDS.has(e.kind)).length)}
+                      />
+                    </View>
+                  ) : (
+                    <Text className="mt-3 font-body text-[13.5px] leading-5 text-ink-soft">{t("diary_day_empty")}</Text>
+                  )}
+                </View>
+
+                {selectedDayEntries.length > 0 && <View>{selectedDayEntries.map(renderDiaryEntry)}</View>}
               </View>
             ) : (
-              diaryDays.map((day) => {
-                const label = dayLabelKind(day);
-                return (
-                  <View key={day.key} className="mt-6">
-                    <View className="flex-row items-center justify-between border-b border-ink/10 pb-2">
-                      <Text className="font-bodySemibold text-[14px] text-ink">
-                        {label.kind === "today"
-                          ? t("diary_today")
-                          : label.kind === "yesterday"
-                            ? t("diary_yesterday")
-                            : formatDate(label.date.toISOString(), lang)}
-                      </Text>
-                      <View className="flex-row items-center gap-3">
-                        {day.feedings > 0 && <DaySum icon="spoon" color={theme.orange} value={String(day.feedings)} />}
-                        {day.sleepMinutes > 0 && <DaySum icon="moon" color={theme.olive} value={durationLabel(day.sleepMinutes, t)} />}
-                        {day.diapers > 0 && <DaySum icon="baby" color={theme.inkFaint} value={String(day.diapers)} />}
-                      </View>
-                    </View>
+              <View className="mt-4">
+                <DiaryWeek
+                  anchor={selectedDay}
+                  today={diaryToday}
+                  daysByKey={diaryDaysByKey}
+                  gender={profile.babyGender}
+                  onChangeWeek={changeDiaryWeek}
+                  onPickDay={(d) => {
+                    pickDiaryDay(d);
+                    setDiaryView("day");
+                  }}
+                />
+              </View>
+            )}
 
-                    {day.entries.map((item, idx) => {
-                      const key = selectionKey(item.kind, item.id);
-                      const isSelected = selectedIds.has(key);
-                      const isLast = idx === day.entries.length - 1;
-                      const badgeBg = item.tint === "orange" ? theme.orangeBg : theme.oliveBg;
-                      const badgeFg = item.tint === "orange" ? theme.orange : theme.olive;
-                      return (
-                        <Pressable
-                          key={key}
-                          onPress={() => (selectMode ? toggleSelect(item.kind, item.id) : undefined)}
-                          className="flex-row items-start gap-3"
-                        >
-                          {/* Shirit kohe: koha dhe nje vije e vazhdueshme qe lidh
-                              ikonat — si te aplikacionet e tjera te ndjekjes,
-                              jo vetem nje rresht teksti. */}
-                          <View className="items-center" style={{ width: 40 }}>
-                            <Text className="mb-1.5 font-body text-[11px] text-ink-faint">
-                              {formatTime(new Date(item.at).toISOString(), lang)}
-                            </Text>
-                            <View
-                              className="h-8 w-8 items-center justify-center rounded-full"
-                              style={{ backgroundColor: badgeBg }}
-                            >
-                              <Icon name={item.icon} size={14} color={badgeFg} />
-                            </View>
-                            {!isLast && <View className="mt-1 w-px flex-1 bg-ink/10" style={{ minHeight: 14 }} />}
-                          </View>
-
-                          <View
-                            className="mb-3 flex-1 flex-row items-center justify-between rounded-xl2 border border-ink/10 bg-surface px-3.5 py-3"
-                            style={shadows.soft}
-                          >
-                            <View className="flex-1 flex-row items-center gap-2">
-                              {selectMode && (
-                                <View className={`h-4 w-4 items-center justify-center rounded-full border ${isSelected ? "border-ink bg-ink" : "border-ink/25 bg-surface"}`}>
-                                  {isSelected && <Icon name="check" size={9} color={isDark ? "#211D17" : "#FBF6EE"} />}
-                                </View>
-                              )}
-                              <Text className="flex-1 font-bodyMedium text-[14px] text-ink" numberOfLines={1}>
-                                {item.title}
-                              </Text>
-                            </View>
-                            {item.detail ? (
-                              <Text className="ml-2 font-body text-[12.5px] text-ink-soft">{item.detail}</Text>
-                            ) : null}
-                            {!selectMode && item.kind === "event" && (
-                              <Pressable
-                                onPress={() => {
-                                  haptics.warning();
-                                  baby.deleteTimelineEvent(item.id);
-                                  showToast(t("deleted_toast"), () => baby.restoreTimelineEvent(item.id));
-                                }}
-                                hitSlop={8}
-                                className="ml-2"
-                              >
-                                <Icon name="close" size={14} color="#A79D8A" />
-                              </Pressable>
-                            )}
-                          </View>
-                        </Pressable>
-                      );
-                    })}
-                  </View>
-                );
-              })
+            {!searchQuery && (
+              <Pressable
+                onPress={() => {
+                  haptics.tap();
+                  router.push("/(main)/baby/export");
+                }}
+                accessibilityRole="button"
+                className="mt-4 flex-row items-center justify-center gap-2 rounded-2xl border border-olive bg-surface py-3.5"
+              >
+                <Icon name="download" size={15} color={theme.olive} />
+                <Text className="font-bodySemibold text-[13.5px] text-olive">{t("diary_report_doctor")}</Text>
+              </Pressable>
             )}
 
             {selectMode && selectedIds.size > 0 && (
