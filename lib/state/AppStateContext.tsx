@@ -5,6 +5,7 @@ import AsyncStorage from "@react-native-async-storage/async-storage";
 import { syncNotificationSettings } from "@/lib/notifications/settingsSync";
 import { signedUrlForProfilePhoto } from "@/lib/baby/profilePhotos";
 import { fetchProfilePhotoPaths } from "@/lib/babySync";
+import { mergeRecordsPatch } from "@/lib/baby/babyRecordsSync";
 import { migrateNotificationPrefs, type NotificationKey } from "@/lib/notifications/catalog";
 import {
   AppState,
@@ -102,18 +103,49 @@ function withDuplicate<T extends Identifiable & Lifecycle>(list: T[], id: string
   const at = nowIso();
   return [{ ...item, ...overrides, id: uid(), createdAt: at, updatedAt: at, editCount: 0 }, ...list];
 }
+/**
+ * Çdo ndryshim i lifecycle-it (fshirje, rikthim, arkivim) rrit `updatedAt`.
+ * Sync-u dërgon vetëm ç'ka `updatedAt` pas sync-ut të fundit dhe shkrin
+ * sipas tij: pa këtë, një fshirje në telefon s'arrinte kurrë te serveri dhe
+ * shënimi mbetej i dukshëm te webi.
+ */
+function touch<T extends Lifecycle>(item: T, patch: Partial<T>, at: string): T {
+  return { ...item, ...patch, updatedAt: at, editCount: item.editCount + 1 };
+}
+function withLifecycle<T extends Identifiable & Lifecycle>(list: T[], ids: string[], patch: (at: string) => Partial<Lifecycle>): T[] {
+  const at = nowIso();
+  return list.map((item) => (ids.includes(item.id) ? touch(item, patch(at) as Partial<T>, at) : item));
+}
 function withSoftDelete<T extends Identifiable & Lifecycle>(list: T[], id: string): T[] {
-  return list.map((item) => (item.id === id ? { ...item, deletedAt: nowIso() } : item));
+  return withLifecycle(list, [id], (at) => ({ deletedAt: at }));
 }
 function withRestore<T extends Identifiable & Lifecycle>(list: T[], id: string): T[] {
-  return list.map((item) => (item.id === id ? { ...item, deletedAt: null } : item));
+  return withLifecycle(list, [id], () => ({ deletedAt: null }));
 }
 function withArchive<T extends Identifiable & Lifecycle>(list: T[], id: string): T[] {
-  return list.map((item) => (item.id === id ? { ...item, archivedAt: nowIso() } : item));
+  return withLifecycle(list, [id], (at) => ({ archivedAt: at }));
 }
 function withUnarchive<T extends Identifiable & Lifecycle>(list: T[], id: string): T[] {
-  return list.map((item) => (item.id === id ? { ...item, archivedAt: null } : item));
+  return withLifecycle(list, [id], () => ({ archivedAt: null }));
 }
+/** E njëjta për shumë shënime njëherësh (zgjedhja te Ditari). */
+function bulkLifecycle(
+  b: BabyModuleState,
+  items: { kind: RecordKind; id: string }[],
+  patch: (at: string) => Partial<Lifecycle>
+): Partial<BabyModuleState> {
+  const ids = (k: RecordKind) => items.filter((i) => i.kind === k).map((i) => i.id);
+  return {
+    feedingLog: withLifecycle(b.feedingLog, ids("feeding"), patch),
+    sleepLog: withLifecycle(b.sleepLog, ids("sleep"), patch),
+    diaperLog: withLifecycle(b.diaperLog, ids("diaper"), patch),
+    growthHistory: withLifecycle(b.growthHistory, ids("growthHistory"), patch),
+    vaccines: withLifecycle(b.vaccines, ids("vaccine"), patch),
+    medicalRecords: withLifecycle(b.medicalRecords, ids("medical"), patch),
+    timeline: withLifecycle(b.timeline, ids("timeline"), patch),
+  };
+}
+
 /** Records visible in normal lists: not deleted, not archived. */
 export function active<T extends Lifecycle>(list: T[]): T[] {
   return list.filter((item) => !item.deletedAt && !item.archivedAt);
@@ -135,6 +167,7 @@ type Action =
   | { type: "UPDATE_CART_QTY"; id: string; qty: number }
   | { type: "CLEAR_CART" }
   | { type: "SET_BABY"; value: Partial<BabyModuleState> }
+  | { type: "MERGE_BABY_RECORDS"; value: Partial<BabyModuleState> }
   | { type: "SET_NOTIFICATION_PREF"; key: NotificationKey; value: boolean }
   | { type: "SET_QUIET_HOURS"; from: number; to: number }
   | { type: "SET_READ_NOTIFICATIONS"; ids: string[] }
@@ -182,6 +215,8 @@ function reducer(state: AppState, action: Action): AppState {
       return { ...state, cartItems: [], cartCount: 0 };
     case "SET_BABY":
       return { ...state, baby: { ...state.baby, ...action.value } };
+    case "MERGE_BABY_RECORDS":
+      return { ...state, baby: { ...state.baby, ...mergeRecordsPatch(state.baby, action.value) } };
     case "SET_NOTIFICATION_PREF":
       return {
         ...state,
@@ -328,7 +363,9 @@ function buildValue(state: AppState, dispatch: React.Dispatch<Action>) {
   return {
     state,
     /** Aplikon listat e shkrira nga sync-u i baby_records. */
-    applyBabyRecordsPatch: (patch: Partial<BabyModuleState>) => setBaby(patch),
+    // Shkrihet me gjendjen në çastin e zbatimit (reducer), jo me atë nga e
+    // cila nisi sync-u — përndryshe një shënim i shtuar gjatë sync-ut humbet.
+    applyBabyRecordsPatch: (patch: Partial<BabyModuleState>) => dispatch({ type: "MERGE_BABY_RECORDS", value: patch }),
     setDarkMode: (value: boolean) => dispatch({ type: "SET_DARK_MODE", value }),
     updateProfile: (value: Partial<BabyProfile>) => dispatch({ type: "UPDATE_PROFILE", value }),
     toggleFavorite: (item: FavoriteItem) => dispatch({ type: "TOGGLE_FAVORITE", item }),
@@ -511,18 +548,29 @@ function buildValue(state: AppState, dispatch: React.Dispatch<Action>) {
         };
         setBaby({ sleepLog: withAdd(b.sleepLog, item) });
       },
-      pauseSleep: (id: string) => setBaby({ sleepLog: b.sleepLog.map((s) => (s.id === id ? { ...s, pausedAt: nowIso() } : s)) }),
+      // Pauza, vazhdimi dhe mbyllja rrisin `updatedAt`: pa të, sync-u s'e
+      // dërgonte ndryshimin dhe webi e tregonte gjumin "në vazhdim" përgjithmonë.
+      pauseSleep: (id: string) => {
+        const at = nowIso();
+        setBaby({ sleepLog: b.sleepLog.map((s) => (s.id === id ? { ...s, pausedAt: at, updatedAt: at, editCount: s.editCount + 1 } : s)) });
+      },
       resumeSleep: (id: string) => {
         const entry = b.sleepLog.find((s) => s.id === id);
         if (!entry?.pausedAt) return;
         const pausedMin = Math.round((Date.now() - new Date(entry.pausedAt).getTime()) / 60000);
+        const at = nowIso();
         setBaby({
           sleepLog: b.sleepLog.map((s) =>
-            s.id === id ? { ...s, pausedAt: null, pausedIntervalsMin: s.pausedIntervalsMin + pausedMin } : s
+            s.id === id
+              ? { ...s, pausedAt: null, pausedIntervalsMin: s.pausedIntervalsMin + pausedMin, updatedAt: at, editCount: s.editCount + 1 }
+              : s
           ),
         });
       },
-      endSleep: (id: string) => setBaby({ sleepLog: b.sleepLog.map((s) => (s.id === id ? { ...s, endAt: nowIso() } : s)) }),
+      endSleep: (id: string) => {
+        const at = nowIso();
+        setBaby({ sleepLog: b.sleepLog.map((s) => (s.id === id ? { ...s, endAt: at, updatedAt: at, editCount: s.editCount + 1 } : s)) });
+      },
       updateSleepEntry: (id: string, patch: Partial<SleepEntry>) => {
         const { list, entries } = diffAndTrack(b.sleepLog, id, patch, "sleep", "sleep");
         setBaby({ sleepLog: list });
@@ -638,42 +686,12 @@ function buildValue(state: AppState, dispatch: React.Dispatch<Action>) {
       removeEmergencyContact: (id: string) => setBaby({ emergencyContacts: b.emergencyContacts.filter((c) => c.id !== id) }),
 
       // ---- Bulk actions (Timeline multi-select) ----
-      bulkDelete: (items: { kind: RecordKind; id: string }[]) => {
-        const ids = (k: RecordKind) => items.filter((i) => i.kind === k).map((i) => i.id);
-        setBaby({
-          feedingLog: b.feedingLog.map((e) => (ids("feeding").includes(e.id) ? { ...e, deletedAt: nowIso() } : e)),
-          sleepLog: b.sleepLog.map((e) => (ids("sleep").includes(e.id) ? { ...e, deletedAt: nowIso() } : e)),
-          diaperLog: b.diaperLog.map((e) => (ids("diaper").includes(e.id) ? { ...e, deletedAt: nowIso() } : e)),
-          growthHistory: b.growthHistory.map((e) => (ids("growthHistory").includes(e.id) ? { ...e, deletedAt: nowIso() } : e)),
-          vaccines: b.vaccines.map((e) => (ids("vaccine").includes(e.id) ? { ...e, deletedAt: nowIso() } : e)),
-          medicalRecords: b.medicalRecords.map((e) => (ids("medical").includes(e.id) ? { ...e, deletedAt: nowIso() } : e)),
-          timeline: b.timeline.map((e) => (ids("timeline").includes(e.id) ? { ...e, deletedAt: nowIso() } : e)),
-        });
-      },
-      bulkArchive: (items: { kind: RecordKind; id: string }[]) => {
-        const ids = (k: RecordKind) => items.filter((i) => i.kind === k).map((i) => i.id);
-        setBaby({
-          feedingLog: b.feedingLog.map((e) => (ids("feeding").includes(e.id) ? { ...e, archivedAt: nowIso() } : e)),
-          sleepLog: b.sleepLog.map((e) => (ids("sleep").includes(e.id) ? { ...e, archivedAt: nowIso() } : e)),
-          diaperLog: b.diaperLog.map((e) => (ids("diaper").includes(e.id) ? { ...e, archivedAt: nowIso() } : e)),
-          growthHistory: b.growthHistory.map((e) => (ids("growthHistory").includes(e.id) ? { ...e, archivedAt: nowIso() } : e)),
-          vaccines: b.vaccines.map((e) => (ids("vaccine").includes(e.id) ? { ...e, archivedAt: nowIso() } : e)),
-          medicalRecords: b.medicalRecords.map((e) => (ids("medical").includes(e.id) ? { ...e, archivedAt: nowIso() } : e)),
-          timeline: b.timeline.map((e) => (ids("timeline").includes(e.id) ? { ...e, archivedAt: nowIso() } : e)),
-        });
-      },
-      bulkRestore: (items: { kind: RecordKind; id: string }[]) => {
-        const ids = (k: RecordKind) => items.filter((i) => i.kind === k).map((i) => i.id);
-        setBaby({
-          feedingLog: b.feedingLog.map((e) => (ids("feeding").includes(e.id) ? { ...e, deletedAt: null } : e)),
-          sleepLog: b.sleepLog.map((e) => (ids("sleep").includes(e.id) ? { ...e, deletedAt: null } : e)),
-          diaperLog: b.diaperLog.map((e) => (ids("diaper").includes(e.id) ? { ...e, deletedAt: null } : e)),
-          growthHistory: b.growthHistory.map((e) => (ids("growthHistory").includes(e.id) ? { ...e, deletedAt: null } : e)),
-          vaccines: b.vaccines.map((e) => (ids("vaccine").includes(e.id) ? { ...e, deletedAt: null } : e)),
-          medicalRecords: b.medicalRecords.map((e) => (ids("medical").includes(e.id) ? { ...e, deletedAt: null } : e)),
-          timeline: b.timeline.map((e) => (ids("timeline").includes(e.id) ? { ...e, deletedAt: null } : e)),
-        });
-      },
+      bulkDelete: (items: { kind: RecordKind; id: string }[]) =>
+        setBaby(bulkLifecycle(b, items, (at) => ({ deletedAt: at }))),
+      bulkArchive: (items: { kind: RecordKind; id: string }[]) =>
+        setBaby(bulkLifecycle(b, items, (at) => ({ archivedAt: at }))),
+      bulkRestore: (items: { kind: RecordKind; id: string }[]) =>
+        setBaby(bulkLifecycle(b, items, () => ({ deletedAt: null }))),
     },
   };
 }

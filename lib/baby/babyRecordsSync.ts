@@ -125,6 +125,41 @@ function mergeById(local: AnyPayload[], remote: AnyPayload[]): { merged: AnyPayl
   return { merged: [...byId.values()], changed };
 }
 
+const SYNCED_LIST_KEYS = new Set<string>(Object.values(RECORD_LIST_KEY));
+
+/**
+ * Zbaton rezultatin e një sync-u mbi gjendjen e TANISHME, jo mbi atë nga e
+ * cila nisi sync-u. Sync-u zgjat (rrjet), dhe ndërkohë prindi mund të ketë
+ * shtuar ose ndryshuar diçka në të njëjtën listë; zëvendësimi i drejtpërdrejtë
+ * i listës do ta fshinte atë ndryshim nga telefoni.
+ *
+ * Rregulli është i njëjti "më i riu fiton" si te `mergeById`. Përjashtim i
+ * vetëm: `storagePath` i momentit të sapongarkuar vjen me të njëjtin
+ * `updatedAt`, prandaj kopjohet kur versioni lokal s'e ka.
+ */
+export function mergeRecordsPatch(current: BabyModuleState, patch: Partial<BabyModuleState>): Partial<BabyModuleState> {
+  const out: Partial<BabyModuleState> = {};
+  for (const [key, incoming] of Object.entries(patch)) {
+    if (!SYNCED_LIST_KEYS.has(key) || !Array.isArray(incoming)) {
+      (out as Record<string, unknown>)[key] = incoming;
+      continue;
+    }
+    const byId = new Map<string, AnyPayload>();
+    for (const item of current[key as keyof BabyModuleState] as AnyPayload[]) byId.set(item.id, item);
+    for (const item of incoming as AnyPayload[]) {
+      const mine = byId.get(item.id);
+      if (!mine || item.updatedAt > mine.updatedAt) {
+        byId.set(item.id, item);
+      } else if (item.updatedAt === mine.updatedAt && "storagePath" in item && item.storagePath && !(mine as Moment).storagePath) {
+        byId.set(item.id, { ...mine, storagePath: item.storagePath } as AnyPayload);
+      }
+    }
+    const merged = [...byId.values()].sort((a, b) => (a.createdAt < b.createdAt ? 1 : -1));
+    (out as Record<string, unknown>)[key] = merged;
+  }
+  return out;
+}
+
 /** Të gjitha regjistrimet lokale, si union i sheshtë. */
 function collectLocal(baby: BabyModuleState): AnyBabyRecord[] {
   const out: AnyBabyRecord[] = [];
@@ -220,6 +255,11 @@ export async function syncBabyRecords(baby: BabyModuleState): Promise<Partial<Ba
   const userId = await resolveDataOwnerId();
   if (!userId) return null;
 
+  // Ora e FILLIMIT, jo e mbarimit: çdo ndryshim që ndodh gjatë këtij sync-u
+  // (në telefon ose te webi) ka `updatedAt` pas saj dhe merret herën tjetër.
+  // Më parë ruhej ora e mbarimit, dhe një shënim i shtuar gjatë sync-ut
+  // mbetej përgjithmonë vetëm në njërën anë.
+  const startedAt = new Date().toISOString();
   const lastSync = await AsyncStorage.getItem(LAST_SYNC_KEY);
   const migrated = await AsyncStorage.getItem(MIGRATED_KEY);
   const localRecords = collectLocal(baby);
@@ -256,7 +296,9 @@ export async function syncBabyRecords(baby: BabyModuleState): Promise<Partial<Ba
     await pushRows(changedLocally.map((item) => toRow(userId, withStoragePath(item))));
   }
 
-  await AsyncStorage.setItem(LAST_SYNC_KEY, new Date().toISOString());
+  // Dy minuta rezervë për orët e pajisjeve që s'përputhen (telefoni dhe
+  // kompjuteri i webit): një rresht i marrë dy herë shkrihet pa dëm.
+  await AsyncStorage.setItem(LAST_SYNC_KEY, new Date(new Date(startedAt).getTime() - 2 * 60_000).toISOString());
 
   const patch: Partial<BabyModuleState> = {};
 
