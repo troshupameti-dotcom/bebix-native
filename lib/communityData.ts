@@ -277,17 +277,34 @@ function mapFeedRow(p: any, likedIds: Set<string>, savedIds: Set<string>): Commu
   };
 }
 
-export async function fetchFeed(): Promise<CommunityPost[]> {
+/** Sa postime lexohen njëherësh; të tjerat vijnë kur prindi zbret poshtë. */
+export const FEED_PAGE_SIZE = 20;
+
+/**
+ * Një faqe e rrjedhës, nga më i riu. `before` = `at` i postimit të fundit
+ * të faqes së mëparshme (faqosje sipas kohës, jo sipas numrit: një postim
+ * i ri në krye s'e zhvendos faqen tjetër dhe s'sjell dublikata).
+ *
+ * Më parë lexohej e gjithë rrjedha dhe të gjitha pëlqimet e ruajtjet e
+ * përdoruesit — me mijëra postime, ekrani hapej gjithnjë e më ngadalë.
+ */
+export async function fetchFeed(options: { before?: string; limit?: number } = {}): Promise<CommunityPost[]> {
   const uid = await getCurrentUserId();
-  const { data, error } = await supabase.from("community_feed").select("*").order("created_at", { ascending: false });
+  let query = supabase.from("community_feed").select("*");
+  if (options.before) query = query.lt("created_at", options.before);
+  const { data, error } = await query
+    .order("created_at", { ascending: false })
+    .limit(options.limit ?? FEED_PAGE_SIZE);
   if (error) throw error;
 
   let likedIds = new Set<string>();
   let savedIds = new Set<string>();
-  if (uid) {
+  const ids = (data ?? []).map((p) => p.id as string);
+  if (uid && ids.length) {
+    // Vetëm për postimet e kësaj faqeje.
     const [{ data: likes }, { data: saves }] = await Promise.all([
-      supabase.from("community_post_likes").select("post_id").eq("user_id", uid),
-      supabase.from("community_post_saves").select("post_id").eq("user_id", uid),
+      supabase.from("community_post_likes").select("post_id").eq("user_id", uid).in("post_id", ids),
+      supabase.from("community_post_saves").select("post_id").eq("user_id", uid).in("post_id", ids),
     ]);
     likedIds = new Set((likes ?? []).map((l) => l.post_id));
     savedIds = new Set((saves ?? []).map((s) => s.post_id));

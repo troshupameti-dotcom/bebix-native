@@ -1,5 +1,5 @@
 import { useCallback, useMemo, useState } from "react";
-import { View, Text, ScrollView, Pressable, TextInput, ActivityIndicator } from "react-native";
+import { View, Text, ScrollView, Pressable, TextInput, ActivityIndicator, type NativeScrollEvent, type NativeSyntheticEvent } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useRouter, useFocusEffect } from "expo-router";
 import { useAppState } from "@/lib/state/AppStateContext";
@@ -9,7 +9,7 @@ import { useThemeColors } from "@/lib/theme/useThemeColors";
 import { shadows } from "@/lib/shadows";
 import { PostCard } from "@/components/community/PostCard";
 import {
-  fetchGroups, fetchExperts, fetchTopics, fetchTips, fetchFeed,
+  fetchGroups, fetchExperts, fetchTopics, fetchTips, fetchFeed, FEED_PAGE_SIZE,
   CommunityGroup, CommunityExpert, CommunityTopic, CommunityTip, CommunityPost,
 } from "@/lib/communityData";
 
@@ -52,19 +52,55 @@ export default function CommunityScreen() {
   const [topics, setTopics] = useState<CommunityTopic[]>([]);
   const [tips, setTips] = useState<CommunityTip[]>([]);
   const [posts, setPosts] = useState<CommunityPost[]>([]);
+  const [hasMore, setHasMore] = useState(true);
+  const [loadingMore, setLoadingMore] = useState(false);
 
   const loadAll = useCallback(async () => {
     try {
       const [g, e, tp, ti, p] = await Promise.all([
         fetchGroups(), fetchExperts(), fetchTopics(), fetchTips(), fetchFeed(),
       ]);
-      setGroups(g); setExperts(e); setTopics(tp); setTips(ti); setPosts(p);
+      setGroups(g); setExperts(e); setTopics(tp); setTips(ti);
+      // Kthimi te ekrani rifreskon faqen e parë, por s'i hedh postimet më
+      // të vjetra që prindi kishte ngarkuar tashmë duke zbritur poshtë.
+      setPosts((prev) => {
+        if (p.length < FEED_PAGE_SIZE) return p;
+        const oldest = new Date(p[p.length - 1].at).getTime();
+        return [...p, ...prev.filter((x) => new Date(x.at).getTime() < oldest)];
+      });
+      setHasMore((prev) => (p.length < FEED_PAGE_SIZE ? false : prev));
     } catch (err) {
       console.warn("Community load error:", err);
     } finally {
       setLoading(false);
     }
   }, []);
+
+  const loadMore = useCallback(async () => {
+    if (loadingMore || !hasMore || posts.length === 0) return;
+    setLoadingMore(true);
+    try {
+      const next = await fetchFeed({ before: posts[posts.length - 1].at });
+      setPosts((prev) => {
+        const seen = new Set(prev.map((x) => x.id));
+        return [...prev, ...next.filter((x) => !seen.has(x.id))];
+      });
+      if (next.length < FEED_PAGE_SIZE) setHasMore(false);
+    } catch (err) {
+      console.warn("Community load more error:", err);
+    } finally {
+      setLoadingMore(false);
+    }
+  }, [hasMore, loadingMore, posts]);
+
+  // Faqja tjetër nis pak para fundit, që leximi të mos ndalet.
+  const onScroll = useCallback(
+    ({ nativeEvent }: NativeSyntheticEvent<NativeScrollEvent>) => {
+      const { layoutMeasurement, contentOffset, contentSize } = nativeEvent;
+      if (layoutMeasurement.height + contentOffset.y >= contentSize.height - 600) void loadMore();
+    },
+    [loadMore]
+  );
 
   useFocusEffect(useCallback(() => { loadAll(); }, [loadAll]));
 
@@ -85,8 +121,19 @@ export default function CommunityScreen() {
   const todayTip = useMemo(() => tipOfDay(tips), [tips]);
 
   const removePost = useCallback(
-    (id: string, reason: "deleted" | "blocked") =>
-      reason === "blocked" ? loadAll() : setPosts((prev) => prev.filter((x) => x.id !== id)),
+    (id: string, reason: "deleted" | "blocked") => {
+      if (reason === "deleted") {
+        setPosts((prev) => prev.filter((x) => x.id !== id));
+        return;
+      }
+      // I bllokuari zhduket edhe nga postimet e vjetra të ngarkuara më parë,
+      // jo vetëm nga faqja e parë që rilexohet.
+      setPosts((prev) => {
+        const author = prev.find((x) => x.id === id)?.authorId;
+        return prev.filter((x) => x.authorId !== author);
+      });
+      void loadAll();
+    },
     [loadAll]
   );
 
@@ -126,7 +173,12 @@ export default function CommunityScreen() {
         </View>
       </View>
 
-      <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={{ paddingBottom: 96 }}>
+      <ScrollView
+        showsVerticalScrollIndicator={false}
+        contentContainerStyle={{ paddingBottom: 96 }}
+        onScroll={onScroll}
+        scrollEventThrottle={250}
+      >
         <View className="px-5">
           <View className="flex-row items-center bg-surface border border-cream-line rounded-xl2 px-3.5 py-2.5">
             <Icon name="search" size={18} color={theme.inkFaint} />
@@ -203,6 +255,7 @@ export default function CommunityScreen() {
               />
             ))
           )}
+          {loadingMore && <ActivityIndicator className="text-olive my-4" />}
         </View>
 
         {/* Navigim dytësor, në fund: aty ku e kërkon kush e kërkon */}
