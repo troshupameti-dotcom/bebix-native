@@ -10,9 +10,6 @@ import { useTranslation } from "@/lib/i18n/LanguageContext";
 import { deleteAccount } from "@/lib/account/deleteAccount";
 import { SUPPORT_EMAIL } from "@/lib/support";
 
-/** Fjala që duhet shkruar — mbrojtje nga shtypja pa dashje. */
-const CONFIRM_WORD = "FSHIJ";
-
 function Row({ icon, text }: { icon: Parameters<typeof Icon>[0]["name"]; text: string }) {
   const theme = useThemeColors();
   return (
@@ -31,6 +28,8 @@ export default function DeleteAccountScreen() {
   const [confirm, setConfirm] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  // Fjala që duhet shkruar — mbrojtje nga shtypja pa dashje ("FSHIJ" / "DELETE").
+  const CONFIRM_WORD = t("del_confirm_word");
 
   const canDelete = confirm.trim().toUpperCase() === CONFIRM_WORD && !loading;
 
@@ -64,22 +63,21 @@ export default function DeleteAccountScreen() {
 
           <View style={shadows.soft} className="bg-surface rounded-xl2 p-4 mb-4">
             <Text className="font-bodySemibold text-sm text-ink mb-3">{t("del_what_goes")}</Text>
-            <Row icon="baby" text="Profili i bebit dhe i gjithë historiku: ushqyerjet, gjumi, pelenat, rritja, vaksinat dhe të dhënat mjekësore." />
-            <Row icon="camera" text="Fotot e momenteve, nga telefoni dhe nga serveri." />
-            <Row icon="comment" text="Postimet, komentet, pëlqimet dhe të ruajturat te Komuniteti." />
-            <Row icon="bell" text="Njoftimet dhe lidhja e këtij telefoni me llogarinë." />
+            <Row icon="baby" text={t("del_goes_baby")} />
+            <Row icon="camera" text={t("del_goes_moments")} />
+            <Row icon="comment" text={t("del_goes_community")} />
+            <Row icon="bell" text={t("del_goes_notifications")} />
           </View>
 
           <View style={shadows.soft} className="bg-surface rounded-xl2 p-4 mb-5">
             <Text className="font-bodySemibold text-sm text-ink mb-3">{t("del_what_stays")}</Text>
-            <Row
-              icon="cube"
-              text="Porositë e bëra nga dyqani mbeten si regjistrim tregtar, sepse na kërkohen nga kontabiliteti dhe nga partnerët që i dërguan. Emri, telefoni dhe adresa hiqen prej tyre — porosia nuk lidhet më me ty."
-            />
+            <Row icon="cube" text={t("del_stays_orders")} />
           </View>
 
           <Text className="font-bodyMedium text-sm text-ink-soft mb-2">
-            Shkruaj <Text className="font-bodySemibold text-ink">{CONFIRM_WORD}</Text> për të vazhduar
+            {t("del_type_before")}
+            <Text className="font-bodySemibold text-ink">{CONFIRM_WORD}</Text>
+            {t("del_type_after")}
           </Text>
           <TextInput
             value={confirm}
@@ -117,8 +115,7 @@ export default function DeleteAccountScreen() {
           </Pressable>
 
           <Text className="font-body text-[11px] text-ink-faint text-center leading-5 mt-8">
-            Nëse llogaria jote është e lidhur me panelin ose me një partner, fshirja bllokohet për
-            siguri. Në atë rast na shkruaj te {SUPPORT_EMAIL}.
+            {t("del_blocked_note", { email: SUPPORT_EMAIL })}
           </Text>
         </ScrollView>
       </KeyboardAvoidingView>

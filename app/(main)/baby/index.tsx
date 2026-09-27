@@ -323,27 +323,28 @@ export default function BabyProfileScreen() {
   const suggestion = useMemo(() => {
     const lastFeeding = active(b.feedingLog)[0];
     const lastDiaper = active(b.diaperLog)[0];
-    const candidates: { label: string; hrs: number; icon: IconName; route: "/(main)/baby/feeding" | "/(main)/baby/diaper" }[] = [];
+    const candidates: { kind: "feeding" | "diaper"; hrs: number; icon: IconName; route: "/(main)/baby/feeding" | "/(main)/baby/diaper" }[] = [];
     if (lastFeeding) {
       // Date.now() ne render: keto jane shfaqje relative ndaj kohes (sa ore nga
       // ushqyerja/pelena e fundit) dhe duhet te rillogariten ne cdo render.
       // eslint-disable-next-line react-hooks/purity
       const hrs = (Date.now() - new Date(lastFeeding.at).getTime()) / 3600000;
-      candidates.push({ label: "ushqyerjes", hrs, icon: "spoon", route: "/(main)/baby/feeding" });
+      candidates.push({ kind: "feeding", hrs, icon: "spoon", route: "/(main)/baby/feeding" });
     }
     if (lastDiaper) {
       // Date.now() ne render: keto jane shfaqje relative ndaj kohes (sa ore nga
       // ushqyerja/pelena e fundit) dhe duhet te rillogariten ne cdo render.
       // eslint-disable-next-line react-hooks/purity
       const hrs = (Date.now() - new Date(lastDiaper.at).getTime()) / 3600000;
-      candidates.push({ label: "pelenës", hrs, icon: "baby", route: "/(main)/baby/diaper" });
+      candidates.push({ kind: "diaper", hrs, icon: "baby", route: "/(main)/baby/diaper" });
     }
     if (candidates.length === 0) return null;
     const oldest = candidates.sort((x, y) => y.hrs - x.hrs)[0];
     if (oldest.hrs < 2) return null; // krejt âsht "e freskët", s'ka nevojë me sugjeru
     const hrsRounded = Math.floor(oldest.hrs);
-    return { text: `Ka kalu ${hrsRounded} orë prej ${oldest.label} të fundit`, icon: oldest.icon, route: oldest.route };
-  }, [b.feedingLog, b.diaperLog]);
+    const text = t(oldest.kind === "feeding" ? "baby_since_feeding" : "baby_since_diaper", { n: hrsRounded });
+    return { text, icon: oldest.icon, route: oldest.route };
+  }, [b.feedingLog, b.diaperLog, t]);
 
   // ---- Rryma e ditarit ----
   // Çdo hyrje mban një "detail" të shkurtër në të djathtë (sasia, sa zgjati,

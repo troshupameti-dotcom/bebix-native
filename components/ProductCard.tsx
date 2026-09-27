@@ -13,11 +13,11 @@ type Props = {
   cardWidth?: number;
 };
 
-const BADGE_LABEL: Record<NonNullable<Product["badge"]>, string> = {
-  new: "E RE",
-  bestseller: "TOP",
-  sale: "OFERTË",
-};
+const BADGE_LABEL = {
+  new: "prod_badge_new",
+  bestseller: "prod_badge_top",
+  sale: "prod_badge_sale",
+} as const satisfies Record<NonNullable<Product["badge"]>, string>;
 
 function discountPercent(product: Product): number | null {
   if (!product.compareAtPrice || product.compareAtPrice <= product.price) return null;
@@ -99,7 +99,7 @@ export function ProductCard({ product, onPress, cardWidth }: Props) {
             {product.badge && (
               <View className="bg-surface rounded-full px-2 py-0.5 self-start" style={shadows.soft}>
                 <Text className="font-bodySemibold text-[9px] text-ink uppercase tracking-wide">
-                  {BADGE_LABEL[product.badge]}
+                  {t(BADGE_LABEL[product.badge])}
                 </Text>
               </View>
             )}
@@ -144,12 +144,12 @@ export function ProductCard({ product, onPress, cardWidth }: Props) {
           </View>
           {savings != null && (
             <Text className="font-bodyMedium text-xs text-olive mt-1">
-              Kurse €{savings.toFixed(2)}
+              {t("prod_save_amount", { amount: savings.toFixed(2) })}
             </Text>
           )}
           {product.stock != null && product.stock > 0 && product.stock <= 5 && (
             <Text className="font-bodyMedium text-xs text-orange mt-1">
-              Vetëm {product.stock} mbeten
+              {t("prod_only_left", { n: product.stock })}
             </Text>
           )}
           {product.stock === 0 && (

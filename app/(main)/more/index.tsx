@@ -1,6 +1,7 @@
 import { View, Text, ScrollView, Pressable, Image, Alert } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useRouter } from "expo-router";
+import Constants from "expo-constants";
 import { useAppState } from "@/lib/state/AppStateContext";
 import { useLanguage } from "@/lib/i18n/LanguageContext";
 import { Icon, IconName } from "@/components/ui/Icon";
@@ -158,7 +159,10 @@ export default function MoreScreen() {
           <Text className="font-bodyMedium text-sm text-orange">{t("logout")}</Text>
         </Pressable>
 
-        <Text className="font-body text-[11px] text-ink-faint text-center mt-4">Bebix v1.0.0</Text>
+        <Text className="font-body text-[11px] text-ink-faint text-center mt-4">
+          {/* Nga app.json, që të mos mbetet "1.0.0" pas çdo publikimi. */}
+          Bebix v{Constants.expoConfig?.version ?? "1.0.0"}
+        </Text>
       </ScrollView>
     </SafeAreaView>
   );

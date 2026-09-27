@@ -104,7 +104,7 @@ export default function SleepScreen() {
           stats={[
             { label: t("sleep_stats_today"), value: stats.today },
             { label: t("sleep_stats_avg"), value: stats.week },
-            { label: "Zgjime", value: stats.wakes },
+            { label: t("sleep_stats_wakes"), value: stats.wakes },
           ]}
         />
 
