@@ -4,6 +4,7 @@ import { useAppState } from "@/lib/state/AppStateContext";
 import { resetBabyRecordsSyncState, syncBabyRecords } from "@/lib/baby/babyRecordsSync";
 import { claimLocalData } from "@/lib/auth/localDataOwner";
 import { resolveDataOwnerId } from "@/lib/baby/household";
+import { registerSyncRequest, resetSyncStatus, setSyncPhase } from "@/lib/baby/syncStatus";
 import { supabase } from "@/lib/supabase/client";
 
 /**
@@ -66,8 +67,10 @@ export function useBabyRecordsSync(isAuthenticated: boolean) {
         return;
       }
       running.current = true;
+      setSyncPhase("syncing");
       syncBabyRecords(latestBaby.current)
         .then((patch) => {
+          setSyncPhase("synced");
           if (patch) {
             applyingRemote.current = true;
             apply.current(patch);
@@ -77,6 +80,7 @@ export function useBabyRecordsSync(isAuthenticated: boolean) {
           // Dështimi i sync-ut s'duhet t'i prishë asgjë prindit: të dhënat janë
           // të ruajtura lokalisht dhe riprovohet herën tjetër.
           console.log("Sync-u i baby_records dështoi:", e);
+          setSyncPhase("error");
         })
         .finally(() => {
           running.current = false;
@@ -99,6 +103,7 @@ export function useBabyRecordsSync(isAuthenticated: boolean) {
     // lokale më poshtë e nis vetë. Pa këtë pritje, sync-u do të dërgonte
     // historikun e llogarisë së mëparshme te kjo.
     ownerReady.current = false;
+    registerSyncRequest(() => runSync.current());
     (async () => {
       const { data } = await supabase.auth.getSession();
       const userId = data.session?.user.id;
@@ -152,6 +157,7 @@ export function useBabyRecordsSync(isAuthenticated: boolean) {
 
     return () => {
       cancelled = true;
+      resetSyncStatus();
       clearTimeout(remoteTimer);
       if (channel) void supabase.removeChannel(channel);
       clearInterval(interval);

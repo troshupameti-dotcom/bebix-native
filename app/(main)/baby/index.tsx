@@ -20,6 +20,7 @@ import { computeAgeText, formatDate, formatTime } from "@/lib/dateUtils";
 import { shadows } from "@/lib/shadows";
 import { useThemeColors } from "@/lib/theme/useThemeColors";
 import { NowCard } from "@/components/baby/NowCard";
+import { SyncBadge } from "@/components/baby/SyncBadge";
 import { DayClock } from "@/components/baby/DayClock";
 import { liveStatus, durationLabel } from "@/lib/baby/dayStats";
 import {
@@ -773,6 +774,7 @@ export default function BabyProfileScreen() {
             {/* Një rresht kontrollesh. Më parë kërkimi, zgjedhja dhe shtatë
                 çipa filtri rrinin gjithmonë në ekran — më shumë vend se vetë
                 ditari. Tash filtrat hapen kur duhen. */}
+            <SyncBadge />
             <View className="mt-2 flex-row items-center gap-2">
               {showSearch ? (
                 <View className="flex-1 flex-row items-center gap-2 rounded-2xl border border-ink/10 bg-surface px-3.5 py-2.5">
