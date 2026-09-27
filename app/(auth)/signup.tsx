@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
-import { View, Text, Pressable, ScrollView, KeyboardAvoidingView, Platform } from "react-native";
+import { View, Text, Pressable, ScrollView, KeyboardAvoidingView, Platform, Alert } from "react-native";
+import * as WebBrowser from "expo-web-browser";
 import { ThemedSwitch } from "@/components/ui/ThemedSwitch";
 import { router, useLocalSearchParams } from "expo-router";
 import { MotiView } from "moti";
@@ -16,6 +17,9 @@ import { useTranslation } from "@/lib/i18n/LanguageContext";
 import type { SignupFormValues, FormErrors } from "@/types/auth";
 import { BackButton } from "@/components/ui/BackButton";
 import { Logo } from "@/components/auth/Logo";
+import { friendlyError } from "@/lib/errors/userMessage";
+import { safeRedirect } from "@/lib/auth/redirect";
+import { webLegalUrl } from "@/lib/support";
 
 const initialValues: SignupFormValues = {
   fullName: "",
@@ -26,7 +30,7 @@ const initialValues: SignupFormValues = {
 };
 
 export default function SignupScreen() {
-  const { t } = useTranslation();
+  const { t, language } = useTranslation();
   const { redirect } = useLocalSearchParams<{ redirect?: string }>();
   const { state } = useAppState();
   const [values, setValues] = useState<SignupFormValues>(initialValues);
@@ -67,12 +71,23 @@ export default function SignupScreen() {
 
     if (error) {
       setLoading(false);
-      setSubmitError(error.message);
+      setSubmitError(friendlyError(error, t, "err_generic"));
       return;
     }
 
     setLoading(false);
-    await finishSignIn(data.session ? data.user?.id : undefined);
+
+    // Kur projekti kërkon konfirmim email-i, s'ka sesion menjëherë. Më parë
+    // përdoruesi çohej në app pa llogari të hapur dhe pa asnjë shpjegim.
+    if (!data.session) {
+      await markOnboardingSeen();
+      Alert.alert(t("signup_check_email_title"), t("signup_check_email_body", { email: values.email.trim() }), [
+        { text: t("ok_action"), onPress: () => router.replace({ pathname: "/(auth)/login", params: redirect ? { redirect } : undefined }) },
+      ]);
+      return;
+    }
+
+    await finishSignIn(data.user?.id);
   }
 
   // Google/Apple kërkojnë po ashtu pranimin e Kushteve, si regjistrimi me email.
@@ -92,7 +107,7 @@ export default function SignupScreen() {
       await syncPendingProfileToSupabase(userId);
     }
     await markOnboardingSeen();
-    router.replace((redirect as string | undefined) ?? "/(main)/baby");
+    router.replace(safeRedirect(redirect) as never);
   }
 
   return (
@@ -157,8 +172,23 @@ export default function SignupScreen() {
                   onValueChange={(v) => setValues((prev) => ({ ...prev, acceptedTerms: v }))}
                 />
                 <Text className="flex-1 font-body text-sm text-ink-soft">
-                  {t("signup_terms_agree")} <Text className="font-bodySemibold text-ink underline">{t("signup_terms")}</Text>{" "}
-                  {t("signup_and")} <Text className="font-bodySemibold text-ink underline">{t("signup_privacy")}</Text>.
+                  {t("signup_terms_agree")}{" "}
+                  <Text
+                    accessibilityRole="link"
+                    onPress={() => void WebBrowser.openBrowserAsync(webLegalUrl(language, "terms"))}
+                    className="font-bodySemibold text-ink underline"
+                  >
+                    {t("signup_terms")}
+                  </Text>{" "}
+                  {t("signup_and")}{" "}
+                  <Text
+                    accessibilityRole="link"
+                    onPress={() => void WebBrowser.openBrowserAsync(webLegalUrl(language, "privacy"))}
+                    className="font-bodySemibold text-ink underline"
+                  >
+                    {t("signup_privacy")}
+                  </Text>
+                  .
                 </Text>
               </View>
               {errors.acceptedTerms ? <Text className="font-body text-xs text-red-500">{errors.acceptedTerms}</Text> : null}

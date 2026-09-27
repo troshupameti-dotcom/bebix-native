@@ -24,6 +24,24 @@ export async function claimLocalData(userId: string): Promise<OwnerCheck> {
   return current ? "switched" : "claimed";
 }
 
+/**
+ * Pronari i TË DHËNAVE që rrinë në telefon — jo llogaria, por ai të cilit i
+ * përket bebi (vetja, ose prindi që të ftoi në familje).
+ *
+ * Kur një prind bashkohej me një familje (ose dilte prej saj), telefoni
+ * mbante historikun e mëparshëm: sync-u e dërgonte te pronari i ri dhe nuk
+ * e tërhiqte të plotë historikun e tij. "switched" do të thotë: pastro
+ * listat lokale dhe tërhiq gjithçka nga pronari i ri.
+ */
+const DATA_OWNER_KEY = "bebix_local_data_owner";
+
+export async function claimDataOwner(ownerId: string): Promise<OwnerCheck> {
+  const current = await AsyncStorage.getItem(DATA_OWNER_KEY);
+  if (current === ownerId) return "same";
+  await AsyncStorage.setItem(DATA_OWNER_KEY, ownerId);
+  return current ? "switched" : "claimed";
+}
+
 // ---- Rikthimi i fjalëkalimit ----
 // Linku i rikthimit fut në app sesionin që mban vetë. Pa kontroll, dikush
 // mund t'i dërgonte tjetrit një link me sesionin e VET, dhe telefoni i tjetrit

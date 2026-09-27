@@ -7,8 +7,11 @@ import { Icon } from "@/components/ui/Icon";
 import { shadows } from "@/lib/shadows";
 import { useThemeColors } from "@/lib/theme/useThemeColors";
 import { useTranslation } from "@/lib/i18n/LanguageContext";
+import { friendlyError } from "@/lib/errors/userMessage";
 
-const MIN_PASSWORD = 6;
+// E njëjta rregull si te regjistrimi (8), jo 6: përndryshe fjalëkalimi i ri
+// lejohej më i dobët se ai që kërkohej kur u krijua llogaria.
+const MIN_PASSWORD = 8;
 
 /**
  * Fjalëkalimi i ri, pasi përdoruesi ka hapur linkun nga email-i.
@@ -36,15 +39,11 @@ export default function ResetPasswordScreen() {
     setError(null);
     try {
       const { error: updateError } = await supabase.auth.updateUser({ password });
-      if (updateError) throw new Error(updateError.message);
+      if (updateError) throw updateError;
       router.replace("/(main)/baby");
-    } catch (e: any) {
-      const message: string = e?.message ?? "";
-      setError(
-        message.toLowerCase().includes("session")
-          ? t("rp_expired")
-          : message || t("rp_err")
-      );
+    } catch (e: unknown) {
+      const message = (e as { message?: string })?.message ?? "";
+      setError(message.toLowerCase().includes("session") ? t("rp_expired") : friendlyError(e, t, "rp_err"));
     } finally {
       setLoading(false);
     }
@@ -57,7 +56,7 @@ export default function ResetPasswordScreen() {
           <View className="px-6 pt-10">
             <Text className="font-display text-2xl text-ink mb-2">{t("rp_title")}</Text>
             <Text className="font-body text-sm text-ink-soft leading-6 mb-6">
-              Zgjidh një fjalëkalim të ri për llogarinë tënde. Të paktën {MIN_PASSWORD} karaktere.
+              {t("rp_intro", { n: MIN_PASSWORD })}
             </Text>
 
             <Text className="font-bodyMedium text-sm text-ink-soft mb-2">{t("rp_title")}</Text>
@@ -71,12 +70,12 @@ export default function ResetPasswordScreen() {
                 autoCapitalize="none"
                 className="flex-1 py-3 font-body text-sm text-ink"
               />
-              <Pressable onPress={() => setVisible((v) => !v)} hitSlop={8} accessibilityLabel={visible ? "Fshih" : "Shfaq"}>
+              <Pressable onPress={() => setVisible((v) => !v)} hitSlop={8} accessibilityLabel={visible ? t("a11y_hide_password") : t("a11y_show_password")}>
                 <Icon name={visible ? "eyeOff" : "eye"} size={18} color={theme.inkFaint} />
               </Pressable>
             </View>
             <Text className="font-body text-[11px] text-orange mb-3 h-4">
-              {tooShort ? `Të paktën ${MIN_PASSWORD} karaktere.` : ""}
+              {tooShort ? t("rp_min_chars", { n: MIN_PASSWORD }) : ""}
             </Text>
 
             <Text className="font-bodyMedium text-sm text-ink-soft mb-2">{t("rp_repeat")}</Text>

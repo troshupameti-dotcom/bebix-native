@@ -1,6 +1,7 @@
 import { View, Text, TextInput, TextInputProps, Pressable } from "react-native";
 import { useState } from "react";
 import { Icon } from "@/components/ui/Icon";
+import { useTranslation } from "@/lib/i18n/LanguageContext";
 
 type AuthInputProps = TextInputProps & {
   label: string;
@@ -18,6 +19,7 @@ export function AuthInput({
   secureTextEntry,
   ...props
 }: AuthInputProps) {
+  const { t } = useTranslation();
   const [visible, setVisible] = useState(false);
   const [focused, setFocused] = useState(false);
 
@@ -42,7 +44,13 @@ export function AuthInput({
           {...props}
         />
         {isPassword && (
-          <Pressable onPress={() => setVisible((v) => !v)} hitSlop={8} className="ml-2">
+          <Pressable
+            onPress={() => setVisible((v) => !v)}
+            hitSlop={8}
+            className="ml-2"
+            accessibilityRole="button"
+            accessibilityLabel={visible ? t("a11y_hide_password") : t("a11y_show_password")}
+          >
             <Icon name={visible ? "eyeOff" : "eye"} size={18} color="#A79D8A" />
           </Pressable>
         )}

@@ -1,6 +1,6 @@
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { supabase } from "@/lib/supabase/client";
-import { resolveDataOwnerId } from "@/lib/baby/household";
+import { resolveDataOwnerIdStrict } from "@/lib/baby/household";
 import type { BabyModuleState, Moment } from "@/lib/state/babyTypes";
 import {
   AnyBabyRecord,
@@ -16,6 +16,14 @@ import { toTimestamp } from "@/lib/baby/timestamps";
 const TABLE = "baby_records";
 const LAST_SYNC_KEY = "bebix_baby_records_last_sync";
 const MIGRATED_KEY = "bebix_baby_records_migrated_v1";
+/**
+ * Kursori i tërheqjes: `server_updated_at` më i madh i parë, sipas orës së
+ * SERVERIT. Më parë tërhiqej sipas `updated_at`, që vjen nga ora e pajisjes:
+ * shënimet e një telefoni me orën 5 minuta mbrapa nuk vinin kurrë te tjetri.
+ */
+const SERVER_CURSOR_KEY = "bebix_baby_records_server_cursor_v1";
+/** Mbivendosje: transaksionet që mbarojnë pak më vonë se ora e tyre nuk humbin. */
+const CURSOR_OVERLAP_MS = 2 * 60_000;
 /** Madhësia e një leximi; e barabartë me kufirin e Supabase (max rows). */
 const PULL_BATCH = 1000;
 
@@ -32,6 +40,8 @@ type BabyRecordRow = {
   edit_count: number;
   deleted_at: string | null;
   archived_at: string | null;
+  /** Ora e serverit kur u shkrua rreshti (e vendos baza). */
+  server_updated_at?: string;
 };
 
 // Fushat që ruhen si kolona reale, pra hiqen nga `payload` për të mos
@@ -237,6 +247,61 @@ async function resolveRemoteMomentUris(remote: Moment[], local: Moment[]): Promi
 }
 
 // ---------------------------------------------------------------------
+// Tërheqja nga serveri
+// ---------------------------------------------------------------------
+
+type PullResult = { rows: BabyRecordRow[]; nextCursor: string | null };
+
+/**
+ * Rreshtat e ndryshuar që nga kursori. Kur baza s'e ka ende kolonën
+ * `server_updated_at` (migrimi s'është aplikuar), bie te mënyra e vjetër me
+ * `updated_at`, që app-i të mos ndalet.
+ */
+async function pullRows(userId: string, cursor: string | null, lastSync: string | null): Promise<PullResult> {
+  const since = cursor ? new Date(new Date(cursor).getTime() - CURSOR_OVERLAP_MS).toISOString() : null;
+  const rows: BabyRecordRow[] = [];
+  let maxServer: string | null = cursor;
+
+  for (let from = 0; ; from += PULL_BATCH) {
+    let query = supabase.from(TABLE).select("*").eq("user_id", userId);
+    if (since) query = query.gt("server_updated_at", since);
+    const { data, error } = await query
+      .order("server_updated_at", { ascending: true })
+      .order("id", { ascending: true })
+      .range(from, from + PULL_BATCH - 1);
+
+    if (error) {
+      if (error.code === "42703") return pullRowsLegacy(userId, lastSync);
+      throw new Error(`Leximi i baby_records dështoi: ${error.message}`);
+    }
+
+    for (const row of (data ?? []) as BabyRecordRow[]) {
+      rows.push(row);
+      if (row.server_updated_at && (!maxServer || row.server_updated_at > maxServer)) maxServer = row.server_updated_at;
+    }
+    if (!data || data.length < PULL_BATCH) break;
+  }
+
+  return { rows, nextCursor: maxServer };
+}
+
+async function pullRowsLegacy(userId: string, lastSync: string | null): Promise<PullResult> {
+  const rows: BabyRecordRow[] = [];
+  for (let from = 0; ; from += PULL_BATCH) {
+    let query = supabase.from(TABLE).select("*").eq("user_id", userId);
+    if (lastSync) query = query.gt("updated_at", lastSync);
+    const { data, error } = await query
+      .order("updated_at", { ascending: true })
+      .order("id", { ascending: true })
+      .range(from, from + PULL_BATCH - 1);
+    if (error) throw new Error(`Leximi i baby_records dështoi: ${error.message}`);
+    rows.push(...((data ?? []) as BabyRecordRow[]));
+    if (!data || data.length < PULL_BATCH) break;
+  }
+  return { rows, nextCursor: null };
+}
+
+// ---------------------------------------------------------------------
 // Sync-u
 // ---------------------------------------------------------------------
 
@@ -254,7 +319,9 @@ export async function syncBabyRecords(baby: BabyModuleState): Promise<Partial<Ba
   // eshte ftuar te familja e tjetrit, te dyve u duhet i njejti histori.
   // Pa kete, secili do te shkruante te vetja dhe do te dukej sikur
   // sinkronizimi nuk punon.
-  const userId = await resolveDataOwnerId();
+  // Pa lidhje me serverin s'dihet i sigurt kush është pronari: sync-u pret,
+  // në vend që të shkruajë te llogaria e gabuar (shih resolveDataOwnerIdStrict).
+  const userId = await resolveDataOwnerIdStrict();
   if (!userId) return null;
 
   // Ora e FILLIMIT, jo e mbarimit: çdo ndryshim që ndodh gjatë këtij sync-u
@@ -282,23 +349,13 @@ export async function syncBabyRecords(baby: BabyModuleState): Promise<Partial<Ba
     await AsyncStorage.setItem(MIGRATED_KEY, "true");
   }
 
-  // 3) Tërheq nga serveri vetëm çka ka ndryshuar pas sync-ut të fundit.
-  //    Në grupe: Supabase kthen më së shumti 1000 rreshta për kërkesë, dhe
-  //    sync-u i parë në një telefon të ri (pa lastSync) do të merrte vetëm
-  //    një pjesë të historikut të një prindi me mbi 1000 shënime.
-  const rows: BabyRecordRow[] = [];
-  for (let from = 0; ; from += PULL_BATCH) {
-    let query = supabase.from(TABLE).select("*").eq("user_id", userId);
-    if (lastSync) query = query.gt("updated_at", lastSync);
-    const { data, error } = await query
-      .order("updated_at", { ascending: true })
-      .order("id", { ascending: true })
-      .range(from, from + PULL_BATCH - 1);
-    if (error) throw new Error(`Leximi i baby_records dështoi: ${error.message}`);
-    rows.push(...((data ?? []) as BabyRecordRow[]));
-    if (!data || data.length < PULL_BATCH) break;
-  }
-
+  // 3) Tërheq nga serveri vetëm çka ka ndryshuar që nga tërheqja e fundit,
+  //    sipas orës së serverit. Në grupe: Supabase kthen më së shumti 1000
+  //    rreshta për kërkesë, dhe sync-u i parë në një telefon të ri do të merrte
+  //    vetëm një pjesë të historikut të një prindi me mbi 1000 shënime.
+  const cursor = await AsyncStorage.getItem(SERVER_CURSOR_KEY);
+  const pulled = await pullRows(userId, cursor, lastSync);
+  const rows = pulled.rows;
   // 4) Dërgo regjistrimet lokale të ndryshuara pas sync-ut të fundit, plus ato
   //    që sapo morën `storagePath`.
   if (migrated) {
@@ -311,6 +368,7 @@ export async function syncBabyRecords(baby: BabyModuleState): Promise<Partial<Ba
   // Dy minuta rezervë për orët e pajisjeve që s'përputhen (telefoni dhe
   // kompjuteri i webit): një rresht i marrë dy herë shkrihet pa dëm.
   await AsyncStorage.setItem(LAST_SYNC_KEY, new Date(new Date(startedAt).getTime() - 2 * 60_000).toISOString());
+  if (pulled.nextCursor) await AsyncStorage.setItem(SERVER_CURSOR_KEY, pulled.nextCursor);
 
   const patch: Partial<BabyModuleState> = {};
 
@@ -356,5 +414,5 @@ export async function syncBabyRecords(baby: BabyModuleState): Promise<Partial<Ba
 
 /** Për testim/rikthim: e detyron migrimin dhe tërheqjen e plotë herën tjetër. */
 export async function resetBabyRecordsSyncState(): Promise<void> {
-  await AsyncStorage.multiRemove([LAST_SYNC_KEY, MIGRATED_KEY]);
+  await AsyncStorage.multiRemove([LAST_SYNC_KEY, MIGRATED_KEY, SERVER_CURSOR_KEY]);
 }

@@ -66,6 +66,11 @@ export type AppState = {
   notificationPrefs: NotificationPrefs;
   /** Njoftimet e shënuara si të lexuara (id-të e lib/notifications/inbox.ts). */
   readNotificationIds: string[];
+  /**
+   * A janë hequr të dhënat demo të versioneve të vjetra (lib/state/seedCleanup.ts).
+   * Mungon te instalimet e vjetra; instalimet e reja nisin pa demo.
+   */
+  seedCleanupDone?: boolean;
 };
 
 export const emptyProfile: BabyProfile = {
@@ -96,6 +101,7 @@ export const initialAppState: AppState = {
   baby: initialBabyState,
   notificationPrefs: initialNotificationPrefs,
   readNotificationIds: [],
+  seedCleanupDone: true,
 };
 
 export * from "./babyTypes";

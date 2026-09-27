@@ -12,11 +12,16 @@ import { useCurrentUserId } from "@/lib/hooks/useCurrentUserId";
 import {
   fetchHousehold, createInviteCode, joinHousehold, leaveHousehold, HouseholdState,
 } from "@/lib/baby/household";
+import { syncBabyRecords } from "@/lib/baby/babyRecordsSync";
+import { retrySync } from "@/lib/baby/syncStatus";
+import { useAppState } from "@/lib/state/AppStateContext";
+import { friendlyError } from "@/lib/errors/userMessage";
 
 export default function FamilyScreen() {
   const theme = useThemeColors();
   const { t } = useTranslation();
   const myId = useCurrentUserId();
+  const { state } = useAppState();
 
   const [household, setHousehold] = useState<HouseholdState | null>(null);
   const [loading, setLoading] = useState(true);
@@ -29,8 +34,8 @@ export default function FamilyScreen() {
   const load = useCallback(async () => {
     try {
       setHousehold(await fetchHousehold());
-    } catch (e: any) {
-      setError(e?.message ?? t("fam_err_load"));
+    } catch (e: unknown) {
+      setError(friendlyError(e, t, "fam_err_load"));
     } finally {
       setLoading(false);
     }
@@ -45,8 +50,8 @@ export default function FamilyScreen() {
       const fresh = await createInviteCode();
       setCode(fresh);
       haptics.tap();
-    } catch (e: any) {
-      setError(e?.message ?? t("fam_err_code"));
+    } catch (e: unknown) {
+      setError(friendlyError(e, t, "fam_err_code"));
     } finally {
       setBusy(false);
     }
@@ -57,12 +62,21 @@ export default function FamilyScreen() {
     setBusy(true);
     setError(null);
     try {
+      // Shënimet e veta që s'kanë arritur ende në server dërgohen PARA se
+      // telefoni të kalojë te bebi i familjes (pas bashkimit pastrohen).
+      try {
+        await syncBabyRecords(state.baby);
+      } catch {
+        // Pa rrjet, bashkimi do të dështojë vetë me mesazhin e vet.
+      }
       await joinHousehold(joinCode);
       setJoinCode("");
       setNotice(t("fam_joined"));
+      // Sync-u vëren pronarin e ri dhe tërheq historikun e familjes.
+      retrySync();
       await load();
-    } catch (e: any) {
-      setError(e?.message ?? t("fam_err_join"));
+    } catch (e: unknown) {
+      setError(friendlyError(e, t, "fam_err_join"));
     } finally {
       setBusy(false);
     }
@@ -82,9 +96,11 @@ export default function FamilyScreen() {
           onPress: async () => {
             try {
               await leaveHousehold(memberId, ownerId);
+              // Kush del, kthehet te historiku i vet.
+              if (isSelf) retrySync();
               await load();
-            } catch (e: any) {
-              setError(e?.message ?? t("fam_err_action"));
+            } catch (e: unknown) {
+              setError(friendlyError(e, t, "fam_err_action"));
             }
           },
         },

@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { View, Text, ScrollView, Pressable, Image, Alert } from "react-native";
+import { View, Text, ScrollView, Pressable, Image, Alert, type ImageStyle } from "react-native";
 import { MotiView } from "moti";
 import { SafeAreaView } from "react-native-safe-area-context";
 import * as ImagePicker from "expo-image-picker";
@@ -16,6 +16,7 @@ import { formatDate, formatTime } from "@/lib/dateUtils";
 import { shadows } from "@/lib/shadows";
 import { Moment, MomentType } from "@/lib/state/types";
 import { BackButton } from "@/components/ui/BackButton";
+import { useMomentUri } from "@/lib/baby/useMomentUri";
 
 const TYPE_ICON: Record<MomentType, IconName> = { photo: "camera", video: "play", note: "edit", milestone: "sparkle" };
 
@@ -169,8 +170,8 @@ export default function MomentsScreen() {
                 style={{ width: "31%" }}
               >
                 <Pressable onPress={() => openGrid(m)} style={shadows.press} className="overflow-hidden rounded-xl2 border border-ink/10 bg-surface">
-                  {m.uri ? (
-                    <Image source={{ uri: m.uri }} style={{ width: "100%", aspectRatio: 1 }} />
+                  {m.uri || m.storagePath ? (
+                    <MomentImage moment={m} style={{ width: "100%", aspectRatio: 1 }} />
                   ) : (
                     <View style={{ width: "100%", aspectRatio: 1 }} className="items-center justify-center bg-cream-soft">
                       <Icon name={TYPE_ICON[m.type]} size={22} color="#A79D8A" />
@@ -206,8 +207,8 @@ export default function MomentsScreen() {
       <BottomSheet visible={!!viewingMoment} onClose={() => setViewingId(null)}>
         {viewingMoment && (
           <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={{ paddingBottom: 12 }}>
-            {viewingMoment.uri ? (
-              <Image source={{ uri: viewingMoment.uri }} style={{ width: "100%", aspectRatio: 1.1, borderRadius: 20 }} />
+            {viewingMoment.uri || viewingMoment.storagePath ? (
+              <MomentImage moment={viewingMoment} style={{ width: "100%", aspectRatio: 1.1, borderRadius: 20 }} />
             ) : (
               <Pressable
                 onPress={addPhotoToViewing}
@@ -293,4 +294,14 @@ export default function MomentsScreen() {
       </RecordSheet>
     </SafeAreaView>
   );
+}
+
+/**
+ * Fotoja e një momenti. Lidhja merret kur shfaqet (useMomentUri), jo nga
+ * `uri` e ruajtur, që mund të ketë skaduar.
+ */
+function MomentImage({ moment, style }: { moment: Moment; style: ImageStyle }) {
+  const uri = useMomentUri(moment);
+  if (!uri) return <View style={style} className="bg-cream-soft" />;
+  return <Image source={{ uri }} style={style} />;
 }

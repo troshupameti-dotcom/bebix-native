@@ -275,7 +275,8 @@ export default function BabyProfileScreen() {
     Share.share({ message: csv });
   }
 
-  const babyName = profile.nickname || profile.babyName || "Elira";
+  // Pa emër: "Bebi", jo emri demo "Elira" që u dilte të gjithë prindërve pa emër.
+  const babyName = profile.nickname || profile.babyName || t("your_baby");
   const ageText = profile.babyDob ? computeAgeText(profile.babyDob, lang) : "";
   const upcomingVaccineCount = active(b.vaccines).filter((v) => !v.givenDate).length;
 

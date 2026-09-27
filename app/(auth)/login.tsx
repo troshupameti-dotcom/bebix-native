@@ -1,6 +1,5 @@
 import { useState } from "react";
 import { View, Text, Pressable, ScrollView, KeyboardAvoidingView, Platform } from "react-native";
-import { ThemedSwitch } from "@/components/ui/ThemedSwitch";
 import { router, useLocalSearchParams } from "expo-router";
 import { MotiView } from "moti";
 import { SafeAreaView } from "react-native-safe-area-context";
@@ -15,8 +14,10 @@ import { useTranslation } from "@/lib/i18n/LanguageContext";
 import type { LoginFormValues, FormErrors } from "@/types/auth";
 import { BackButton } from "@/components/ui/BackButton";
 import { Logo } from "@/components/auth/Logo";
+import { friendlyError } from "@/lib/errors/userMessage";
+import { safeRedirect } from "@/lib/auth/redirect";
 
-const initialValues: LoginFormValues = { email: "", password: "", rememberMe: true };
+const initialValues: LoginFormValues = { email: "", password: "" };
 
 export default function LoginScreen() {
   const { t } = useTranslation();
@@ -46,7 +47,7 @@ export default function LoginScreen() {
 
     if (error) {
       setLoading(false);
-      setSubmitError(error.message);
+      setSubmitError(friendlyError(error, t, "err_generic"));
       return;
     }
 
@@ -61,7 +62,7 @@ export default function LoginScreen() {
       await syncPendingProfileToSupabase(userId);
     }
     await markOnboardingSeen();
-    router.replace((redirect as string | undefined) ?? "/(main)/baby");
+    router.replace(safeRedirect(redirect) as never);
   }
 
   return (
@@ -109,13 +110,6 @@ export default function LoginScreen() {
                 }
               />
 
-              <View className="flex-row items-center gap-2.5 pt-1">
-                <ThemedSwitch
-                  value={values.rememberMe}
-                  onValueChange={(v) => setValues((prev) => ({ ...prev, rememberMe: v }))}
-                />
-                <Text className="font-body text-sm text-ink-soft">{t("login_remember_me")}</Text>
-              </View>
             </View>
 
             {submitError ? <Text className="mt-4 font-body text-sm text-red-500">{submitError}</Text> : null}

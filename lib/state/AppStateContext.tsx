@@ -1,11 +1,13 @@
-import { createContext, useContext, useEffect, useReducer, useState, ReactNode } from "react";
-import { useColorScheme } from "react-native";
+import { createContext, useContext, useEffect, useReducer, useRef, useState, ReactNode } from "react";
+import { AppState as RNAppState, useColorScheme } from "react-native";
 import { useColorScheme as useNativeWindColorScheme } from "nativewind";
-import AsyncStorage from "@react-native-async-storage/async-storage";
 import { syncNotificationSettings } from "@/lib/notifications/settingsSync";
 import { signedUrlForProfilePhoto } from "@/lib/baby/profilePhotos";
-import { fetchProfilePhotoPaths } from "@/lib/babySync";
-import { mergeRecordsPatch } from "@/lib/baby/babyRecordsSync";
+import { fetchBabyProfileBasics, fetchProfilePhotoPaths, isBabyProfilePending, saveBabyProfileRemote } from "@/lib/babySync";
+import { localDateKey } from "@/lib/babyProfile";
+import { mergeRecordsPatch, resetBabyRecordsSyncState } from "@/lib/baby/babyRecordsSync";
+import { loadAppState, saveAppState } from "@/lib/state/persistence";
+import { cleanupSeedBabyData } from "@/lib/state/seedCleanup";
 import { clampGap, migrateNotificationPrefs, type NotificationKey } from "@/lib/notifications/catalog";
 import {
   AppState,
@@ -36,9 +38,17 @@ import {
   milestoneCatalog,
 } from "./types";
 
-const STORAGE_KEY = "bebix_app_state_v3";
 const uid = () => Date.now().toString(36) + Math.random().toString(36).slice(2, 7);
 const nowIso = () => new Date().toISOString();
+
+/** Sa copë nga një produkt pranon porosia (e njëjta kufi si place_order). */
+const MAX_CART_QTY = 99;
+
+/** Ditari i ndryshimeve mban vetëm hyrjet e fundit: pa kufi rritej përgjithmonë. */
+const MAX_AUDIT_ENTRIES = 500;
+function capAudit(list: AuditEntry[]): AuditEntry[] {
+  return list.length > MAX_AUDIT_ENTRIES ? list.slice(list.length - MAX_AUDIT_ENTRIES) : list;
+}
 
 // ---------------------------------------------------------------------
 // Generic helpers shared by every Lifecycle-typed list (feeding, sleep,
@@ -167,6 +177,8 @@ type Action =
   | { type: "UPDATE_CART_QTY"; id: string; qty: number }
   | { type: "CLEAR_CART" }
   | { type: "SET_BABY"; value: Partial<BabyModuleState> }
+  | { type: "UPDATE_BABY"; fn: (cur: BabyModuleState) => Partial<BabyModuleState> }
+  | { type: "REPLACE_CART"; items: CartItem[] }
   | { type: "MERGE_BABY_RECORDS"; value: Partial<BabyModuleState> }
   | { type: "SET_NOTIFICATION_PREF"; key: NotificationKey; value: boolean }
   | { type: "SET_QUIET_HOURS"; from: number; to: number }
@@ -198,7 +210,7 @@ function reducer(state: AppState, action: Action): AppState {
       case "ADD_TO_CART": {
       const existing = state.cartItems.find((i) => i.id === action.item.id);
       const cartItems = existing
-        ? state.cartItems.map((i) => (i.id === action.item.id ? { ...i, qty: i.qty + action.item.qty } : i))
+        ? state.cartItems.map((i) => (i.id === action.item.id ? { ...i, qty: Math.min(MAX_CART_QTY, i.qty + action.item.qty) } : i))
         : [...state.cartItems, action.item];
       return { ...state, cartItems, cartCount: cartItems.reduce((s, i) => s + i.qty, 0) };
     }
@@ -208,7 +220,7 @@ function reducer(state: AppState, action: Action): AppState {
     }
     case "UPDATE_CART_QTY": {
       const cartItems = state.cartItems
-        .map((i) => (i.id === action.id ? { ...i, qty: Math.max(0, action.qty) } : i))
+        .map((i) => (i.id === action.id ? { ...i, qty: Math.min(MAX_CART_QTY, Math.max(0, action.qty)) } : i))
         .filter((i) => i.qty > 0);
       return { ...state, cartItems, cartCount: cartItems.reduce((s, i) => s + i.qty, 0) };
     }
@@ -216,6 +228,12 @@ function reducer(state: AppState, action: Action): AppState {
       return { ...state, cartItems: [], cartCount: 0 };
     case "SET_BABY":
       return { ...state, baby: { ...state.baby, ...action.value } };
+    case "UPDATE_BABY": {
+      const patch = action.fn(state.baby);
+      return Object.keys(patch).length ? { ...state, baby: { ...state.baby, ...patch } } : state;
+    }
+    case "REPLACE_CART":
+      return { ...state, cartItems: action.items, cartCount: action.items.reduce((s, i) => s + i.qty, 0) };
     case "MERGE_BABY_RECORDS":
       return { ...state, baby: { ...state.baby, ...mergeRecordsPatch(state.baby, action.value) } };
     case "SET_NOTIFICATION_PREF":
@@ -249,6 +267,8 @@ function reducer(state: AppState, action: Action): AppState {
       return {
         ...initialAppState,
         ...action.state,
+        // Listat e reja qe s'ishin te versioni i ruajtur marrin vleren fillestare.
+        baby: { ...initialAppState.baby, ...((action.state as AppState).baby ?? {}) },
         cartItems: (action.state as AppState).cartItems ?? initialAppState.cartItems,
         // Instalimet e vjetra kane celesa si `feedingReminders`; pa migrim,
         // zgjedhjet e tyre do te zhdukeshin pa zhurme.
@@ -261,7 +281,7 @@ function reducer(state: AppState, action: Action): AppState {
 }
 
 /** Vlera e kontekstit: buildValue plus flag-u i ngarkimit nga AsyncStorage. */
-type AppStateValue = ReturnType<typeof buildValue> & { hydrated: boolean };
+type AppStateValue = ReturnType<typeof buildValue> & { hydrated: boolean; refreshProfileFromServer: () => void };
 
 const AppStateContext = createContext<AppStateValue | null>(null);
 
@@ -270,29 +290,61 @@ export function AppStateProvider({ children }: { children: ReactNode }) {
   // Sync-u me Supabase s'duhet te nise para ngarkimit nga AsyncStorage:
   // state-i bosh do e shenonte migrimin si te kryer pa derguar asgje.
   const [hydrated, setHydrated] = useState(false);
+  // Rritet kur ndryshon pronari i të dhënave (familja): profili rimerret.
+  const [profileRefresh, setProfileRefresh] = useState(0);
   const systemScheme = useColorScheme();
   const { setColorScheme } = useNativeWindColorScheme();
 
   useEffect(() => {
-    AsyncStorage.getItem(STORAGE_KEY).then((raw) => {
-      if (raw) {
-        try {
-          dispatch({ type: "HYDRATE", state: JSON.parse(raw) });
-          setHydrated(true);
-          return;
-        } catch {
-          // Corrupt/old shape — fall through to system-theme default.
+    let alive = true;
+    void loadAppState().then(async ({ state: stored, failed }) => {
+      if (!alive) return;
+      // Diçka s'u lexua dot: historiku rimerret i plotë nga serveri në sync-un
+      // e radhës, në vend që telefoni të mbetet me një kopje të cunguar.
+      if (failed) await resetBabyRecordsSyncState();
+      if (stored) {
+        let baby = stored.baby;
+        if (!stored.seedCleanupDone && baby) {
+          const patch = cleanupSeedBabyData({ ...initialAppState.baby, ...baby });
+          if (patch) baby = { ...baby, ...patch };
         }
+        dispatch({ type: "HYDRATE", state: { ...stored, baby, seedCleanupDone: true } as AppState });
+      } else if (systemScheme === "dark") {
+        dispatch({ type: "SET_DARK_MODE", value: true });
       }
-      if (systemScheme === "dark") dispatch({ type: "SET_DARK_MODE", value: true });
       setHydrated(true);
     });
+    return () => {
+      alive = false;
+    };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
+  // Ruajtja: kurrë para ngarkimit (do të mbishkruante historikun me gjendjen
+  // bosh), me vonesë të shkurtër që disa prekje radhazi të shkojnë bashkë, dhe
+  // menjëherë kur app-i del në sfond (sistemi mund ta mbyllë pa paralajmërim).
+  const latestState = useRef(state);
+  const hydratedRef = useRef(false);
+  const saveTimer = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
   useEffect(() => {
-    AsyncStorage.setItem(STORAGE_KEY, JSON.stringify(state));
-  }, [state]);
+    latestState.current = state;
+    hydratedRef.current = hydrated;
+    if (!hydrated) return;
+    clearTimeout(saveTimer.current);
+    saveTimer.current = setTimeout(() => void saveAppState(latestState.current), 400);
+  }, [state, hydrated]);
+
+  useEffect(() => {
+    const subscription = RNAppState.addEventListener("change", (next) => {
+      if (next === "active" || !hydratedRef.current) return;
+      clearTimeout(saveTimer.current);
+      void saveAppState(latestState.current);
+    });
+    return () => {
+      subscription.remove();
+      clearTimeout(saveTimer.current);
+    };
+  }, []);
 
   // Pas ngarkimit, cilesimet e njoftimeve i shkojne edhe serverit: kujtesat
   // e vaksinave dhe statusi i porosise dergohen prej andej, jo nga telefoni.
@@ -300,6 +352,35 @@ export function AppStateProvider({ children }: { children: ReactNode }) {
     if (!hydrated) return;
     void syncNotificationSettings(state.notificationPrefs);
   }, [hydrated, state.notificationPrefs]);
+
+  // Profili i bebit nga serveri: emri dhe data e lindjes (telefoni i ri,
+  // prindi i dytë i familjes, ri-instalimi). Nëse ndryshimi lokal s'ka arritur
+  // ende në server, dërgohet ai — nuk mbishkruhet me versionin e vjetër.
+  useEffect(() => {
+    if (!hydrated) return;
+    let alive = true;
+    void (async () => {
+      const profile = latestState.current.profile;
+      if (await isBabyProfilePending()) {
+        const dob = profile.babyDob ? localDateKey(new Date(profile.babyDob)) : null;
+        await saveBabyProfileRemote(profile.babyName, dob);
+        return;
+      }
+      const basics = await fetchBabyProfileBasics().catch(() => null);
+      if (!alive || !basics) return;
+      const patch: Partial<BabyProfile> = {};
+      if (basics.babyName && basics.babyName !== profile.babyName) patch.babyName = basics.babyName;
+      if (basics.babyDob) {
+        const [y, m, d] = basics.babyDob.slice(0, 10).split("-").map(Number);
+        const same = profile.babyDob && localDateKey(new Date(profile.babyDob)) === basics.babyDob.slice(0, 10);
+        if (!same && y && m && d) patch.babyDob = new Date(y, m - 1, d).toISOString();
+      }
+      if (Object.keys(patch).length) dispatch({ type: "UPDATE_PROFILE", value: patch });
+    })();
+    return () => {
+      alive = false;
+    };
+  }, [hydrated, profileRefresh]);
 
   // Fotot e profilit. Rruga lokale (nga ky telefon) dhe ajo e serverit
   // (e ruajtur qe prindi/bebi ta rigjejne edhe ne nje pajisje tjeter, ose
@@ -340,10 +421,11 @@ export function AppStateProvider({ children }: { children: ReactNode }) {
     return () => {
       alive = false;
     };
-    // Vetem nje here pas ngarkimit: URL-ja vlen nje jave dhe rifreskohet ne
-    // hapjen tjeter. Varesia te vete rruget do te rinisej ne cdo ndryshim.
+    // Pas ngarkimit dhe kur ndryshon pronari i të dhënave: URL-ja vlen një
+    // javë dhe rifreskohet në hapjen tjetër. Varësia te vetë rrugët do të
+    // rinisej në çdo ndryshim.
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [hydrated]);
+  }, [hydrated, profileRefresh]);
 
   // Real dark mode: whenever the user's chosen darkMode value changes,
   // sync NativeWind's color scheme so every `dark:` class in the app
@@ -353,20 +435,27 @@ export function AppStateProvider({ children }: { children: ReactNode }) {
     setColorScheme(state.darkMode ? "dark" : "light");
   }, [state.darkMode, setColorScheme]);
 
-  const value = { ...buildValue(state, dispatch), hydrated };
+  const value = { ...buildValue(state, dispatch), hydrated, refreshProfileFromServer: () => setProfileRefresh((v) => v + 1) };
   return <AppStateContext.Provider value={value}>{children}</AppStateContext.Provider>;
 }
 
 function buildValue(state: AppState, dispatch: React.Dispatch<Action>) {
-  const setBaby = (value: Partial<BabyModuleState>) => dispatch({ type: "SET_BABY", value });
   const b = state.baby;
+  /**
+   * Çdo ndryshim i bebit llogaritet mbi gjendjen e ÇASTIT (brenda reducer-it),
+   * jo mbi `b` të render-it. Pa këtë, një veprim pas një pritjeje (p.sh. pasi
+   * mbyllet zgjedhësi i fotos) llogariste listën nga një kopje e vjetër dhe
+   * zëvendësonte shënimet që sync-u kishte sjellë ndërkohë nga webi.
+   */
+  const update = (fn: (cur: BabyModuleState) => Partial<BabyModuleState>) => dispatch({ type: "UPDATE_BABY", fn });
 
-  function pushAudit(entries: AuditEntry[]) {
-    if (entries.length) setBaby({ auditLog: [...b.auditLog, ...entries] });
+  /** Shton hyrje në ditarin e ndryshimeve, brenda të njëjtit përditësim. */
+  function audit(cur: BabyModuleState, entries: AuditEntry[]): Partial<BabyModuleState> {
+    return entries.length ? { auditLog: capAudit([...cur.auditLog, ...entries]) } : {};
   }
-  function logSimple(kind: RecordKind, recordId: string, recordLabel: string, field: string, oldValue: string, newValue: string) {
-    if (oldValue === newValue) return;
-    pushAudit([{ id: uid(), recordKind: kind, recordId, recordLabel, field, fieldLabel: field, oldValue: oldValue || "–", newValue: newValue || "–", at: nowIso() }]);
+  function simpleEntry(kind: RecordKind, recordId: string, recordLabel: string, field: string, oldValue: string, newValue: string): AuditEntry[] {
+    if (oldValue === newValue) return [];
+    return [{ id: uid(), recordKind: kind, recordId, recordLabel, field, fieldLabel: field, oldValue: oldValue || "–", newValue: newValue || "–", at: nowIso() }];
   }
 
   return {
@@ -385,10 +474,23 @@ function buildValue(state: AppState, dispatch: React.Dispatch<Action>) {
     addToCart: (item: Omit<CartItem, "qty">, qty = 1) => dispatch({ type: "ADD_TO_CART", item: { ...item, qty } }),
     removeFromCart: (id: string) => dispatch({ type: "REMOVE_FROM_CART", id }),
     updateCartQty: (id: string, qty: number) => dispatch({ type: "UPDATE_CART_QTY", id, qty }),
+    /** Çmimet/emrat e rifreskuar nga serveri para arkëtimit. */
+    replaceCartItems: (items: CartItem[]) => dispatch({ type: "REPLACE_CART", items }),
     clearCart: () => dispatch({ type: "CLEAR_CART" }),
     cartTotal: () => state.cartItems.reduce((sum, i) => sum + i.price * i.qty, 0),
-    resetBabyData: () => {
-      dispatch({ type: "UPDATE_PROFILE", value: initialAppState.profile });
+    /**
+     * Pastron të dhënat e bebit në telefon. `keepParent`: kur ndryshon vetëm
+     * familja (pronari i të dhënave), emri dhe fotoja e prindit mbeten — janë
+     * të llogarisë, jo të bebit.
+     */
+    resetBabyData: (options?: { keepParent?: boolean }) => {
+      const p = state.profile;
+      dispatch({
+        type: "UPDATE_PROFILE",
+        value: options?.keepParent
+          ? { ...initialAppState.profile, parentName: p.parentName, relation: p.relation, parentPhoto: p.parentPhoto, parentPhotoPath: p.parentPhotoPath }
+          : initialAppState.profile,
+      });
       dispatch({ type: "SET_BABY", value: initialAppState.baby });
     },
 
@@ -410,29 +512,32 @@ function buildValue(state: AppState, dispatch: React.Dispatch<Action>) {
       dispatch({ type: "SET_NOTIFICATION_PREF", key, value }),
 
     baby: {
-      // ---- Growth stat cards (profile summary) — this is the "Weight
-      // changed: 8.4kg -> 8.7kg" example from the spec. ----
-      addGrowthStat: (key: string) => {
-        const preset = growthCatalog.find((g) => g.key === key);
-        if (!preset || b.growthActiveKeys.includes(key)) return;
-        setBaby({ growthStats: [...b.growthStats, preset], growthActiveKeys: [...b.growthActiveKeys, key] });
-      },
+      // ---- Growth stat cards (profile summary) ----
+      addGrowthStat: (key: string) =>
+        update((cur) => {
+          const preset = growthCatalog.find((g) => g.key === key);
+          if (!preset || cur.growthActiveKeys.includes(key)) return {};
+          return { growthStats: [...cur.growthStats, preset], growthActiveKeys: [...cur.growthActiveKeys, key] };
+        }),
       addCustomGrowthStat: (label: string, value: string) => {
         const key = `custom:${uid()}`;
         const stat: GrowthStat = { key, label, value, isCustom: true };
-        setBaby({ growthStats: [...b.growthStats, stat], growthActiveKeys: [...b.growthActiveKeys, key] });
+        update((cur) => ({ growthStats: [...cur.growthStats, stat], growthActiveKeys: [...cur.growthActiveKeys, key] }));
       },
-      removeGrowthStat: (key: string) => {
-        setBaby({
-          growthStats: b.growthStats.filter((g) => g.key !== key),
-          growthActiveKeys: b.growthActiveKeys.filter((k) => k !== key),
-        });
-      },
-      updateGrowthStat: (key: string, patch: Partial<Pick<GrowthStat, "value" | "label">>) => {
-        const stat = b.growthStats.find((g) => g.key === key);
-        if (stat && patch.value !== undefined) logSimple("growthHistory", key, stat.label ?? stat.labelKey ?? key, "value", stat.value, patch.value);
-        setBaby({ growthStats: b.growthStats.map((g) => (g.key === key ? { ...g, ...patch } : g)) });
-      },
+      removeGrowthStat: (key: string) =>
+        update((cur) => ({
+          growthStats: cur.growthStats.filter((g) => g.key !== key),
+          growthActiveKeys: cur.growthActiveKeys.filter((k) => k !== key),
+        })),
+      updateGrowthStat: (key: string, patch: Partial<Pick<GrowthStat, "value" | "label">>) =>
+        update((cur) => {
+          const stat = cur.growthStats.find((g) => g.key === key);
+          const entries =
+            stat && patch.value !== undefined
+              ? simpleEntry("growthHistory", key, stat.label ?? stat.labelKey ?? key, "value", stat.value, patch.value)
+              : [];
+          return { growthStats: cur.growthStats.map((g) => (g.key === key ? { ...g, ...patch } : g)), ...audit(cur, entries) };
+        }),
       availableGrowthPresets: () => growthCatalog.filter((g) => !b.growthActiveKeys.includes(g.key)),
 
       // ---- Growth history (measurements over time) ----
@@ -443,88 +548,93 @@ function buildValue(state: AppState, dispatch: React.Dispatch<Action>) {
           createdAt: at, updatedAt: at, editCount: 0, deletedAt: null, archivedAt: null,
           ...entry,
         };
-        setBaby({ growthHistory: withAdd(b.growthHistory, item) });
+        update((cur) => ({ growthHistory: withAdd(cur.growthHistory, item) }));
       },
-      updateGrowthHistoryEntry: (id: string, patch: Partial<GrowthHistoryEntry>) => {
-        const { list, entries } = diffAndTrack(b.growthHistory, id, patch, "growthHistory", "growth measurement");
-        setBaby({ growthHistory: list });
-        pushAudit(entries);
-      },
-      duplicateGrowthHistoryEntry: (id: string) => setBaby({ growthHistory: withDuplicate(b.growthHistory, id, { date: nowIso() }) }),
-      deleteGrowthHistoryEntry: (id: string) => setBaby({ growthHistory: withSoftDelete(b.growthHistory, id) }),
-      restoreGrowthHistoryEntry: (id: string) => setBaby({ growthHistory: withRestore(b.growthHistory, id) }),
-      archiveGrowthHistoryEntry: (id: string) => setBaby({ growthHistory: withArchive(b.growthHistory, id) }),
-      unarchiveGrowthHistoryEntry: (id: string) => setBaby({ growthHistory: withUnarchive(b.growthHistory, id) }),
+      updateGrowthHistoryEntry: (id: string, patch: Partial<GrowthHistoryEntry>) =>
+        update((cur) => {
+          const { list, entries } = diffAndTrack(cur.growthHistory, id, patch, "growthHistory", "growth measurement");
+          return { growthHistory: list, ...audit(cur, entries) };
+        }),
+      duplicateGrowthHistoryEntry: (id: string) => update((cur) => ({ growthHistory: withDuplicate(cur.growthHistory, id, { date: nowIso() }) })),
+      deleteGrowthHistoryEntry: (id: string) => update((cur) => ({ growthHistory: withSoftDelete(cur.growthHistory, id) })),
+      restoreGrowthHistoryEntry: (id: string) => update((cur) => ({ growthHistory: withRestore(cur.growthHistory, id) })),
+      archiveGrowthHistoryEntry: (id: string) => update((cur) => ({ growthHistory: withArchive(cur.growthHistory, id) })),
+      unarchiveGrowthHistoryEntry: (id: string) => update((cur) => ({ growthHistory: withUnarchive(cur.growthHistory, id) })),
 
       // ---- Quick actions ----
-      addQuickAction: (key: QuickActionKey) => {
-        if (b.quickActionKeys.includes(key)) return;
-        setBaby({ quickActionKeys: [...b.quickActionKeys, key] });
-      },
-      removeQuickAction: (key: QuickActionKey) => setBaby({ quickActionKeys: b.quickActionKeys.filter((k) => k !== key) }),
+      addQuickAction: (key: QuickActionKey) =>
+        update((cur) => (cur.quickActionKeys.includes(key) ? {} : { quickActionKeys: [...cur.quickActionKeys, key] })),
+      removeQuickAction: (key: QuickActionKey) => update((cur) => ({ quickActionKeys: cur.quickActionKeys.filter((k) => k !== key) })),
 
       // ---- Medical info (profile summary rows) ----
-      addMedicalRow: (key: string) => {
-        const preset = medicalCatalog.find((m) => m.key === key);
-        if (!preset || b.medicalActiveKeys.includes(key)) return;
-        setBaby({
-          medicalInfo: [...b.medicalInfo.filter((m) => m.key !== key), preset],
-          medicalActiveKeys: [...b.medicalActiveKeys, key],
-        });
-      },
+      addMedicalRow: (key: string) =>
+        update((cur) => {
+          const preset = medicalCatalog.find((m) => m.key === key);
+          if (!preset || cur.medicalActiveKeys.includes(key)) return {};
+          return {
+            medicalInfo: [...cur.medicalInfo.filter((m) => m.key !== key), preset],
+            medicalActiveKeys: [...cur.medicalActiveKeys, key],
+          };
+        }),
       addCustomMedicalRow: (label: string, value: string) => {
         const key = `custom:${uid()}`;
         const row: MedicalInfoRow = { key, label, value, isCustom: true };
-        setBaby({ medicalInfo: [...b.medicalInfo, row], medicalActiveKeys: [...b.medicalActiveKeys, key] });
+        update((cur) => ({ medicalInfo: [...cur.medicalInfo, row], medicalActiveKeys: [...cur.medicalActiveKeys, key] }));
       },
-      removeMedicalRow: (key: string) => setBaby({ medicalActiveKeys: b.medicalActiveKeys.filter((k) => k !== key) }),
-      updateMedicalRow: (key: string, patch: Partial<Pick<MedicalInfoRow, "value" | "label">>) => {
-        const row = b.medicalInfo.find((m) => m.key === key);
-        if (row && patch.value !== undefined) logSimple("medical", key, row.label ?? row.labelKey ?? key, "value", row.value, patch.value);
-        setBaby({ medicalInfo: b.medicalInfo.map((m) => (m.key === key ? { ...m, ...patch } : m)) });
-      },
+      removeMedicalRow: (key: string) => update((cur) => ({ medicalActiveKeys: cur.medicalActiveKeys.filter((k) => k !== key) })),
+      updateMedicalRow: (key: string, patch: Partial<Pick<MedicalInfoRow, "value" | "label">>) =>
+        update((cur) => {
+          const row = cur.medicalInfo.find((m) => m.key === key);
+          const entries =
+            row && patch.value !== undefined
+              ? simpleEntry("medical", key, row.label ?? row.labelKey ?? key, "value", row.value, patch.value)
+              : [];
+          return { medicalInfo: cur.medicalInfo.map((m) => (m.key === key ? { ...m, ...patch } : m)), ...audit(cur, entries) };
+        }),
       availableMedicalPresets: () => medicalCatalog.filter((m) => !b.medicalActiveKeys.includes(m.key)),
 
       // ---- Milestones ----
-      addMilestone: (key: string) => {
-        const preset = milestoneCatalog.find((m) => m.key === key);
-        if (!preset || b.milestoneActiveKeys.includes(key)) return;
-        setBaby({
-          milestones: [...b.milestones.filter((m) => m.key !== key), preset],
-          milestoneActiveKeys: [...b.milestoneActiveKeys, key],
-        });
-      },
+      addMilestone: (key: string) =>
+        update((cur) => {
+          const preset = milestoneCatalog.find((m) => m.key === key);
+          if (!preset || cur.milestoneActiveKeys.includes(key)) return {};
+          return {
+            milestones: [...cur.milestones.filter((m) => m.key !== key), preset],
+            milestoneActiveKeys: [...cur.milestoneActiveKeys, key],
+          };
+        }),
       addCustomMilestone: (label: string) => {
         const key = `custom:${uid()}`;
         const item: MilestoneItem = { key, label, done: false, isCustom: true };
-        setBaby({ milestones: [...b.milestones, item], milestoneActiveKeys: [...b.milestoneActiveKeys, key] });
+        update((cur) => ({ milestones: [...cur.milestones, item], milestoneActiveKeys: [...cur.milestoneActiveKeys, key] }));
       },
-      removeMilestone: (key: string) => setBaby({ milestoneActiveKeys: b.milestoneActiveKeys.filter((k) => k !== key) }),
-      toggleMilestone: (key: string) => {
-        const m = b.milestones.find((mm) => mm.key === key);
-        if (m) logSimple("timeline", key, m.label ?? m.labelKey ?? key, "done", String(m.done), String(!m.done));
-        setBaby({ milestones: b.milestones.map((mm) => (mm.key === key ? { ...mm, done: !mm.done } : mm)) });
-      },
+      removeMilestone: (key: string) => update((cur) => ({ milestoneActiveKeys: cur.milestoneActiveKeys.filter((k) => k !== key) })),
+      toggleMilestone: (key: string) =>
+        update((cur) => {
+          const m = cur.milestones.find((mm) => mm.key === key);
+          const entries = m ? simpleEntry("timeline", key, m.label ?? m.labelKey ?? key, "done", String(m.done), String(!m.done)) : [];
+          return { milestones: cur.milestones.map((mm) => (mm.key === key ? { ...mm, done: !mm.done } : mm)), ...audit(cur, entries) };
+        }),
       updateMilestoneLabel: (key: string, label: string) =>
-        setBaby({ milestones: b.milestones.map((m) => (m.key === key ? { ...m, label } : m)) }),
+        update((cur) => ({ milestones: cur.milestones.map((m) => (m.key === key ? { ...m, label } : m)) })),
       availableMilestonePresets: () => milestoneCatalog.filter((m) => !b.milestoneActiveKeys.includes(m.key)),
 
       // ---- Timeline (unified, also manually-added custom events) ----
       addTimelineEvent: (title: string, date: string) => {
         const at = nowIso();
         const event: TimelineEvent = { id: uid(), title, date, color: "olive", note: "", createdAt: at, updatedAt: at, editCount: 0, deletedAt: null, archivedAt: null };
-        setBaby({ timeline: withAdd(b.timeline, event) });
+        update((cur) => ({ timeline: withAdd(cur.timeline, event) }));
       },
-      updateTimelineEvent: (id: string, patch: Partial<TimelineEvent>) => {
-        const { list, entries } = diffAndTrack(b.timeline, id, patch, "timeline", "event");
-        setBaby({ timeline: list });
-        pushAudit(entries);
-      },
-      duplicateTimelineEvent: (id: string) => setBaby({ timeline: withDuplicate(b.timeline, id) }),
-      deleteTimelineEvent: (id: string) => setBaby({ timeline: withSoftDelete(b.timeline, id) }),
-      restoreTimelineEvent: (id: string) => setBaby({ timeline: withRestore(b.timeline, id) }),
-      archiveTimelineEvent: (id: string) => setBaby({ timeline: withArchive(b.timeline, id) }),
-      unarchiveTimelineEvent: (id: string) => setBaby({ timeline: withUnarchive(b.timeline, id) }),
+      updateTimelineEvent: (id: string, patch: Partial<TimelineEvent>) =>
+        update((cur) => {
+          const { list, entries } = diffAndTrack(cur.timeline, id, patch, "timeline", "event");
+          return { timeline: list, ...audit(cur, entries) };
+        }),
+      duplicateTimelineEvent: (id: string) => update((cur) => ({ timeline: withDuplicate(cur.timeline, id) })),
+      deleteTimelineEvent: (id: string) => update((cur) => ({ timeline: withSoftDelete(cur.timeline, id) })),
+      restoreTimelineEvent: (id: string) => update((cur) => ({ timeline: withRestore(cur.timeline, id) })),
+      archiveTimelineEvent: (id: string) => update((cur) => ({ timeline: withArchive(cur.timeline, id) })),
+      unarchiveTimelineEvent: (id: string) => update((cur) => ({ timeline: withUnarchive(cur.timeline, id) })),
 
       // ---- Feeding ----
       addFeedingEntry: (entry: Partial<FeedingEntry>) => {
@@ -534,20 +644,20 @@ function buildValue(state: AppState, dispatch: React.Dispatch<Action>) {
           at, note: "", createdAt: at, updatedAt: at, editCount: 0, deletedAt: null, archivedAt: null,
           ...entry,
         };
-        setBaby({ feedingLog: withAdd(b.feedingLog, item) });
+        update((cur) => ({ feedingLog: withAdd(cur.feedingLog, item) }));
       },
-      updateFeedingEntry: (id: string, patch: Partial<FeedingEntry>) => {
-        const { list, entries } = diffAndTrack(b.feedingLog, id, patch, "feeding", "feeding");
-        setBaby({ feedingLog: list });
-        pushAudit(entries);
-      },
+      updateFeedingEntry: (id: string, patch: Partial<FeedingEntry>) =>
+        update((cur) => {
+          const { list, entries } = diffAndTrack(cur.feedingLog, id, patch, "feeding", "feeding");
+          return { feedingLog: list, ...audit(cur, entries) };
+        }),
       // Smart duplicate: never copy the original timestamp — a duplicated
       // feeding is logged as happening now, not back-dated to the original.
-      duplicateFeedingEntry: (id: string) => setBaby({ feedingLog: withDuplicate(b.feedingLog, id, { at: nowIso() }) }),
-      deleteFeedingEntry: (id: string) => setBaby({ feedingLog: withSoftDelete(b.feedingLog, id) }),
-      restoreFeedingEntry: (id: string) => setBaby({ feedingLog: withRestore(b.feedingLog, id) }),
-      archiveFeedingEntry: (id: string) => setBaby({ feedingLog: withArchive(b.feedingLog, id) }),
-      unarchiveFeedingEntry: (id: string) => setBaby({ feedingLog: withUnarchive(b.feedingLog, id) }),
+      duplicateFeedingEntry: (id: string) => update((cur) => ({ feedingLog: withDuplicate(cur.feedingLog, id, { at: nowIso() }) })),
+      deleteFeedingEntry: (id: string) => update((cur) => ({ feedingLog: withSoftDelete(cur.feedingLog, id) })),
+      restoreFeedingEntry: (id: string) => update((cur) => ({ feedingLog: withRestore(cur.feedingLog, id) })),
+      archiveFeedingEntry: (id: string) => update((cur) => ({ feedingLog: withArchive(cur.feedingLog, id) })),
+      unarchiveFeedingEntry: (id: string) => update((cur) => ({ feedingLog: withUnarchive(cur.feedingLog, id) })),
 
       // ---- Sleep ----
       startSleep: (isNap: boolean) => {
@@ -556,41 +666,45 @@ function buildValue(state: AppState, dispatch: React.Dispatch<Action>) {
           id: uid(), startAt: at, endAt: null, pausedIntervalsMin: 0, pausedAt: null, isNap, quality: null,
           note: "", createdAt: at, updatedAt: at, editCount: 0, deletedAt: null, archivedAt: null,
         };
-        setBaby({ sleepLog: withAdd(b.sleepLog, item) });
+        update((cur) => ({ sleepLog: withAdd(cur.sleepLog, item) }));
       },
       // Pauza, vazhdimi dhe mbyllja rrisin `updatedAt`: pa të, sync-u s'e
       // dërgonte ndryshimin dhe webi e tregonte gjumin "në vazhdim" përgjithmonë.
       pauseSleep: (id: string) => {
         const at = nowIso();
-        setBaby({ sleepLog: b.sleepLog.map((s) => (s.id === id ? { ...s, pausedAt: at, updatedAt: at, editCount: s.editCount + 1 } : s)) });
+        update((cur) => ({ sleepLog: cur.sleepLog.map((s) => (s.id === id ? { ...s, pausedAt: at, updatedAt: at, editCount: s.editCount + 1 } : s)) }));
       },
       resumeSleep: (id: string) => {
-        const entry = b.sleepLog.find((s) => s.id === id);
-        if (!entry?.pausedAt) return;
-        const pausedMin = Math.round((Date.now() - new Date(entry.pausedAt).getTime()) / 60000);
         const at = nowIso();
-        setBaby({
-          sleepLog: b.sleepLog.map((s) =>
-            s.id === id
-              ? { ...s, pausedAt: null, pausedIntervalsMin: s.pausedIntervalsMin + pausedMin, updatedAt: at, editCount: s.editCount + 1 }
-              : s
-          ),
+        const nowMs = Date.now();
+        update((cur) => {
+          const entry = cur.sleepLog.find((s) => s.id === id);
+          if (!entry?.pausedAt) return {};
+          const pausedMin = Math.round((nowMs - new Date(entry.pausedAt).getTime()) / 60000);
+          return {
+            sleepLog: cur.sleepLog.map((s) =>
+              s.id === id
+                ? { ...s, pausedAt: null, pausedIntervalsMin: s.pausedIntervalsMin + pausedMin, updatedAt: at, editCount: s.editCount + 1 }
+                : s
+            ),
+          };
         });
       },
       endSleep: (id: string) => {
         const at = nowIso();
-        setBaby({ sleepLog: b.sleepLog.map((s) => (s.id === id ? { ...s, endAt: at, updatedAt: at, editCount: s.editCount + 1 } : s)) });
+        update((cur) => ({ sleepLog: cur.sleepLog.map((s) => (s.id === id ? { ...s, endAt: at, updatedAt: at, editCount: s.editCount + 1 } : s)) }));
       },
-      updateSleepEntry: (id: string, patch: Partial<SleepEntry>) => {
-        const { list, entries } = diffAndTrack(b.sleepLog, id, patch, "sleep", "sleep");
-        setBaby({ sleepLog: list });
-        pushAudit(entries);
-      },
-      duplicateSleepEntry: (id: string) => setBaby({ sleepLog: withDuplicate(b.sleepLog, id, { startAt: nowIso(), endAt: null, pausedAt: null }) }),
-      deleteSleepEntry: (id: string) => setBaby({ sleepLog: withSoftDelete(b.sleepLog, id) }),
-      restoreSleepEntry: (id: string) => setBaby({ sleepLog: withRestore(b.sleepLog, id) }),
-      archiveSleepEntry: (id: string) => setBaby({ sleepLog: withArchive(b.sleepLog, id) }),
-      unarchiveSleepEntry: (id: string) => setBaby({ sleepLog: withUnarchive(b.sleepLog, id) }),
+      updateSleepEntry: (id: string, patch: Partial<SleepEntry>) =>
+        update((cur) => {
+          const { list, entries } = diffAndTrack(cur.sleepLog, id, patch, "sleep", "sleep");
+          return { sleepLog: list, ...audit(cur, entries) };
+        }),
+      duplicateSleepEntry: (id: string) =>
+        update((cur) => ({ sleepLog: withDuplicate(cur.sleepLog, id, { startAt: nowIso(), endAt: null, pausedAt: null }) })),
+      deleteSleepEntry: (id: string) => update((cur) => ({ sleepLog: withSoftDelete(cur.sleepLog, id) })),
+      restoreSleepEntry: (id: string) => update((cur) => ({ sleepLog: withRestore(cur.sleepLog, id) })),
+      archiveSleepEntry: (id: string) => update((cur) => ({ sleepLog: withArchive(cur.sleepLog, id) })),
+      unarchiveSleepEntry: (id: string) => update((cur) => ({ sleepLog: withUnarchive(cur.sleepLog, id) })),
 
       // ---- Diaper ----
       addDiaperEntry: (entry: Partial<DiaperEntry>) => {
@@ -600,18 +714,18 @@ function buildValue(state: AppState, dispatch: React.Dispatch<Action>) {
           createdAt: at, updatedAt: at, editCount: 0, deletedAt: null, archivedAt: null,
           ...entry,
         };
-        setBaby({ diaperLog: withAdd(b.diaperLog, item) });
+        update((cur) => ({ diaperLog: withAdd(cur.diaperLog, item) }));
       },
-      updateDiaperEntry: (id: string, patch: Partial<DiaperEntry>) => {
-        const { list, entries } = diffAndTrack(b.diaperLog, id, patch, "diaper", "diaper");
-        setBaby({ diaperLog: list });
-        pushAudit(entries);
-      },
-      duplicateDiaperEntry: (id: string) => setBaby({ diaperLog: withDuplicate(b.diaperLog, id, { at: nowIso() }) }),
-      deleteDiaperEntry: (id: string) => setBaby({ diaperLog: withSoftDelete(b.diaperLog, id) }),
-      restoreDiaperEntry: (id: string) => setBaby({ diaperLog: withRestore(b.diaperLog, id) }),
-      archiveDiaperEntry: (id: string) => setBaby({ diaperLog: withArchive(b.diaperLog, id) }),
-      unarchiveDiaperEntry: (id: string) => setBaby({ diaperLog: withUnarchive(b.diaperLog, id) }),
+      updateDiaperEntry: (id: string, patch: Partial<DiaperEntry>) =>
+        update((cur) => {
+          const { list, entries } = diffAndTrack(cur.diaperLog, id, patch, "diaper", "diaper");
+          return { diaperLog: list, ...audit(cur, entries) };
+        }),
+      duplicateDiaperEntry: (id: string) => update((cur) => ({ diaperLog: withDuplicate(cur.diaperLog, id, { at: nowIso() }) })),
+      deleteDiaperEntry: (id: string) => update((cur) => ({ diaperLog: withSoftDelete(cur.diaperLog, id) })),
+      restoreDiaperEntry: (id: string) => update((cur) => ({ diaperLog: withRestore(cur.diaperLog, id) })),
+      archiveDiaperEntry: (id: string) => update((cur) => ({ diaperLog: withArchive(cur.diaperLog, id) })),
+      unarchiveDiaperEntry: (id: string) => update((cur) => ({ diaperLog: withUnarchive(cur.diaperLog, id) })),
 
       // ---- Vaccinations ----
       addVaccine: (entry: Partial<VaccineEntry> & { name: string; dueDate: string }) => {
@@ -621,23 +735,25 @@ function buildValue(state: AppState, dispatch: React.Dispatch<Action>) {
           reminderEnabled: true, createdAt: at, updatedAt: at, editCount: 0, deletedAt: null, archivedAt: null,
           ...entry,
         };
-        setBaby({ vaccines: withAdd(b.vaccines, item) });
+        update((cur) => ({ vaccines: withAdd(cur.vaccines, item) }));
       },
-      updateVaccine: (id: string, patch: Partial<VaccineEntry>) => {
-        const { list, entries } = diffAndTrack(b.vaccines, id, patch, "vaccine", "vaccine");
-        setBaby({ vaccines: list });
-        pushAudit(entries);
-      },
+      updateVaccine: (id: string, patch: Partial<VaccineEntry>) =>
+        update((cur) => {
+          const { list, entries } = diffAndTrack(cur.vaccines, id, patch, "vaccine", "vaccine");
+          return { vaccines: list, ...audit(cur, entries) };
+        }),
       markVaccineDone: (id: string) => {
-        const { list, entries } = diffAndTrack(b.vaccines, id, { givenDate: nowIso() } as Partial<VaccineEntry>, "vaccine", "vaccine");
-        setBaby({ vaccines: list });
-        pushAudit(entries);
+        const givenDate = nowIso();
+        update((cur) => {
+          const { list, entries } = diffAndTrack(cur.vaccines, id, { givenDate } as Partial<VaccineEntry>, "vaccine", "vaccine");
+          return { vaccines: list, ...audit(cur, entries) };
+        });
       },
-      duplicateVaccine: (id: string) => setBaby({ vaccines: withDuplicate(b.vaccines, id, { givenDate: null }) }),
-      deleteVaccine: (id: string) => setBaby({ vaccines: withSoftDelete(b.vaccines, id) }),
-      restoreVaccine: (id: string) => setBaby({ vaccines: withRestore(b.vaccines, id) }),
-      archiveVaccine: (id: string) => setBaby({ vaccines: withArchive(b.vaccines, id) }),
-      unarchiveVaccine: (id: string) => setBaby({ vaccines: withUnarchive(b.vaccines, id) }),
+      duplicateVaccine: (id: string) => update((cur) => ({ vaccines: withDuplicate(cur.vaccines, id, { givenDate: null }) })),
+      deleteVaccine: (id: string) => update((cur) => ({ vaccines: withSoftDelete(cur.vaccines, id) })),
+      restoreVaccine: (id: string) => update((cur) => ({ vaccines: withRestore(cur.vaccines, id) })),
+      archiveVaccine: (id: string) => update((cur) => ({ vaccines: withArchive(cur.vaccines, id) })),
+      unarchiveVaccine: (id: string) => update((cur) => ({ vaccines: withUnarchive(cur.vaccines, id) })),
 
       // ---- Moments ----
       addMoment: (entry: Partial<Moment> & { type: Moment["type"] }) => {
@@ -647,23 +763,26 @@ function buildValue(state: AppState, dispatch: React.Dispatch<Action>) {
           createdAt: at, updatedAt: at, editCount: 0, deletedAt: null, archivedAt: null,
           ...entry,
         };
-        setBaby({ moments: withAdd(b.moments, item) });
+        update((cur) => ({ moments: withAdd(cur.moments, item) }));
       },
-      updateMoment: (id: string, patch: Partial<Moment>) => {
-        const { list, entries } = diffAndTrack(b.moments, id, patch, "moment", "moment");
-        setBaby({ moments: list });
-        pushAudit(entries);
-      },
+      updateMoment: (id: string, patch: Partial<Moment>) =>
+        update((cur) => {
+          const { list, entries } = diffAndTrack(cur.moments, id, patch, "moment", "moment");
+          return { moments: list, ...audit(cur, entries) };
+        }),
+      // `updatedAt` rritet: pa të, "i preferuar" s'arrinte kurrë te serveri dhe webi.
       toggleMomentFavorite: (id: string) => {
-        const m = b.moments.find((mo) => mo.id === id);
-        if (m) setBaby({ moments: b.moments.map((mo) => (mo.id === id ? { ...mo, favorite: !mo.favorite } : mo)) });
+        const at = nowIso();
+        update((cur) => ({
+          moments: cur.moments.map((mo) => (mo.id === id ? { ...mo, favorite: !mo.favorite, updatedAt: at, editCount: mo.editCount + 1 } : mo)),
+        }));
       },
       // Smart duplicate: reset to "now", never copy the original date.
-      duplicateMoment: (id: string) => setBaby({ moments: withDuplicate(b.moments, id, { date: nowIso() }) }),
-      deleteMoment: (id: string) => setBaby({ moments: withSoftDelete(b.moments, id) }),
-      restoreMoment: (id: string) => setBaby({ moments: withRestore(b.moments, id) }),
-      archiveMoment: (id: string) => setBaby({ moments: withArchive(b.moments, id) }),
-      unarchiveMoment: (id: string) => setBaby({ moments: withUnarchive(b.moments, id) }),
+      duplicateMoment: (id: string) => update((cur) => ({ moments: withDuplicate(cur.moments, id, { date: nowIso() }) })),
+      deleteMoment: (id: string) => update((cur) => ({ moments: withSoftDelete(cur.moments, id) })),
+      restoreMoment: (id: string) => update((cur) => ({ moments: withRestore(cur.moments, id) })),
+      archiveMoment: (id: string) => update((cur) => ({ moments: withArchive(cur.moments, id) })),
+      unarchiveMoment: (id: string) => update((cur) => ({ moments: withUnarchive(cur.moments, id) })),
 
       // ---- Medical records ----
       addMedicalRecord: (entry: Partial<MedicalRecord> & { type: MedicalRecord["type"]; title: string }) => {
@@ -673,35 +792,39 @@ function buildValue(state: AppState, dispatch: React.Dispatch<Action>) {
           createdAt: at, updatedAt: at, editCount: 0, deletedAt: null, archivedAt: null,
           ...entry,
         };
-        setBaby({ medicalRecords: withAdd(b.medicalRecords, item) });
+        update((cur) => ({ medicalRecords: withAdd(cur.medicalRecords, item) }));
       },
-      updateMedicalRecord: (id: string, patch: Partial<MedicalRecord>) => {
-        const { list, entries } = diffAndTrack(b.medicalRecords, id, patch, "medical", "medical record");
-        setBaby({ medicalRecords: list });
-        pushAudit(entries);
+      updateMedicalRecord: (id: string, patch: Partial<MedicalRecord>) =>
+        update((cur) => {
+          const { list, entries } = diffAndTrack(cur.medicalRecords, id, patch, "medical", "medical record");
+          return { medicalRecords: list, ...audit(cur, entries) };
+        }),
+      // `updatedAt` rritet, që gozhdimi të arrijë edhe te webi.
+      togglePinMedicalRecord: (id: string) => {
+        const at = nowIso();
+        update((cur) => ({
+          medicalRecords: cur.medicalRecords.map((m) => (m.id === id ? { ...m, pinned: !m.pinned, updatedAt: at, editCount: m.editCount + 1 } : m)),
+        }));
       },
-      togglePinMedicalRecord: (id: string) =>
-        setBaby({ medicalRecords: b.medicalRecords.map((m) => (m.id === id ? { ...m, pinned: !m.pinned } : m)) }),
-      duplicateMedicalRecord: (id: string) => setBaby({ medicalRecords: withDuplicate(b.medicalRecords, id, { at: nowIso() }) }),
-      deleteMedicalRecord: (id: string) => setBaby({ medicalRecords: withSoftDelete(b.medicalRecords, id) }),
-      restoreMedicalRecord: (id: string) => setBaby({ medicalRecords: withRestore(b.medicalRecords, id) }),
-      archiveMedicalRecord: (id: string) => setBaby({ medicalRecords: withArchive(b.medicalRecords, id) }),
-      unarchiveMedicalRecord: (id: string) => setBaby({ medicalRecords: withUnarchive(b.medicalRecords, id) }),
+      duplicateMedicalRecord: (id: string) => update((cur) => ({ medicalRecords: withDuplicate(cur.medicalRecords, id, { at: nowIso() }) })),
+      deleteMedicalRecord: (id: string) => update((cur) => ({ medicalRecords: withSoftDelete(cur.medicalRecords, id) })),
+      restoreMedicalRecord: (id: string) => update((cur) => ({ medicalRecords: withRestore(cur.medicalRecords, id) })),
+      archiveMedicalRecord: (id: string) => update((cur) => ({ medicalRecords: withArchive(cur.medicalRecords, id) })),
+      unarchiveMedicalRecord: (id: string) => update((cur) => ({ medicalRecords: withUnarchive(cur.medicalRecords, id) })),
 
       // ---- Emergency contacts ----
-      addEmergencyContact: (contact: Omit<EmergencyContact, "id">) =>
-        setBaby({ emergencyContacts: [...b.emergencyContacts, { id: uid(), ...contact }] }),
+      addEmergencyContact: (contact: Omit<EmergencyContact, "id">) => {
+        const id = uid();
+        update((cur) => ({ emergencyContacts: [...cur.emergencyContacts, { id, ...contact }] }));
+      },
       updateEmergencyContact: (id: string, patch: Partial<EmergencyContact>) =>
-        setBaby({ emergencyContacts: b.emergencyContacts.map((c) => (c.id === id ? { ...c, ...patch } : c)) }),
-      removeEmergencyContact: (id: string) => setBaby({ emergencyContacts: b.emergencyContacts.filter((c) => c.id !== id) }),
+        update((cur) => ({ emergencyContacts: cur.emergencyContacts.map((c) => (c.id === id ? { ...c, ...patch } : c)) })),
+      removeEmergencyContact: (id: string) => update((cur) => ({ emergencyContacts: cur.emergencyContacts.filter((c) => c.id !== id) })),
 
       // ---- Bulk actions (Timeline multi-select) ----
-      bulkDelete: (items: { kind: RecordKind; id: string }[]) =>
-        setBaby(bulkLifecycle(b, items, (at) => ({ deletedAt: at }))),
-      bulkArchive: (items: { kind: RecordKind; id: string }[]) =>
-        setBaby(bulkLifecycle(b, items, (at) => ({ archivedAt: at }))),
-      bulkRestore: (items: { kind: RecordKind; id: string }[]) =>
-        setBaby(bulkLifecycle(b, items, () => ({ deletedAt: null }))),
+      bulkDelete: (items: { kind: RecordKind; id: string }[]) => update((cur) => bulkLifecycle(cur, items, (at) => ({ deletedAt: at }))),
+      bulkArchive: (items: { kind: RecordKind; id: string }[]) => update((cur) => bulkLifecycle(cur, items, (at) => ({ archivedAt: at }))),
+      bulkRestore: (items: { kind: RecordKind; id: string }[]) => update((cur) => bulkLifecycle(cur, items, () => ({ deletedAt: null }))),
     },
   };
 }

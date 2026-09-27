@@ -44,11 +44,22 @@ export async function syncPendingProfileToSupabase(userId: string): Promise<void
   const pending = await getPendingProfile();
   if (!pending) return;
 
+  // Plotëson vetëm atë që mungon. Më parë upsert-i mbishkruante profilin:
+  // kush kalonte hapat e profilit dhe pastaj hynte në një llogari EKZISTUESE
+  // (p.sh. e partnerit, ose e vjetra e vet), ia zëvendësonte asaj emrin dhe
+  // datën e lindjes së bebit me ato që sapo shkroi.
+  const { data: existing, error: readError } = await supabase
+    .from("baby_profiles")
+    .select("parent_name, baby_name, baby_dob")
+    .eq("user_id", userId)
+    .maybeSingle();
+  if (readError) return; // riprovohet në hyrjen tjetër
+
   const { error } = await supabase.from("baby_profiles").upsert({
     user_id: userId,
-    parent_name: pending.parentName || null,
-    baby_name: pending.babyName || null,
-    baby_dob: pending.babyDob,
+    parent_name: existing?.parent_name || pending.parentName || null,
+    baby_name: existing?.baby_name || pending.babyName || null,
+    baby_dob: existing?.baby_dob || pending.babyDob,
     updated_at: new Date().toISOString(),
   });
 
@@ -63,7 +74,7 @@ export async function syncPendingProfileToSupabase(userId: string): Promise<void
  * Konverton "DD.MM.VVVV" në "VVVV-MM-DD" (formati i pritur nga Postgres
  * `date`). Kthen null nëse formati ose data s'është e vlefshme.
  */
-export function parseDobInput(value: string): string | null {
+export function parseDobInput(value: string, now: Date = new Date()): string | null {
   const match = value.trim().match(/^(\d{1,2})\.(\d{1,2})\.(\d{4})$/);
   if (!match) return null;
   const [, dd, mm, yyyy] = match;
@@ -79,8 +90,17 @@ export function parseDobInput(value: string): string | null {
     d.getUTCFullYear() === year &&
     d.getUTCMonth() + 1 === month &&
     d.getUTCDate() === day;
+  if (!valid) return null;
 
-  return valid ? iso : null;
+  // Jo në të ardhmen, dhe jo një datë që s'mund të jetë e një bebi/fëmije.
+  if (iso > localDateKey(now)) return null;
+  if (year < now.getFullYear() - 18) return null;
+  return iso;
+}
+
+/** "YYYY-MM-DD" e datës LOKALE (jo UTC): 15 mars në orën 00:30 mbetet 15 mars. */
+export function localDateKey(date: Date): string {
+  return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}-${String(date.getDate()).padStart(2, "0")}`;
 }
 
 /**

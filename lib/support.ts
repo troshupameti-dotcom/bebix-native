@@ -14,3 +14,10 @@ export const SUPPORT_EMAIL = "info.bebix@gmail.com";
 
 /** Adresa për kërkesa të privatësisë; njësoj derisa të ketë ekip të veçantë. */
 export const PRIVACY_EMAIL = SUPPORT_EMAIL;
+
+/** Faqja e webit: kushtet, privatësia dhe fshirja e llogarisë jetojnë edhe atje. */
+export const WEB_BASE_URL = "https://www.bebix.store";
+
+export function webLegalUrl(language: string, doc: "terms" | "privacy"): string {
+  return `${WEB_BASE_URL}/${language === "en" ? "en" : "sq"}/legal/${doc}`;
+}

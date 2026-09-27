@@ -8,6 +8,7 @@ import { Icon, IconName } from "@/components/ui/Icon";
 import { shadows } from "@/lib/shadows";
 import { supabase } from "@/lib/supabase/client";
 import { useAuthUser } from "@/lib/hooks/useAuthUser";
+import { unregisterPushToken } from "@/lib/notifications";
 
 type Row = {
   icon: IconName;
@@ -148,6 +149,8 @@ export default function MoreScreen() {
                 text: t("logout_action"),
                 style: "destructive",
                 onPress: async () => {
+                  // Telefoni s'duhet të marrë më njoftimet e kësaj llogarie.
+                  await unregisterPushToken();
                   await supabase.auth.signOut();
                   router.replace("/(auth)/login");
                 },

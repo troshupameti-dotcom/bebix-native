@@ -1,7 +1,8 @@
-import { Pressable, View, Alert } from "react-native";
+import { Pressable, View, Alert, Platform } from "react-native";
 import { MotiView } from "moti";
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import * as WebBrowser from "expo-web-browser";
+import * as AppleAuthentication from "expo-apple-authentication";
 import * as Linking from "expo-linking";
 import Svg, { Path } from "react-native-svg";
 import { supabase } from "@/lib/supabase/client";
@@ -13,7 +14,6 @@ import { useTranslation } from "@/lib/i18n/LanguageContext";
 WebBrowser.maybeCompleteAuthSession();
 
 type SocialAuthRowProps = {
-  onEmailSelect?: () => void;
   /** Thirret pasi sesioni u krijua me sukses — ekrani vendos ku të navigojë. */
   onSignedIn?: (userId: string) => void | Promise<void>;
   /** Kontroll para hapjes së OAuth-it (p.sh. pranimi i Kushteve) — `false` e ndalon. */
@@ -24,20 +24,72 @@ const buttonClass =
   "h-14 flex-1 items-center justify-center rounded-2xl border border-ink/10 bg-cream";
 
 /**
- * Apple / Google / Email row. Uses Supabase's generic OAuth flow opened in
- * an in-app browser, which redirects back into the app via the `bebix://`
- * deep link scheme registered in app.json.
+ * Hyrja me Apple dhe Google.
  *
- * Note: if you ship Google sign-in on iOS, App Store guideline 4.8 requires
- * offering Sign in with Apple too, ideally via the native
- * `expo-apple-authentication` button (a closer-to-native alternative to
- * this generic OAuth flow) — swap the Apple handler for that when ready.
+ * - Google: fluksi OAuth i Supabase-it në shfletuesin e brendshëm, që kthehet
+ *   në app me skemën `bebix://`.
+ * - Apple: në iPhone me hyrjen NATIVE (`expo-apple-authentication` +
+ *   `signInWithIdToken`), siç e kërkon App Store (udhëzimi 4.8) kur ofrohet
+ *   Google. Në Android butoni fshihet: Apple aty kërkon një "Services ID" të
+ *   konfiguruar, dhe pa të butoni vetëm do të jepte gabim.
+ *
+ * Butoni i tretë "Email" u hoq: s'ishte i lidhur me asgjë (formulari i
+ * email-it është vetë ekrani).
  */
-export function SocialAuthRow({ onEmailSelect, onSignedIn, beforeStart }: SocialAuthRowProps) {
+export function SocialAuthRow({ onSignedIn, beforeStart }: SocialAuthRowProps) {
   const { t } = useTranslation();
   const [pressedKey, setPressedKey] = useState<string | null>(null);
   // Ref (jo state) që dy shtypje të shpejta të mos hapin dy sesione OAuth.
   const inFlight = useRef(false);
+  const [appleAvailable, setAppleAvailable] = useState(false);
+
+  useEffect(() => {
+    if (Platform.OS !== "ios") return;
+    let alive = true;
+    AppleAuthentication.isAvailableAsync()
+      .then((available) => {
+        if (alive) setAppleAvailable(available);
+      })
+      .catch(() => {});
+    return () => {
+      alive = false;
+    };
+  }, []);
+
+  async function handleApple() {
+    if (inFlight.current) return;
+    if (beforeStart && !beforeStart()) return;
+    inFlight.current = true;
+    try {
+      const credential = await AppleAuthentication.signInAsync({
+        requestedScopes: [
+          AppleAuthentication.AppleAuthenticationScope.FULL_NAME,
+          AppleAuthentication.AppleAuthenticationScope.EMAIL,
+        ],
+      });
+      if (!credential.identityToken) {
+        Alert.alert(t("mod_error_title"), t("auth_login_failed"));
+        return;
+      }
+      const { data, error } = await supabase.auth.signInWithIdToken({ provider: "apple", token: credential.identityToken });
+      if (error) {
+        Alert.alert(t("mod_error_title"), describe(error.message));
+        return;
+      }
+      // Apple e jep emrin vetëm herën e parë: ruhet te llogaria që të mos humbasë.
+      const fullName = [credential.fullName?.givenName, credential.fullName?.familyName].filter(Boolean).join(" ").trim();
+      if (fullName && !data.user?.user_metadata?.full_name) {
+        await supabase.auth.updateUser({ data: { full_name: fullName } });
+      }
+      if (data.user?.id) await onSignedIn?.(data.user.id);
+    } catch (e) {
+      // Anulimi nga përdoruesi s'është gabim.
+      if ((e as { code?: string })?.code === "ERR_REQUEST_CANCELED") return;
+      Alert.alert(t("mod_error_title"), e instanceof Error ? describe(e.message) : t("auth_login_failed"));
+    } finally {
+      inFlight.current = false;
+    }
+  }
 
   /**
    * Asnje mesazh bosh.
@@ -59,7 +111,7 @@ ${redirectTo}` : t("auth_redirect_blocked");
     return text;
   }
 
-  async function handleOAuth(provider: "apple" | "google") {
+  async function handleOAuth(provider: "google") {
     if (inFlight.current) return;
     if (beforeStart && !beforeStart()) return;
     inFlight.current = true;
@@ -74,7 +126,7 @@ ${redirectTo}` : t("auth_redirect_blocked");
           redirectTo,
           skipBrowserRedirect: true,
           // Pa këtë, Google e rikyç heshturazi llogarinë e fundit pa pyetur.
-          queryParams: provider === "google" ? { prompt: "select_account" } : undefined,
+          queryParams: { prompt: "select_account" },
         },
       });
 
@@ -135,36 +187,31 @@ ${redirectTo}`);
 
   return (
     <View className="flex-row gap-3">
-      <Pressable
-        className={buttonClass}
-        onPressIn={() => setPressedKey("apple")}
-        onPressOut={() => setPressedKey(null)}
-        onPress={() => handleOAuth("apple")}
-      >
-        <MotiView animate={{ scale: pressedKey === "apple" ? 0.94 : 1 }}>
-          <AppleGlyph />
-        </MotiView>
-      </Pressable>
+      {appleAvailable && (
+        <Pressable
+          className={buttonClass}
+          onPressIn={() => setPressedKey("apple")}
+          onPressOut={() => setPressedKey(null)}
+          onPress={handleApple}
+          accessibilityRole="button"
+          accessibilityLabel={t("auth_continue_apple")}
+        >
+          <MotiView animate={{ scale: pressedKey === "apple" ? 0.94 : 1 }}>
+            <AppleGlyph />
+          </MotiView>
+        </Pressable>
+      )}
 
       <Pressable
         className={buttonClass}
         onPressIn={() => setPressedKey("google")}
         onPressOut={() => setPressedKey(null)}
         onPress={() => handleOAuth("google")}
+        accessibilityRole="button"
+        accessibilityLabel={t("auth_continue_google")}
       >
         <MotiView animate={{ scale: pressedKey === "google" ? 0.94 : 1 }}>
           <GoogleGlyph />
-        </MotiView>
-      </Pressable>
-
-      <Pressable
-        className={buttonClass}
-        onPressIn={() => setPressedKey("email")}
-        onPressOut={() => setPressedKey(null)}
-        onPress={onEmailSelect}
-      >
-        <MotiView animate={{ scale: pressedKey === "email" ? 0.94 : 1 }}>
-          <EmailGlyph />
         </MotiView>
       </Pressable>
     </View>
@@ -203,16 +250,6 @@ function GoogleGlyph() {
         fill="#EA4335"
         d="M12 4.75c1.77 0 3.35.61 4.6 1.8l3.44-3.44C17.95 1.19 15.24 0 12 0 7.31 0 3.26 2.69 1.27 6.61l4 3.11C6.22 6.86 8.87 4.75 12 4.75z"
       />
-    </Svg>
-  );
-}
-
-function EmailGlyph() {
-  const theme = useThemeColors();
-  return (
-    <Svg width={20} height={20} viewBox="0 0 24 24" fill="none" stroke={theme.ink} strokeWidth={1.6}>
-      <Path d="M3 5h18v14H3V5Z" />
-      <Path d="M3.5 6.5 12 13l8.5-6.5" />
     </Svg>
   );
 }

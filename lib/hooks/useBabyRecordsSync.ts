@@ -1,9 +1,9 @@
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useState } from "react";
 import { AppState } from "react-native";
 import { useAppState } from "@/lib/state/AppStateContext";
 import { resetBabyRecordsSyncState, syncBabyRecords } from "@/lib/baby/babyRecordsSync";
-import { claimLocalData } from "@/lib/auth/localDataOwner";
-import { resolveDataOwnerId } from "@/lib/baby/household";
+import { claimDataOwner, claimLocalData } from "@/lib/auth/localDataOwner";
+import { resolveDataOwnerId, resolveDataOwnerIdStrict } from "@/lib/baby/household";
 import { registerSyncRequest, resetSyncStatus, setSyncPhase } from "@/lib/baby/syncStatus";
 import { supabase } from "@/lib/supabase/client";
 
@@ -33,17 +33,19 @@ const DEBOUNCE_MS = 2_500;
  * punon, ai nis sapo mbaron i pari.
  */
 export function useBabyRecordsSync(isAuthenticated: boolean) {
-  const { state, hydrated, applyBabyRecordsPatch, resetBabyData } = useAppState();
+  const { state, hydrated, applyBabyRecordsPatch, resetBabyData, refreshProfileFromServer } = useAppState();
 
   // Refs, që efektet të mos rinisen në çdo shkrim (react-hooks/refs: shkrimi
   // bëhet në efekt, jo gjatë render-it).
   const latestBaby = useRef(state.baby);
   const apply = useRef(applyBabyRecordsPatch);
   const reset = useRef(resetBabyData);
+  const refreshProfile = useRef(refreshProfileFromServer);
   useEffect(() => {
     latestBaby.current = state.baby;
     apply.current = applyBabyRecordsPatch;
     reset.current = resetBabyData;
+    refreshProfile.current = refreshProfileFromServer;
   });
 
   const running = useRef(false);
@@ -58,6 +60,9 @@ export function useBabyRecordsSync(isAuthenticated: boolean) {
     enabledRef.current = enabled;
   }, [enabled]);
 
+  // Rritet kur ndryshon pronari i të dhënave, që Realtime të dëgjojë pronarin e ri.
+  const [ownerVersion, setOwnerVersion] = useState(0);
+
   const runSync = useRef<() => void>(() => {});
   useEffect(() => {
     runSync.current = () => {
@@ -68,7 +73,20 @@ export function useBabyRecordsSync(isAuthenticated: boolean) {
       }
       running.current = true;
       setSyncPhase("syncing");
-      syncBabyRecords(latestBaby.current)
+      (async () => {
+        // Familja: nëse pronari i të dhënave ndryshoi (u bashkua me një familje,
+        // doli prej saj, ose u hoq nga pronari), historiku lokal s'është më i tij.
+        // Pastrohet dhe sync-u i radhës (pas render-it) tërheq gjithçka nga e para.
+        const ownerId = await resolveDataOwnerIdStrict();
+        if (ownerId && (await claimDataOwner(ownerId)) === "switched") {
+          await resetBabyRecordsSyncState();
+          reset.current({ keepParent: true });
+          refreshProfile.current();
+          setOwnerVersion((v) => v + 1);
+          return null;
+        }
+        return syncBabyRecords(latestBaby.current);
+      })()
         .then((patch) => {
           setSyncPhase("synced");
           if (patch) {
@@ -123,9 +141,27 @@ export function useBabyRecordsSync(isAuthenticated: boolean) {
       runSync.current();
     })();
 
-    // Realtime: serveri njofton sapo ndryshon një rresht i këtij bebi. RLS
-    // vendos se kush e merr njoftimin; filtri e ngushton te pronari i të
-    // dhënave (vetja, ose prindi që e ftoi në shtëpi).
+    const interval = setInterval(() => {
+      if (AppState.currentState === "active") runSync.current();
+    }, INTERVAL_MS);
+    const subscription = AppState.addEventListener("change", (next) => {
+      if (next === "active") runSync.current();
+    });
+
+    return () => {
+      cancelled = true;
+      resetSyncStatus();
+      clearInterval(interval);
+      subscription.remove();
+    };
+  }, [enabled]);
+
+  // Realtime: serveri njofton sapo ndryshon një rresht i këtij bebi. RLS
+  // vendos se kush e merr njoftimin; filtri e ngushton te pronari i të
+  // dhënave (vetja, ose prindi që e ftoi në shtëpi). Rinis kur ndryshon pronari.
+  useEffect(() => {
+    if (!enabled) return;
+    let cancelled = false;
     let channel: ReturnType<typeof supabase.channel> | null = null;
     let remoteTimer: ReturnType<typeof setTimeout> | undefined;
     (async () => {
@@ -147,23 +183,12 @@ export function useBabyRecordsSync(isAuthenticated: boolean) {
         });
       if (cancelled) void supabase.removeChannel(channel);
     })();
-
-    const interval = setInterval(() => {
-      if (AppState.currentState === "active") runSync.current();
-    }, INTERVAL_MS);
-    const subscription = AppState.addEventListener("change", (next) => {
-      if (next === "active") runSync.current();
-    });
-
     return () => {
       cancelled = true;
-      resetSyncStatus();
       clearTimeout(remoteTimer);
       if (channel) void supabase.removeChannel(channel);
-      clearInterval(interval);
-      subscription.remove();
     };
-  }, [enabled]);
+  }, [enabled, ownerVersion]);
 
   // Pak pas çdo shkrimi lokal.
   useEffect(() => {

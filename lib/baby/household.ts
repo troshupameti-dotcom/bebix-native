@@ -37,26 +37,41 @@ export function clearHouseholdCache(): void {
  * app-i të punojë njësoj si më parë kur diçka dështon.
  */
 export async function resolveDataOwnerId(): Promise<string | null> {
-  const { data } = await supabase.auth.getUser();
-  const userId = data?.user?.id;
+  try {
+    return await resolveDataOwnerIdStrict();
+  } catch {
+    // Pa lidhje: për leximet e thjeshta (p.sh. fotot e profilit) mjafton
+    // llogaria vetë. Sync-u përdor versionin strikt dhe pret.
+    const { data } = await supabase.auth.getSession();
+    return data.session?.user.id ?? null;
+  }
+}
+
+/**
+ * Pronari i të dhënave, ose GABIM kur s'mund të dihet (s'ka rrjet).
+ *
+ * Më parë, kur kërkesa dështonte, kthehej llogaria vetë — dhe ruhej në
+ * kujtesë për gjithë sesionin. Për një prind të ftuar në familje, kjo do të
+ * thoshte që sync-u i shkruante shënimet e bebit të përbashkët te llogaria e
+ * VET (ku s'i sheh askush) dhe tërhiqte historikun e gabuar.
+ */
+export async function resolveDataOwnerIdStrict(): Promise<string | null> {
+  const { data } = await supabase.auth.getSession();
+  const userId = data.session?.user.id;
   if (!userId) return null;
 
   if (cachedOwnerId?.userId === userId) return cachedOwnerId.ownerId;
 
-  try {
-    const { data: row, error } = await supabase
-      .from("baby_household_members")
-      .select("owner_id")
-      .eq("member_id", userId)
-      .maybeSingle();
+  const { data: row, error } = await supabase
+    .from("baby_household_members")
+    .select("owner_id")
+    .eq("member_id", userId)
+    .maybeSingle();
+  if (error) throw new Error(`Familja nuk u lexua: ${error.message}`);
 
-    const ownerId = !error && row?.owner_id ? (row.owner_id as string) : userId;
-    cachedOwnerId = { userId, ownerId };
-    return ownerId;
-  } catch {
-    // Pa lidhje: puno me të dhënat e veta, siç ishte më parë.
-    return userId;
-  }
+  const ownerId = row?.owner_id ? (row.owner_id as string) : userId;
+  cachedOwnerId = { userId, ownerId };
+  return ownerId;
 }
 
 export async function fetchHousehold(): Promise<HouseholdState | null> {

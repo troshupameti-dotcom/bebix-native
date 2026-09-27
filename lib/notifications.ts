@@ -1,4 +1,5 @@
 import * as Device from "expo-device";
+import AsyncStorage from "@react-native-async-storage/async-storage";
 import Constants, { ExecutionEnvironment } from "expo-constants";
 import { Platform } from "react-native";
 import { supabase } from "@/lib/supabase/client";
@@ -98,21 +99,69 @@ export async function registerForPushNotificationsAsync(): Promise<string | null
   const tokenResponse = await Notifications.getExpoPushTokenAsync({ projectId });
   const expoPushToken = tokenResponse.data;
 
-  // Ruaje në Supabase — lidhur me përdoruesin aktual.
-  const { data: userData } = await supabase.auth.getUser();
-  const userId = userData?.user?.id;
+  const { data: sessionData } = await supabase.auth.getSession();
+  const userId = sessionData.session?.user.id;
   if (!userId) {
     console.log("Asnjë përdorues i kyçur — token-i nuk u ruajt.");
     return expoPushToken;
   }
 
-  const { error } = await supabase
-    .from("push_tokens")
-    .upsert({ user_id: userId, expo_push_token: expoPushToken }, { onConflict: "expo_push_token" });
-
+  // Token-i është i telefonit: nëse ishte i një llogarie tjetër (dikush tjetër
+  // u kyç më parë këtu), funksioni ia kalon llogarisë së kyçur tani. Me
+  // upsert-in e vjetër kjo dështonte, dhe njoftimet e llogarisë së mëparshme
+  // vazhdonin të vinin në këtë telefon.
+  const { error } = await supabase.rpc("register_push_token", { p_token: expoPushToken });
   if (error) {
     console.log("Gabim gjatë ruajtjes së push token:", error.message);
+  } else {
+    await AsyncStorage.setItem(PUSH_TOKEN_KEY, expoPushToken);
   }
 
   return expoPushToken;
+}
+
+const PUSH_TOKEN_KEY = "bebix_push_token";
+
+/**
+ * Thirret PARA daljes nga llogaria: telefoni nuk duhet të marrë më kujtesat e
+ * bebit dhe porositë e llogarisë që sapo doli.
+ */
+export async function unregisterPushToken(): Promise<void> {
+  try {
+    const token = await AsyncStorage.getItem(PUSH_TOKEN_KEY);
+    if (!token) return;
+    await supabase.rpc("unregister_push_token", { p_token: token });
+    await AsyncStorage.removeItem(PUSH_TOKEN_KEY);
+  } catch {
+    // Pa rrjet: serveri e heq token-in vetë kur Expo e raporton si të pavlefshëm,
+    // ose kur llogaria tjetër e regjistron sërish në këtë telefon.
+  }
+}
+
+/**
+ * Dëgjon prekjen e njoftimeve dhe thërret `onOpen` me `data`-n e tyre — edhe
+ * për njoftimin që e hapi app-in nga e mbyllura. Kthen funksionin që ndal dëgjimin.
+ */
+/** Njoftimet e trajtuara tashmë: layout-i mund të rimontohet (p.sh. pas hyrjes). */
+const handledOpens = new Set<string>();
+
+export function listenForNotificationOpens(onOpen: (data: unknown) => void): () => void {
+  const Notifications = loadNotifications();
+  if (!Notifications) return () => {};
+
+  const handle = (response: import("expo-notifications").NotificationResponse) => {
+    const id = response.notification.request.identifier;
+    if (handledOpens.has(id)) return;
+    handledOpens.add(id);
+    onOpen(response.notification.request.content.data);
+  };
+
+  const subscription = Notifications.addNotificationResponseReceivedListener(handle);
+  Notifications.getLastNotificationResponseAsync()
+    .then((response) => {
+      if (response) handle(response);
+    })
+    .catch(() => {});
+
+  return () => subscription.remove();
 }

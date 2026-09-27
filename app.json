@@ -11,13 +11,15 @@
       "**/*"
     ],
     "ios": {
-      "supportsTablet": true,
+      "supportsTablet": false,
       "bundleIdentifier": "com.bebix.app",
       "infoPlist": {
         "NSCameraUsageDescription": "Bebix përdor kamerën për të shtuar foto të bebit tënd.",
         "NSPhotoLibraryUsageDescription": "Bebix përdor galerinë për të zgjedhur foto të bebit tënd.",
-        "ITSAppUsesNonExemptEncryption": false
-      }
+        "ITSAppUsesNonExemptEncryption": false,
+        "NSMicrophoneUsageDescription": "Bebix përdor mikrofonin kur regjistron një video për Komunitetin."
+      },
+      "usesAppleSignIn": true
     },
     "android": {
       "package": "com.bebix.app",
@@ -27,7 +29,6 @@
       },
       "permissions": [
         "android.permission.CAMERA",
-        "android.permission.READ_EXTERNAL_STORAGE",
         "android.permission.RECORD_AUDIO"
       ]
     },
@@ -55,7 +56,8 @@
       "expo-status-bar",
       "expo-web-browser",
       "expo-video",
-      "@sentry/react-native"
+      "@sentry/react-native",
+      "expo-apple-authentication"
     ],
     "extra": {
       "router": {

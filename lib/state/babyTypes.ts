@@ -26,11 +26,6 @@ export type Lifecycle = {
   archivedAt: string | null;
 };
 
-function lifecycle(createdAt?: string): Lifecycle {
-  const at = createdAt ?? new Date().toISOString();
-  return { createdAt: at, updatedAt: at, editCount: 0, deletedAt: null, archivedAt: null };
-}
-
 export type RecordKind =
   | "growthHistory"
   | "feeding"
@@ -263,27 +258,28 @@ export type BabyModuleState = {
   auditLog: AuditEntry[];
 };
 
-const daysAgo = (n: number) => new Date(Date.now() - n * 86400000).toISOString();
-const daysFromNow = (n: number) => new Date(Date.now() + n * 86400000).toISOString();
-
+// Katalogët janë "vendet" e profilit (pesha, grupi i gjakut, buzëqeshja e
+// parë...), jo të dhëna: nisin bosh. Deri në shtator 2026 nisnin me vlera
+// demo (0+, "Dr. Arta Elezi", 7.8 kg...) që çdo prind i ri i shihte si të
+// bebit të vet — shih lib/state/seedCleanup.ts.
 export const growthCatalog: GrowthStat[] = [
-  { key: "weight", labelKey: "growth_weight", value: "7.8 kg", subKey: "pct_50", isCustom: false },
-  { key: "height", labelKey: "growth_height", value: "66 cm", subKey: "pct_45", isCustom: false },
-  { key: "head", labelKey: "growth_head", value: "43 cm", subKey: "pct_40", isCustom: false },
+  { key: "weight", labelKey: "growth_weight", value: "", isCustom: false },
+  { key: "height", labelKey: "growth_height", value: "", isCustom: false },
+  { key: "head", labelKey: "growth_head", value: "", isCustom: false },
 ];
 
 export const medicalCatalog: MedicalInfoRow[] = [
-  { key: "blood", labelKey: "baby_blood_type", value: "0+", isCustom: false },
+  { key: "blood", labelKey: "baby_blood_type", value: "", isCustom: false },
   { key: "allergies", labelKey: "baby_allergies", value: "", isCustom: false },
-  { key: "doctor", labelKey: "baby_doctor", value: "Dr. Arta Elezi", isCustom: false },
+  { key: "doctor", labelKey: "baby_doctor", value: "", isCustom: false },
   { key: "diaper_size", labelKey: "baby_diaper_size", value: "", isCustom: false },
-  { key: "birth_weight", labelKey: "info_birth_weight", value: "3.4 kg", isCustom: false },
-  { key: "rh", labelKey: "info_rh", value: "Rh+", isCustom: false },
+  { key: "birth_weight", labelKey: "info_birth_weight", value: "", isCustom: false },
+  { key: "rh", labelKey: "info_rh", value: "", isCustom: false },
 ];
 
 export const milestoneCatalog: MilestoneItem[] = [
-  { key: "smile", labelKey: "ms_smile", done: true, isCustom: false },
-  { key: "rolling", labelKey: "ms_rolling", done: true, isCustom: false },
+  { key: "smile", labelKey: "ms_smile", done: false, isCustom: false },
+  { key: "rolling", labelKey: "ms_rolling", done: false, isCustom: false },
   { key: "sitting", labelKey: "ms_sitting", done: false, isCustom: false },
   { key: "steps", labelKey: "ms_steps", done: false, isCustom: false },
   { key: "crawling", labelKey: "ms_crawling", done: false, isCustom: false },
@@ -292,59 +288,21 @@ export const milestoneCatalog: MilestoneItem[] = [
   { key: "waving", labelKey: "ms_waving", done: false, isCustom: false },
 ];
 
+/** Një prind i ri nis me historik bosh. */
 export const initialBabyState: BabyModuleState = {
   growthStats: growthCatalog.filter((s) => s.key !== "head"),
   growthActiveKeys: ["weight", "height"],
-  growthHistory: [
-    { id: "g1", date: daysAgo(150), weightKg: 4.1, heightCm: 53, headCm: null, note: "", ...lifecycle(daysAgo(150)) },
-    { id: "g2", date: daysAgo(90), weightKg: 6.0, heightCm: 60, headCm: null, note: "", ...lifecycle(daysAgo(90)) },
-    { id: "g3", date: daysAgo(30), weightKg: 7.2, heightCm: 64, headCm: null, note: "", ...lifecycle(daysAgo(30)) },
-    { id: "g4", date: daysAgo(2), weightKg: 7.8, heightCm: 66, headCm: 43, note: "", ...lifecycle(daysAgo(2)) },
-  ],
+  growthHistory: [],
   quickActionKeys: ["feeding", "sleep", "diaper", "growth"],
   medicalInfo: medicalCatalog,
   medicalActiveKeys: ["blood", "doctor"],
   milestones: milestoneCatalog,
   milestoneActiveKeys: ["smile", "rolling", "sitting", "steps"],
-  timeline: [
-    { id: "t1", title: "Lindja", date: "5 Maj, 2024", color: "olive", note: "", ...lifecycle(daysAgo(150)) },
-    { id: "t2", title: "Buzëqeshja e parë", date: "18 Qershor, 2024", color: "olive", note: "", ...lifecycle(daysAgo(120)) },
-    { id: "t3", title: "Rrotullimi i parë", date: "2 Shtator, 2024", color: "olive", note: "", ...lifecycle(daysAgo(60)) },
-    { id: "t4", title: "Dhëmbi i parë", date: "Pritet së shpejti", color: "orange", note: "", ...lifecycle() },
-  ],
-  feedingLog: [
-    {
-      id: "f1", type: "bottle", amountMl: 120, durationMin: null, side: null, foodCategory: null,
-      at: daysAgo(0), note: "", ...lifecycle(daysAgo(0)),
-    },
-    {
-      id: "f2", type: "breast", amountMl: null, durationMin: 15, side: "left", foodCategory: null,
-      at: daysAgo(0), note: "", ...lifecycle(daysAgo(0)),
-    },
-  ],
-  sleepLog: [
-    {
-      id: "s1", startAt: daysAgo(0), endAt: new Date().toISOString(), pausedIntervalsMin: 0, pausedAt: null,
-      isNap: true, quality: "good", note: "", ...lifecycle(daysAgo(0)),
-    },
-  ],
-  diaperLog: [
-    { id: "d1", type: "wet", color: null, consistency: null, at: daysAgo(0), note: "", ...lifecycle(daysAgo(0)) },
-  ],
-  vaccines: [
-    {
-      id: "v1", name: "Hepatit B (doza 1)", description: "", dueDate: daysAgo(150), givenDate: daysAgo(148),
-      doctor: "Dr. Arta Elezi", clinic: "", batchNumber: "", note: "", reminderEnabled: true, ...lifecycle(daysAgo(150)),
-    },
-    {
-      id: "v2", name: "DTaP (doza 2)", description: "", dueDate: daysFromNow(10), givenDate: null,
-      doctor: "", clinic: "", batchNumber: "", note: "", reminderEnabled: true, ...lifecycle(daysAgo(30)),
-    },
-    {
-      id: "v3", name: "Polio (doza 2)", description: "", dueDate: daysAgo(3), givenDate: null,
-      doctor: "", clinic: "", batchNumber: "", note: "", reminderEnabled: true, ...lifecycle(daysAgo(30)),
-    },
-  ],
+  timeline: [],
+  feedingLog: [],
+  sleepLog: [],
+  diaperLog: [],
+  vaccines: [],
   moments: [],
   medicalRecords: [],
   emergencyContacts: [],

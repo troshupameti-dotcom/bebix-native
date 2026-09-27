@@ -11,7 +11,10 @@ import { useTranslation } from "@/lib/i18n/LanguageContext";
 import { haptics } from "@/lib/haptics";
 import { shadows } from "@/lib/shadows";
 import { BabyGender, BloodType } from "@/lib/state/types";
-import { syncBabyProfileToSupabase, syncProfilePhotoToSupabase } from "@/lib/babySync";
+import { saveBabyProfileRemote, syncProfilePhotoToSupabase } from "@/lib/babySync";
+import { localDateKey } from "@/lib/babyProfile";
+import { resetBabyRecordsSyncState } from "@/lib/baby/babyRecordsSync";
+import { retrySync } from "@/lib/baby/syncStatus";
 import { BackButton, goBackOr } from "@/components/ui/BackButton";
 import { uploadProfilePhoto } from "@/lib/baby/profilePhotos";
 import { useCurrentUserId } from "@/lib/hooks/useCurrentUserId";
@@ -133,8 +136,9 @@ export default function BabySettingsScreen() {
       parentNotes,
     });
     // Sinkronizon emrin + datëlindjen te Supabase, e nevojshme për
-    // skeduluesin e notifications të ditëlindjes (server-side).
-    syncBabyProfileToSupabase(name.trim() || null, dob ? dob.toISOString() : null);
+    // skeduluesin e notifications të ditëlindjes (server-side). Data dërgohet
+    // si dita LOKALE, jo si UTC (që e kalonte një ditë më herët).
+    void saveBabyProfileRemote(name.trim() || null, dob ? localDateKey(dob) : null);
     haptics.success();
     goBackOr("/(main)/baby");
   }
@@ -148,10 +152,21 @@ export default function BabySettingsScreen() {
     haptics.success();
   }
 
-  function resetDemoData() {
-    Alert.alert(t("baby_settings_reset"), t("baby_settings_reset_confirm"), [
+  // Rimerr historikun nga llogaria. Më parë ky buton "fshinte të dhënat demo":
+  // tani që s'ka demo, fshirja vetëm në telefon e linte telefonin bosh ndërsa
+  // webi dhe partneri i shihnin ende — pa asnjë mënyrë për t'i rikthyer.
+  function resyncFromAccount() {
+    Alert.alert(t("baby_settings_resync"), t("baby_settings_resync_confirm"), [
       { text: t("cancel_action"), style: "cancel" },
-      { text: t("delete_action"), style: "destructive", onPress: () => { resetBabyData(); goBackOr("/(main)/baby"); } },
+      {
+        text: t("baby_settings_resync_action"),
+        onPress: async () => {
+          await resetBabyRecordsSyncState();
+          resetBabyData();
+          retrySync();
+          goBackOr("/(main)/baby");
+        },
+      },
     ]);
   }
 
@@ -304,8 +319,8 @@ export default function BabySettingsScreen() {
         </View>
 
         <Text className="mb-2 mt-8 font-bodySemibold text-base text-ink">{t("baby_settings_danger")}</Text>
-        <Pressable onPress={resetDemoData} className="items-center rounded-2xl border border-red-200 bg-red-50 py-4">
-          <Text className="font-bodyMedium text-[14px] text-red-500">{t("baby_settings_reset")}</Text>
+        <Pressable onPress={resyncFromAccount} className="items-center rounded-2xl border border-ink/10 bg-surface py-4">
+          <Text className="font-bodyMedium text-[14px] text-ink">{t("baby_settings_resync")}</Text>
         </Pressable>
       </ScrollView>
 

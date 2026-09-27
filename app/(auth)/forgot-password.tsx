@@ -9,6 +9,7 @@ import { BackButton } from "@/components/ui/BackButton";
 import { useThemeColors } from "@/lib/theme/useThemeColors";
 import { useTranslation } from "@/lib/i18n/LanguageContext";
 import { markRecoveryRequested } from "@/lib/auth/localDataOwner";
+import { friendlyError } from "@/lib/errors/userMessage";
 
 /**
  * Ekrani i fjalëkalimit të harruar.
@@ -40,10 +41,10 @@ export default function ForgotPasswordScreen() {
       const { error: resetError } = await supabase.auth.resetPasswordForEmail(email.trim(), {
         redirectTo: Linking.createURL("auth/callback"),
       });
-      if (resetError) throw new Error(resetError.message);
+      if (resetError) throw resetError;
       setSent(true);
-    } catch (e: any) {
-      setError(e?.message ?? t("fp_err"));
+    } catch (e: unknown) {
+      setError(friendlyError(e, t, "fp_err"));
     } finally {
       setLoading(false);
     }

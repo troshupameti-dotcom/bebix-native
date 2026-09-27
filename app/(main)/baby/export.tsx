@@ -15,7 +15,7 @@ export default function ExportScreen() {
   const { t } = useTranslation();
   const { state } = useAppState();
   const [loading, setLoading] = useState<Format | null>(null);
-  const babyName = state.profile.babyName || "Baby";
+  const babyName = state.profile.babyName || t("your_baby");
 
   async function handleExport(format: Format) {
     haptics.tap();

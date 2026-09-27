@@ -4,6 +4,7 @@ import { previousPath, currentPath, decideBack, lastPathInOtherSection } from "@
 import { Icon } from "@/components/ui/Icon";
 import { haptics } from "@/lib/haptics";
 import { shadows } from "@/lib/shadows";
+import { useTranslation } from "@/lib/i18n/LanguageContext";
 
 /**
  * Kthehet aty ku ishte perdoruesi vertet.
@@ -57,6 +58,7 @@ type BackButtonProps = {
  * dhe ngjyra që ndjekin temën.
  */
 export function BackButton({ fallback = "/", onPress, variant = "back", className = "" }: BackButtonProps) {
+  const { t } = useTranslation();
   const isClose = variant === "close";
 
   return (
@@ -68,7 +70,7 @@ export function BackButton({ fallback = "/", onPress, variant = "back", classNam
       }}
       hitSlop={4}
       accessibilityRole="button"
-      accessibilityLabel={isClose ? "Mbyll" : "Kthehu"}
+      accessibilityLabel={isClose ? t("a11y_close") : t("a11y_back")}
       style={shadows.soft}
       className={`h-10 w-10 items-center justify-center rounded-full bg-surface active:opacity-70 ${className}`}
     >

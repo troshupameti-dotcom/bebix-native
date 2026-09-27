@@ -7,7 +7,8 @@ import { useTranslation } from "@/lib/i18n/LanguageContext";
 import { TranslationKey } from "@/lib/i18n/translations";
 import { useOnboardingStatus } from "@/lib/hooks/useOnboardingStatus";
 import { useThemeColors } from "@/lib/theme/useThemeColors";
-import { registerForPushNotificationsAsync } from "@/lib/notifications";
+import { listenForNotificationOpens, registerForPushNotificationsAsync } from "@/lib/notifications";
+import { routeForNotification } from "@/lib/notifications/routing";
 import { useBabyRecordsSync } from "@/lib/hooks/useBabyRecordsSync";
 
 // AI-ja rri ne mes: aty ku ishte butoni rrethor, pra duart e mesuara e
@@ -69,6 +70,15 @@ export default function MainLayout() {
 
     registerForPushNotificationsAsync().catch((e) => {
       console.log("Regjistrimi i push notifications deshtoi:", e);
+    });
+  }, [isAuthenticated]);
+
+  // Prekja e një njoftimi hap ekranin që i përket (postimi, porosia, ushqyerja...).
+  useEffect(() => {
+    if (!isAuthenticated) return;
+    return listenForNotificationOpens((data) => {
+      const route = routeForNotification(data);
+      if (route) router.push(route as never);
     });
   }, [isAuthenticated]);
 
