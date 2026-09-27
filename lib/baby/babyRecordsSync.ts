@@ -16,6 +16,8 @@ import { toTimestamp } from "@/lib/baby/timestamps";
 const TABLE = "baby_records";
 const LAST_SYNC_KEY = "bebix_baby_records_last_sync";
 const MIGRATED_KEY = "bebix_baby_records_migrated_v1";
+/** Madhësia e një leximi; e barabartë me kufirin e Supabase (max rows). */
+const PULL_BATCH = 1000;
 
 /** Rreshti si vjen nga / shkon te Supabase. */
 type BabyRecordRow = {
@@ -281,11 +283,21 @@ export async function syncBabyRecords(baby: BabyModuleState): Promise<Partial<Ba
   }
 
   // 3) Tërheq nga serveri vetëm çka ka ndryshuar pas sync-ut të fundit.
-  let query = supabase.from(TABLE).select("*").eq("user_id", userId);
-  if (lastSync) query = query.gt("updated_at", lastSync);
-
-  const { data: rows, error } = await query;
-  if (error) throw new Error(`Leximi i baby_records dështoi: ${error.message}`);
+  //    Në grupe: Supabase kthen më së shumti 1000 rreshta për kërkesë, dhe
+  //    sync-u i parë në një telefon të ri (pa lastSync) do të merrte vetëm
+  //    një pjesë të historikut të një prindi me mbi 1000 shënime.
+  const rows: BabyRecordRow[] = [];
+  for (let from = 0; ; from += PULL_BATCH) {
+    let query = supabase.from(TABLE).select("*").eq("user_id", userId);
+    if (lastSync) query = query.gt("updated_at", lastSync);
+    const { data, error } = await query
+      .order("updated_at", { ascending: true })
+      .order("id", { ascending: true })
+      .range(from, from + PULL_BATCH - 1);
+    if (error) throw new Error(`Leximi i baby_records dështoi: ${error.message}`);
+    rows.push(...((data ?? []) as BabyRecordRow[]));
+    if (!data || data.length < PULL_BATCH) break;
+  }
 
   // 4) Dërgo regjistrimet lokale të ndryshuara pas sync-ut të fundit, plus ato
   //    që sapo morën `storagePath`.
