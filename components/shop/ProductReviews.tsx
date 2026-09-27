@@ -9,6 +9,7 @@ import { useAppState } from "@/lib/state/AppStateContext";
 import { useCurrentUserId } from "@/lib/hooks/useCurrentUserId";
 import { useTranslation } from "@/lib/i18n/LanguageContext";
 import { fetchReviews, submitReview, deleteMyReview, ProductReview } from "@/lib/shop/reviews";
+import { friendlyError } from "@/lib/errors/userMessage";
 
 const MAX_BODY = 1000;
 
@@ -141,7 +142,7 @@ export function ProductReviews({ productId }: { productId: string }) {
       setWriting(false);
       await load();
     } catch (e: any) {
-      setError(e?.message ?? t("rev_save_failed"));
+      setError(friendlyError(e, t, "rev_save_failed"));
     } finally {
       setSaving(false);
     }
@@ -154,7 +155,7 @@ export function ProductReviews({ productId }: { productId: string }) {
       setWriting(false);
       await load();
     } catch (e: any) {
-      setError(e?.message ?? t("rev_delete_failed"));
+      setError(friendlyError(e, t, "rev_delete_failed"));
     } finally {
       setSaving(false);
     }

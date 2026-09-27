@@ -14,6 +14,7 @@ import {
 } from "@/lib/shopData";
 import { ProductCard, ProductCardSkeleton } from "@/components/ProductCard";
 import { track } from "@/lib/analytics/posthog";
+import { friendlyError } from "@/lib/errors/userMessage";
 
 const PADDING_X = 20;
 const GRID_GAP = 12;
@@ -110,7 +111,7 @@ export default function ShopScreen() {
       })
       .catch((e: any) => {
         if (!active || id !== requestId.current) return;
-        setError(e?.message ?? t("shop_load_error_title"));
+        setError(friendlyError(e, t, "shop_load_error_title"));
       });
     return () => { active = false; };
   }, [filterKey, search, category, sort, t]);

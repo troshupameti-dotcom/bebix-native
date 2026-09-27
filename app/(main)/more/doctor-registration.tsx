@@ -7,6 +7,7 @@ import { fetchMyApplication, submitApplication, ExpertApplication } from "@/lib/
 import { BackButton } from "@/components/ui/BackButton";
 import { useTranslation } from "@/lib/i18n/LanguageContext";
 import type { TranslationKey } from "@/lib/i18n/translations";
+import { friendlyError } from "@/lib/errors/userMessage";
 
 const SPECIALIZATIONS: { value: string; labelKey: TranslationKey }[] = [
   { value: "Pediatër", labelKey: "doc_spec_pediatrician" },
@@ -55,10 +56,10 @@ export default function DoctorRegistrationScreen() {
       setLoading(true);
       fetchMyApplication()
         .then((app) => { if (alive) setExisting(app); })
-        .catch((e) => { if (alive) setError(String(e.message ?? e)); })
+        .catch((e) => { if (alive) setError(friendlyError(e, t, "err_generic")); })
         .finally(() => { if (alive) setLoading(false); });
       return () => { alive = false; };
-    }, [])
+    }, [t])
   );
 
   const canSubmit = fullName.trim() && licenseNumber.trim() && phone.trim() && !submitting;
@@ -79,7 +80,7 @@ export default function DoctorRegistrationScreen() {
       const app = await fetchMyApplication();
       setExisting(app);
     } catch (e: any) {
-      setError(e.message ?? t("doc_send_failed"));
+      setError(friendlyError(e, t, "doc_send_failed"));
     } finally {
       setSubmitting(false);
     }

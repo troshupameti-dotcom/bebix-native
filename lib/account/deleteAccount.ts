@@ -10,7 +10,8 @@ import { supabase } from "@/lib/supabase/client";
  * mbeteshin në AsyncStorage edhe pasi llogaria s'ekziston më.
  */
 
-export type DeleteAccountResult = { ok: true } | { ok: false; message: string };
+/** `error`: teksti i serverit (mesazhet tona janë shqip) ose gabimi i rrjetit — ekrani e përkthen. */
+export type DeleteAccountResult = { ok: true } | { ok: false; error: unknown };
 
 /** Çelësat që duhen fshirë nga telefoni. Ruajtja lokale është burimi i UI-së. */
 const LOCAL_KEYS_PREFIX = ["bebix", "@bebix", "appState", "baby"];
@@ -28,7 +29,7 @@ async function clearLocalData(): Promise<void> {
 export async function deleteAccount(): Promise<DeleteAccountResult> {
   const { data: sessionData } = await supabase.auth.getSession();
   if (!sessionData.session) {
-    return { ok: false, message: "Nuk je i kyçur." };
+    return { ok: false, error: { message: "JWT: auth session missing" } };
   }
 
   try {
@@ -40,16 +41,16 @@ export async function deleteAccount(): Promise<DeleteAccountResult> {
     // Funksionet kthejnë gabimet si status jo-2xx; trupi mban arsyen e vërtetë.
     if (error) {
       const detail = await readFunctionError(error);
-      return { ok: false, message: detail ?? error.message };
+      return { ok: false, error: detail ? { message: detail } : error };
     }
-    if (data?.error) return { ok: false, message: data.error };
-    if (!data?.ok) return { ok: false, message: "Përgjigje e papritur nga serveri." };
+    if (data?.error) return { ok: false, error: { message: data.error } };
+    if (!data?.ok) return { ok: false, error: null };
 
     await clearLocalData();
     await supabase.auth.signOut();
     return { ok: true };
-  } catch (e: any) {
-    return { ok: false, message: e?.message ?? "Fshirja dështoi. Provo përsëri." };
+  } catch (e: unknown) {
+    return { ok: false, error: e };
   }
 }
 

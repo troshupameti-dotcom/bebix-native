@@ -16,6 +16,7 @@ import {
   fetchPost, fetchComments, addComment, deleteComment,
   CommunityPost, CommunityComment,
 } from "@/lib/communityData";
+import { friendlyError } from "@/lib/errors/userMessage";
 
 const MAX_COMMENT = 1000;
 
@@ -110,14 +111,14 @@ export default function PostDetailScreen() {
         postId: id,
         text: draft.trim(),
         parentId: replyTo?.id ?? null,
-        authorName: state.profile.parentName ?? "Ti",
+        authorName: state.profile.parentName ?? "",
       });
       haptics.tap();
       setDraft("");
       setReplyTo(null);
       setComments(await fetchComments(id));
     } catch (err) {
-      Alert.alert(t("mod_error_title"), err instanceof Error ? err.message : t("cpost_comment_failed"));
+      Alert.alert(t("mod_error_title"), friendlyError(err, t, "cpost_comment_failed"));
     } finally {
       setSending(false);
     }

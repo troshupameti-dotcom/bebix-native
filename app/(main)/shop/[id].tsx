@@ -238,6 +238,13 @@ export default function ProductDetailsScreen() {
 
       {/* Sticky bottom actions */}
       <View className="absolute bottom-0 left-0 right-0 bg-cream px-5 pt-3 pb-6 flex-row" style={shadows.softLg}>
+        {product.stock === 0 ? (
+          // Pa stok: më parë produkti shtohej në shportë dhe gabimi dilte vetëm te arkëtimi.
+          <View className="flex-1 bg-cream-soft rounded-xl2 py-3.5 items-center">
+            <Text className="font-bodySemibold text-[15px] text-ink-faint">{t("prod_out_of_stock_action")}</Text>
+          </View>
+        ) : (
+        <>
         <Pressable
           onPress={() => {
             addToCart({
@@ -270,6 +277,8 @@ export default function ProductDetailsScreen() {
         >
           <Text className="font-bodySemibold text-[15px] text-on-accent">{t("prod_buy_now")}</Text>
         </Pressable>
+        </>
+        )}
       </View>
     </SafeAreaView>
   );

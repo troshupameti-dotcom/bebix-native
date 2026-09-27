@@ -12,6 +12,7 @@ import { fetchTopics, fetchGroups, createPost, CommunityTopic, CommunityGroup } 
 import { BackButton, goBackOr } from "@/components/ui/BackButton";
 import { MAX_POST_MEDIA, MAX_VIDEO_SECONDS, MAX_FILE_BYTES, type LocalMedia } from "@/lib/community/media";
 import { formatVideoDuration } from "@/components/community/PostVideo";
+import { friendlyError } from "@/lib/errors/userMessage";
 
 const MAX_TEXT = 2000;
 
@@ -116,16 +117,15 @@ export default function NewPostScreen() {
         text: text.trim(),
         tag: selectedTag,
         groupId: selectedGroupId,
-        authorName: state.profile.parentName ?? "Ti",
+        authorName: state.profile.parentName ?? "",
         media,
       });
       haptics.success();
       goBackOr("/(main)/community");
     } catch (e) {
-      // Shfaq shkakun e vertete: gabimet e Supabase-it vijne si objekt me
-      // fushen message, jo si Error.
-      const detail = e instanceof Error ? e.message : typeof e === "object" && e && "message" in e ? String((e as { message: unknown }).message) : "";
-      setError(detail ? `Postimi nuk u publikua: ${detail}` : "Postimi nuk u publikua. Provo përsëri.");
+      // Mesazhet tona (p.sh. "Ky emër i përket një eksperti...") kalojnë siç
+      // janë; teksti teknik zëvendësohet me një fjali të përkthyer.
+      setError(friendlyError(e, t, "cnew_post_failed"));
     } finally {
       setPosting(false);
     }

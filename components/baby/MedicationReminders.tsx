@@ -10,6 +10,7 @@ import {
   fetchMedicationSchedules, createMedicationSchedule, stopMedicationSchedule, markDoseGiven,
   type MedicationSchedule,
 } from "@/lib/baby/medicationSchedules";
+import { friendlyError } from "@/lib/errors/userMessage";
 
 const INTERVALS = [4, 6, 8, 12, 24];
 const DAY_OPTIONS = [3, 5, 7, 10];
@@ -74,7 +75,7 @@ export function MedicationReminders() {
       setAdding(false);
       await load();
     } catch (e: any) {
-      setError(e?.message ?? t("med_save_failed"));
+      setError(friendlyError(e, t, "med_save_failed"));
     } finally {
       setSaving(false);
     }

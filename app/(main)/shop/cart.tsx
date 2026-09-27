@@ -1,4 +1,4 @@
-import { View, Text, Pressable, Image, ScrollView } from "react-native";
+import { View, Text, Pressable, Image, ScrollView, Alert } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useRouter } from "expo-router";
 import { useAppState } from "@/lib/state/AppStateContext";
@@ -59,6 +59,8 @@ export default function CartScreen() {
                       <Text className="font-bodyMedium text-sm text-ink mx-3">{item.qty}</Text>
                       <Pressable
                         onPress={() => updateCartQty(item.id, item.qty + 1)}
+                        disabled={item.qty >= 99}
+                        style={{ opacity: item.qty >= 99 ? 0.4 : 1 }}
                         className="w-7 h-7 rounded-full bg-cream-soft items-center justify-center"
                       >
                         <Text className="font-bodyMedium text-sm text-ink">+</Text>
@@ -72,7 +74,16 @@ export default function CartScreen() {
                 </View>
               ))}
 
-              <Pressable onPress={clearCart} style={shadows.soft} className="bg-surface rounded-xl2 py-3 items-center mt-1">
+              <Pressable
+                onPress={() =>
+                  Alert.alert(t("cart_clear_confirm"), undefined, [
+                    { text: t("cancel_action"), style: "cancel" },
+                    { text: t("cart_clear"), style: "destructive", onPress: clearCart },
+                  ])
+                }
+                style={shadows.soft}
+                className="bg-surface rounded-xl2 py-3 items-center mt-1"
+              >
                 <Text className="font-bodyMedium text-sm text-orange">{t("cart_clear")}</Text>
               </Pressable>
             </ScrollView>

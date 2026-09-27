@@ -11,6 +11,8 @@ import { BackButton } from "@/components/ui/BackButton";
 import { fetchSavedContact } from "@/lib/shop/orders";
 import type { TranslationKey } from "@/lib/i18n/translations";
 import { track } from "@/lib/analytics/posthog";
+import { friendlyError } from "@/lib/errors/userMessage";
+import { isValidPhone, reconcileCart, type CartChange, type ProductNow } from "@/lib/shop/cartCheck";
 
 /**
  * Gabimet e bazës vijnë si tekst teknik (p.sh. kufizime stoku). Klienti
@@ -27,7 +29,7 @@ function friendlyErrorKey(message: string): TranslationKey | null {
 
 export default function CheckoutScreen() {
   const router = useRouter();
-  const { state, cartTotal, clearCart } = useAppState();
+  const { state, cartTotal, clearCart, replaceCartItems } = useAppState();
   const { t } = useTranslation();
   // "loading" derisa lexohet sesioni lokal — pa këtë, ekrani i kyçjes
   // pulsonte për një moment edhe për përdoruesit e kyçur.
@@ -42,6 +44,8 @@ export default function CheckoutScreen() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [done, setDone] = useState(false);
+  // Çka ndryshoi në shportë që kur u shtua (çmim, stok, produkt i hequr).
+  const [changes, setChanges] = useState<CartChange[]>([]);
 
   useEffect(() => {
     let active = true;
@@ -84,9 +88,28 @@ export default function CheckoutScreen() {
 
   const submitOrder = useCallback(async () => {
     if (!canSubmit) return;
+    if (!isValidPhone(phone)) {
+      setError(t("co_err_phone"));
+      return;
+    }
     setLoading(true);
     setError(null);
+    setChanges([]);
     try {
+      // Çmimet dhe stoku i sotëm, para se klienti të konfirmojë: nëse diçka
+      // ndryshoi, shporta përditësohet dhe klienti e sheh para porosisë.
+      const { data: products, error: productsError } = await supabase
+        .from("products")
+        .select("id, name, price, is_active, stock, image_url")
+        .in("id", state.cartItems.map((i) => i.id));
+      if (productsError) throw productsError;
+      const checked = reconcileCart(state.cartItems, (products ?? []) as ProductNow[]);
+      if (checked.changes.length > 0) {
+        replaceCartItems(checked.items);
+        setChanges(checked.changes);
+        return;
+      }
+
       // place_order() bën gjithçka brenda një transaksioni atomik:
       // verifikon stokun te partnerët, krijon porosinë (orders.items
       // mbetet i njëjtë si më parë), zbret stokun dhe krijon fulfillment
@@ -112,11 +135,11 @@ export default function CheckoutScreen() {
       const message = e?.message ?? "";
       track("order_failed", { reason: String(message).slice(0, 120) || "unknown" });
       const key = friendlyErrorKey(message);
-      setError(key ? t(key) : message || t("co_err_generic"));
+      setError(key ? t(key) : friendlyError(e, t, "co_err_generic"));
     } finally {
       setLoading(false);
     }
-  }, [canSubmit, fullName, phone, address, city, state.cartItems, clearCart, cartTotal, t]);
+  }, [canSubmit, fullName, phone, address, city, state.cartItems, clearCart, cartTotal, replaceCartItems, t]);
 
   // --- Kyçja kërkohet PARA formularit, jo pasi e mbush.
   if (authState === "loading") {
@@ -255,6 +278,21 @@ export default function CheckoutScreen() {
           style={shadows.soft}
           className="bg-surface rounded-xl2 px-4 py-3 font-body text-sm text-ink mb-6"
         />
+
+        {changes.length > 0 && (
+          <View className="bg-olive-bg rounded-xl2 p-3 mb-4">
+            <Text className="font-bodySemibold text-xs text-ink mb-1">{t("co_changes_title")}</Text>
+            {changes.map((c, i) => (
+              <Text key={i} className="font-body text-xs text-ink-soft leading-5">
+                {c.kind === "removed"
+                  ? t("co_change_removed", { name: c.name })
+                  : c.kind === "price"
+                    ? t("co_change_price", { name: c.name, from: c.from.toFixed(2), to: c.to.toFixed(2) })
+                    : t("co_change_qty", { name: c.name, n: c.to })}
+              </Text>
+            ))}
+          </View>
+        )}
 
         {error && (
           <View className="bg-orange-bg rounded-xl2 p-3 mb-4">

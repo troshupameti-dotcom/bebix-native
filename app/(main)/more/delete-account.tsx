@@ -9,6 +9,8 @@ import { useThemeColors } from "@/lib/theme/useThemeColors";
 import { useTranslation } from "@/lib/i18n/LanguageContext";
 import { deleteAccount } from "@/lib/account/deleteAccount";
 import { SUPPORT_EMAIL } from "@/lib/support";
+import { friendlyError } from "@/lib/errors/userMessage";
+import { unregisterPushToken } from "@/lib/notifications";
 
 function Row({ icon, text }: { icon: Parameters<typeof Icon>[0]["name"]; text: string }) {
   const theme = useThemeColors();
@@ -38,13 +40,15 @@ export default function DeleteAccountScreen() {
     setLoading(true);
     setError(null);
 
+    // Token-i i njoftimeve hiqet para: pas fshirjes s'ka më llogari me të cilën ta heqim.
+    await unregisterPushToken();
     const result = await deleteAccount();
     if (result.ok) {
       router.replace("/(auth)/welcome");
       return;
     }
 
-    setError(result.message);
+    setError(friendlyError(result.error, t, "del_failed"));
     setLoading(false);
   }
 

@@ -14,6 +14,7 @@ import { syncProfilePhotoToSupabase } from "@/lib/babySync";
 import { useCurrentUserId } from "@/lib/hooks/useCurrentUserId";
 import { useTranslation } from "@/lib/i18n/LanguageContext";
 import type { TranslationKey } from "@/lib/i18n/translations";
+import { friendlyError } from "@/lib/errors/userMessage";
 
 const RELATIONS: { value: ParentRelation; labelKey: TranslationKey }[] = [
   { value: "mom", labelKey: "prof_rel_mom" },
@@ -84,7 +85,7 @@ export default function ProfileScreen() {
     setSavingPassword(false);
 
     if (error) {
-      setPasswordError(error.message);
+      setPasswordError(friendlyError(error, t, "err_generic"));
       return;
     }
 

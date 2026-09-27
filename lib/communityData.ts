@@ -313,6 +313,22 @@ export async function fetchFeed(options: { before?: string; limit?: number } = {
   return (data ?? []).map((p) => mapFeedRow(p, likedIds, savedIds));
 }
 
+/** Pëlqimet dhe ruajtjet e përdoruesit VETËM për këto postime (jo të gjitha që ka bërë ndonjëherë). */
+async function myReactions(uid: string | null, ids: string[]): Promise<{ likedIds: Set<string>; savedIds: Set<string> }> {
+  if (!uid || ids.length === 0) return { likedIds: new Set(), savedIds: new Set() };
+  const [{ data: likes }, { data: saves }] = await Promise.all([
+    supabase.from("community_post_likes").select("post_id").eq("user_id", uid).in("post_id", ids),
+    supabase.from("community_post_saves").select("post_id").eq("user_id", uid).in("post_id", ids),
+  ]);
+  return {
+    likedIds: new Set((likes ?? []).map((l) => l.post_id)),
+    savedIds: new Set((saves ?? []).map((s) => s.post_id)),
+  };
+}
+
+/** Sa postime lexohen për profilin, grupin ose të ruajturat (më të rejat). */
+const LIST_LIMIT = 50;
+
 export async function fetchPost(id: string): Promise<CommunityPost | null> {
   const uid = await getCurrentUserId();
   const { data, error } = await supabase.from("community_feed").select("*").eq("id", id).maybeSingle();
@@ -336,17 +352,20 @@ export async function fetchPost(id: string): Promise<CommunityPost | null> {
 export async function fetchSavedPosts(): Promise<CommunityPost[]> {
   const uid = await getCurrentUserId();
   if (!uid) return [];
-  const { data: saves } = await supabase.from("community_post_saves").select("post_id").eq("user_id", uid);
+  const { data: saves } = await supabase
+    .from("community_post_saves")
+    .select("post_id")
+    .eq("user_id", uid)
+    .order("created_at", { ascending: false })
+    .limit(LIST_LIMIT);
   const ids = (saves ?? []).map((s) => s.post_id);
   if (ids.length === 0) return [];
 
   const { data, error } = await supabase.from("community_feed").select("*").in("id", ids).order("created_at", { ascending: false });
   if (error) throw error;
 
-  const { data: likes } = await supabase.from("community_post_likes").select("post_id").eq("user_id", uid);
-  const likedIds = new Set((likes ?? []).map((l) => l.post_id));
+  const { likedIds } = await myReactions(uid, ids);
   const savedIds = new Set(ids);
-
   return (data ?? []).map((p) => mapFeedRow(p, likedIds, savedIds));
 }
 
@@ -356,20 +375,11 @@ export async function fetchPostsByAuthor(authorId: string): Promise<CommunityPos
     .from("community_feed")
     .select("*")
     .eq("author_id", authorId)
-    .order("created_at", { ascending: false });
+    .order("created_at", { ascending: false })
+    .limit(LIST_LIMIT);
   if (error) throw error;
 
-  let likedIds = new Set<string>();
-  let savedIds = new Set<string>();
-  if (uid) {
-    const [{ data: likes }, { data: saves }] = await Promise.all([
-      supabase.from("community_post_likes").select("post_id").eq("user_id", uid),
-      supabase.from("community_post_saves").select("post_id").eq("user_id", uid),
-    ]);
-    likedIds = new Set((likes ?? []).map((l) => l.post_id));
-    savedIds = new Set((saves ?? []).map((s) => s.post_id));
-  }
-
+  const { likedIds, savedIds } = await myReactions(uid, (data ?? []).map((p) => p.id as string));
   return (data ?? []).map((p) => mapFeedRow(p, likedIds, savedIds));
 }
 
@@ -379,20 +389,11 @@ export async function fetchPostsByGroup(groupId: string): Promise<CommunityPost[
     .from("community_feed")
     .select("*")
     .eq("group_id", groupId)
-    .order("created_at", { ascending: false });
+    .order("created_at", { ascending: false })
+    .limit(LIST_LIMIT);
   if (error) throw error;
 
-  let likedIds = new Set<string>();
-  let savedIds = new Set<string>();
-  if (uid) {
-    const [{ data: likes }, { data: saves }] = await Promise.all([
-      supabase.from("community_post_likes").select("post_id").eq("user_id", uid),
-      supabase.from("community_post_saves").select("post_id").eq("user_id", uid),
-    ]);
-    likedIds = new Set((likes ?? []).map((l) => l.post_id));
-    savedIds = new Set((saves ?? []).map((s) => s.post_id));
-  }
-
+  const { likedIds, savedIds } = await myReactions(uid, (data ?? []).map((p) => p.id as string));
   return (data ?? []).map((p) => mapFeedRow(p, likedIds, savedIds));
 }
 
@@ -409,16 +410,9 @@ export async function createPost(input: {
   if (!input.text.trim() && localMedia.length === 0) {
     throw new Error("Shkruaj diçka ose shto një foto/video.");
   }
-  const authorInitial = (input.authorName || "T").trim().charAt(0).toUpperCase() || "T";
-
-  // Nëse llogaria është e lidhur me një ekspert të aprovuar (shih expert_applications
-  // + panelin e adminit), postimi shënohet automatikisht si i verifikuar.
-  const { data: expertRow } = await supabase
-    .from("community_experts")
-    .select("id")
-    .eq("user_id", uid)
-    .maybeSingle();
-  const isExpert = !!expertRow;
+  // Emri, shenja "ekspert" dhe ora i vendos serveri (trigger-i
+  // community_posts_guard): klienti s'mund të deklarojë vete që është mjek.
+  const authorName = input.authorName.trim();
 
   // Skedarët ngarkohen para postimit, që rreshti të ruhet bashkë me rrugët.
   const media = await uploadPostMedia(uid, localMedia);
@@ -431,14 +425,12 @@ export async function createPost(input: {
     .from("community_posts")
     .insert({
       author_id: uid,
-      author_name: input.authorName || "Ti",
-      author_initial: authorInitial,
-      author_is_expert: isExpert,
+      author_name: authorName,
+      author_initial: authorName.charAt(0).toUpperCase() || "P",
       accent: "olive",
       text: input.text,
       media,
       tag: input.tag ?? null,
-      icon: isExpert ? "shield" : "sparkle",
       group_id: input.groupId ?? null,
     })
     .select("id")
@@ -448,7 +440,7 @@ export async function createPost(input: {
     await removePostMedia(media);
     // Gabimet e Supabase-it jane objekte, jo Error: pa kete, UI-ja tregonte
     // vetem mesazhin e pergjithshem dhe shkaku i vertete humbte.
-    throw new Error(error.message || "Postimi nuk u ruajt.");
+    throw new Error(error.message || "post_failed");
   }
   return data.id;
 }
@@ -516,7 +508,8 @@ export async function addComment(input: { postId: string; text: string; parentId
   const { error } = await supabase.from("community_comments").insert({
     post_id: input.postId,
     author_id: uid,
-    author_name: input.authorName || "Ti",
+    // Bosh: serveri vendos "Prind" (jo "Ti", që të tjerëve u dilte si emër).
+    author_name: input.authorName.trim(),
     parent_id: input.parentId ?? null,
     text: input.text,
   });
