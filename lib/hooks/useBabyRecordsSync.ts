@@ -3,10 +3,16 @@ import { AppState } from "react-native";
 import { useAppState } from "@/lib/state/AppStateContext";
 import { resetBabyRecordsSyncState, syncBabyRecords } from "@/lib/baby/babyRecordsSync";
 import { claimLocalData } from "@/lib/auth/localDataOwner";
+import { resolveDataOwnerId } from "@/lib/baby/household";
 import { supabase } from "@/lib/supabase/client";
 
-/** Sa shpesh kontrollohet serveri kur app-i është i hapur (ndryshimet nga webi). */
-const INTERVAL_MS = 30_000;
+/**
+ * Kontrolli periodik mbetet vetëm si rrjet sigurie: ndryshimet nga webi
+ * vijnë me Realtime. Nëse lidhja Realtime bie pa u vënë re, prapë kapen.
+ */
+const INTERVAL_MS = 5 * 60_000;
+/** Njoftimet Realtime që vijnë radhazi (p.sh. disa shënime nga webi) bashkohen. */
+const REMOTE_DEBOUNCE_MS = 800;
 /** Pas një shkrimi lokal, pritet pak që disa prekje radhazi të shkojnë bashkë. */
 const DEBOUNCE_MS = 2_500;
 
@@ -18,7 +24,8 @@ const DEBOUNCE_MS = 2_500;
  * në telefon nuk dilte te webi derisa app-i të rihapej, dhe anasjelltas.
  * Tani sync-u nis:
  *  - kur app-i hapet ose kthehet në plan të parë,
- *  - çdo 30 sekonda sa kohë app-i është aktiv,
+ *  - sapo webi ose partneri shkruan (Realtime te `baby_records`),
+ *  - çdo 5 minuta sa kohë app-i është aktiv, si rrjet sigurie,
  *  - pak pas çdo shkrimi lokal.
  *
  * Asnjëherë dy sync-e njëkohësisht: nëse kërkohet një i ri ndërsa tjetri
@@ -111,6 +118,31 @@ export function useBabyRecordsSync(isAuthenticated: boolean) {
       runSync.current();
     })();
 
+    // Realtime: serveri njofton sapo ndryshon një rresht i këtij bebi. RLS
+    // vendos se kush e merr njoftimin; filtri e ngushton te pronari i të
+    // dhënave (vetja, ose prindi që e ftoi në shtëpi).
+    let channel: ReturnType<typeof supabase.channel> | null = null;
+    let remoteTimer: ReturnType<typeof setTimeout> | undefined;
+    (async () => {
+      const ownerId = await resolveDataOwnerId();
+      if (!ownerId || cancelled) return;
+      channel = supabase
+        .channel(`baby_records:${ownerId}`)
+        .on(
+          "postgres_changes",
+          { event: "*", schema: "public", table: "baby_records", filter: `user_id=eq.${ownerId}` },
+          () => {
+            clearTimeout(remoteTimer);
+            remoteTimer = setTimeout(() => runSync.current(), REMOTE_DEBOUNCE_MS);
+          }
+        )
+        .subscribe((status) => {
+          // Pas rilidhjes mund të kenë humbur njoftime: një sync i kap.
+          if (status === "SUBSCRIBED") runSync.current();
+        });
+      if (cancelled) void supabase.removeChannel(channel);
+    })();
+
     const interval = setInterval(() => {
       if (AppState.currentState === "active") runSync.current();
     }, INTERVAL_MS);
@@ -120,6 +152,8 @@ export function useBabyRecordsSync(isAuthenticated: boolean) {
 
     return () => {
       cancelled = true;
+      clearTimeout(remoteTimer);
+      if (channel) void supabase.removeChannel(channel);
       clearInterval(interval);
       subscription.remove();
     };
