@@ -84,13 +84,28 @@ export type NotificationPrefs = {
   /** Orët e qeta, 0–23. E njëjta orë për të dyja = pa orë të qeta. */
   quietFrom: number;
   quietTo: number;
+  /** Pas sa orësh pa ushqyerje / pa ndërruar pelenë vjen kujtesa (1–12). */
+  feedingGapH: number;
+  diaperGapH: number;
 };
+
+export const REMINDER_GAP_MIN = 1;
+export const REMINDER_GAP_MAX = 12;
+const DEFAULT_GAP_H = 4;
 
 export const initialNotificationPrefs: NotificationPrefs = {
   keys: {},
   quietFrom: 22,
   quietTo: 7,
+  feedingGapH: DEFAULT_GAP_H,
+  diaperGapH: DEFAULT_GAP_H,
 };
+
+/** Vlerë e ruajtur -> orë e vlefshme; çdo gjë tjetër = 4 orë. */
+export function clampGap(value: unknown): number {
+  if (typeof value !== "number" || !Number.isFinite(value)) return DEFAULT_GAP_H;
+  return Math.min(REMINDER_GAP_MAX, Math.max(REMINDER_GAP_MIN, Math.round(value)));
+}
 
 export function isNotificationEnabled(prefs: NotificationPrefs, key: NotificationKey): boolean {
   if (key !== "push" && prefs.keys.push === false) return false;
@@ -136,6 +151,8 @@ export function migrateNotificationPrefs(stored: unknown): NotificationPrefs {
       keys: raw.keys as Partial<Record<NotificationKey, boolean>>,
       quietFrom: typeof raw.quietFrom === "number" ? raw.quietFrom : 22,
       quietTo: typeof raw.quietTo === "number" ? raw.quietTo : 7,
+      feedingGapH: clampGap(raw.feedingGapH),
+      diaperGapH: clampGap(raw.diaperGapH),
     };
   }
 
@@ -146,5 +163,5 @@ export function migrateNotificationPrefs(stored: unknown): NotificationPrefs {
     for (const target of targets) keys[target] = value;
   }
 
-  return { keys, quietFrom: 22, quietTo: 7 };
+  return { keys, quietFrom: 22, quietTo: 7, feedingGapH: DEFAULT_GAP_H, diaperGapH: DEFAULT_GAP_H };
 }

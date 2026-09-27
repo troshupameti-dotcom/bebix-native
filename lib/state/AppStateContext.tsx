@@ -6,7 +6,7 @@ import { syncNotificationSettings } from "@/lib/notifications/settingsSync";
 import { signedUrlForProfilePhoto } from "@/lib/baby/profilePhotos";
 import { fetchProfilePhotoPaths } from "@/lib/babySync";
 import { mergeRecordsPatch } from "@/lib/baby/babyRecordsSync";
-import { migrateNotificationPrefs, type NotificationKey } from "@/lib/notifications/catalog";
+import { clampGap, migrateNotificationPrefs, type NotificationKey } from "@/lib/notifications/catalog";
 import {
   AppState,
   initialAppState,
@@ -170,6 +170,7 @@ type Action =
   | { type: "MERGE_BABY_RECORDS"; value: Partial<BabyModuleState> }
   | { type: "SET_NOTIFICATION_PREF"; key: NotificationKey; value: boolean }
   | { type: "SET_QUIET_HOURS"; from: number; to: number }
+  | { type: "SET_REMINDER_GAP"; kind: "feeding" | "diaper"; hours: number }
   | { type: "SET_READ_NOTIFICATIONS"; ids: string[] }
   | { type: "HYDRATE"; state: AppState };
 
@@ -230,6 +231,14 @@ function reducer(state: AppState, action: Action): AppState {
       return {
         ...state,
         notificationPrefs: { ...state.notificationPrefs, quietFrom: action.from, quietTo: action.to },
+      };
+    case "SET_REMINDER_GAP":
+      return {
+        ...state,
+        notificationPrefs: {
+          ...state.notificationPrefs,
+          [action.kind === "feeding" ? "feedingGapH" : "diaperGapH"]: clampGap(action.hours),
+        },
       };
     case "SET_READ_NOTIFICATIONS":
       return { ...state, readNotificationIds: action.ids };
@@ -394,6 +403,7 @@ function buildValue(state: AppState, dispatch: React.Dispatch<Action>) {
       dispatch({ type: "SET_READ_NOTIFICATIONS", ids: [...next] });
     },
     setQuietHours: (from: number, to: number) => dispatch({ type: "SET_QUIET_HOURS", from, to }),
+    setReminderGap: (kind: "feeding" | "diaper", hours: number) => dispatch({ type: "SET_REMINDER_GAP", kind, hours }),
     setNotificationPref: (key: NotificationKey, value: boolean) =>
       // Dergimi te serveri behet nga efekti me poshte, qe mbulon edhe
       // ngarkimin e pare — jo ketu, qe te mos kete dy rruge per te njejten gje.

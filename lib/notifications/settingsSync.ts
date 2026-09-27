@@ -30,6 +30,8 @@ export async function syncNotificationSettings(prefs: NotificationPrefs): Promis
         prefs: keys,
         quiet_from: prefs.quietFrom,
         quiet_to: prefs.quietTo,
+        feeding_gap_h: prefs.feedingGapH,
+        diaper_gap_h: prefs.diaperGapH,
         updated_at: new Date().toISOString(),
       },
       { onConflict: "user_id" }

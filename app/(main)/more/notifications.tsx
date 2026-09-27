@@ -8,7 +8,7 @@ import { shadows } from "@/lib/shadows";
 import { BackButton } from "@/components/ui/BackButton";
 import { useThemeColors } from "@/lib/theme/useThemeColors";
 import {
-  NOTIFICATION_CATALOG, NOTIFICATION_GROUPS, isNotificationEnabled,
+  NOTIFICATION_CATALOG, NOTIFICATION_GROUPS, REMINDER_GAP_MAX, REMINDER_GAP_MIN, isNotificationEnabled,
   type NotificationEntry, type NotificationKey,
 } from "@/lib/notifications/catalog";
 
@@ -16,30 +16,72 @@ function hourLabel(hour: number): string {
   return `${String(hour).padStart(2, "0")}:00`;
 }
 
+/** Kujtesat e boshllëqeve që prindi i rregullon vetë (orët). */
+type GapKind = "feeding" | "diaper";
+const GAP_KIND: Partial<Record<NotificationKey, GapKind>> = { baby_feeding: "feeding", baby_diaper: "diaper" };
+
 function Row({
-  entry, enabled, disabled, onToggle, t,
+  entry, enabled, disabled, onToggle, gapHours, onGapChange, t,
 }: {
   entry: NotificationEntry;
   enabled: boolean;
   disabled: boolean;
   onToggle: (key: NotificationKey, value: boolean) => void;
-  t: (key: any) => string;
+  /** Vetëm për ushqyerjen dhe pelenat. */
+  gapHours?: number;
+  onGapChange?: (hours: number) => void;
+  t: (key: any, params?: Record<string, string | number>) => string;
 }) {
   const theme = useThemeColors();
+  const hasGap = gapHours !== undefined && onGapChange !== undefined;
   return (
-    <View className="flex-row items-center py-3 border-t border-cream-line" style={{ opacity: disabled ? 0.45 : 1 }}>
-      <View className="w-8 h-8 rounded-full bg-cream-soft items-center justify-center mr-3">
-        <Icon name={entry.icon} size={15} color={theme.inkSoft} />
+    <View className="py-3 border-t border-cream-line" style={{ opacity: disabled ? 0.45 : 1 }}>
+      <View className="flex-row items-center">
+        <View className="w-8 h-8 rounded-full bg-cream-soft items-center justify-center mr-3">
+          <Icon name={entry.icon} size={15} color={theme.inkSoft} />
+        </View>
+        <View className="flex-1 mr-3">
+          <Text className="font-bodyMedium text-sm text-ink">{t(entry.labelKey)}</Text>
+          <Text className="font-body text-[11px] text-ink-faint leading-4 mt-0.5">
+            {t(entry.hintKey, hasGap ? { n: gapHours } : undefined)}
+          </Text>
+        </View>
+        <ThemedSwitch
+          value={enabled}
+          disabled={disabled}
+          onValueChange={(value) => onToggle(entry.key, value)}
+        />
       </View>
-      <View className="flex-1 mr-3">
-        <Text className="font-bodyMedium text-sm text-ink">{t(entry.labelKey)}</Text>
-        <Text className="font-body text-[11px] text-ink-faint leading-4 mt-0.5">{t(entry.hintKey)}</Text>
-      </View>
-      <ThemedSwitch
-        value={enabled}
-        disabled={disabled}
-        onValueChange={(value) => onToggle(entry.key, value)}
-      />
+      {hasGap && enabled && !disabled ? (
+        <View className="flex-row items-center ml-11 mt-2">
+          <Text className="font-body text-[12px] text-ink-soft flex-1">{t("notif_gap_label")}</Text>
+          <Pressable
+            onPress={() => onGapChange(gapHours - 1)}
+            disabled={gapHours <= REMINDER_GAP_MIN}
+            hitSlop={8}
+            accessibilityRole="button"
+            accessibilityLabel={`${t(entry.labelKey)} -1`}
+            className="w-7 h-7 rounded-full bg-cream-soft items-center justify-center"
+            style={{ opacity: gapHours <= REMINDER_GAP_MIN ? 0.4 : 1 }}
+          >
+            <Text className="font-bodyMedium text-base text-ink">–</Text>
+          </Pressable>
+          <Text className="font-bodySemibold text-[13px] text-ink mx-2 w-12 text-center">
+            {t("notif_gap_hours", { n: gapHours })}
+          </Text>
+          <Pressable
+            onPress={() => onGapChange(gapHours + 1)}
+            disabled={gapHours >= REMINDER_GAP_MAX}
+            hitSlop={8}
+            accessibilityRole="button"
+            accessibilityLabel={`${t(entry.labelKey)} +1`}
+            className="w-7 h-7 rounded-full bg-cream-soft items-center justify-center"
+            style={{ opacity: gapHours >= REMINDER_GAP_MAX ? 0.4 : 1 }}
+          >
+            <Icon name="plus" size={13} color={theme.ink} />
+          </Pressable>
+        </View>
+      ) : null}
     </View>
   );
 }
@@ -76,7 +118,7 @@ function HourStepper({ label, value, onChange }: { label: string; value: number;
 }
 
 export default function NotificationsScreen() {
-  const { state, setNotificationPref, setQuietHours } = useAppState();
+  const { state, setNotificationPref, setQuietHours, setReminderGap } = useAppState();
   const { t } = useTranslation();
   const prefs = state.notificationPrefs;
 
@@ -142,25 +184,27 @@ export default function NotificationsScreen() {
             <View key={group} className="mb-4">
               <Text className="font-bodyMedium text-xs text-ink-faint uppercase px-5 mb-2">{t(titleKey)}</Text>
               <View style={shadows.soft} className="mx-5 bg-surface rounded-xl2 px-4 pb-1">
-                {entries.map((entry) => (
-                  <Row
-                    key={entry.key}
-                    entry={entry}
-                    enabled={isNotificationEnabled(prefs, entry.key)}
-                    disabled={!pushOn}
-                    onToggle={setNotificationPref}
-                    t={t}
-                  />
-                ))}
+                {entries.map((entry) => {
+                  const gapKind = GAP_KIND[entry.key];
+                  return (
+                    <Row
+                      key={entry.key}
+                      entry={entry}
+                      enabled={isNotificationEnabled(prefs, entry.key)}
+                      disabled={!pushOn}
+                      onToggle={setNotificationPref}
+                      gapHours={gapKind ? (gapKind === "feeding" ? prefs.feedingGapH : prefs.diaperGapH) : undefined}
+                      onGapChange={gapKind ? (h) => setReminderGap(gapKind, h) : undefined}
+                      t={t}
+                    />
+                  );
+                })}
               </View>
             </View>
           );
         })}
 
-        <Text className="font-body text-[11px] text-ink-faint px-6 leading-4">
-          Njoftimet e para kërkojnë leje nga telefoni. Nëse i ke refuzuar një herë, duhen lejuar nga
-          cilësimet e telefonit.
-        </Text>
+        <Text className="font-body text-[11px] text-ink-faint px-6 leading-4">{t("notif_permission_note")}</Text>
       </ScrollView>
     </SafeAreaView>
   );

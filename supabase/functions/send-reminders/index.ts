@@ -19,9 +19,10 @@ const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
 const serviceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
 const supabase = createClient(supabaseUrl, serviceKey, { auth: { persistSession: false } });
 
-// Pragjet e boshlleqeve, ne ore.
-const FEEDING_GAP_H = 4;
-const DIAPER_GAP_H = 4;
+// Pragjet e boshlleqeve, ne ore. Ushqyerjen dhe pelenat i zgjedh prindi
+// (notification_settings.feeding_gap_h / diaper_gap_h); keto jane parazgjedhjet.
+const DEFAULT_FEEDING_GAP_H = 4;
+const DEFAULT_DIAPER_GAP_H = 4;
 const AWAKE_GAP_H = 3;
 
 const REMIND_DAYS_BEFORE = [1, 0];
@@ -64,19 +65,38 @@ async function enqueue(
   });
 }
 
-/** Regjistrimi i fundit per cdo perdorues, per nje lloj te dhene. */
-async function lastByUser(kind: string): Promise<Map<string, Row>> {
-  const { data } = await supabase
-    .from("baby_records")
-    .select("user_id, id, payload, occurred_at, kind")
-    .eq("kind", kind)
-    .is("deleted_at", null)
-    .order("occurred_at", { ascending: false })
-    .limit(3000);
+/**
+ * Regjistrimi i fundit per cdo perdorues, per nje lloj, brenda dritares
+ * kohore. Llogaritet ne baze (distinct on), jo duke lexuar rreshtat e te
+ * gjitheve ketu: perndryshe, me shume perdorues, disa nuk do te merrnin kujtese.
+ */
+async function lastByUser(kind: string, withinHours: number): Promise<Map<string, Row>> {
+  const { data, error } = await supabase.rpc("latest_baby_record_per_user", {
+    p_kind: kind,
+    p_since: new Date(Date.now() - withinHours * 3600000).toISOString(),
+  });
+  if (error) console.log(`latest_baby_record_per_user(${kind}):`, error.message);
 
   const map = new Map<string, Row>();
-  for (const row of (data ?? []) as Row[]) {
-    if (!map.has(row.user_id)) map.set(row.user_id, row);
+  for (const row of (data ?? []) as Omit<Row, "kind">[]) map.set(row.user_id, { ...row, kind });
+  return map;
+}
+
+/** Pas sa oresh i kujtohet secilit prind ushqyerja dhe pelena. */
+async function gapSettings(userIds: string[]): Promise<Map<string, { feeding: number; diaper: number }>> {
+  const map = new Map<string, { feeding: number; diaper: number }>();
+  // Ne grupe, qe adresa e kerkeses te mos behet shume e gjate.
+  for (let i = 0; i < userIds.length; i += 200) {
+    const { data } = await supabase
+      .from("notification_settings")
+      .select("user_id, feeding_gap_h, diaper_gap_h")
+      .in("user_id", userIds.slice(i, i + 200));
+    for (const s of (data ?? []) as { user_id: string; feeding_gap_h: number | null; diaper_gap_h: number | null }[]) {
+      map.set(s.user_id, {
+        feeding: s.feeding_gap_h ?? DEFAULT_FEEDING_GAP_H,
+        diaper: s.diaper_gap_h ?? DEFAULT_DIAPER_GAP_H,
+      });
+    }
   }
   return map;
 }
@@ -90,15 +110,18 @@ serve(async () => {
   const bump = (k: string) => { counts[k] = (counts[k] ?? 0) + 1; };
 
   // =============== BOSHLLEQET ===============
+  // Kujtesat dalin vetem brenda 24 oresh (gjumi: nga fillimi i tij, qe
+  // zgjimi te bjere ende brenda 12 oreve).
   const [feedings, diapers, sleeps] = await Promise.all([
-    lastByUser("feeding"),
-    lastByUser("diaper"),
-    lastByUser("sleep"),
+    lastByUser("feeding", 24),
+    lastByUser("diaper", 24),
+    lastByUser("sleep", 36),
   ]);
+  const gaps = await gapSettings([...new Set([...feedings.keys(), ...diapers.keys()])]);
 
   for (const [userId, row] of feedings) {
     const gap = hoursSince(row.occurred_at);
-    if (gap >= FEEDING_GAP_H && gap < 24) {
+    if (gap >= (gaps.get(userId)?.feeding ?? DEFAULT_FEEDING_GAP_H) && gap < 24) {
       // Dedupe mbi regjistrimin e fundit: nje kujtese per boshllek, jo nje
       // per cdo xhirim.
       await enqueue(userId, "baby_feeding", "Koha e ushqyerjes?",
@@ -110,7 +133,7 @@ serve(async () => {
 
   for (const [userId, row] of diapers) {
     const gap = hoursSince(row.occurred_at);
-    if (gap >= DIAPER_GAP_H && gap < 24) {
+    if (gap >= (gaps.get(userId)?.diaper ?? DEFAULT_DIAPER_GAP_H) && gap < 24) {
       await enqueue(userId, "baby_diaper", "Pelena",
         `Kane kaluar ${Math.floor(gap)} ore nga pelena e fundit.`,
         { type: "diaper" }, `diaper:${row.id}`, 90);
@@ -181,7 +204,8 @@ serve(async () => {
       .not("baby_dob", "is", null)
       .limit(5000);
 
-    const growth = await lastByUser("growth");
+    // Mungesa brenda 30 diteve = koha per matje (edhe kur s'ka asnje matje).
+    const growth = await lastByUser("growth", 30 * 24);
 
     for (const p of (profiles ?? []) as { user_id: string; baby_name: string | null; baby_dob: string }[]) {
       const name = p.baby_name?.trim() || "Bebi";

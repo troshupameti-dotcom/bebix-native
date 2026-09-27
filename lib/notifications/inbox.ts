@@ -32,10 +32,11 @@ function active<R extends { deletedAt: string | null; archivedAt: string | null 
 const HOUR = 3600000;
 const DAY = 24 * HOUR;
 
-/** Pas sa kohësh del kujtesa. */
+/**
+ * Pas sa kohësh del kujtesa. Ushqyerja dhe pelenat vijnë nga cilësimet e
+ * prindit (prefs.feedingGapH / diaperGapH), njësoj si kujtesat nga serveri.
+ */
 export const INBOX_THRESHOLDS = {
-  feedingHours: 3,
-  diaperHours: 4,
   awakeHours: 3,
   vaccineWindowDays: 7,
 };
@@ -108,14 +109,14 @@ export function buildInbox({ baby, prefs, t, lang, now = new Date() }: Input): I
     const last = active(baby.feedingLog).find((f) => f.type !== "medicine");
     if (last) {
       const hours = Math.floor((nowMs - new Date(last.at).getTime()) / HOUR);
-      if (hours >= INBOX_THRESHOLDS.feedingHours) {
+      if (hours >= prefs.feedingGapH) {
         items.push({
           id: `feeding:${last.id}`,
           icon: "spoon",
           accent: "orange",
           title: t("inbox_feeding_title", { n: hours }),
           body: t("inbox_feeding_body", { time: formatTime(last.at, lang) }),
-          at: new Date(new Date(last.at).getTime() + INBOX_THRESHOLDS.feedingHours * HOUR).toISOString(),
+          at: new Date(new Date(last.at).getTime() + prefs.feedingGapH * HOUR).toISOString(),
           route: "/(main)/baby/feeding",
         });
       }
@@ -145,14 +146,14 @@ export function buildInbox({ baby, prefs, t, lang, now = new Date() }: Input): I
   const lastDiaper = active(baby.diaperLog)[0];
   if (lastDiaper) {
     const hours = Math.floor((nowMs - new Date(lastDiaper.at).getTime()) / HOUR);
-    if (hours >= INBOX_THRESHOLDS.diaperHours) {
+    if (hours >= prefs.diaperGapH) {
       items.push({
         id: `diaper:${lastDiaper.id}`,
         icon: "diaper",
         accent: "olive",
         title: t("inbox_diaper_title", { n: hours }),
         body: t("inbox_diaper_body"),
-        at: new Date(new Date(lastDiaper.at).getTime() + INBOX_THRESHOLDS.diaperHours * HOUR).toISOString(),
+        at: new Date(new Date(lastDiaper.at).getTime() + prefs.diaperGapH * HOUR).toISOString(),
         route: "/(main)/baby/diaper",
       });
     }
