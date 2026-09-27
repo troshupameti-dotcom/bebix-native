@@ -1,12 +1,13 @@
 # Migrime që presin miratimin tënd
 
-Këto dy skedarë janë gati, por **nuk janë aplikuar** në bazën e prodhimit.
+Këta tre skedarë janë gati, por **nuk janë aplikuar** në bazën e prodhimit.
 Gjatë auditimit (28 shtator 2026) mjeti i sigurisë i Claude-it i ndaloi si
 "ndryshim në prodhim", dhe vendimi mbetet te ti.
 
 | Skedari | Çfarë rregullon | Rreziku nëse s'aplikohet |
 | --- | --- | --- |
 | `orders_and_stock.sql` | Stoku i produktit ndjek partnerët; `place_order` kontrollon emrin/telefonin/adresën, bashkon rreshtat e njëjtë, zbret stokun e produkteve pa partner, kufizon porositë në pritje, mbron nga dërgimi i dyfishtë; anulimi i porosisë e kthen stokun; "blerje e verifikuar" vetëm pas dorëzimit. | Produktet pa partner mund të porositen edhe kur tregohen "Pa stok"; anulimi nga admini e humb stokun; stoku që sheh klienti mund të jetë i gabuar. |
+| `community_counters_and_notifications.sql` | Pëlqimet, anëtarësitë e grupeve dhe ndjekjet e mjekëve s'i lexon më kushdo; numërues në vend të numërimit të gjithë tabelës në çdo faqe; radha e njoftimeve pa dërgime të dyfishta; orët e qeta sipas zonës kohore të prindit; njoftimet e postimit me një INSERT të vetëm. Pas aplikimit duhen 4 ndryshime të vogla në kod (të listuara në krye të skedarit). | Kushdo mund të shohë kush pëlqen çfarë dhe kush është në cilin grup; rrjedha e komunitetit ngadalësohet me rritjen; në raste të rralla, një njoftim dërgohet dy herë. |
 | `rls_initplan_rewrite.sql` | Rishkruan të gjitha politikat RLS që `auth.uid()` dhe kontrolli i adminit të llogariten një herë për kërkesë (advisor: `auth_rls_initplan`). | Vetëm shpejtësi: me shumë rreshta, listat e adminit dhe të partnerit ngadalësohen. |
 
 ## Si aplikohen
