@@ -7,3 +7,6 @@ ios/
 
 # Eksporti i Expo-s (dalje ndertimi, jo kod)
 dist/
+
+# Gjendja lokale e Supabase CLI (lidhja e projektit, versionet) — jo kod
+supabase/.temp/

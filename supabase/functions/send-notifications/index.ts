@@ -22,7 +22,28 @@ const EXPO_CHUNK = 100;
 
 type Pending = { id: number; user_id: string; key: string; title: string; body: string; data: Record<string, unknown> };
 
-serve(async () => {
+/**
+ * Vetem cron-i (service_role). verify_jwt kontrollon vetem nenshkrimin, dhe
+ * celesi publik (anon) eshte po ashtu JWT i nenshkruar — pa kete, kushdo me
+ * celesin e app-it mund ta nxiste radhen sa here te donte.
+ */
+function isServiceRole(req: Request): boolean {
+  const token = (req.headers.get("Authorization") ?? "").replace(/^Bearer\s+/i, "");
+  const part = token.split(".")[1];
+  if (!part) return false;
+  try {
+    const json = JSON.parse(atob(part.replace(/-/g, "+").replace(/_/g, "/")));
+    return json?.role === "service_role";
+  } catch {
+    return false;
+  }
+}
+
+serve(async (req) => {
+  if (!isServiceRole(req)) {
+    return new Response(JSON.stringify({ error: "forbidden" }), { status: 403 });
+  }
+
   const { data: pending, error } = await supabase.rpc("pending_notifications", { p_limit: BATCH });
   if (error) {
     return new Response(JSON.stringify({ error: error.message }), { status: 500 });
@@ -49,6 +70,9 @@ serve(async () => {
   }
 
   const messages: { to: string; title: string; body: string; sound: string; data: unknown }[] = [];
+  // Token-at qe Expo i refuzon si te c'instaluar (DeviceNotRegistered) fshihen:
+  // pa kete, tabela mbushej me pajisje te vdekura dhe cdo dergim i provonte serish.
+  const deadTokens = new Set<string>();
   const sendingIds: number[] = [];
   const noTokenIds: number[] = [];
 
@@ -86,6 +110,13 @@ serve(async () => {
         failure = `Expo ${response.status}: ${(await response.text()).slice(0, 150)}`;
         break;
       }
+      const chunk = messages.slice(i, i + EXPO_CHUNK);
+      const body = await response.json().catch(() => null) as { data?: { status?: string; details?: { error?: string } }[] } | null;
+      (body?.data ?? []).forEach((ticket, index) => {
+        if (ticket?.status === "error" && ticket.details?.error === "DeviceNotRegistered" && chunk[index]) {
+          deadTokens.add(chunk[index].to);
+        }
+      });
       deliveredChunks++;
     } catch (e) {
       failure = String(e).slice(0, 200);
@@ -94,6 +125,10 @@ serve(async () => {
   }
 
   const now = new Date().toISOString();
+
+  if (deadTokens.size > 0) {
+    await supabase.from("push_tokens").delete().in("expo_push_token", [...deadTokens]);
+  }
 
   if (failure) {
     // Riprovohen heren tjeter; pas 5 provash nuk merren me.
@@ -120,6 +155,7 @@ serve(async () => {
       sent: sendingIds.length,
       skipped: noTokenIds.length,
       chunks: deliveredChunks,
+      removedTokens: deadTokens.size,
     }),
     { headers: { "Content-Type": "application/json" } }
   );
