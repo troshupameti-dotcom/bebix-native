@@ -52,6 +52,17 @@ function nineLocal(date: { y: number; m: number; d: number }): string {
   return new Date(guess.getTime() - (localHour - 9) * 3600000).toISOString();
 }
 
+/**
+ * A bie ditëlindja (muaji `m`, dita `d`) në këtë datë. Bebet e lindura më 29 shkurt
+ * e festojnë më 28 shkurt në vitet që s'janë të brishta (përndryshe s'merrnin urim
+ * 3 vjet nga 4).
+ */
+function isBirthday(m: number, d: number, date: { y: number; m: number; d: number }): boolean {
+  if (m === date.m && d === date.d) return true;
+  const leap = (date.y % 4 === 0 && date.y % 100 !== 0) || date.y % 400 === 0;
+  return m === 2 && d === 29 && !leap && date.m === 2 && date.d === 28;
+}
+
 type Profile = { user_id: string; baby_name: string | null; baby_dob: string };
 
 async function allProfiles(): Promise<Profile[]> {
@@ -110,8 +121,8 @@ serve(async (req) => {
   for (const p of profiles) {
     const [y, m, d] = p.baby_dob.slice(0, 10).split("-").map(Number);
     if (!y || !m || !d) continue;
-    if (m === today.m && d === today.d && today.y > y) birthdays.push({ profile: p, years: today.y - y });
-    if (m === inSeven.m && d === inSeven.d && inSeven.y > y) gifts.push(p);
+    if (isBirthday(m, d, today) && today.y > y) birthdays.push({ profile: p, years: today.y - y });
+    if (isBirthday(m, d, inSeven) && inSeven.y > y) gifts.push(p);
   }
 
   const household = await householdOf([...new Set([...birthdays.map((b) => b.profile.user_id), ...gifts.map((g) => g.user_id)])]);
