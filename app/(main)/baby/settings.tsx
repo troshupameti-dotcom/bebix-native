@@ -18,6 +18,7 @@ import { retrySync } from "@/lib/baby/syncStatus";
 import { BackButton, goBackOr } from "@/components/ui/BackButton";
 import { uploadProfilePhoto } from "@/lib/baby/profilePhotos";
 import { useCurrentUserId } from "@/lib/hooks/useCurrentUserId";
+import { supabase } from "@/lib/supabase/client";
 
 const GENDERS: BabyGender[] = ["girl", "boy", "other"];
 const BLOOD_TYPES: BloodType[] = ["0+", "0-", "A+", "A-", "B+", "B-", "AB+", "AB-"];
@@ -84,8 +85,15 @@ export default function BabySettingsScreen() {
     const localUri = result.assets[0].uri;
     updateProfile({ babyPhoto: localUri });
 
-    if (!userId) return;
-    const path = await uploadProfilePhoto(userId, "baby", localUri);
+    // Llogaria merret drejt nga sesioni: hook-u mund të mos jetë gati ende, dhe
+    // atëherë fotoja mbetej vetëm në cache-in e telefonit, pa u ngarkuar kurrë.
+    const uid = userId ?? (await supabase.auth.getSession()).data.session?.user.id ?? null;
+    if (!uid) return;
+    const path = await uploadProfilePhoto(uid, "baby", localUri);
+    if (!path) {
+      Alert.alert(t("baby_photo_upload_failed_title"), t("baby_photo_upload_failed_body"));
+      return;
+    }
     if (path) {
       updateProfile({ babyPhotoPath: path });
       // Qe fotoja te mos jetoje vetem ne kete pajisje: nese ri-instalohet

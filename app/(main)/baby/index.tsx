@@ -6,6 +6,8 @@ import { SafeAreaView } from "react-native-safe-area-context";
 import { Icon, IconName } from "@/components/ui/Icon";
 import { SectionHeader } from "@/components/baby/SectionHeader";
 import { StatCard } from "@/components/baby/StatCard";
+import { GrowthOverview } from "@/components/baby/GrowthOverview";
+import { latestGrowth } from "@/lib/baby/growthLatest";
 import { AddTile } from "@/components/baby/AddTile";
 import { FormField } from "@/components/baby/FormField";
 import { DateTimeField } from "@/components/baby/DateTimeField";
@@ -279,6 +281,7 @@ export default function BabyProfileScreen() {
   const babyName = profile.nickname || profile.babyName || t("your_baby");
   const ageText = profile.babyDob ? computeAgeText(profile.babyDob, lang) : "";
   const upcomingVaccineCount = active(b.vaccines).filter((v) => !v.givenDate).length;
+  const growth = useMemo(() => latestGrowth(b.growthHistory), [b.growthHistory]);
 
   function closeSheet() {
     setSheet(null);
@@ -304,6 +307,7 @@ export default function BabyProfileScreen() {
       if (!isNaN(num)) {
         if (stat.key === "weight") baby.addGrowthHistoryEntry({ date: statDate, weightKg: num });
         else if (stat.key === "height") baby.addGrowthHistoryEntry({ date: statDate, heightCm: num });
+        else if (stat.key === "head") baby.addGrowthHistoryEntry({ date: statDate, headCm: num });
       }
     }
     haptics.success();
@@ -717,12 +721,19 @@ export default function BabyProfileScreen() {
 
             {/* Growth summary */}
             <SectionHeader title={t("baby_growth_summary")} editable editing={editGrowth} onToggleEdit={() => toggleEdit(setEditGrowth)} />
-            <View className="flex-row flex-wrap gap-3">
-              {b.growthStats.map((g) => (
+            {/* Pesha dhe gjatësia lexohen nga historiku i rritjes (që sinkronizohet),
+                jo nga kartat e ruajtura vetëm në telefon. */}
+            <GrowthOverview
+              latest={growth}
+              onAdd={(entry) => baby.addGrowthHistoryEntry(entry)}
+              onOpenChart={() => router.push("/(main)/baby/growth")}
+            />
+            <View className="mt-3 flex-row flex-wrap gap-3">
+              {b.growthStats.filter((g) => g.key !== "weight" && g.key !== "height").map((g) => (
                 <Pressable key={g.key} disabled={editGrowth} onPress={() => openStatEdit(g.key, g.value)} style={{ width: "47.5%" }}>
                   <StatCard
                     label={g.isCustom ? g.label ?? "" : t(g.labelKey as never)}
-                    value={g.value}
+                    value={g.key === "head" && growth.head ? `${growth.head.value} cm` : g.value}
                     sub={g.isCustom ? undefined : g.subKey ? t(g.subKey as never) : undefined}
                     editing={editGrowth}
                     isCustom={g.isCustom}
@@ -739,9 +750,6 @@ export default function BabyProfileScreen() {
                 </View>
               )}
             </View>
-            <Pressable onPress={() => router.push("/(main)/baby/growth")} className="mt-3 items-center rounded-2xl bg-ink py-3.5">
-              <Text className="font-bodyMedium text-[14px] text-cream">{t("baby_see_chart")}</Text>
-            </Pressable>
 
             {/* Info mjekësore — dikur ishte tab "Shëndeti", tash pjesë kompakte e Ditarit */}
             <SectionHeader title={t("baby_medical_info")} editable editing={editMedical} onToggleEdit={() => toggleEdit(setEditMedical)} />

@@ -7,6 +7,13 @@ import { fetchBabyProfileBasics, fetchProfilePhotoPaths, isBabyProfilePending, s
 import { localDateKey } from "@/lib/babyProfile";
 import { mergeRecordsPatch, resetBabyRecordsSyncState } from "@/lib/baby/babyRecordsSync";
 import { loadAppState, saveAppState } from "@/lib/state/persistence";
+import {
+  detailsFromState,
+  fetchProfileDetails,
+  isProfileDetailsPending,
+  saveProfileDetailsRemote,
+} from "@/lib/baby/profileDetails";
+import { supabase } from "@/lib/supabase/client";
 import { cleanupSeedBabyData } from "@/lib/state/seedCleanup";
 import { clampGap, migrateNotificationPrefs, type NotificationKey } from "@/lib/notifications/catalog";
 import {
@@ -382,6 +389,69 @@ export function AppStateProvider({ children }: { children: ReactNode }) {
     };
   }, [hydrated, profileRefresh]);
 
+  // Sapo hyrja përfundon (ose rikthehet sesioni), profili dhe fotot rimerren:
+  // kërkesat e nisura para sesionit shkonin si të paidentifikuara dhe serveri
+  // i refuzonte (fotoja private e bebit s'dilte).
+  useEffect(() => {
+    const { data } = supabase.auth.onAuthStateChange((event) => {
+      if (event === "SIGNED_IN" || event === "INITIAL_SESSION") setProfileRefresh((v) => v + 1);
+    });
+    return () => data.subscription.unsubscribe();
+  }, []);
+
+  // Cilësimet e bebit (gjinia, gjaku, alergjitë, kontaktet, info mjekësore)
+  // te serveri. Tërheqja: pas ngarkimit dhe kur ndryshon llogaria/familja.
+  // Nëse ka ndryshim lokal të padërguar, ai fiton dhe dërgohet.
+  const lastDetailsSent = useRef<string | null>(null);
+  useEffect(() => {
+    if (!hydrated) return;
+    let alive = true;
+    // Asnjë dërgim derisa të dihet çfarë ka serveri: pas ndërrimit të familjes,
+    // gjendja e pastruar përndryshe mund të mbishkruante detajet e pronarit.
+    lastDetailsSent.current = null;
+    void (async () => {
+      const { data } = await supabase.auth.getSession();
+      if (!data.session || !alive) return;
+      const local = detailsFromState(latestState.current);
+      if (await isProfileDetailsPending()) {
+        if (await saveProfileDetailsRemote(local)) lastDetailsSent.current = JSON.stringify(local);
+        return;
+      }
+      const remote = await fetchProfileDetails().catch(() => null);
+      if (!alive) return;
+      if (!remote) {
+        // Serveri s'ka ende detaje: dërgohen ato të telefonit (instalimet e vjetra).
+        if (await saveProfileDetailsRemote(local)) lastDetailsSent.current = JSON.stringify(local);
+        return;
+      }
+      const { emergencyContacts, medicalInfo, medicalActiveKeys, ...profilePart } = remote;
+      if (Object.keys(profilePart).length) dispatch({ type: "UPDATE_PROFILE", value: profilePart });
+      const babyPart = {
+        ...(emergencyContacts ? { emergencyContacts } : {}),
+        ...(medicalInfo ? { medicalInfo } : {}),
+        ...(medicalActiveKeys ? { medicalActiveKeys } : {}),
+      };
+      if (Object.keys(babyPart).length) dispatch({ type: "UPDATE_BABY", fn: () => babyPart });
+      lastDetailsSent.current = JSON.stringify({ ...local, ...remote });
+    })();
+    return () => {
+      alive = false;
+    };
+  }, [hydrated, profileRefresh]);
+
+  // Dërgimi: pak pas çdo ndryshimi të këtyre fushave, nga cilido ekran.
+  const detailsKey = hydrated ? JSON.stringify(detailsFromState(state)) : null;
+  useEffect(() => {
+    if (!detailsKey || lastDetailsSent.current === null || detailsKey === lastDetailsSent.current) return;
+    const timer = setTimeout(() => {
+      const details = JSON.parse(detailsKey);
+      void saveProfileDetailsRemote(details).then((ok) => {
+        if (ok) lastDetailsSent.current = detailsKey;
+      });
+    }, 1500);
+    return () => clearTimeout(timer);
+  }, [detailsKey]);
+
   // Fotot e profilit. Rruga lokale (nga ky telefon) dhe ajo e serverit
   // (e ruajtur qe prindi/bebi ta rigjejne edhe ne nje pajisje tjeter, ose
   // pas nje ri-instalimi) merren te dyja; e serverit fiton kur ndryshojne,
@@ -393,6 +463,10 @@ export function AppStateProvider({ children }: { children: ReactNode }) {
     let alive = true;
 
     void (async () => {
+      // Pa sesion, serveri e refuzon foton private: pritet hyrja (efekti
+      // rinis me `profileRefresh` sapo sesioni të jetë gati).
+      const { data: auth } = await supabase.auth.getSession();
+      if (!auth.session || !alive) return;
       const remote = await fetchProfilePhotoPaths();
 
       const paths: { path: string | null; pathKey: "babyPhotoPath" | "parentPhotoPath"; urlKey: "babyPhoto" | "parentPhoto" }[] = [

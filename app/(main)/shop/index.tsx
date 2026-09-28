@@ -230,8 +230,8 @@ export default function ShopScreen() {
           <Text className="font-bodySemibold text-base text-ink px-5 mt-3 mb-3">{t("shop_brands")}</Text>
           <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ paddingHorizontal: 20 }}>
             {brands.map((b) => (
-              <Pressable key={b.id} onPress={() => router.push(`/shop/brand/${b.id}`)} className="mr-3 w-[64px] items-center">
-                <View className="h-[52px] w-[52px] items-center justify-center overflow-hidden rounded-2xl border border-cream-line bg-surface">
+              <Pressable key={b.id} onPress={() => router.push(`/shop/brand/${b.id}`)} className="mr-2 w-[60px] items-center">
+                <View className="h-[56px] w-[56px] items-center justify-center overflow-hidden rounded-2xl border border-cream-line bg-surface">
                   {b.logoUrl ? (
                     <Image source={{ uri: b.logoUrl }} className="w-full h-full" resizeMode="cover" />
                   ) : (
