@@ -13,10 +13,19 @@ import { useToast } from "@/lib/toast/ToastContext";
 import { useTranslation } from "@/lib/i18n/LanguageContext";
 import { haptics } from "@/lib/haptics";
 import { formatTime } from "@/lib/dateUtils";
-import { shadows } from "@/lib/shadows";
 import { FeedingEntry, FeedingType, BreastSide } from "@/lib/state/types";
 import { BackButton } from "@/components/ui/BackButton";
-import { QuickLog, AmountChips } from "@/components/baby/QuickLog";
+import { SinceHero, LogTile, AmountRow, LogRow, TONES, type Tone } from "@/components/baby/LogTiles";
+
+/** Ngjyra e çdo lloji: gjiri rozë, shishja kaltër, ushqimi jeshil. */
+const TYPE_TONE: Record<FeedingType, Tone> = {
+  breast: TONES.pink,
+  bottle: TONES.blue,
+  formula: TONES.blue,
+  solid: TONES.green,
+  water: TONES.blue,
+  medicine: TONES.purple,
+};
 
 /** Sasite qe zgjidhen me shpesh; e fundit e perdorur del e para. */
 const COMMON_ML = [60, 90, 120, 150, 180];
@@ -96,10 +105,13 @@ export default function FeedingScreen() {
   // Shenim me nje prekje: koha eshte tani, llojin e zgjedh butoni.
   // Detajet mbeten te formulari i plote, por nuk jane kusht per te
   // mbajtur historikun.
-  function quickLog(entry: Partial<FeedingEntry>, message: string) {
-    baby.addFeedingEntry(entry);
-    showToast(message);
+  function quickLog(entry: Partial<FeedingEntry>) {
+    const id = baby.addFeedingEntry(entry);
+    haptics.success();
+    setBottleOpen(false);
+    showToast(t("quick_saved"), () => baby.deleteFeedingEntry(id));
   }
+  const [bottleOpen, setBottleOpen] = useState(false);
 
   /** Sasia e fundit e shishes: prindi jep te njejten disa dite me radhe. */
   const lastBottleMl = useMemo(() => {
@@ -174,39 +186,64 @@ export default function FeedingScreen() {
       </View>
 
       <ScrollView className="flex-1 px-5" contentContainerStyle={{ paddingBottom: 24 }}>
-        <QuickLog
-          title={t("quick_log_title")}
-          actions={[
-            {
-              key: "breast-left",
-              label: t("feeding_type_breast"),
-              sub: t("feeding_side_left"),
-              icon: "droplet",
-              onPress: () => quickLog({ type: "breast", side: "left" }, t("quick_saved")),
-            },
-            {
-              key: "breast-right",
-              label: t("feeding_type_breast"),
-              sub: t("feeding_side_right"),
-              icon: "droplet",
-              onPress: () => quickLog({ type: "breast", side: "right" }, t("quick_saved")),
-            },
-            {
-              key: "solid",
-              label: t("feeding_type_solid"),
-              icon: "spoon",
-              onPress: () => quickLog({ type: "solid" }, t("quick_saved")),
-            },
-          ]}
+        <SinceHero
+          title={t("feeding_last_title")}
+          lastAt={log[0]?.at ?? null}
+          emptyText={t("feeding_hero_empty")}
+          detail={
+            log[0]
+              ? `${t(`feeding_type_${log[0].type === "medicine" ? "medicine_short" : log[0].type}` as never)}${
+                  log[0].side ? ` · ${t(`feeding_side_${log[0].side}` as never)}` : ""
+                }${log[0].amountMl ? ` · ${log[0].amountMl} ml` : ""} · ${t("today_count", { n: stats.today })}`
+              : undefined
+          }
+          icon="droplet"
+          tone={log[0] ? TYPE_TONE[log[0].type] : TONES.pink}
         />
 
-        <AmountChips
-          label={t("quick_bottle_title")}
-          amounts={COMMON_ML}
-          lastUsed={lastBottleMl}
-          onPick={(ml) => quickLog({ type: "bottle", amountMl: ml }, t("quick_saved"))}
-        />
+        <Text className="mb-2 font-bodyMedium text-xs uppercase text-ink-faint">{t("quick_log_title")}</Text>
+        <View className="flex-row" style={{ gap: 10 }}>
+          <LogTile
+            label={t("feeding_type_breast")}
+            sub={t("feeding_side_left")}
+            icon="droplet"
+            tone={TONES.pink}
+            onPress={() => quickLog({ type: "breast", side: "left" })}
+          />
+          <LogTile
+            label={t("feeding_type_breast")}
+            sub={t("feeding_side_right")}
+            icon="droplet"
+            tone={TONES.pink}
+            onPress={() => quickLog({ type: "breast", side: "right" })}
+          />
+        </View>
+        <View className="mt-2.5 flex-row" style={{ gap: 10 }}>
+          <LogTile
+            label={t("feeding_type_bottle")}
+            sub={lastBottleMl ? `${lastBottleMl} ml` : t("feeding_pick_amount")}
+            icon="bath"
+            tone={TONES.blue}
+            selected={bottleOpen}
+            onPress={() => setBottleOpen((o) => !o)}
+          />
+          <LogTile
+            label={t("feeding_type_solid")}
+            icon="spoon"
+            tone={TONES.green}
+            onPress={() => quickLog({ type: "solid" })}
+          />
+        </View>
+        {bottleOpen && (
+          <AmountRow
+            amounts={COMMON_ML}
+            lastUsed={lastBottleMl}
+            tone={TONES.blue}
+            onPick={(ml) => quickLog({ type: "bottle", amountMl: ml })}
+          />
+        )}
 
+        <View className="mt-5" />
         <StatsRow
           stats={[
             { label: t("feeding_stats_today"), value: String(stats.today) },
@@ -225,42 +262,31 @@ export default function FeedingScreen() {
               animate={{ opacity: 1, translateX: 0 }}
               transition={{ type: "timing", duration: 220, delay: Math.min(i, 6) * 25 }}
             >
-              <Pressable
+              <LogRow
                 onPress={() => openEdit(entry)}
-                style={shadows.press}
-                className="mb-2.5 flex-row items-center gap-3 rounded-xl2 border border-ink/10 bg-surface p-3.5 active:opacity-80"
-              >
-                <View className="h-10 w-10 items-center justify-center rounded-xl bg-orange-bg">
-                  <Icon name={TYPE_ICON[entry.type]} size={17} color="#C9702E" />
-                </View>
-                <View className="flex-1">
-                  <Text className="font-bodySemibold text-[14px] text-ink">
-                    {t(`feeding_type_${entry.type === "medicine" ? "medicine_short" : entry.type}` as never)}
-                  </Text>
-                  <Text className="font-body text-xs text-ink-soft" numberOfLines={1}>
-                    {[
-                      entry.amountMl ? `${entry.amountMl} ml` : null,
-                      entry.durationMin ? `${entry.durationMin} min` : null,
-                      entry.side ? t(`feeding_side_${entry.side}` as never) : null,
-                      entry.foodCategory,
-                    ]
-                      .filter(Boolean)
-                      .join(" · ")}
-                    {" · "}
-                    {formatTime(entry.at, lang)}
-                  </Text>
-                </View>
-                <Icon name="chevronRight" size={16} color="#A79D8A" />
-              </Pressable>
+                icon={TYPE_ICON[entry.type]}
+                tone={TYPE_TONE[entry.type]}
+                title={t(`feeding_type_${entry.type === "medicine" ? "medicine_short" : entry.type}` as never)}
+                detail={[
+                  entry.amountMl ? `${entry.amountMl} ml` : null,
+                  entry.durationMin ? `${entry.durationMin} min` : null,
+                  entry.side ? t(`feeding_side_${entry.side}` as never) : null,
+                  entry.foodCategory,
+                  formatTime(entry.at, lang),
+                ]
+                  .filter(Boolean)
+                  .join(" · ")}
+              />
             </MotiView>
           ))
         )}
       </ScrollView>
 
       <View className="px-5 pb-6">
-        <Pressable onPress={openNew} className="flex-row items-center justify-center gap-2 rounded-2xl bg-ink py-4">
-          <Icon name="plus" size={16} color="#FBF6EE" />
-          <Text className="font-bodyMedium text-[15px] text-cream">{t("add_with_details")}</Text>
+        {/* Dytësore: shumica e shënimeve bëhen me pllakat lart. */}
+        <Pressable onPress={openNew} className="flex-row items-center justify-center gap-2 rounded-2xl border border-ink/10 bg-surface py-3.5">
+          <Icon name="plus" size={16} color="#2C271F" />
+          <Text className="font-bodyMedium text-[14px] text-ink">{t("add_with_details")}</Text>
         </Pressable>
       </View>
 

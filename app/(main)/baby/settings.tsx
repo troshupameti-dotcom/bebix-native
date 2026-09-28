@@ -143,6 +143,8 @@ export default function BabySettingsScreen() {
       medicalNotes,
       parentNotes,
     });
+    // Të njëjtat vlera dalin menjëherë te "Info mjekësore" në faqen kryesore.
+    baby.syncMedicalFromProfile({ bloodType, pediatrician, allergies });
     // Sinkronizon emrin + datëlindjen te Supabase, e nevojshme për
     // skeduluesin e notifications të ditëlindjes (server-side). Data dërgohet
     // si dita LOKALE, jo si UTC (që e kalonte një ditë më herët).

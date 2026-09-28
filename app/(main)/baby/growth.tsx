@@ -1,25 +1,31 @@
 import { useMemo, useState } from "react";
 import { View, Text, ScrollView, Pressable, Dimensions } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
-import Svg, { Path, Circle, Line as SvgLine } from "react-native-svg";
+import Svg, { Path, Circle, Defs, LinearGradient, Stop, Line as SvgLine } from "react-native-svg";
 import { Icon } from "@/components/ui/Icon";
 import { RecordSheet } from "@/components/baby/RecordSheet";
 import { FormField } from "@/components/baby/FormField";
 import { DateTimeField } from "@/components/baby/DateTimeField";
+import { TONES, type Tone } from "@/components/baby/LogTiles";
 import { useAppState, active } from "@/lib/state/AppStateContext";
 import { useToast } from "@/lib/toast/ToastContext";
 import { useTranslation } from "@/lib/i18n/LanguageContext";
 import { haptics } from "@/lib/haptics";
 import { formatDate } from "@/lib/dateUtils";
 import { shadows } from "@/lib/shadows";
-import { useThemeColors } from "@/lib/theme/useThemeColors";
 import { GrowthHistoryEntry } from "@/lib/state/types";
 import { BackButton } from "@/components/ui/BackButton";
-import { QuickMeasure } from "@/components/baby/QuickMeasure";
+import { buildSeries, metricHistory, type GrowthMetric } from "@/lib/baby/growthChart";
 
-type Metric = "weight" | "height";
-const CHART_WIDTH = Dimensions.get("window").width - 72;
-const CHART_HEIGHT = 140;
+/** Kartela ka 20 px anash dhe 20 px mbushje: grafiku zë pjesën e mbetur. */
+const CHART_WIDTH = Dimensions.get("window").width - 80;
+const CHART_HEIGHT = 170;
+
+/** Pesha në ngjyrën e kartës së peshës, gjatësia në atë të gjatësisë. */
+const METRIC: Record<GrowthMetric, { unit: string; labelKey: "growth_weight" | "growth_height"; tone: Tone; icon: "cube" | "chart" }> = {
+  weight: { unit: "kg", labelKey: "growth_weight", tone: TONES.orange, icon: "cube" },
+  height: { unit: "cm", labelKey: "growth_height", tone: TONES.blue, icon: "chart" },
+};
 
 type FormShape = { date: string; weightKg: string; heightCm: string; headCm: string; note: string };
 function formFromEntry(e: GrowthHistoryEntry): FormShape {
@@ -35,52 +41,31 @@ function emptyForm(): FormShape {
   return { date: new Date().toISOString(), weightKg: "", heightCm: "", headCm: "", note: "" };
 }
 
+/** 5.9 → "5.9", 61 → "61". */
+function fmt(n: number): string {
+  return String(Math.round(n * 100) / 100);
+}
+
 export default function GrowthScreen() {
   const { t, lang } = useTranslation();
   const { state, baby } = useAppState();
-  const theme = useThemeColors();
   const { showToast } = useToast();
-  const [metric, setMetric] = useState<Metric>("weight");
+  const [metric, setMetric] = useState<GrowthMetric>("weight");
   const [sheetOpen, setSheetOpen] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [form, setForm] = useState<FormShape>(emptyForm());
 
-  // Matja për të cilën âsht i hapun grafiku — vetëm një herësh, mbyllet kur
-  // klikon prapë ose zgjedh një matje tjetër (ndryshim #7: grafiku vetëm
-  // sipas kërkesës, jo i përhershëm).
-  const [expandedId, setExpandedId] = useState<string | null>(null);
+  const allHistory = useMemo(() => active(state.baby.growthHistory), [state.baby.growthHistory]);
+  const cfg = METRIC[metric];
+  const series = useMemo(() => buildSeries(allHistory, metric, CHART_WIDTH, CHART_HEIGHT), [allHistory, metric]);
+  const items = useMemo(() => metricHistory(allHistory, metric), [allHistory, metric]);
+  const last = items[items.length - 1] ?? null;
+  const prev = items[items.length - 2] ?? null;
+  const delta = last && prev ? Math.round((last.value - prev.value) * 100) / 100 : null;
 
-  const history = active(state.baby.growthHistory).sort(
-    (a, b) => new Date(a.date).getTime() - new Date(b.date).getTime()
-  );
-
-  const values = useMemo(
-    () =>
-      history
-        .map((h) => (metric === "weight" ? h.weightKg : h.heightCm))
-        .filter((v): v is number => typeof v === "number"),
-    [history, metric]
-  );
-
-  const { path, bandTop, bandBottom } = useMemo(() => {
-    if (values.length < 2) return { path: "", bandTop: "", bandBottom: "" };
-    const min = Math.min(...values) * 0.85;
-    const max = Math.max(...values) * 1.15;
-    const range = max - min || 1;
-    const stepX = CHART_WIDTH / (values.length - 1);
-    const toXY = (v: number, i: number) => {
-      const x = i * stepX;
-      const y = CHART_HEIGHT - ((v - min) / range) * CHART_HEIGHT;
-      return `${x.toFixed(1)},${y.toFixed(1)}`;
-    };
-    const mainPath = values.map((v, i) => `${i === 0 ? "M" : "L"}${toXY(v, i)}`).join(" ");
-    // Simplified visual reference band (±15%) — NOT real WHO LMS percentile data.
-    const topPath = values.map((v, i) => `${i === 0 ? "M" : "L"}${toXY(v * 1.12, i)}`).join(" ");
-    const bottomPath = values.map((v, i) => `${i === 0 ? "M" : "L"}${toXY(v * 0.88, i)}`).join(" ");
-    return { path: mainPath, bandTop: topPath, bandBottom: bottomPath };
-  }, [values]);
-
-  function openEdit(entry: GrowthHistoryEntry) {
+  function openEdit(id: string) {
+    const entry = allHistory.find((e) => e.id === id);
+    if (!entry) return;
     haptics.select();
     setForm(formFromEntry(entry));
     setEditingId(entry.id);
@@ -125,11 +110,7 @@ export default function GrowthScreen() {
     if (!editingId) return;
     baby.duplicateGrowthHistoryEntry(editingId);
   }
-  function toggleChart(id: string) {
-    haptics.select();
-    setExpandedId((prev) => (prev === id ? null : id));
-  }
-  const editingEntry = editingId ? history.find((e) => e.id === editingId) : null;
+  const editingEntry = editingId ? allHistory.find((e) => e.id === editingId) : null;
 
   return (
     <SafeAreaView className="flex-1 bg-cream" edges={["top"]}>
@@ -138,100 +119,135 @@ export default function GrowthScreen() {
         <Text className="font-display text-xl text-ink">{t("growth_screen_title")}</Text>
       </View>
 
-      <View className="mx-5 mb-4 flex-row rounded-2xl bg-cream-soft p-1">
-        {(["weight", "height"] as Metric[]).map((m) => (
-          <Pressable
-            key={m}
-            onPress={() => {
-              setMetric(m);
-              setExpandedId(null); // ndrron njësinë, mbyll çdo grafik të hapun
-            }}
-            className="flex-1 items-center rounded-xl py-2.5"
-            style={metric === m ? [shadows.press, { backgroundColor: theme.surface }] : undefined}
-          >
-            <Text className={`font-bodyMedium text-[12.5px] ${metric === m ? "text-ink" : "text-ink-faint"}`}>
-              {t(m === "weight" ? "growth_weight" : "growth_height")}
-            </Text>
-          </Pressable>
-        ))}
+      {/* Zgjedhësi: secila madhësi me ngjyrën e vet. */}
+      <View className="mx-5 mb-4 flex-row" style={{ gap: 10 }}>
+        {(["weight", "height"] as GrowthMetric[]).map((m) => {
+          const on = metric === m;
+          const { tone, icon, labelKey } = METRIC[m];
+          return (
+            <Pressable
+              key={m}
+              onPress={() => {
+                haptics.select();
+                setMetric(m);
+              }}
+              accessibilityRole="tab"
+              accessibilityState={{ selected: on }}
+              className="flex-1 flex-row items-center justify-center gap-2 rounded-2xl py-3"
+              style={{ backgroundColor: on ? tone.tint : tone.tintBg }}
+            >
+              <Icon name={icon} size={15} color={on ? "#FFFFFF" : tone.tint} />
+              <Text className="font-bodySemibold text-[14px]" style={{ color: on ? "#FFFFFF" : tone.tint }}>
+                {t(labelKey)}
+              </Text>
+            </Pressable>
+          );
+        })}
       </View>
 
       <ScrollView className="flex-1 px-5" contentContainerStyle={{ paddingBottom: 24 }}>
-        {/* Matja e shpejte: tre numra dhe nje prekje. Formulari i plote
-            mbetet per nje mates te vjeter ose me shenim. */}
-        <QuickMeasure
-          onSave={(values) => {
-            baby.addGrowthHistoryEntry({ date: new Date().toISOString(), note: "", ...values });
-            showToast(t("quick_saved"));
-          }}
-        />
-
-        <Text className="mb-2 font-bodySemibold text-base text-ink">{t("baby_growth_summary")}</Text>
-
-        {history.length === 0 ? (
-          <View className="items-center gap-2 rounded-xl3 border border-ink/10 bg-surface py-14">
-            <Icon name="chart" size={24} color="#E9DFCC" />
-            <Text className="font-body text-sm text-ink-soft">{t("growth_add_measurement")}</Text>
-          </View>
-        ) : (
-          [...history].reverse().map((h) => {
-            const bmi = h.weightKg && h.heightCm ? (h.weightKg / (h.heightCm / 100) ** 2).toFixed(1) : null;
-            const isExpanded = expandedId === h.id;
-            return (
-              <View key={h.id} className="border-b border-ink/8">
-                <Pressable onPress={() => openEdit(h)} className="flex-row items-center justify-between py-3">
-                  <Text className="font-body text-[13.5px] text-ink-soft">{formatDate(h.date, lang)}</Text>
-                  <View className="flex-row items-center gap-3">
-                    <Text className="font-bodySemibold text-[13.5px] text-ink">
-                      {h.weightKg ? `${h.weightKg} kg` : ""}
-                      {h.weightKg && h.heightCm ? " · " : ""}
-                      {h.heightCm ? `${h.heightCm} cm` : ""}
-                      {bmi ? ` · ${t("growth_bmi")} ${bmi}` : ""}
+        {/* Vlera e fundit dhe grafiku, gjithmonë të dukshëm. */}
+        <View style={shadows.soft} className="mb-5 rounded-xl3 border border-ink/10 bg-surface p-5">
+          {last ? (
+            <>
+              <View className="flex-row items-end justify-between">
+                <View>
+                  <Text className="font-bodyMedium text-[12.5px] text-ink-soft">{t(cfg.labelKey)}</Text>
+                  <View className="mt-1 flex-row items-baseline gap-1">
+                    <Text className="font-display text-[36px] leading-[42px] text-ink">{fmt(last.value)}</Text>
+                    <Text className="font-bodyMedium text-[15px] text-ink-soft">{cfg.unit}</Text>
+                  </View>
+                  <Text className="font-body text-[12px] text-ink-soft">{formatDate(last.date, lang)}</Text>
+                </View>
+                {delta !== null && delta !== 0 ? (
+                  <View className="rounded-full px-3 py-1" style={{ backgroundColor: cfg.tone.tintBg }}>
+                    <Text className="font-bodySemibold text-[12.5px]" style={{ color: cfg.tone.tint }}>
+                      {delta > 0 ? "+" : "−"}
+                      {fmt(Math.abs(delta))} {cfg.unit}
                     </Text>
-                    <Pressable
-                      onPress={(e) => {
-                        e.stopPropagation();
-                        toggleChart(h.id);
-                      }}
-                      hitSlop={8}
-                      className="flex-row items-center gap-1"
-                    >
-                      <Icon name="chart" size={15} color={isExpanded ? "#6E7452" : "#A79D8A"} />
-                    </Pressable>
-                    <Icon name="chevronRight" size={14} color="#A79D8A" />
                   </View>
-                </Pressable>
+                ) : null}
+              </View>
 
-                {isExpanded && (
-                  <View className="mb-4 items-center rounded-xl2 border border-ink/10 bg-surface p-4">
-                    <Text className="mb-2 font-bodyMedium text-[12px] text-ink-soft">{t("baby_see_chart")}</Text>
-                    {values.length >= 2 ? (
-                      <>
-                        <Svg width={CHART_WIDTH} height={CHART_HEIGHT + 20}>
-                          <SvgLine x1={0} y1={CHART_HEIGHT} x2={CHART_WIDTH} y2={CHART_HEIGHT} stroke={theme.creamLine} strokeWidth={1} />
-                          <Path d={bandTop} stroke={theme.creamLine} strokeWidth={1.5} fill="none" strokeDasharray="4,4" />
-                          <Path d={bandBottom} stroke={theme.creamLine} strokeWidth={1.5} fill="none" strokeDasharray="4,4" />
-                          <Path d={path} stroke={theme.olive} strokeWidth={2.5} fill="none" strokeLinecap="round" strokeLinejoin="round" />
-                          {values.map((v, i) => {
-                            const min = Math.min(...values) * 0.85;
-                            const max = Math.max(...values) * 1.15;
-                            const range = max - min || 1;
-                            const stepX = CHART_WIDTH / (values.length - 1);
-                            const x = i * stepX;
-                            const y = CHART_HEIGHT - ((v - min) / range) * CHART_HEIGHT;
-                            return <Circle key={i} cx={x} cy={y} r={4} fill={theme.olive} />;
-                          })}
-                        </Svg>
-                        <Text className="mt-2 font-body text-[10.5px] text-ink-faint">{t("growth_percentile_note")}</Text>
-                      </>
-                    ) : (
-                      <Text className="py-6 font-body text-[13px] text-ink-soft">{t("growth_add_measurement")}</Text>
-                    )}
+              <View className="mt-4">
+                <Svg width={CHART_WIDTH} height={CHART_HEIGHT}>
+                  <Defs>
+                    <LinearGradient id="growthFill" x1="0" y1="0" x2="0" y2="1">
+                      <Stop offset="0" stopColor={cfg.tone.tint} stopOpacity={0.28} />
+                      <Stop offset="1" stopColor={cfg.tone.tint} stopOpacity={0} />
+                    </LinearGradient>
+                  </Defs>
+                  {[0.25, 0.5, 0.75].map((f) => (
+                    <SvgLine key={f} x1={0} x2={CHART_WIDTH} y1={CHART_HEIGHT * f} y2={CHART_HEIGHT * f} stroke="#E9DFCC" strokeWidth={1} strokeDasharray="3,5" />
+                  ))}
+                  {series.area ? <Path d={series.area} fill="url(#growthFill)" /> : null}
+                  {series.points.length > 1 ? (
+                    <Path d={series.line} stroke={cfg.tone.tint} strokeWidth={3} fill="none" strokeLinecap="round" strokeLinejoin="round" />
+                  ) : null}
+                  {series.points.map((p, i) => {
+                    const isLast = i === series.points.length - 1;
+                    return (
+                      <Circle
+                        key={p.id}
+                        cx={p.x}
+                        cy={p.y}
+                        r={isLast ? 6 : 4}
+                        fill={isLast ? cfg.tone.tint : "#FFFFFF"}
+                        stroke={cfg.tone.tint}
+                        strokeWidth={2.5}
+                      />
+                    );
+                  })}
+                </Svg>
+                {items.length > 1 ? (
+                  <View className="mt-1 flex-row justify-between">
+                    <Text className="font-body text-[11px] text-ink-faint">{formatDate(items[0].date, lang)}</Text>
+                    <Text className="font-body text-[11px] text-ink-faint">{formatDate(last.date, lang)}</Text>
                   </View>
+                ) : (
+                  <Text className="mt-1 text-center font-body text-[12px] text-ink-soft">{t("growth_one_more")}</Text>
                 )}
               </View>
-            );
-          })
+            </>
+          ) : (
+            <View className="items-center gap-2 py-10">
+              <Icon name={cfg.icon} size={26} color={cfg.tone.tint} />
+              <Text className="text-center font-body text-sm text-ink-soft">{t("growth_empty_metric")}</Text>
+            </View>
+          )}
+        </View>
+
+        {/* Historiku i madhësisë së zgjedhur, më e reja lart. */}
+        {items.length > 0 && (
+          <>
+            <Text className="mb-2 font-bodySemibold text-base text-ink">{t("growth_history_title")}</Text>
+            <View style={shadows.soft} className="overflow-hidden rounded-xl3 border border-ink/10 bg-surface">
+              {[...items].reverse().map((item, i, arr) => {
+                const before = arr[i + 1];
+                const d = before ? Math.round((item.value - before.value) * 100) / 100 : null;
+                return (
+                  <Pressable
+                    key={item.id}
+                    onPress={() => openEdit(item.id)}
+                    className={`flex-row items-center px-4 py-3.5 ${i < arr.length - 1 ? "border-b border-ink/8" : ""}`}
+                  >
+                    <View className="mr-3 h-2.5 w-2.5 rounded-full" style={{ backgroundColor: cfg.tone.tint }} />
+                    <Text className="flex-1 font-body text-[13.5px] text-ink-soft">{formatDate(item.date, lang)}</Text>
+                    {d !== null && d !== 0 ? (
+                      <Text className="mr-3 font-bodyMedium text-[12px]" style={{ color: cfg.tone.tint }}>
+                        {d > 0 ? "+" : "−"}
+                        {fmt(Math.abs(d))}
+                      </Text>
+                    ) : null}
+                    <Text className="font-bodySemibold text-[15px] text-ink">
+                      {fmt(item.value)} {cfg.unit}
+                    </Text>
+                    <Icon name="chevronRight" size={14} color="#A79D8A" />
+                  </Pressable>
+                );
+              })}
+            </View>
+          </>
         )}
       </ScrollView>
 
@@ -255,8 +271,14 @@ export default function GrowthScreen() {
       >
         <View className="gap-4">
           <DateTimeField label={t("date_field")} mode="date" value={form.date} onChange={(iso) => setForm((f) => ({ ...f, date: iso }))} />
-          <FormField label={t("growth_weight_ph")} keyboardType="decimal-pad" value={form.weightKg} onChangeText={(v) => setForm((f) => ({ ...f, weightKg: v }))} />
-          <FormField label={t("growth_height_ph")} keyboardType="decimal-pad" value={form.heightCm} onChangeText={(v) => setForm((f) => ({ ...f, heightCm: v }))} />
+          <View className="flex-row gap-3">
+            <View className="flex-1">
+              <FormField label={t("growth_weight_ph")} keyboardType="decimal-pad" value={form.weightKg} onChangeText={(v) => setForm((f) => ({ ...f, weightKg: v }))} />
+            </View>
+            <View className="flex-1">
+              <FormField label={t("growth_height_ph")} keyboardType="decimal-pad" value={form.heightCm} onChangeText={(v) => setForm((f) => ({ ...f, heightCm: v }))} />
+            </View>
+          </View>
           <FormField label={t("growth_head")} keyboardType="decimal-pad" value={form.headCm} onChangeText={(v) => setForm((f) => ({ ...f, headCm: v }))} />
           <FormField label={t("note_field")} placeholder={t("growth_note_ph")} value={form.note} onChangeText={(v) => setForm((f) => ({ ...f, note: v }))} multiline />
           <Pressable onPress={save} className="mt-1 items-center rounded-2xl bg-ink py-4">

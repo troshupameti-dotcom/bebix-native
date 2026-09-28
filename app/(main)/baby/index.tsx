@@ -8,6 +8,7 @@ import { SectionHeader } from "@/components/baby/SectionHeader";
 import { StatCard } from "@/components/baby/StatCard";
 import { GrowthOverview } from "@/components/baby/GrowthOverview";
 import { latestGrowth } from "@/lib/baby/growthLatest";
+import { parseBloodType } from "@/lib/baby/medicalSync";
 import { AddTile } from "@/components/baby/AddTile";
 import { FormField } from "@/components/baby/FormField";
 import { DateTimeField } from "@/components/baby/DateTimeField";
@@ -113,7 +114,7 @@ function DayTile({ color, label, value }: { color: string; label: string; value:
 
 export default function BabyProfileScreen() {
   const { t, lang } = useTranslation();
-  const { state, baby } = useAppState();
+  const { state, baby, updateProfile } = useAppState();
   const { showToast } = useToast();
   const { profile } = state;
   const b = state.baby;
@@ -764,7 +765,17 @@ export default function BabyProfileScreen() {
                     isCustom={m.isCustom}
                     editing={editMedical}
                     placeholder={t("value_field")}
-                    onChangeValue={(v) => baby.updateMedicalRow(m.key, { value: v })}
+                    onChangeValue={(v) => {
+                      baby.updateMedicalRow(m.key, { value: v });
+                      // Drejtimi tjetër: grupi i gjakut, mjeku dhe alergjitë mbeten
+                      // të njëjta edhe te cilësimet e bebit.
+                      if (m.key === "doctor") updateProfile({ pediatrician: v });
+                      else if (m.key === "allergies") updateProfile({ allergies: v });
+                      else if (m.key === "blood") {
+                        const blood = parseBloodType(v);
+                        if (blood !== undefined) updateProfile({ bloodType: blood });
+                      }
+                    }}
                     onChangeLabel={(v) => baby.updateMedicalRow(m.key, { label: v })}
                     onRemove={() => baby.removeMedicalRow(m.key)}
                   />

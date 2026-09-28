@@ -13,12 +13,16 @@ import { useToast } from "@/lib/toast/ToastContext";
 import { useTranslation } from "@/lib/i18n/LanguageContext";
 import { haptics } from "@/lib/haptics";
 import { formatTime } from "@/lib/dateUtils";
-import { shadows } from "@/lib/shadows";
 import { DiaperEntry, DiaperType } from "@/lib/state/types";
 import { BackButton } from "@/components/ui/BackButton";
-import { QuickLog } from "@/components/baby/QuickLog";
+import { SinceHero, LogTile, LogRow, TONES, type Tone } from "@/components/baby/LogTiles";
+import type { IconName } from "@/components/ui/Icon";
 
 const TYPES: DiaperType[] = ["wet", "dirty", "both"];
+
+/** E lagur kaltër, e pistë qelibar, të dyja vjollcë — dallohen me një vështrim. */
+const TYPE_TONE: Record<DiaperType, Tone> = { wet: TONES.blue, dirty: TONES.amber, both: TONES.purple };
+const TYPE_ICON: Record<DiaperType, IconName> = { wet: "droplet", dirty: "diaper", both: "repeat" };
 
 type FormShape = { type: DiaperType; color: string; consistency: string; at: string; note: string };
 function formFromEntry(e: DiaperEntry): FormShape {
@@ -37,9 +41,10 @@ export default function DiaperScreen() {
 
   // Nje prekje mjafton: lloji dhe koha. Ngjyra dhe qendrueshmeria
   // kane rendesi vetem kur dicka shkon keq — atehere hapet formulari.
-  function quickLog(type: DiaperType, message: string) {
-    baby.addDiaperEntry({ type });
-    showToast(message);
+  function quickLog(type: DiaperType) {
+    const id = baby.addDiaperEntry({ type });
+    haptics.success();
+    showToast(t("quick_saved"), () => baby.deleteDiaperEntry(id));
   }
 
   const stats = useMemo(() => {
@@ -91,15 +96,29 @@ export default function DiaperScreen() {
       </View>
 
       <ScrollView className="flex-1 px-5" contentContainerStyle={{ paddingBottom: 24 }}>
-        <QuickLog
-          title={t("quick_log_title")}
-          actions={[
-            { key: "wet",   label: t("diaper_type_wet"),   icon: "droplet", onPress: () => quickLog("wet", t("quick_saved")) },
-            { key: "dirty", label: t("diaper_type_dirty"), icon: "diaper",  onPress: () => quickLog("dirty", t("quick_saved")) },
-            { key: "both",  label: t("diaper_type_both"),  icon: "repeat",  onPress: () => quickLog("both", t("quick_saved")) },
-          ]}
+        <SinceHero
+          title={t("diaper_last_title")}
+          lastAt={log[0]?.at ?? null}
+          emptyText={t("diaper_hero_empty")}
+          detail={log[0] ? `${t(`diaper_type_${log[0].type}` as never)} · ${t("today_count", { n: stats.today })}` : undefined}
+          icon={log[0] ? TYPE_ICON[log[0].type] : "diaper"}
+          tone={log[0] ? TYPE_TONE[log[0].type] : TONES.blue}
         />
 
+        <Text className="mb-2 font-bodyMedium text-xs uppercase text-ink-faint">{t("quick_log_title")}</Text>
+        <View className="flex-row" style={{ gap: 10 }}>
+          {TYPES.map((type) => (
+            <LogTile
+              key={type}
+              label={t(`diaper_type_${type}` as never)}
+              icon={TYPE_ICON[type]}
+              tone={TYPE_TONE[type]}
+              onPress={() => quickLog(type)}
+            />
+          ))}
+        </View>
+
+        <View className="mt-5" />
         <StatsRow
           stats={[
             { label: t("diaper_stats_today"), value: String(stats.today) },
@@ -120,42 +139,17 @@ export default function DiaperScreen() {
               animate={{ opacity: 1, translateX: 0 }}
               transition={{ type: "timing", duration: 220, delay: Math.min(i, 6) * 25 }}
             >
-              <Pressable
+              <LogRow
                 onPress={() => openEdit(entry)}
-                style={shadows.press}
-                className="mb-2.5 flex-row items-center gap-3 rounded-xl2 border border-ink/10 bg-surface p-3.5"
-              >
-                <View className="h-10 w-10 items-center justify-center rounded-xl bg-orange-bg">
-                  <Icon name="baby" size={17} color="#C9702E" />
-                </View>
-                <View className="flex-1">
-                  <Text className="font-bodySemibold text-[14px] text-ink">
-                    {t(`diaper_type_${entry.type}` as never)}
-                  </Text>
-                  <Text className="font-body text-xs text-ink-soft">{formatTime(entry.at, lang)}</Text>
-                </View>
-                <Icon name="chevronRight" size={16} color="#A79D8A" />
-              </Pressable>
+                icon={TYPE_ICON[entry.type]}
+                tone={TYPE_TONE[entry.type]}
+                title={t(`diaper_type_${entry.type}` as never)}
+                detail={[entry.color, entry.consistency, formatTime(entry.at, lang)].filter(Boolean).join(" · ")}
+              />
             </MotiView>
           ))
         )}
       </ScrollView>
-
-      <View className="flex-row gap-2.5 px-5 pb-6">
-        {TYPES.map((type) => (
-          <Pressable
-            key={type}
-            onPress={() => {
-              haptics.tap();
-              baby.addDiaperEntry({ type });
-            }}
-            className="flex-1 items-center gap-1 rounded-2xl bg-ink py-4"
-          >
-            <Icon name="baby" size={16} color="#FBF6EE" />
-            <Text className="font-bodyMedium text-[12px] text-cream">{t(`diaper_type_${type}` as never)}</Text>
-          </Pressable>
-        ))}
-      </View>
 
       {form && (
         <RecordSheet

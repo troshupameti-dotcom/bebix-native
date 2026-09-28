@@ -14,6 +14,7 @@ import {
   saveProfileDetailsRemote,
 } from "@/lib/baby/profileDetails";
 import { supabase } from "@/lib/supabase/client";
+import { applyProfileToMedical, type ProfileMedical } from "@/lib/baby/medicalSync";
 import { cleanupSeedBabyData } from "@/lib/state/seedCleanup";
 import { clampGap, migrateNotificationPrefs, type NotificationKey } from "@/lib/notifications/catalog";
 import {
@@ -655,6 +656,9 @@ function buildValue(state: AppState, dispatch: React.Dispatch<Action>) {
         const row: MedicalInfoRow = { key, label, value, isCustom: true };
         update((cur) => ({ medicalInfo: [...cur.medicalInfo, row], medicalActiveKeys: [...cur.medicalActiveKeys, key] }));
       },
+      /** Grupi i gjakut, pediatri dhe alergjitë nga cilësimet → rreshtat e "Info mjekësore". */
+      syncMedicalFromProfile: (profile: ProfileMedical) =>
+        update((cur) => applyProfileToMedical(cur.medicalInfo, cur.medicalActiveKeys, profile)),
       removeMedicalRow: (key: string) => update((cur) => ({ medicalActiveKeys: cur.medicalActiveKeys.filter((k) => k !== key) })),
       updateMedicalRow: (key: string, patch: Partial<Pick<MedicalInfoRow, "value" | "label">>) =>
         update((cur) => {
@@ -719,6 +723,7 @@ function buildValue(state: AppState, dispatch: React.Dispatch<Action>) {
           ...entry,
         };
         update((cur) => ({ feedingLog: withAdd(cur.feedingLog, item) }));
+        return item.id;
       },
       updateFeedingEntry: (id: string, patch: Partial<FeedingEntry>) =>
         update((cur) => {
@@ -789,6 +794,7 @@ function buildValue(state: AppState, dispatch: React.Dispatch<Action>) {
           ...entry,
         };
         update((cur) => ({ diaperLog: withAdd(cur.diaperLog, item) }));
+        return item.id;
       },
       updateDiaperEntry: (id: string, patch: Partial<DiaperEntry>) =>
         update((cur) => {

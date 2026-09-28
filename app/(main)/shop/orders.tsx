@@ -12,11 +12,18 @@ import {
 } from "@/lib/shop/orders";
 import { useTranslation } from "@/lib/i18n/LanguageContext";
 
-function statusStyle(status: OrderStatus): { bg: string; text: string } {
-  if (status === "delivered") return { bg: "bg-olive-bg", text: "text-olive" };
-  if (status === "cancelled") return { bg: "bg-cream-soft", text: "text-ink-faint" };
-  return { bg: "bg-orange-bg", text: "text-orange" };
-}
+/**
+ * Ngjyra e secilit status, që prindi ta kuptojë me një vështrim:
+ * në pritje gri, e konfirmuar jeshile, e nisur portokalli, e dorëzuar
+ * (e pranuar) kaltër, e anuluar/refuzuar e kuqe.
+ */
+const STATUS_TONE: Record<OrderStatus, { fg: string; bg: string }> = {
+  pending: { fg: "#6B6358", bg: "#ECE8E1" },
+  confirmed: { fg: "#2F7D3A", bg: "#DDF0DF" },
+  shipped: { fg: "#B8641A", bg: "#F7E4CF" },
+  delivered: { fg: "#2E6FA8", bg: "#D9E7F2" },
+  cancelled: { fg: "#C0392B", bg: "#F8DAD6" },
+};
 
 function orderDate(iso: string, lang: string): string {
   return new Date(iso).toLocaleDateString(lang === "en" ? "en-GB" : "sq-AL", {
@@ -28,6 +35,7 @@ function orderDate(iso: string, lang: string): string {
 function Timeline({ status }: { status: OrderStatus }) {
   if (status === "cancelled") return null;
   const currentIndex = ORDER_TIMELINE.indexOf(status);
+  const color = STATUS_TONE[status].fg;
 
   return (
     <View className="flex-row items-center mt-3">
@@ -35,9 +43,9 @@ function Timeline({ status }: { status: OrderStatus }) {
         const reached = i <= currentIndex;
         return (
           <View key={step} className="flex-1 flex-row items-center">
-            <View className={`w-2.5 h-2.5 rounded-full ${reached ? "bg-olive" : "bg-cream-line"}`} />
+            <View className="w-2.5 h-2.5 rounded-full" style={{ backgroundColor: reached ? color : "#E9DFCC" }} />
             {i < ORDER_TIMELINE.length - 1 && (
-              <View className={`flex-1 h-[2px] ${i < currentIndex ? "bg-olive" : "bg-cream-line"}`} />
+              <View className="flex-1 h-[2px]" style={{ backgroundColor: i < currentIndex ? color : "#E9DFCC" }} />
             )}
           </View>
         );
@@ -49,15 +57,16 @@ function Timeline({ status }: { status: OrderStatus }) {
 function OrderCard({ order }: { order: MyOrder }) {
   const theme = useThemeColors();
   const { t, language } = useTranslation();
-  const badge = statusStyle(order.status);
+  const tone = STATUS_TONE[order.status];
   const itemCount = order.items.reduce((sum, i) => sum + i.qty, 0);
 
   return (
-    <View style={shadows.soft} className="bg-surface rounded-xl2 p-4 mb-3">
+    <View style={[shadows.soft, { borderLeftWidth: 4, borderLeftColor: tone.fg }]} className="bg-surface rounded-xl2 p-4 mb-3">
       <View className="flex-row items-center justify-between mb-1">
         <Text className="font-bodySemibold text-sm text-ink">#{order.id.slice(0, 8).toUpperCase()}</Text>
-        <View className={`rounded-full px-2.5 py-1 ${badge.bg}`}>
-          <Text className={`font-bodySemibold text-[11px] ${badge.text}`}>{t(orderStatusLabelKey(order.status))}</Text>
+        <View className="flex-row items-center gap-1.5 rounded-full px-3 py-1" style={{ backgroundColor: tone.bg }}>
+          <View className="h-2 w-2 rounded-full" style={{ backgroundColor: tone.fg }} />
+          <Text className="font-bodySemibold text-[12px]" style={{ color: tone.fg }}>{t(orderStatusLabelKey(order.status))}</Text>
         </View>
       </View>
       <Text className="font-body text-xs text-ink-faint">{orderDate(order.createdAt, language)}</Text>
