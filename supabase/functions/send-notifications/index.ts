@@ -44,7 +44,9 @@ serve(async (req) => {
     return new Response(JSON.stringify({ error: "forbidden" }), { status: 403 });
   }
 
-  const { data: pending, error } = await supabase.rpc("pending_notifications", { p_limit: BATCH });
+  // "Merr" rreshtat (FOR UPDATE SKIP LOCKED): dy xhirime njekohesisht s'e
+  // dergojne me te njejtin njoftim dy here.
+  const { data: pending, error } = await supabase.rpc("claim_pending_notifications", { p_limit: BATCH });
   if (error) {
     return new Response(JSON.stringify({ error: error.message }), { status: 500 });
   }

@@ -13,8 +13,11 @@
 --      mund te porositej sa te doje, edhe kur tregohej "Pa stok");
 --    - jo me shume se 10 porosi "ne pritje" brenda 24 oresh per llogari;
 --    - `p_client_ref`: e njejta porosi e derguar dy here (rrjet i dobet)
---      krijohet nje here.
--- 3. Anulimi i porosise nga admini e kthen stokun (me pare e humbiste).
+--      krijohet nje here;
+--    - te `orders.items` ruhen vetem fushat e serverit (+ ikona e produktit),
+--      jo cdo gje qe dergon klienti.
+-- 3. Anulimi i porosise nga admini e kthen stokun e artikujve qe s'kane dale
+--    ende nga partneri (me pare stoku humbiste).
 -- 4. Vleresimi "blerje e verifikuar" vetem pas nje porosie te dorezuar.
 -- 5. Statusi i porosise vetem nga lista e njohur.
 
@@ -51,7 +54,7 @@ begin
   if tg_op in ('INSERT', 'UPDATE') then
     perform public.sync_product_stock(new.product_id);
   end if;
-  if tg_op in ('UPDATE', 'DELETE') and (tg_op = 'DELETE' or old.product_id is distinct from new.product_id) then
+  if tg_op = 'DELETE' or (tg_op = 'UPDATE' and old.product_id is distinct from new.product_id) then
     perform public.sync_product_stock(old.product_id);
   end if;
   return null;
@@ -163,7 +166,9 @@ begin
 
   -- Rreshtat e te njejtit produkt bashkohen para kontrollit te stokut.
   for v_line in
-    select (e->>'id')::uuid as product_id, sum((e->>'qty')::int)::int as qty
+    select (e->>'id')::uuid as product_id,
+           sum((e->>'qty')::int)::int as qty,
+           max(left(nullif(btrim(e->>'icon'), ''), 16)) as icon
     from jsonb_array_elements(p_items) e
     group by 1
   loop
@@ -195,14 +200,16 @@ begin
     end if;
 
     v_total := v_total + v_product.price * v_line.qty;
-    v_items := v_items || jsonb_build_array(jsonb_build_object(
-      'id', v_product.id,
-      'name', v_product.name,
-      'price', v_product.price,
-      'qty', v_line.qty,
-      'imageUrl', v_product.image_url,
-      'stock_source', case when v_pp.id is not null then 'partner' else 'product' end
-    ));
+    v_items := v_items || jsonb_build_array(
+      jsonb_build_object(
+        'id', v_product.id,
+        'name', v_product.name,
+        'price', v_product.price,
+        'qty', v_line.qty,
+        'imageUrl', v_product.image_url,
+        'stock_source', case when v_pp.id is not null then 'partner' else 'product' end
+      ) || case when v_line.icon is not null then jsonb_build_object('icon', v_line.icon) else '{}'::jsonb end
+    );
   end loop;
 
   insert into public.orders (user_id, full_name, phone, address, city, items, total_price, status, client_ref)
@@ -284,6 +291,9 @@ drop function if exists public.checkout_process_order_items(uuid, jsonb);
 -- ---------------------------------------------------------------------
 -- 3. Anulimi e kthen stokun (dhe zhbërja e anulimit e merr prapë)
 -- ---------------------------------------------------------------------
+-- Kthehen vetem artikujt qe jane ende te partneri. Te dorezuarit, te
+-- marret nga korrieri dhe ata qe partneri i shenoi "pa stok" s'kthehen:
+-- stoku do te dilte me i madh se ai qe ka partneri ne te vertete.
 create or replace function public.orders_status_stock()
 returns trigger
 language plpgsql
@@ -291,10 +301,12 @@ security definer
 set search_path = public
 as $$
 declare
-  v_item  public.order_items%rowtype;
-  v_pp    public.partner_products%rowtype;
-  v_line  jsonb;
-  v_stock integer;
+  v_item      public.order_items%rowtype;
+  v_pp        public.partner_products%rowtype;
+  v_line      jsonb;
+  v_stock     integer;
+  v_threshold integer;
+  v_new_stock integer;
 begin
   if new.status is not distinct from old.status then
     return new;
@@ -302,15 +314,24 @@ begin
 
   if new.status = 'cancelled' then
     for v_item in
-      select * from public.order_items where order_id = new.id and fulfillment_status <> 'cancelled' for update
+      select * from public.order_items
+      where order_id = new.id and fulfillment_status in ('pending', 'accepted', 'preparing', 'ready_for_pickup')
+      for update
     loop
       select * into v_pp from public.partner_products where id = v_item.partner_product_id for update;
       if v_pp.id is not null then
+        select low_stock_threshold into v_threshold from public.partners where id = v_pp.partner_id;
+        v_new_stock := v_pp.stock + v_item.qty;
         insert into public.inventory_logs (partner_product_id, old_stock, new_stock, change, reason, user_id)
-        values (v_pp.id, v_pp.stock, v_pp.stock + v_item.qty, v_item.qty, 'return', auth.uid());
+        values (v_pp.id, v_pp.stock, v_new_stock, v_item.qty, 'return', auth.uid());
         update public.partner_products
-          set stock = v_pp.stock + v_item.qty,
-              status = case when v_pp.status = 'inactive' then 'inactive' else 'in_stock' end,
+          set stock = v_new_stock,
+              status = case
+                when v_pp.status = 'inactive' then 'inactive'
+                when v_new_stock = 0 then 'out_of_stock'
+                when v_new_stock <= coalesce(v_threshold, 0) then 'low_stock'
+                else 'in_stock'
+              end,
               updated_at = now()
           where id = v_pp.id;
       end if;
@@ -333,11 +354,18 @@ begin
           raise exception 'S''mund të rikthehet porosia: stok i pamjaftueshëm (në dispozicion %, nevojiten %).',
             v_pp.stock, v_item.qty;
         end if;
+        select low_stock_threshold into v_threshold from public.partners where id = v_pp.partner_id;
+        v_new_stock := v_pp.stock - v_item.qty;
         insert into public.inventory_logs (partner_product_id, old_stock, new_stock, change, reason, user_id)
-        values (v_pp.id, v_pp.stock, v_pp.stock - v_item.qty, -v_item.qty, 'adjustment', auth.uid());
+        values (v_pp.id, v_pp.stock, v_new_stock, -v_item.qty, 'adjustment', auth.uid());
         update public.partner_products
-          set stock = v_pp.stock - v_item.qty,
-              status = case when v_pp.stock - v_item.qty = 0 then 'out_of_stock' else v_pp.status end,
+          set stock = v_new_stock,
+              status = case
+                when v_pp.status = 'inactive' then 'inactive'
+                when v_new_stock = 0 then 'out_of_stock'
+                when v_new_stock <= coalesce(v_threshold, 0) then 'low_stock'
+                else 'in_stock'
+              end,
               updated_at = now()
           where id = v_pp.id;
       end if;
@@ -368,6 +396,8 @@ create trigger orders_status_stock before update of status on public.orders
 -- ---------------------------------------------------------------------
 -- 4. "Blerje e verifikuar" vetem pas dorezimit
 -- ---------------------------------------------------------------------
+-- Lexohet nga `orders.items`, qe perfshin edhe produktet pa partner (ato
+-- s'kane rresht te `order_items`).
 create or replace function public.product_review_mark_verified()
 returns trigger
 language plpgsql

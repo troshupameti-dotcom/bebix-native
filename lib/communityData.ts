@@ -93,7 +93,7 @@ export async function fetchGroups(): Promise<CommunityGroup[]> {
   const uid = await getCurrentUserId();
   const { data: groups, error } = await supabase
     .from("community_groups")
-    .select("id,name,description,icon,accent, community_group_members(count)")
+    .select("id,name,description,icon,accent,member_count")
     .order("name");
   if (error) throw error;
 
@@ -109,7 +109,7 @@ export async function fetchGroups(): Promise<CommunityGroup[]> {
     description: g.description,
     icon: g.icon,
     accent: g.accent,
-    memberCount: g.community_group_members?.[0]?.count ?? 0,
+    memberCount: g.member_count ?? 0,
     joined: joinedIds.has(g.id),
   }));
 }
@@ -118,7 +118,7 @@ export async function fetchGroupById(id: string): Promise<CommunityGroup | null>
   const uid = await getCurrentUserId();
   const { data, error } = await supabase
     .from("community_groups")
-    .select("id,name,description,icon,accent, community_group_members(count)")
+    .select("id,name,description,icon,accent,member_count")
     .eq("id", id)
     .maybeSingle();
   if (error) throw error;
@@ -141,7 +141,7 @@ export async function fetchGroupById(id: string): Promise<CommunityGroup | null>
     description: data.description,
     icon: data.icon,
     accent: data.accent,
-    memberCount: (data as any).community_group_members?.[0]?.count ?? 0,
+    memberCount: (data as any).member_count ?? 0,
     joined,
   };
 }

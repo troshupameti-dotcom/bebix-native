@@ -57,3 +57,16 @@ export function isValidPhone(value: string): boolean {
   const trimmed = value.trim();
   return /^[+0-9 ()./-]{6,30}$/.test(trimmed) && trimmed.replace(/\D/g, "").length >= 6;
 }
+
+/**
+ * Referenca e një porosie (UUID v4). E njëjta referencë dërgohet sa herë
+ * klienti riprovon të njëjtën porosi, dhe `place_order` e krijon vetëm një herë
+ * (rrjet i dobët, prekje e dyfishtë). S'është sekret: mjafton të jetë unike.
+ */
+export function newOrderRef(random: () => number = Math.random): string {
+  const hex = Array.from({ length: 32 }, () => Math.floor(random() * 16).toString(16));
+  hex[12] = "4";
+  hex[16] = ((parseInt(hex[16], 16) & 0x3) | 0x8).toString(16);
+  const s = hex.join("");
+  return `${s.slice(0, 8)}-${s.slice(8, 12)}-${s.slice(12, 16)}-${s.slice(16, 20)}-${s.slice(20)}`;
+}

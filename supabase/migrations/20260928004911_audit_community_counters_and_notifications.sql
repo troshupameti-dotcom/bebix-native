@@ -1,5 +1,3 @@
--- NUK ËSHTË APLIKUAR — pret miratimin (shih README.md në këtë dosje).
---
 -- Auditimi (28 shtator 2026): komuniteti dhe radha e njoftimeve.
 --
 -- 1. Privatësia: `community_post_likes`, `community_group_members` dhe
@@ -201,6 +199,31 @@ revoke execute on function public.claim_pending_notifications(integer) from publ
 -- ---------------------------------------------------------------------
 alter table public.notification_settings add column if not exists timezone text;
 
+-- Zona kontrollohet kur shkruhet: nje emer i panjohur behet NULL (= ora e
+-- Kosoves), qe `in_quiet_hours` te mos rrezohet kurre dhe te mos lexoje
+-- listen e zonave per cdo njoftim.
+create or replace function public.notification_settings_timezone_guard()
+returns trigger language plpgsql set search_path = public
+as $$
+begin
+  if new.timezone is not null then
+    new.timezone := left(btrim(new.timezone), 64);
+    begin
+      perform now() at time zone new.timezone;
+    exception when others then
+      new.timezone := null;
+    end;
+  end if;
+  return new;
+end;
+$$;
+revoke execute on function public.notification_settings_timezone_guard() from public, anon, authenticated;
+
+drop trigger if exists notification_settings_timezone_guard on public.notification_settings;
+create trigger notification_settings_timezone_guard
+  before insert or update of timezone on public.notification_settings
+  for each row execute function public.notification_settings_timezone_guard();
+
 create or replace function public.in_quiet_hours(p_user uuid)
 returns boolean language sql stable security definer set search_path = public
 as $$
@@ -209,15 +232,14 @@ as $$
       select case
         when s.quiet_from = s.quiet_to then false
         when s.quiet_from < s.quiet_to then h >= s.quiet_from and h < s.quiet_to
+        -- Kalon mesnaten, p.sh. 22 -> 7.
         else h >= s.quiet_from or h < s.quiet_to
       end
       from public.notification_settings s,
-           lateral (
-             select extract(hour from now() at time zone coalesce(
-               (select name from pg_timezone_names where name = s.timezone), 'Europe/Belgrade'))::int as h
-           ) t
+           lateral (select extract(hour from now() at time zone coalesce(s.timezone, 'Europe/Belgrade'))::int as h) t
       where s.user_id = p_user
     ),
+    -- Pa cilesime: parazgjedhja 22:00–07:00, ora e Kosoves.
     (select h >= 22 or h < 7 from (select extract(hour from now() at time zone 'Europe/Belgrade')::int as h) d)
   );
 $$;

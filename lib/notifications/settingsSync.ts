@@ -11,6 +11,15 @@ import { NOTIFICATION_CATALOG, isNotificationEnabled, type NotificationPrefs } f
  * Dërgohet harta e plotë, jo vetëm ndryshimet: serveri nuk ka pse të dijë
  * parazgjedhjet e app-it, dhe kështu të dyja anët tregojnë të njëjtën gjë.
  */
+/** Zona kohore e telefonit (p.sh. "Europe/Berlin"); null nëse s'dihet. Serveri e kontrollon. */
+function deviceTimeZone(): string | null {
+  try {
+    return Intl.DateTimeFormat().resolvedOptions().timeZone || null;
+  } catch {
+    return null;
+  }
+}
+
 export async function syncNotificationSettings(prefs: NotificationPrefs): Promise<void> {
   try {
     const { data } = await supabase.auth.getUser();
@@ -32,6 +41,8 @@ export async function syncNotificationSettings(prefs: NotificationPrefs): Promis
         quiet_to: prefs.quietTo,
         feeding_gap_h: prefs.feedingGapH,
         diaper_gap_h: prefs.diaperGapH,
+        // Orët e qeta llogariten sipas zonës së telefonit (prindi në diasporë).
+        timezone: deviceTimeZone(),
         updated_at: new Date().toISOString(),
       },
       { onConflict: "user_id" }

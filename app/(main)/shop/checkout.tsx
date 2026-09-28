@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { View, Text, Pressable, TextInput, ScrollView, ActivityIndicator } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useRouter } from "expo-router";
@@ -12,7 +12,7 @@ import { fetchSavedContact } from "@/lib/shop/orders";
 import type { TranslationKey } from "@/lib/i18n/translations";
 import { track } from "@/lib/analytics/posthog";
 import { friendlyError } from "@/lib/errors/userMessage";
-import { isValidPhone, reconcileCart, type CartChange, type ProductNow } from "@/lib/shop/cartCheck";
+import { isValidPhone, newOrderRef, reconcileCart, type CartChange, type ProductNow } from "@/lib/shop/cartCheck";
 
 /**
  * Gabimet e bazës vijnë si tekst teknik (p.sh. kufizime stoku). Klienti
@@ -46,6 +46,9 @@ export default function CheckoutScreen() {
   const [done, setDone] = useState(false);
   // Çka ndryshoi në shportë që kur u shtua (çmim, stok, produkt i hequr).
   const [changes, setChanges] = useState<CartChange[]>([]);
+  // E njëjta referencë në çdo riprovim të kësaj porosie: nëse përgjigjja e
+  // serverit humb në rrjet, riprovimi s'krijon porosi të dytë.
+  const orderRef = useRef(newOrderRef());
 
   useEffect(() => {
     let active = true;
@@ -107,6 +110,8 @@ export default function CheckoutScreen() {
       if (checked.changes.length > 0) {
         replaceCartItems(checked.items);
         setChanges(checked.changes);
+        // Shporta ndryshoi: kjo është tashmë një porosi tjetër.
+        orderRef.current = newOrderRef();
         return;
       }
 
@@ -121,6 +126,7 @@ export default function CheckoutScreen() {
         p_address: address.trim(),
         p_city: city.trim(),
         p_items: state.cartItems,
+        p_client_ref: orderRef.current,
       });
 
       if (rpcError) throw new Error(rpcError.message);
@@ -130,6 +136,7 @@ export default function CheckoutScreen() {
         value: Number(cartTotal().toFixed(2)),
       });
       clearCart();
+      orderRef.current = newOrderRef();
       setDone(true);
     } catch (e: any) {
       const message = e?.message ?? "";

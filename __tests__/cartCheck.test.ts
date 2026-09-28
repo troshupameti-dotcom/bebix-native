@@ -1,4 +1,4 @@
-import { isValidPhone, reconcileCart, type ProductNow } from "@/lib/shop/cartCheck";
+import { isValidPhone, newOrderRef, reconcileCart, type ProductNow } from "@/lib/shop/cartCheck";
 import type { CartItem } from "@/lib/state/types";
 
 const item = (id: string, price: number, qty: number): CartItem => ({ id, name: `P${id}`, price, qty, imageUrl: null, icon: "cube" });
@@ -48,5 +48,16 @@ describe("telefoni", () => {
   it("refuzon tekstin dhe numrat shumë të shkurtër", () => {
     expect(isValidPhone("abc")).toBe(false);
     expect(isValidPhone("123")).toBe(false);
+  });
+});
+
+describe("referenca e porosisë", () => {
+  it("është UUID v4 që serveri e pranon", () => {
+    const ref = newOrderRef();
+    expect(ref).toMatch(/^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/);
+  });
+
+  it("dy porosi marrin referenca të ndryshme", () => {
+    expect(newOrderRef()).not.toBe(newOrderRef());
   });
 });
