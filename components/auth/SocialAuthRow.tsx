@@ -3,7 +3,7 @@ import { MotiView } from "moti";
 import { useEffect, useRef, useState } from "react";
 import * as WebBrowser from "expo-web-browser";
 import * as AppleAuthentication from "expo-apple-authentication";
-import * as Linking from "expo-linking";
+import { authCallbackUrl } from "@/lib/auth/callbackUrl";
 import Svg, { Path } from "react-native-svg";
 import { supabase } from "@/lib/supabase/client";
 import { parseOAuthRedirect } from "@/lib/auth/oauthRedirect";
@@ -117,9 +117,7 @@ ${redirectTo}` : t("auth_redirect_blocked");
     inFlight.current = true;
 
     try {
-      // Dev/prod build: bebix://auth/callback — Expo Go: exp://<IP>:8081/--/auth/callback.
-      // Të dyja duhet të jenë te Supabase → Auth → URL Configuration → Redirect URLs.
-      const redirectTo = Linking.createURL("auth/callback");
+      const redirectTo = authCallbackUrl();
       const { data, error } = await supabase.auth.signInWithOAuth({
         provider,
         options: {
