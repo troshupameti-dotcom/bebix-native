@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "724286191353",
+    "project_id": "bebix-a17b2",
+    "storage_bucket": "bebix-a17b2.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:724286191353:android:b6e7e36b8de4e321a79428",
+        "android_client_info": {
+          "package_name": "com.bebix.app"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyB62uHjqOIjtKxFpIqHmE_cFdR1dP42cx8"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
