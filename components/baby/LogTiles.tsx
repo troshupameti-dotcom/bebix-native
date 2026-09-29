@@ -1,4 +1,6 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
+import ReanimatedSwipeable, { type SwipeableMethods } from "react-native-gesture-handler/ReanimatedSwipeable";
+import Animated, { runOnJS, useAnimatedReaction, useAnimatedStyle, type SharedValue } from "react-native-reanimated";
 import { View, Text, Pressable } from "react-native";
 import { MotiView } from "moti";
 import { Icon, type IconName } from "@/components/ui/Icon";
@@ -156,8 +158,94 @@ export function AmountRow({
   );
 }
 
-/** Rreshti i historikut me ikonën në ngjyrën e llojit. */
+/** Sa larg duhet rrëshqitur (px) që fshirja të bëhet vetë, pa prekur butonin. */
+const FULL_SWIPE = 180;
+const DELETE_WIDTH = 88;
+
+/**
+ * Rreshti i historikut me ikonën në ngjyrën e llojit.
+ *
+ * Me `onDelete`, rreshti rrëshqet majtas si në iPhone: shfaqet butoni i kuq
+ * "Fshi"; rrëshqitja e plotë e fshin menjëherë. Fshirja kthehet mbrapsht me
+ * "Zhbëj" te njoftimi (thirrësi e jep).
+ */
 export function LogRow({
+  title,
+  detail,
+  icon,
+  tone,
+  onPress,
+  onDelete,
+  deleteLabel,
+}: {
+  title: string;
+  detail: string;
+  icon: IconName;
+  tone: Tone;
+  onPress: () => void;
+  onDelete?: () => void;
+  deleteLabel?: string;
+}) {
+  const swipeRef = useRef<SwipeableMethods>(null);
+  const row = <LogRowBody title={title} detail={detail} icon={icon} tone={tone} onPress={onPress} />;
+  if (!onDelete) return <View className="mb-2.5">{row}</View>;
+
+  function remove() {
+    haptics.success();
+    swipeRef.current?.close();
+    onDelete?.();
+  }
+
+  return (
+    <ReanimatedSwipeable
+      ref={swipeRef}
+      friction={1.6}
+      rightThreshold={40}
+      overshootRight
+      containerStyle={{ marginBottom: 10, borderRadius: 18 }}
+      renderRightActions={(_progress, drag) => (
+        <DeleteAction drag={drag} label={deleteLabel ?? "Fshi"} onPress={remove} />
+      )}
+      onSwipeableWillOpen={() => haptics.select()}
+    >
+      {row}
+    </ReanimatedSwipeable>
+  );
+}
+
+function DeleteAction({ drag, label, onPress }: { drag: SharedValue<number>; label: string; onPress: () => void }) {
+  // Rrëshqitja e plotë: kur zvarritja kalon kufirin, fshirja bëhet vetë.
+  const fired = useRef(false);
+  useAnimatedReaction(
+    () => drag.value < -FULL_SWIPE,
+    (past, before) => {
+      if (past && !before && !fired.current) {
+        fired.current = true;
+        runOnJS(onPress)();
+      }
+    }
+  );
+  const style = useAnimatedStyle(() => ({
+    width: Math.max(DELETE_WIDTH, -drag.value),
+  }));
+
+  return (
+    <Animated.View style={[{ height: "100%", borderRadius: 18, overflow: "hidden", marginLeft: 8 }, style]}>
+      <Pressable
+        onPress={onPress}
+        accessibilityRole="button"
+        accessibilityLabel={label}
+        className="flex-1 items-center justify-center"
+        style={{ backgroundColor: "#E5484D" }}
+      >
+        <Icon name="trash" size={20} color="#FFFFFF" />
+        <Text className="mt-1 font-bodySemibold text-[12px] text-white">{label}</Text>
+      </Pressable>
+    </Animated.View>
+  );
+}
+
+function LogRowBody({
   title,
   detail,
   icon,
@@ -174,7 +262,7 @@ export function LogRow({
     <Pressable
       onPress={onPress}
       style={shadows.press}
-      className="mb-2.5 flex-row items-center gap-3 rounded-xl2 border border-ink/10 bg-surface p-3.5 active:opacity-80"
+      className="flex-row items-center gap-3 rounded-xl2 border border-ink/10 bg-surface p-3.5 active:opacity-80"
     >
       <View className="h-10 w-10 items-center justify-center rounded-xl" style={{ backgroundColor: tone.tintBg }}>
         <Icon name={icon} size={17} color={tone.tint} />

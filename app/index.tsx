@@ -16,7 +16,8 @@ export default function Index() {
           animate={{ opacity: 1 }}
           transition={{ type: "timing", duration: 900, loop: true, repeatReverse: true }}
         >
-          <Logo tagline={undefined} size="md" />
+          {/* E njëjta logo dhe madhësi si splash-i, që kalimi të mos duket. */}
+          <Logo tagline={undefined} size="xl" variant="full" />
         </MotiView>
       </View>
     );

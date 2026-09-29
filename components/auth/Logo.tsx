@@ -4,7 +4,8 @@ import { useThemeColors } from "@/lib/theme/useThemeColors";
 
 type LogoProps = {
   tagline?: string;
-  size?: "md" | "lg";
+  /** "xl" = ekrani i hapjes: sa më afër madhësisë së splash-it. */
+  size?: "md" | "lg" | "xl";
   /** "full" = shenja "b" me fjalën poshtë, për ekranet e hyrjes. */
   variant?: "wordmark" | "full";
 };
@@ -31,7 +32,7 @@ export function Logo({ size = "lg", variant = "wordmark" }: LogoProps) {
   const { isDark } = useThemeColors();
 
   if (variant === "full") {
-    const fullWidth = size === "lg" ? 150 : 116;
+    const fullWidth = size === "xl" ? 240 : size === "lg" ? 150 : 116;
     return (
       <MotiView
         from={{ opacity: 0, scale: 0.94 }}
@@ -49,7 +50,7 @@ export function Logo({ size = "lg", variant = "wordmark" }: LogoProps) {
     );
   }
 
-  const width = size === "lg" ? 200 : 160;
+  const width = size === "xl" ? 240 : size === "lg" ? 200 : 160;
 
   return (
     <MotiView

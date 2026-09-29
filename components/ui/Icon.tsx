@@ -22,6 +22,8 @@ export type IconName =
   | "camera"
   | "flash"
   | "close"
+  | "trash"
+  | "user"
   | "heart"
   | "comment"
   | "bookmark"
@@ -185,6 +187,13 @@ const GLYPHS: Record<IconName, (p: CommonProps) => React.ReactNode> = {
   ),
   flash: (p) => <Path d="M13 2 4 14h6l-1 8 9-12h-6l1-8Z" {...p} />,
   close: (p) => <Path d="M6 6l12 12M18 6 6 18" {...p} />,
+  trash: (p) => <Path d="M4.5 6.5h15M9.5 6.5V4.5h5v2M6.5 6.5l1 13h9l1-13M10 10.5v6M14 10.5v6" {...p} />,
+  user: (p) => (
+    <>
+      <Circle cx="12" cy="8.5" r="3.8" {...p} />
+      <Path d="M4.5 20c1.3-3.6 4.2-5.5 7.5-5.5s6.2 1.9 7.5 5.5" {...p} />
+    </>
+  ),
   heart: (p) => <Path d="M12 20.5S3.5 15 3.5 9a4.5 4.5 0 0 1 8.5-2 4.5 4.5 0 0 1 8.5 2c0 6-8.5 11.5-8.5 11.5Z" {...p} />,
   comment: (p) => <Path d="M4 5h16v11H9l-5 4V5Z" {...p} />,
   bookmark: (p) => <Path d="M6 3.5h12v17l-6-4-6 4v-17Z" {...p} />,

@@ -264,6 +264,11 @@ export default function FeedingScreen() {
             >
               <LogRow
                 onPress={() => openEdit(entry)}
+                onDelete={() => {
+                  baby.deleteFeedingEntry(entry.id);
+                  showToast(t("deleted_toast"), () => baby.restoreFeedingEntry(entry.id));
+                }}
+                deleteLabel={t("delete_action")}
                 icon={TYPE_ICON[entry.type]}
                 tone={TYPE_TONE[entry.type]}
                 title={t(`feeding_type_${entry.type === "medicine" ? "medicine_short" : entry.type}` as never)}

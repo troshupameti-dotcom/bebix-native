@@ -141,6 +141,11 @@ export default function DiaperScreen() {
             >
               <LogRow
                 onPress={() => openEdit(entry)}
+                onDelete={() => {
+                  baby.deleteDiaperEntry(entry.id);
+                  showToast(t("deleted_toast"), () => baby.restoreDiaperEntry(entry.id));
+                }}
+                deleteLabel={t("delete_action")}
                 icon={TYPE_ICON[entry.type]}
                 tone={TYPE_TONE[entry.type]}
                 title={t(`diaper_type_${entry.type}` as never)}

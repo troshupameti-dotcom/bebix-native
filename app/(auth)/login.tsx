@@ -8,7 +8,7 @@ import { AuthDivider } from "@/components/auth/AuthDivider";
 import { PrimaryButton } from "@/components/auth/PrimaryButton";
 import { SocialAuthRow } from "@/components/auth/SocialAuthRow";
 import { supabase } from "@/lib/supabase/client";
-import { markOnboardingSeen } from "@/lib/hooks/useOnboardingStatus";
+import { markOnboardingSeen, markGuestMode } from "@/lib/hooks/useOnboardingStatus";
 import { syncPendingProfileToSupabase } from "@/lib/babyProfile";
 import { useTranslation } from "@/lib/i18n/LanguageContext";
 import type { LoginFormValues, FormErrors } from "@/types/auth";
@@ -120,7 +120,7 @@ export default function LoginScreen() {
               <SocialAuthRow onSignedIn={finishSignIn} />
             </View>
 
-            <View className="mt-6 mb-8 flex-row justify-center gap-1">
+            <View className="mt-6 flex-row justify-center gap-1">
               <Text className="font-body text-sm text-ink-soft">{t("login_no_account")}</Text>
               <Pressable
                 onPress={() =>
@@ -130,6 +130,19 @@ export default function LoginScreen() {
                 <Text className="font-bodyMedium text-sm text-orange">{t("login_signup_link")}</Text>
               </Pressable>
             </View>
+
+            {/* Dyqani s'kërkon llogari: kush do vetëm të blejë, hyn si mysafir. */}
+            {!redirect && (
+              <Pressable
+                onPress={async () => {
+                  await markGuestMode();
+                  router.replace("/(main)/shop");
+                }}
+                className="mb-8 mt-4 items-center py-2"
+              >
+                <Text className="font-bodyMedium text-sm text-ink-soft underline">{t("welcome_guest_shop")}</Text>
+              </Pressable>
+            )}
           </MotiView>
         </ScrollView>
       </KeyboardAvoidingView>

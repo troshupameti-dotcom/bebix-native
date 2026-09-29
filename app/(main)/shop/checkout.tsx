@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from "react";
+import AsyncStorage from "@react-native-async-storage/async-storage";
 import { View, Text, Pressable, TextInput, ScrollView, ActivityIndicator } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useRouter } from "expo-router";
@@ -19,6 +20,9 @@ import { isValidPhone, newOrderRef, reconcileCart, type CartChange, type Product
  * duhet të kuptojë çfarë të bëjë, jo çfarë tha Postgres-i.
  */
 /** Kthen nje CELES perkthimi, ose null nese mesazhi s'njihet. */
+/** Kontakti i mysafirit, që formulari të dalë i mbushur herën tjetër. */
+const GUEST_CONTACT_KEY = "bebix_guest_contact_v1";
+
 function friendlyErrorKey(message: string): TranslationKey | null {
   const m = message.toLowerCase();
   if (m.includes("stock") || m.includes("stok")) return "co_err_stock";
@@ -44,6 +48,7 @@ export default function CheckoutScreen() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [done, setDone] = useState(false);
+  const [placedId, setPlacedId] = useState<string | null>(null);
   // Çka ndryshoi në shportë që kur u shtua (çmim, stok, produkt i hequr).
   const [changes, setChanges] = useState<CartChange[]>([]);
   // E njëjta referencë në çdo riprovim të kësaj porosie: nëse përgjigjja e
@@ -60,6 +65,23 @@ export default function CheckoutScreen() {
     });
     return () => { active = false; sub.subscription.unsubscribe(); };
   }, []);
+
+  // Mysafiri: kontakti i porosisë së fundit, i ruajtur në këtë telefon.
+  useEffect(() => {
+    if (authState !== "out") return;
+    let active = true;
+    AsyncStorage.getItem(GUEST_CONTACT_KEY)
+      .then((raw) => {
+        if (!active || !raw) return;
+        const saved = JSON.parse(raw) as Partial<Record<"fullName" | "phone" | "address" | "city", string>>;
+        setFullName((prev) => prev || saved.fullName || "");
+        setPhone((prev) => prev || saved.phone || "");
+        setAddress((prev) => prev || saved.address || "");
+        setCity((prev) => prev || saved.city || "");
+      })
+      .catch(() => {});
+    return () => { active = false; };
+  }, [authState]);
 
   // Parambushje: emri nga profili, adresa dhe telefoni nga porosia e fundit.
   useEffect(() => {
@@ -120,7 +142,10 @@ export default function CheckoutScreen() {
       // mbetet i njëjtë si më parë), zbret stokun dhe krijon fulfillment
       // per-partner. Nëse stoku s'mjafton për ndonjë artikull, gjithë
       // transaksioni rrëzohet dhe s'krijohet asnjë porosi e pjesshme.
-      const { error: rpcError } = await supabase.rpc("place_order", {
+      // Pa llogari: e njëjta porosi, përmes `place_guest_order` (admini
+      // e konfirmon me telefon). Me llogari: `place_order`, si më parë.
+      const guest = authState === "out";
+      const { data: orderId, error: rpcError } = await supabase.rpc(guest ? "place_guest_order" : "place_order", {
         p_full_name: fullName.trim(),
         p_phone: phone.trim(),
         p_address: address.trim(),
@@ -130,6 +155,14 @@ export default function CheckoutScreen() {
       });
 
       if (rpcError) throw new Error(rpcError.message);
+      setPlacedId(typeof orderId === "string" ? orderId : null);
+      if (guest) {
+        // Herën tjetër formulari del i mbushur, pa pasur nevojë për llogari.
+        void AsyncStorage.setItem(
+          GUEST_CONTACT_KEY,
+          JSON.stringify({ fullName: fullName.trim(), phone: phone.trim(), address: address.trim(), city: city.trim() })
+        ).catch(() => {});
+      }
 
       track("order_placed", {
         items: state.cartItems.reduce((n, i) => n + i.qty, 0),
@@ -146,9 +179,8 @@ export default function CheckoutScreen() {
     } finally {
       setLoading(false);
     }
-  }, [canSubmit, fullName, phone, address, city, state.cartItems, clearCart, cartTotal, replaceCartItems, t]);
+  }, [canSubmit, fullName, phone, address, city, state.cartItems, clearCart, cartTotal, replaceCartItems, t, authState]);
 
-  // --- Kyçja kërkohet PARA formularit, jo pasi e mbush.
   if (authState === "loading") {
     return (
       <SafeAreaView className="flex-1 bg-cream items-center justify-center">
@@ -157,31 +189,7 @@ export default function CheckoutScreen() {
     );
   }
 
-  if (authState === "out") {
-    return (
-      <SafeAreaView className="flex-1 bg-cream" edges={["top"]}>
-        <View className="flex-row items-center px-5 pt-2 mb-4">
-          <BackButton fallback="/(main)/shop/cart" className="mr-3" />
-          <Text className="font-display text-2xl text-ink">{t("co_title")}</Text>
-        </View>
-        <View className="flex-1 items-center justify-center px-8 -mt-16">
-          <View className="w-14 h-14 rounded-full bg-olive-bg items-center justify-center mb-4">
-            <Icon name="lock" size={24} color="#6E7452" />
-          </View>
-          <Text className="font-bodySemibold text-base text-ink mb-2 text-center">{t("co_login_title")}</Text>
-          <Text className="font-body text-sm text-ink-soft text-center leading-5 mb-6">
-            {t("co_login_body")}
-          </Text>
-          <Pressable
-            onPress={() => router.push({ pathname: "/(auth)/login", params: { redirect: "/shop/checkout" } })}
-            className="bg-olive rounded-xl2 py-3.5 px-8"
-          >
-            <Text className="font-bodySemibold text-sm text-on-accent">{t("co_login_action")}</Text>
-          </Pressable>
-        </View>
-      </SafeAreaView>
-    );
-  }
+  const isGuest = authState === "out";
 
   if (done) {
     return (
@@ -190,9 +198,20 @@ export default function CheckoutScreen() {
           <Icon name="check" size={28} color="#6E7452" />
         </View>
         <Text className="font-display text-xl text-ink text-center mb-2">{t("co_thanks")}</Text>
+        {placedId ? (
+          <Text className="font-bodySemibold text-base text-ink text-center mb-2">#{placedId.slice(0, 8).toUpperCase()}</Text>
+        ) : null}
         <Text className="font-body text-sm text-ink-soft text-center mb-6 leading-5">
-          {t("co_placed_body")}
+          {isGuest ? t("co_guest_placed_body") : t("co_placed_body")}
         </Text>
+        {isGuest ? (
+          <Pressable
+            onPress={() => router.push("/(auth)/signup")}
+            className="bg-olive rounded-xl2 py-3 px-6 mb-3"
+          >
+            <Text className="font-bodyMedium text-sm text-on-accent">{t("co_guest_create_account")}</Text>
+          </Pressable>
+        ) : (
         <Pressable
           onPress={() => {
             // Heq shportën/arketimin nga stiva, jo vetëm ekranin aktual —
@@ -206,6 +225,7 @@ export default function CheckoutScreen() {
         >
           <Text className="font-bodyMedium text-sm text-on-accent">{t("co_see_order")}</Text>
         </Pressable>
+        )}
         <Pressable
           onPress={() => {
             router.dismissAll();
@@ -226,6 +246,19 @@ export default function CheckoutScreen() {
       </View>
 
       <ScrollView className="px-5" showsVerticalScrollIndicator={false} contentContainerStyle={{ paddingBottom: 40 }}>
+        {/* Pa llogari: porosia vazhdon; llogaria mbetet opsion, jo kusht. */}
+        {isGuest && (
+          <View className="mb-4 flex-row items-center gap-3 rounded-xl2 bg-olive-bg p-3.5">
+            <Icon name="user" size={18} color="#6E7452" />
+            <Text className="flex-1 font-body text-xs leading-5 text-ink-soft">{t("co_guest_note")}</Text>
+            <Pressable
+              onPress={() => router.push({ pathname: "/(auth)/login", params: { redirect: "/shop/checkout" } })}
+              hitSlop={8}
+            >
+              <Text className="font-bodySemibold text-xs text-olive">{t("co_login_action")}</Text>
+            </Pressable>
+          </View>
+        )}
         {/* Çfarë po porosit — e dukshme para se të mbushet formulari */}
         <View style={shadows.soft} className="bg-surface rounded-xl2 p-4 mb-5">
           {state.cartItems.map((item) => (
