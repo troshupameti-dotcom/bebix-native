@@ -16,6 +16,15 @@ import { useThemeColors } from "@/lib/theme/useThemeColors";
 import { recordPath } from "@/lib/navigation/history";
 
 SplashScreen.preventAutoHideAsync();
+// Logoja zbehet butë kur mbaron, jo prerje e thatë.
+SplashScreen.setOptions({ duration: 450, fade: true });
+
+/**
+ * Sa gjatë rri logoja në hapje, si te TikTok: mjaft sa të shihet marka, pa u
+ * bërë pritje. Nëse app-i ngarkohet më ngadalë, rri deri sa të jetë gati.
+ */
+const SPLASH_MIN_MS = 1800;
+const APP_START = Date.now();
 
 // Lidhet para se te renderohet cdo gje: nje gabim ne montim duhet kapur.
 initSentry();
@@ -33,7 +42,10 @@ function RootLayout() {
   });
 
   useEffect(() => {
-    if (fontsLoaded) SplashScreen.hideAsync();
+    if (!fontsLoaded) return;
+    const wait = Math.max(0, SPLASH_MIN_MS - (Date.now() - APP_START));
+    const timer = setTimeout(() => void SplashScreen.hideAsync(), wait);
+    return () => clearTimeout(timer);
   }, [fontsLoaded]);
 
   if (!fontsLoaded) return null;

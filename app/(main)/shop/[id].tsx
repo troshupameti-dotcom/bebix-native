@@ -8,6 +8,7 @@ import { Icon } from "@/components/ui/Icon";
 import { shadows } from "@/lib/shadows";
 import { Product } from "@/lib/homeContent";
 import { fetchProductById, fetchRelatedProducts } from "@/lib/shopData";
+import { ProductCard } from "@/components/ProductCard";
 import { BackButton, goBackOr } from "@/components/ui/BackButton";
 import { track } from "@/lib/analytics/posthog";
 import { ProductReviews, Stars } from "@/components/shop/ProductReviews";
@@ -16,39 +17,6 @@ import { useTranslation } from "@/lib/i18n/LanguageContext";
 const { width } = Dimensions.get("window");
 
 
-function RelatedCard({ product, onPress }: { product: Product; onPress: () => void }) {
-  const bg = product.accent === "olive" ? "bg-olive-bg" : "bg-orange-bg";
-  const fg = product.accent === "olive" ? "#6E7452" : "#C9702E";
-  return (
-    <Pressable onPress={onPress} style={shadows.soft} className="mr-3 w-[136px] rounded-xl2 bg-surface p-3">
-      <View
-        className={`mb-2 h-[88px] w-full items-center justify-center overflow-hidden rounded-xl ${product.imageUrl ? "" : bg}`}
-        style={product.imageUrl ? { backgroundColor: "#FFFFFF", padding: 6 } : undefined}
-      >
-        {product.imageUrl ? (
-          <Image source={{ uri: product.imageUrl }} className="h-full w-full" resizeMode="contain" />
-        ) : product.emoji ? (
-          <Text
-            style={{
-              fontSize: 56,
-              lineHeight: 66,
-              includeFontPadding: false,
-              textAlignVertical: "center",
-            }}
-          >
-            {product.emoji}
-          </Text>
-        ) : (
-          <Icon name={product.icon} size={24} color={fg} />
-        )}
-      </View>
-      <Text className="font-bodyMedium text-[13px] leading-4 text-ink" numberOfLines={2}>
-        {product.name}
-      </Text>
-      <Text className="mt-1 font-bodySemibold text-[14px] text-ink">€{product.price.toFixed(2)}</Text>
-    </Pressable>
-  );
-}
 
 export default function ProductDetailsScreen() {
   const { t } = useTranslation();
@@ -227,9 +195,17 @@ export default function ProductDetailsScreen() {
         {related.length > 0 && (
           <>
             <Text className="mb-3 mt-8 px-5 font-bodySemibold text-[17px] text-ink">{t("prod_similar")}</Text>
-            <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ paddingHorizontal: 20 }}>
+            {/* E njëjta kartë si në dyqan: kornizë, lartësi dhe foto njësoj.
+                Mbushja vertikale lë hijen të duket (ScrollView horizontal e pret). */}
+            <ScrollView
+              horizontal
+              showsHorizontalScrollIndicator={false}
+              contentContainerStyle={{ paddingHorizontal: 20, paddingTop: 4, paddingBottom: 12 }}
+            >
               {related.map((p) => (
-                <RelatedCard key={p.id} product={p} onPress={() => router.push(`/shop/${p.id}`)} />
+                <View key={p.id} className="mr-3">
+                  <ProductCard product={p} cardWidth={150} onPress={() => router.push(`/shop/${p.id}`)} />
+                </View>
               ))}
             </ScrollView>
           </>

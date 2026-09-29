@@ -1,7 +1,6 @@
 import { View } from "react-native";
 import { Redirect } from "expo-router";
-import { MotiView } from "moti";
-import { Logo } from "@/components/auth/Logo";
+import { Image } from "expo-image";
 import { useOnboardingStatus } from "@/lib/hooks/useOnboardingStatus";
 
 export default function Index() {
@@ -10,15 +9,9 @@ export default function Index() {
   // 1. Sa kohë po lexohet storage/auth state, shfaq ekranin e ngarkimit
   if (loading) {
     return (
-      <View className="flex-1 items-center justify-center bg-cream">
-        <MotiView
-          from={{ opacity: 0.4 }}
-          animate={{ opacity: 1 }}
-          transition={{ type: "timing", duration: 900, loop: true, repeatReverse: true }}
-        >
-          {/* E njëjta logo dhe madhësi si splash-i, që kalimi të mos duket. */}
-          <Logo tagline={undefined} size="xl" variant="full" />
-        </MotiView>
+      // E njëjta figurë, sfond dhe madhësi si splash-i: kalimi s'duket fare.
+      <View className="flex-1 items-center justify-center" style={{ backgroundColor: "#F3F3F1" }}>
+        <Image source={require("@/assets/images/splash-logo.png")} style={{ width: 300, height: 300 }} contentFit="contain" />
       </View>
     );
   }
