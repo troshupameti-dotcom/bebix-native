@@ -50,7 +50,7 @@ export default function MoreScreen() {
   const { state } = useAppState();
   const { profile } = state;
   const { t, language } = useLanguage();
-  const { email } = useAuthUser();
+  const { email, provider } = useAuthUser();
 
   return (
     <SafeAreaView className="flex-1 bg-cream" edges={["top"]}>
@@ -112,7 +112,8 @@ export default function MoreScreen() {
           title={t("section_account")}
           rows={[
             { icon: "family", label: t("family_title"), onPress: () => router.push("/more/family") },
-            { icon: "close", label: t("delete_account"), onPress: () => router.push("/more/delete-account") },
+            // Mysafiri s'ka llogari për të fshirë.
+            ...(provider ? [{ icon: "close" as const, label: t("delete_account"), onPress: () => router.push("/more/delete-account") }] : []),
           ]}
         />
 
