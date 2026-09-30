@@ -62,7 +62,7 @@ function mapItems(raw: unknown): OrderItem[] {
   });
 }
 
-function mapOrder(row: Record<string, any>): MyOrder {
+export function mapOrder(row: Record<string, any>): MyOrder {
   return {
     id: row.id,
     createdAt: row.created_at,

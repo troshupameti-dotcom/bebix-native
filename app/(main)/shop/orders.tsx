@@ -10,6 +10,7 @@ import {
   fetchMyOrders, orderStatusLabelKey, orderStatusHintKey, ORDER_TIMELINE,
   MyOrder, OrderStatus,
 } from "@/lib/shop/orders";
+import { fetchGuestOrders } from "@/lib/shop/guestOrders";
 import { useTranslation } from "@/lib/i18n/LanguageContext";
 
 /**
@@ -119,7 +120,13 @@ export default function MyOrdersScreen() {
   const load = useCallback(async () => {
     try {
       setError(null);
-      setOrders(await fetchMyOrders());
+      // Porositë e llogarisë, plus ato të bëra si mysafir nga kjo pajisje
+      // (të ruajtura lokalisht): mysafiri i sheh edhe pasi kthehet.
+      const [mine, guest] = await Promise.all([fetchMyOrders(), fetchGuestOrders().catch(() => [])]);
+      const seen = new Set(mine.map((o) => o.id));
+      const merged = [...mine, ...guest.filter((o) => !seen.has(o.id))];
+      merged.sort((a, b) => b.createdAt.localeCompare(a.createdAt));
+      setOrders(merged);
     } catch (e) {
       setError(e instanceof Error ? e.message : t("myorders_load_error"));
     } finally {

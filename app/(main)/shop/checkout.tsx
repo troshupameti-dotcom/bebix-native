@@ -10,6 +10,7 @@ import { shadows } from "@/lib/shadows";
 import { supabase } from "@/lib/supabase/client";
 import { BackButton } from "@/components/ui/BackButton";
 import { fetchSavedContact } from "@/lib/shop/orders";
+import { rememberGuestOrder } from "@/lib/shop/guestOrders";
 import type { TranslationKey } from "@/lib/i18n/translations";
 import { track } from "@/lib/analytics/posthog";
 import { friendlyError } from "@/lib/errors/userMessage";
@@ -157,6 +158,9 @@ export default function CheckoutScreen() {
       if (rpcError) throw new Error(rpcError.message);
       setPlacedId(typeof orderId === "string" ? orderId : null);
       if (guest) {
+        // Porosia ruhet në pajisje: statusi i saj del te "Porositë e mia" edhe
+        // kur mysafiri del nga app-i dhe kthehet.
+        if (typeof orderId === "string") void rememberGuestOrder(orderId);
         // Herën tjetër formulari del i mbushur, pa pasur nevojë për llogari.
         void AsyncStorage.setItem(
           GUEST_CONTACT_KEY,
@@ -205,12 +209,20 @@ export default function CheckoutScreen() {
           {isGuest ? t("co_guest_placed_body") : t("co_placed_body")}
         </Text>
         {isGuest ? (
-          <Pressable
-            onPress={() => router.push("/(auth)/signup")}
-            className="bg-olive rounded-xl2 py-3 px-6 mb-3"
-          >
-            <Text className="font-bodyMedium text-sm text-on-accent">{t("co_guest_create_account")}</Text>
-          </Pressable>
+          <>
+            <Pressable
+              onPress={() => {
+                router.dismissAll();
+                router.replace("/shop/orders");
+              }}
+              className="bg-olive rounded-xl2 py-3 px-6 mb-3"
+            >
+              <Text className="font-bodyMedium text-sm text-on-accent">{t("co_see_order")}</Text>
+            </Pressable>
+            <Pressable onPress={() => router.push("/(auth)/signup")} className="mb-3 py-1">
+              <Text className="font-bodyMedium text-sm text-olive">{t("co_guest_create_account")}</Text>
+            </Pressable>
+          </>
         ) : (
         <Pressable
           onPress={() => {
