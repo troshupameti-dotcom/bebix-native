@@ -1,6 +1,6 @@
 import { useEffect, useRef } from "react";
-import { Tabs, router } from "expo-router";
-import { View } from "react-native";
+import { Tabs, router, usePathname } from "expo-router";
+import { BackHandler, View } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { Icon, IconName } from "@/components/ui/Icon";
 import { useTranslation } from "@/lib/i18n/LanguageContext";
@@ -51,6 +51,18 @@ export default function MainLayout() {
       router.replace("/(auth)/login");
     }
   }, [loading, canBrowse]);
+
+  // Mysafiri në faqen kryesore të Dyqanit: "prapa" e çon te hyrja (ku mund të
+  // hyjë ose të regjistrohet), jo te Bebi dhe as jashtë app-it.
+  const pathname = usePathname();
+  useEffect(() => {
+    if (isAuthenticated || !isGuest || pathname !== "/shop") return;
+    const sub = BackHandler.addEventListener("hardwareBackPress", () => {
+      router.replace("/(auth)/login");
+      return true;
+    });
+    return () => sub.remove();
+  }, [isAuthenticated, isGuest, pathname]);
 
   // Historiku i baby-t sinkronizohet me Supabase (offline-first: AsyncStorage
   // mbetet burimi per UI-n, sync-u punon ne sfond).
@@ -107,6 +119,8 @@ export default function MainLayout() {
     <View style={{ flex: 1 }}>
       <Tabs
         initialRouteName={isAuthenticated ? "baby" : "shop"}
+        // Mysafiri s'ka tab-e të tjera: "prapa" nga Dyqani s'duhet ta çojë te Bebi.
+        backBehavior={isAuthenticated ? "firstRoute" : "none"}
         screenOptions={{
           headerShown: false,
           tabBarActiveTintColor: colors.active,

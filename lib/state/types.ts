@@ -71,6 +71,11 @@ export type AppState = {
    * Mungon te instalimet e vjetra; instalimet e reja nisin pa demo.
    */
   seedCleanupDone?: boolean;
+  /**
+   * A e ka zgjedhur vetë përdoruesi temën (Më shumë → Pamja). Pa këtë, aplikacioni
+   * hapet në light — edhe te instalimet e vjetra që e morën dark nga sistemi.
+   */
+  themeChosen?: boolean;
 };
 
 export const emptyProfile: BabyProfile = {

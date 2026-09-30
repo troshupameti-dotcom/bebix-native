@@ -1,5 +1,5 @@
 import { createContext, useContext, useEffect, useReducer, useRef, useState, ReactNode } from "react";
-import { AppState as RNAppState, useColorScheme } from "react-native";
+import { AppState as RNAppState } from "react-native";
 import { useColorScheme as useNativeWindColorScheme } from "nativewind";
 import { syncNotificationSettings } from "@/lib/notifications/settingsSync";
 import { signedUrlForProfilePhoto } from "@/lib/baby/profilePhotos";
@@ -197,7 +197,7 @@ type Action =
 function reducer(state: AppState, action: Action): AppState {
   switch (action.type) {
     case "SET_DARK_MODE":
-      return { ...state, darkMode: action.value };
+      return { ...state, darkMode: action.value, themeChosen: true };
     case "UPDATE_PROFILE":
       return { ...state, profile: { ...state.profile, ...action.value } };
     case "TOGGLE_FAVORITE": {
@@ -300,7 +300,6 @@ export function AppStateProvider({ children }: { children: ReactNode }) {
   const [hydrated, setHydrated] = useState(false);
   // Rritet kur ndryshon pronari i të dhënave (familja): profili rimerret.
   const [profileRefresh, setProfileRefresh] = useState(0);
-  const systemScheme = useColorScheme();
   const { setColorScheme } = useNativeWindColorScheme();
 
   useEffect(() => {
@@ -316,9 +315,8 @@ export function AppStateProvider({ children }: { children: ReactNode }) {
           const patch = cleanupSeedBabyData({ ...initialAppState.baby, ...baby });
           if (patch) baby = { ...baby, ...patch };
         }
-        dispatch({ type: "HYDRATE", state: { ...stored, baby, seedCleanupDone: true } as AppState });
-      } else if (systemScheme === "dark") {
-        dispatch({ type: "SET_DARK_MODE", value: true });
+        const darkMode = stored.themeChosen ? stored.darkMode : false;
+        dispatch({ type: "HYDRATE", state: { ...stored, baby, darkMode, seedCleanupDone: true } as AppState });
       }
       setHydrated(true);
     });

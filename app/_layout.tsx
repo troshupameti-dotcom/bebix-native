@@ -14,10 +14,11 @@ import { AppStateProvider } from "@/lib/state/AppStateContext";
 import { ToastProvider } from "@/lib/toast/ToastContext";
 import { useThemeColors } from "@/lib/theme/useThemeColors";
 import { recordPath } from "@/lib/navigation/history";
+import { BrandSplash } from "@/components/ui/BrandSplash";
 
 SplashScreen.preventAutoHideAsync();
-// Logoja zbehet butë kur mbaron, jo prerje e thatë.
-SplashScreen.setOptions({ duration: 450, fade: true });
+// Pas splash-it të sistemit vjen BrandSplash me të njëjtin sfond: kalim i shpejtë.
+SplashScreen.setOptions({ duration: 200, fade: true });
 
 /**
  * Sa gjatë rri logoja në hapje, si te TikTok: mjaft sa të shihet marka, pa u
@@ -41,11 +42,10 @@ function RootLayout() {
     Poppins_700Bold,
   });
 
+  // Splash-i i sistemit hiqet sapo app-i është gati; koha e mbetur e logos
+  // kalon te BrandSplash, që tregon logon e plotë (edhe te Android).
   useEffect(() => {
-    if (!fontsLoaded) return;
-    const wait = Math.max(0, SPLASH_MIN_MS - (Date.now() - APP_START));
-    const timer = setTimeout(() => void SplashScreen.hideAsync(), wait);
-    return () => clearTimeout(timer);
+    if (fontsLoaded) void SplashScreen.hideAsync();
   }, [fontsLoaded]);
 
   if (!fontsLoaded) return null;
@@ -59,6 +59,7 @@ function RootLayout() {
           </ToastProvider>
         </AppStateProvider>
       </LanguageProvider>
+      <BrandSplash until={APP_START + SPLASH_MIN_MS} />
     </GestureHandlerRootView>
   );
 }

@@ -9,6 +9,7 @@ import { haptics } from "@/lib/haptics";
 import { formatDate } from "@/lib/dateUtils";
 import { useTranslation } from "@/lib/i18n/LanguageContext";
 import { parseMeasure, type LatestGrowth, type LatestMeasure } from "@/lib/baby/growthLatest";
+import { useThemeColors } from "@/lib/theme/useThemeColors";
 
 type Props = {
   latest: LatestGrowth;
@@ -26,6 +27,7 @@ type Props = {
  */
 export function GrowthOverview({ latest, onAdd, onOpenChart }: Props) {
   const { t, lang } = useTranslation();
+  const theme = useThemeColors();
   const [open, setOpen] = useState(false);
   const [weight, setWeight] = useState("");
   const [height, setHeight] = useState("");
@@ -58,8 +60,7 @@ export function GrowthOverview({ latest, onAdd, onOpenChart }: Props) {
             label={t("growth_weight")}
             unit="kg"
             icon="cube"
-            tint="#B23A1C"
-            tintBg="#F3DCCF"
+            tone={TONES.weight}
             measure={latest.weight}
             lang={lang}
           />
@@ -67,8 +68,7 @@ export function GrowthOverview({ latest, onAdd, onOpenChart }: Props) {
             label={t("growth_height")}
             unit="cm"
             icon="chart"
-            tint="#2E6FA8"
-            tintBg="#D9E7F2"
+            tone={TONES.height}
             measure={latest.height}
             lang={lang}
           />
@@ -80,7 +80,7 @@ export function GrowthOverview({ latest, onAdd, onOpenChart }: Props) {
             accessibilityRole="button"
             className="flex-1 flex-row items-center justify-center gap-2 rounded-2xl bg-ink py-3.5"
           >
-            <Icon name="plus" size={16} color="#FBF7F0" />
+            <Icon name="plus" size={16} color={theme.cream} />
             <Text className="font-bodySemibold text-[14px] text-cream">{t("growth_add_measurement")}</Text>
           </Pressable>
           <Pressable
@@ -121,31 +121,48 @@ export function GrowthOverview({ latest, onAdd, onOpenChart }: Props) {
   );
 }
 
+type Tone = { light: { tint: string; bg: string; iconBg: string }; dark: { tint: string; bg: string; iconBg: string } };
+
+/**
+ * Ngjyrat e dy fushave. Te tema e errët pastelet e çelëta dukeshin si
+ * njolla të bardha nën tekstin krem: atje sfondi është vetë ngjyra, e tejdukshme.
+ */
+const TONES: Record<"weight" | "height", Tone> = {
+  weight: {
+    light: { tint: "#B23A1C", bg: "#F3DCCF99", iconBg: "#F3DCCF" },
+    dark: { tint: "#F0A58C", bg: "#E0785A26", iconBg: "#E0785A40" },
+  },
+  height: {
+    light: { tint: "#2E6FA8", bg: "#D9E7F299", iconBg: "#D9E7F2" },
+    dark: { tint: "#94C2EC", bg: "#5A9BD626", iconBg: "#5A9BD640" },
+  },
+};
+
 function MeasureTile({
   label,
   unit,
   icon,
-  tint,
-  tintBg,
+  tone,
   measure,
   lang,
 }: {
   label: string;
   unit: string;
   icon: IconName;
-  tint: string;
-  tintBg: string;
+  tone: Tone;
   measure: LatestMeasure | null;
   lang: "sq" | "en";
 }) {
   const { t } = useTranslation();
+  const { isDark } = useThemeColors();
+  const { tint, bg, iconBg } = isDark ? tone.dark : tone.light;
   const delta = measure?.delta ?? null;
   const deltaText = delta === null || delta === 0 ? null : `${delta > 0 ? "+" : "−"}${formatNumber(Math.abs(delta))} ${unit}`;
 
   return (
-    <View className="flex-1 rounded-2xl p-3.5" style={{ backgroundColor: `${tintBg}99` }}>
+    <View className="flex-1 rounded-2xl p-3.5" style={{ backgroundColor: bg }}>
       <View className="flex-row items-center gap-2">
-        <View className="h-7 w-7 items-center justify-center rounded-full" style={{ backgroundColor: tintBg }}>
+        <View className="h-7 w-7 items-center justify-center rounded-full" style={{ backgroundColor: iconBg }}>
           <Icon name={icon} size={14} color={tint} />
         </View>
         <Text className="font-bodySemibold text-[12.5px]" style={{ color: tint }}>

@@ -5,7 +5,7 @@
     "scheme": "bebix",
     "version": "1.0.0",
     "orientation": "portrait",
-    "userInterfaceStyle": "automatic",
+    "userInterfaceStyle": "light",
     "icon": "./assets/icon.png",
     "assetBundlePatterns": [
       "**/*"
@@ -47,7 +47,13 @@
           "image": "./assets/splash.png",
           "imageWidth": 300,
           "resizeMode": "contain",
-          "backgroundColor": "#F3F3F1"
+          "backgroundColor": "#F3F3F1",
+          "android": {
+            "image": "./assets/splash-android.png",
+            "imageWidth": 288,
+            "resizeMode": "contain",
+            "backgroundColor": "#F3F3F1"
+          }
         }
       ],
       "@react-native-community/datetimepicker",
