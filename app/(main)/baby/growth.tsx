@@ -1,5 +1,6 @@
 import { useMemo, useState } from "react";
-import { View, Text, ScrollView, Pressable, Dimensions } from "react-native";
+import { View, Text, ScrollView, Pressable } from "react-native";
+import { useContentWidth } from "@/lib/layout";
 import { SafeAreaView } from "react-native-safe-area-context";
 import Svg, { Path, Circle, Defs, LinearGradient, Stop, Line as SvgLine } from "react-native-svg";
 import { Icon } from "@/components/ui/Icon";
@@ -18,7 +19,6 @@ import { BackButton } from "@/components/ui/BackButton";
 import { buildSeries, metricHistory, type GrowthMetric } from "@/lib/baby/growthChart";
 
 /** Kartela ka 20 px anash dhe 20 px mbushje: grafiku zë pjesën e mbetur. */
-const CHART_WIDTH = Dimensions.get("window").width - 80;
 const CHART_HEIGHT = 170;
 
 /** Pesha në ngjyrën e kartës së peshës, gjatësia në atë të gjatësisë. */
@@ -47,6 +47,7 @@ function fmt(n: number): string {
 }
 
 export default function GrowthScreen() {
+  const CHART_WIDTH = useContentWidth() - 80;
   const { t, lang } = useTranslation();
   const { state, baby } = useAppState();
   const { showToast } = useToast();
@@ -57,7 +58,7 @@ export default function GrowthScreen() {
 
   const allHistory = useMemo(() => active(state.baby.growthHistory), [state.baby.growthHistory]);
   const cfg = METRIC[metric];
-  const series = useMemo(() => buildSeries(allHistory, metric, CHART_WIDTH, CHART_HEIGHT), [allHistory, metric]);
+  const series = useMemo(() => buildSeries(allHistory, metric, CHART_WIDTH, CHART_HEIGHT), [allHistory, metric, CHART_WIDTH]);
   const items = useMemo(() => metricHistory(allHistory, metric), [allHistory, metric]);
   const last = items[items.length - 1] ?? null;
   const prev = items[items.length - 2] ?? null;

@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
-import { View, Text, ScrollView, ActivityIndicator, useWindowDimensions } from "react-native";
+import { View, Text, ScrollView, ActivityIndicator } from "react-native";
+import { useContentWidth, gridColumns } from "@/lib/layout";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import { Icon } from "@/components/ui/Icon";
@@ -12,19 +13,12 @@ import { useTranslation } from "@/lib/i18n/LanguageContext";
 const PADDING_X = 20;
 const GRID_GAP = 12;
 
-function useGridColumns() {
-  const { width } = useWindowDimensions();
-  if (width >= 1024) return 4;
-  if (width >= 768) return 3;
-  return 2;
-}
-
 export default function BrandProductsScreen() {
   const { t } = useTranslation();
   const router = useRouter();
   const { id } = useLocalSearchParams<{ id: string }>();
-  const { width } = useWindowDimensions();
-  const columns = useGridColumns();
+  const width = useContentWidth();
+  const columns = gridColumns(width);
   const cardWidth = (width - PADDING_X * 2 - GRID_GAP * (columns - 1)) / columns;
 
   const [brand, setBrand] = useState<Brand | null | undefined>(undefined);

@@ -11,7 +11,8 @@
       "**/*"
     ],
     "ios": {
-      "supportsTablet": false,
+      "supportsTablet": true,
+      "requireFullScreen": true,
       "bundleIdentifier": "com.bebix.app",
       "infoPlist": {
         "NSCameraUsageDescription": "Bebix përdor kamerën për të shtuar foto të bebit tënd.",

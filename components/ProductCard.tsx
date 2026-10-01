@@ -67,7 +67,7 @@ export function ProductCard({ product, onPress, cardWidth }: Props) {
         <View
           // Kornizë e bardhë (edhe në temën e errët) kur ka foto: fotot e
           // produkteve kanë sfond të bardhë, dhe mbi krem dilnin si drejtkëndësha.
-          style={[shadows.soft, thumbnail ? { backgroundColor: "#FFFFFF", padding: 12 } : null]}
+          style={[shadows.soft, thumbnail ? { backgroundColor: "#FFFFFF", padding: 3 } : null]}
           className={`w-full aspect-square items-center justify-center relative rounded-xl2 overflow-hidden ${thumbnail ? "" : bg}`}
         >
           {thumbnail ? (

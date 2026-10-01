@@ -15,6 +15,8 @@ import { ToastProvider } from "@/lib/toast/ToastContext";
 import { useThemeColors } from "@/lib/theme/useThemeColors";
 import { recordPath } from "@/lib/navigation/history";
 import { BrandSplash } from "@/components/ui/BrandSplash";
+import { MAX_CONTENT_WIDTH } from "@/lib/layout";
+import { View } from "react-native";
 
 SplashScreen.preventAutoHideAsync();
 // Pas splash-it të sistemit vjen BrandSplash me të njëjtin sfond: kalim i shpejtë.
@@ -80,13 +82,19 @@ function ThemedStack() {
   return (
     <>
       <StatusBar style={theme.isDark ? "light" : "dark"} />
-      <Stack
-        screenOptions={{
-          headerShown: false,
-          animation: "fade",
-          contentStyle: { backgroundColor: theme.cream },
-        }}
-      />
+      {/* Në tablet dhe në të palosshmit e hapur përmbajtja rri në qendër me
+          gjerësi të kufizuar; në telefon mbush gjithë ekranin. */}
+      <View style={{ flex: 1, alignItems: "center", backgroundColor: theme.cream }}>
+        <View style={{ flex: 1, width: "100%", maxWidth: MAX_CONTENT_WIDTH }}>
+          <Stack
+            screenOptions={{
+              headerShown: false,
+              animation: "fade",
+              contentStyle: { backgroundColor: theme.cream },
+            }}
+          />
+        </View>
+      </View>
     </>
   );
 }

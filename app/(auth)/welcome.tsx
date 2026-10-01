@@ -1,6 +1,7 @@
 import { useRef, useState } from "react";
 import { useThemeColors } from "@/lib/theme/useThemeColors";
-import { View, Text, Pressable, ScrollView, Dimensions, NativeSyntheticEvent, NativeScrollEvent } from "react-native";
+import { View, Text, Pressable, ScrollView, NativeSyntheticEvent, NativeScrollEvent } from "react-native";
+import { useContentWidth } from "@/lib/layout";
 import { router } from "expo-router";
 import { MotiView } from "moti";
 import { Image } from "expo-image";
@@ -13,7 +14,6 @@ import { markOnboardingSeen, markGuestMode } from "@/lib/hooks/useOnboardingStat
 import { useTranslation } from "@/lib/i18n/LanguageContext";
 import type { TranslationKey } from "@/lib/i18n/translations";
 
-const { width: SCREEN_WIDTH } = Dimensions.get("window");
 
 const SLIDES: { taglineKey: TranslationKey; image: number }[] = [
   { taglineKey: "welcome_tagline_1", image: require("@/assets/images/onboarding/baby-first-steps.jpg") },
@@ -22,6 +22,7 @@ const SLIDES: { taglineKey: TranslationKey; image: number }[] = [
 ];
 
 export default function WelcomeScreen() {
+  const SCREEN_WIDTH = useContentWidth();
   const { t } = useTranslation();
   const theme = useThemeColors();
   const [index, setIndex] = useState(0);

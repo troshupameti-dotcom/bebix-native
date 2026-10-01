@@ -1,6 +1,6 @@
 import { useToast } from "@/lib/toast/ToastContext";
 import { useEffect, useState } from "react";
-import { View, Text, ScrollView, Pressable, Dimensions, Image, ActivityIndicator, FlatList } from "react-native";
+import { View, Text, ScrollView, Pressable, Image, ActivityIndicator, FlatList } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import { useAppState } from "@/lib/state/AppStateContext";
@@ -13,12 +13,13 @@ import { BackButton, goBackOr } from "@/components/ui/BackButton";
 import { track } from "@/lib/analytics/posthog";
 import { ProductReviews, Stars } from "@/components/shop/ProductReviews";
 import { useTranslation } from "@/lib/i18n/LanguageContext";
+import { useContentWidth } from "@/lib/layout";
 
-const { width } = Dimensions.get("window");
 
 
 
 export default function ProductDetailsScreen() {
+  const width = useContentWidth();
   const { t } = useTranslation();
   const router = useRouter();
   const { id } = useLocalSearchParams<{ id: string }>();
@@ -116,7 +117,7 @@ export default function ProductDetailsScreen() {
                 renderItem={({ item }) => (
                   // `contain` mbi të bardhë: fotot e produkteve kanë sfond të bardhë,
                   // dhe me `cover` një shishe e gjatë dilte e prerë lart e poshtë.
-                  <View style={{ width, height: 320, backgroundColor: "#FFFFFF", padding: 20 }}>
+                  <View style={{ width, height: 360, backgroundColor: "#FFFFFF", padding: 6 }}>
                     <Image source={{ uri: item }} style={{ width: "100%", height: "100%" }} resizeMode="contain" />
                   </View>
                 )}

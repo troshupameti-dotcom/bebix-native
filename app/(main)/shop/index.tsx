@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from "react";
-import { View, Text, FlatList, ScrollView, Pressable, TextInput, Image, ActivityIndicator, useWindowDimensions } from "react-native";
+import { View, Text, FlatList, ScrollView, Pressable, TextInput, Image, ActivityIndicator } from "react-native";
+import { useContentWidth, gridColumns } from "@/lib/layout";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useRouter } from "expo-router";
 import { useAppState } from "@/lib/state/AppStateContext";
@@ -19,13 +20,6 @@ import { friendlyError } from "@/lib/errors/userMessage";
 const PADDING_X = 20;
 const GRID_GAP = 12;
 const SEARCH_DEBOUNCE_MS = 350;
-
-function useGridColumns() {
-  const { width } = useWindowDimensions();
-  if (width >= 1024) return 4;
-  if (width >= 768) return 3;
-  return 2;
-}
 
 const SORT_OPTIONS: { value: ProductSort; labelKey: string }[] = [
   { value: "newest", labelKey: "sort_relevant" },
@@ -52,8 +46,8 @@ export default function ShopScreen() {
   const { t } = useTranslation();
   const { state } = useAppState();
   const theme = useThemeColors();
-  const { width } = useWindowDimensions();
-  const columns = useGridColumns();
+  const width = useContentWidth();
+  const columns = gridColumns(width);
   const cardWidth = (width - PADDING_X * 2 - GRID_GAP * (columns - 1)) / columns;
 
   const [query, setQuery] = useState("");
@@ -227,18 +221,18 @@ export default function ShopScreen() {
       )}
       {!isFiltering && brands.length > 0 && (
         <>
-          <Text className="font-bodySemibold text-base text-ink px-5 mt-3 mb-3">{t("shop_brands")}</Text>
+          <Text className="font-bodySemibold text-base text-ink px-5 mt-2 mb-2">{t("shop_brands")}</Text>
           <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ paddingHorizontal: 20 }}>
             {brands.map((b) => (
-              <Pressable key={b.id} onPress={() => router.push(`/shop/brand/${b.id}`)} className="mr-2 w-[60px] items-center">
-                <View className="h-[56px] w-[56px] items-center justify-center overflow-hidden rounded-2xl border border-cream-line bg-surface">
+              <Pressable key={b.id} onPress={() => router.push(`/shop/brand/${b.id}`)} className="mr-1.5 w-[54px] items-center">
+                <View className="h-[52px] w-[52px] items-center justify-center overflow-hidden rounded-xl border border-cream-line bg-surface">
                   {b.logoUrl ? (
                     <Image source={{ uri: b.logoUrl }} className="w-full h-full" resizeMode="cover" />
                   ) : (
                     <Icon name={b.icon} size={20} color={theme.inkFaint} />
                   )}
                 </View>
-                <Text className="mt-1.5 text-center font-bodyMedium text-[10.5px] text-ink-soft" numberOfLines={1}>{b.name}</Text>
+                <Text className="mt-1 text-center font-bodyMedium text-[10px] text-ink-soft" numberOfLines={1}>{b.name}</Text>
               </Pressable>
             ))}
           </ScrollView>
@@ -247,7 +241,7 @@ export default function ShopScreen() {
 
       {!isFiltering && onSale.length > 0 && (
         <>
-          <Text className="font-bodySemibold text-base text-ink px-5 mt-7 mb-3">{t("shop_on_sale")}</Text>
+          <Text className="font-bodySemibold text-base text-ink px-5 mt-5 mb-2">{t("shop_on_sale")}</Text>
           <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ paddingHorizontal: 20 }}>
             {onSale.map((p) => (
               <View key={p.id} className="mr-3">
@@ -258,7 +252,7 @@ export default function ShopScreen() {
         </>
       )}
 
-      <View className="flex-row items-center justify-between px-5 mt-7 mb-3">
+      <View className="flex-row items-center justify-between px-5 mt-5 mb-2">
         <Text className="font-bodySemibold text-base text-ink">
           {isFiltering ? t("shop_results_count", { n: total }) : t("shop_all_products")}
         </Text>
