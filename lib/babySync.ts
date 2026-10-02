@@ -1,3 +1,4 @@
+import { log } from "@/lib/log";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { supabase } from "@/lib/supabase/client";
 import { resolveDataOwnerId } from "@/lib/baby/household";
@@ -30,7 +31,7 @@ export async function syncBabyProfileToSupabase(babyName: string | null, babyDob
     { onConflict: "user_id" }
   );
 
-  if (error) console.log("Gabim gjatë sinkronizimit të profilit të bebit:", error.message);
+  if (error) log("Gabim gjatë sinkronizimit të profilit të bebit:", error.message);
   return !error;
 }
 
@@ -92,7 +93,7 @@ export async function syncProfilePhotoToSupabase(
     { onConflict: "user_id" }
   );
 
-  if (error) console.log("Gabim gjatë sinkronizimit të fotos së profilit:", error.message);
+  if (error) log("Gabim gjatë sinkronizimit të fotos së profilit:", error.message);
 }
 
 /** Rrugët e fotove të ruajtura te serveri, për t'i rikthyer në një pajisje të re. */

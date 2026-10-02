@@ -1,3 +1,4 @@
+import { log } from "@/lib/log";
 import { File } from "expo-file-system";
 import { supabase } from "@/lib/supabase/client";
 
@@ -124,5 +125,5 @@ export async function uploadPostMedia(userId: string, items: LocalMedia[]): Prom
 export async function removePostMedia(media: StoredMedia[]): Promise<void> {
   if (!media.length) return;
   const { error } = await supabase.storage.from(COMMUNITY_BUCKET).remove(media.map((m) => m.path));
-  if (error) console.log("Fshirja e medias së postimit dështoi:", error.message);
+  if (error) log("Fshirja e medias së postimit dështoi:", error.message);
 }

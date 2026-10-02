@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useState } from "react";
 import { Animated, StyleSheet } from "react-native";
 import { Image } from "expo-image";
 
@@ -10,7 +10,7 @@ import { Image } from "expo-image";
  * Te iOS ka të njëjtën figurë, madhësi dhe sfond si splash-i: kalimi s'duket.
  */
 export function BrandSplash({ until }: { until: number }) {
-  const opacity = useRef(new Animated.Value(1)).current;
+  const [opacity] = useState(() => new Animated.Value(1));
   const [done, setDone] = useState(false);
 
   useEffect(() => {

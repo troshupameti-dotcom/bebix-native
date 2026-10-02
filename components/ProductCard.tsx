@@ -62,7 +62,14 @@ export function ProductCard({ product, onPress, cardWidth }: Props) {
 
   return (
     <Animated.View style={[cardWidth ? { width: cardWidth } : { width: "47%" }, { transform: [{ scale }] }]}>
-      <Pressable onPress={onPress} onPressIn={pressIn} onPressOut={pressOut} className="mb-4">
+      <Pressable
+        onPress={onPress}
+        onPressIn={pressIn}
+        onPressOut={pressOut}
+        accessibilityRole="button"
+        accessibilityLabel={`${product.name}, €${product.price.toFixed(2)}`}
+        className="mb-4"
+      >
         {/* A. Image area — VETËM kjo pjesë ka shadow/rounded/background si "card" */}
         <View
           // Kornizë e bardhë (edhe në temën e errët) kur ka foto: fotot e
@@ -116,6 +123,9 @@ export function ProductCard({ product, onPress, cardWidth }: Props) {
           <Pressable
             onPress={onHeartPress}
             hitSlop={8}
+            accessibilityRole="button"
+            accessibilityLabel={fav ? t("a11y_unfavorite") : t("a11y_favorite")}
+            accessibilityState={{ selected: fav }}
             className="absolute bottom-2 right-2 w-8 h-8 rounded-full bg-surface items-center justify-center"
             style={shadows.soft}
           >

@@ -1,3 +1,4 @@
+import { log } from "@/lib/log";
 import { useEffect, useRef, useState } from "react";
 import { AppState } from "react-native";
 import { useAppState } from "@/lib/state/AppStateContext";
@@ -97,7 +98,7 @@ export function useBabyRecordsSync(isAuthenticated: boolean) {
         .catch((e) => {
           // Dështimi i sync-ut s'duhet t'i prishë asgjë prindit: të dhënat janë
           // të ruajtura lokalisht dhe riprovohet herën tjetër.
-          console.log("Sync-u i baby_records dështoi:", e);
+          log("Sync-u i baby_records dështoi:", e);
           setSyncPhase("error");
         })
         .finally(() => {

@@ -16,7 +16,11 @@ import { useThemeColors } from "@/lib/theme/useThemeColors";
 import { recordPath } from "@/lib/navigation/history";
 import { BrandSplash } from "@/components/ui/BrandSplash";
 import { MAX_CONTENT_WIDTH } from "@/lib/layout";
+import { OfflineBanner } from "@/components/ui/OfflineBanner";
 import { View } from "react-native";
+
+// Kur një ekran rrëzohet, shfaqet ky në vend të ekranit të bardhë.
+export { AppErrorBoundary as ErrorBoundary } from "@/components/ui/AppErrorBoundary";
 
 SplashScreen.preventAutoHideAsync();
 // Pas splash-it të sistemit vjen BrandSplash me të njëjtin sfond: kalim i shpejtë.
@@ -82,6 +86,7 @@ function ThemedStack() {
   return (
     <>
       <StatusBar style={theme.isDark ? "light" : "dark"} />
+      <OfflineBanner />
       {/* Në tablet dhe në të palosshmit e hapur përmbajtja rri në qendër me
           gjerësi të kufizuar; në telefon mbush gjithë ekranin. */}
       <View style={{ flex: 1, alignItems: "center", backgroundColor: theme.cream }}>

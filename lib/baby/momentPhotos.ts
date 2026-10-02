@@ -1,3 +1,4 @@
+import { log } from "@/lib/log";
 import { supabase } from "@/lib/supabase/client";
 
 const BUCKET = "baby-moments";
@@ -68,12 +69,12 @@ export async function uploadMomentFile(
     });
 
     if (error) {
-      console.log("Ngarkimi i file-it te momentit deshtoi:", error.message);
+      log("Ngarkimi i file-it te momentit deshtoi:", error.message);
       return null;
     }
     return path;
   } catch (e) {
-    console.log("Ngarkimi i file-it te momentit deshtoi:", e);
+    log("Ngarkimi i file-it te momentit deshtoi:", e);
     return null;
   }
 }
@@ -85,7 +86,7 @@ export async function signedUrlForMoment(storagePath: string): Promise<string | 
     .createSignedUrl(storagePath, SIGNED_URL_TTL_SECONDS);
 
   if (error) {
-    console.log("URL e nenshkruar e momentit deshtoi:", error.message);
+    log("URL e nenshkruar e momentit deshtoi:", error.message);
     return null;
   }
   return data?.signedUrl ?? null;
@@ -94,5 +95,5 @@ export async function signedUrlForMoment(storagePath: string): Promise<string | 
 /** Fshin file-in e nje momenti; heshtazi, sepse metadatat jane me te rendesishme. */
 export async function deleteMomentFile(storagePath: string): Promise<void> {
   const { error } = await supabase.storage.from(BUCKET).remove([storagePath]);
-  if (error) console.log("Fshirja e file-it te momentit deshtoi:", error.message);
+  if (error) log("Fshirja e file-it te momentit deshtoi:", error.message);
 }

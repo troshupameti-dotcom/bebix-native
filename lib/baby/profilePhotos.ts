@@ -1,3 +1,4 @@
+import { log } from "@/lib/log";
 import { supabase } from "@/lib/supabase/client";
 import { isLocalFileUri } from "@/lib/baby/momentPhotos";
 
@@ -77,12 +78,12 @@ export async function uploadProfilePhoto(
     });
 
     if (error) {
-      console.log("Ngarkimi i fotos se profilit deshtoi:", error.message);
+      log("Ngarkimi i fotos se profilit deshtoi:", error.message);
       return null;
     }
     return path;
   } catch (e) {
-    console.log("Ngarkimi i fotos se profilit deshtoi:", e);
+    log("Ngarkimi i fotos se profilit deshtoi:", e);
     return null;
   }
 }
@@ -94,7 +95,7 @@ export async function signedUrlForProfilePhoto(storagePath: string): Promise<str
     .createSignedUrl(storagePath, SIGNED_URL_TTL_SECONDS);
 
   if (error) {
-    console.log("URL e nenshkruar e fotos se profilit deshtoi:", error.message);
+    log("URL e nenshkruar e fotos se profilit deshtoi:", error.message);
     return null;
   }
   return data?.signedUrl ?? null;

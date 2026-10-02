@@ -323,7 +323,6 @@ export function AppStateProvider({ children }: { children: ReactNode }) {
     return () => {
       alive = false;
     };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   // Ruajtja: kurrë para ngarkimit (do të mbishkruante historikun me gjendjen

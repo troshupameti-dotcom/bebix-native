@@ -1,3 +1,4 @@
+import { log } from "@/lib/log";
 import { useEffect, useRef } from "react";
 import { Tabs, router, usePathname } from "expo-router";
 import { BackHandler, View } from "react-native";
@@ -81,7 +82,7 @@ export default function MainLayout() {
     pushRegistered.current = true;
 
     registerForPushNotificationsAsync().catch((e) => {
-      console.log("Regjistrimi i push notifications deshtoi:", e);
+      log("Regjistrimi i push notifications deshtoi:", e);
     });
   }, [isAuthenticated]);
 

@@ -1,3 +1,4 @@
+import { log } from "@/lib/log";
 import * as Device from "expo-device";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import Constants, { ExecutionEnvironment } from "expo-constants";
@@ -26,7 +27,7 @@ function loadNotifications(): NotificationsModule | null {
   if (cachedModule !== undefined) return cachedModule;
 
   if (isExpoGo) {
-    console.log("Push notifications kërkojnë development build, jo Expo Go.");
+    log("Push notifications kërkojnë development build, jo Expo Go.");
     cachedModule = null;
     return null;
   }
@@ -46,7 +47,7 @@ function loadNotifications(): NotificationsModule | null {
     });
   } catch (e) {
     // Build i vjetër pa modulin nativ: s'ka push, por app-i punon.
-    console.log("expo-notifications s'është i disponueshëm:", e);
+    log("expo-notifications s'është i disponueshëm:", e);
     cachedModule = null;
   }
 
@@ -61,7 +62,7 @@ function loadNotifications(): NotificationsModule | null {
 export async function registerForPushNotificationsAsync(): Promise<string | null> {
   if (!Device.isDevice) {
     // Emulatori s'merr push token real.
-    console.log("Push notifications kërkojnë pajisje fizike, jo emulator.");
+    log("Push notifications kërkojnë pajisje fizike, jo emulator.");
     return null;
   }
 
@@ -77,7 +78,7 @@ export async function registerForPushNotificationsAsync(): Promise<string | null
   }
 
   if (finalStatus !== "granted") {
-    console.log("Leja e njoftimeve u refuzua.");
+    log("Leja e njoftimeve u refuzua.");
     return null;
   }
 
@@ -92,7 +93,7 @@ export async function registerForPushNotificationsAsync(): Promise<string | null
 
   const projectId = Constants.expoConfig?.extra?.eas?.projectId ?? Constants.easConfig?.projectId;
   if (!projectId) {
-    console.log("S'u gjet EAS projectId — kontrollo app.json.");
+    log("S'u gjet EAS projectId — kontrollo app.json.");
     return null;
   }
 
@@ -102,7 +103,7 @@ export async function registerForPushNotificationsAsync(): Promise<string | null
   const { data: sessionData } = await supabase.auth.getSession();
   const userId = sessionData.session?.user.id;
   if (!userId) {
-    console.log("Asnjë përdorues i kyçur — token-i nuk u ruajt.");
+    log("Asnjë përdorues i kyçur — token-i nuk u ruajt.");
     return expoPushToken;
   }
 
@@ -112,7 +113,7 @@ export async function registerForPushNotificationsAsync(): Promise<string | null
   // vazhdonin të vinin në këtë telefon.
   const { error } = await supabase.rpc("register_push_token", { p_token: expoPushToken });
   if (error) {
-    console.log("Gabim gjatë ruajtjes së push token:", error.message);
+    log("Gabim gjatë ruajtjes së push token:", error.message);
   } else {
     await AsyncStorage.setItem(PUSH_TOKEN_KEY, expoPushToken);
   }
