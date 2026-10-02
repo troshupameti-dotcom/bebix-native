@@ -8,6 +8,7 @@ import { FormField } from "@/components/baby/FormField";
 import { SegmentedField } from "@/components/baby/SegmentedField";
 import { DateTimeField } from "@/components/baby/DateTimeField";
 import { StatsRow } from "@/components/baby/StatsRow";
+import { DiaperStockCard } from "@/components/baby/DiaperStockCard";
 import { useAppState, active } from "@/lib/state/AppStateContext";
 import { useToast } from "@/lib/toast/ToastContext";
 import { useTranslation } from "@/lib/i18n/LanguageContext";
@@ -125,6 +126,9 @@ export default function DiaperScreen() {
             { label: t("diaper_stats_week"), value: String(stats.week) },
           ]}
         />
+
+        <View className="mt-5" />
+        <DiaperStockCard entries={log} />
 
         {log.length === 0 ? (
           <View className="items-center gap-2 py-16">

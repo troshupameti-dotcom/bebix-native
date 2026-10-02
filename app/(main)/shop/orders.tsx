@@ -12,6 +12,7 @@ import {
 } from "@/lib/shop/orders";
 import { fetchGuestOrders } from "@/lib/shop/guestOrders";
 import { useTranslation } from "@/lib/i18n/LanguageContext";
+import { useAppState } from "@/lib/state/AppStateContext";
 
 /**
  * Ngjyra e secilit status, që prindi ta kuptojë me një vështrim:
@@ -57,6 +58,8 @@ function Timeline({ status }: { status: OrderStatus }) {
 
 function OrderCard({ order }: { order: MyOrder }) {
   const theme = useThemeColors();
+  const router = useRouter();
+  const { addToCart } = useAppState();
   const { t, language } = useTranslation();
   const tone = STATUS_TONE[order.status];
   const itemCount = order.items.reduce((sum, i) => sum + i.qty, 0);
@@ -105,6 +108,20 @@ function OrderCard({ order }: { order: MyOrder }) {
       <Text className="font-body text-[11px] text-ink-faint mt-2" numberOfLines={1}>
         {order.address}, {order.city} · {order.phone}
       </Text>
+
+      {/* Porosit përsëri: të njëjtat artikuj në shportë. Çmimi dhe stoku rikontrollohen te arkëtimi. */}
+      {order.status !== "cancelled" && order.items.length > 0 ? (
+        <Pressable
+          onPress={() => {
+            for (const i of order.items) addToCart({ id: i.id, name: i.name, price: i.price, imageUrl: i.imageUrl ?? null, icon: i.icon ?? "cube" }, i.qty);
+            router.push("/shop/cart");
+          }}
+          accessibilityRole="button"
+          className="mt-3 items-center rounded-full border border-cream-line py-2.5"
+        >
+          <Text className="font-bodySemibold text-xs text-ink">{t("myorders_reorder")}</Text>
+        </Pressable>
+      ) : null}
     </View>
   );
 }

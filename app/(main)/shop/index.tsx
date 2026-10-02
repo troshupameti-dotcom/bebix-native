@@ -2,7 +2,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { View, Text, FlatList, ScrollView, Pressable, TextInput, Image, ActivityIndicator } from "react-native";
 import { useContentWidth, gridColumns } from "@/lib/layout";
 import { SafeAreaView } from "react-native-safe-area-context";
-import { useRouter } from "expo-router";
+import { useRouter, useLocalSearchParams } from "expo-router";
 import { useAppState } from "@/lib/state/AppStateContext";
 import { useTranslation } from "@/lib/i18n/LanguageContext";
 import { Icon } from "@/components/ui/Icon";
@@ -50,7 +50,15 @@ export default function ShopScreen() {
   const columns = gridColumns(width);
   const cardWidth = (width - PADDING_X * 2 - GRID_GAP * (columns - 1)) / columns;
 
-  const [query, setQuery] = useState("");
+  // Një lidhje mund ta çojë klientin këtu me kërkimin gati (p.sh. "Porosit pelena").
+  const { q: queryParam } = useLocalSearchParams<{ q?: string }>();
+  const [query, setQuery] = useState(typeof queryParam === "string" ? queryParam : "");
+  // Kur lidhja ndryshon pasi ekrani është hapur, kërkimi përditësohet gjatë vizatimit (jo në efekt).
+  const [seenParam, setSeenParam] = useState(queryParam);
+  if (queryParam !== seenParam) {
+    setSeenParam(queryParam);
+    if (typeof queryParam === "string" && queryParam) setQuery(queryParam);
+  }
   const [search, setSearch] = useState("");
   // Celesi i kategorise nga baza, ose "all". Kategorite i menaxhon paneli.
   const [category, setCategory] = useState<string>("all");
