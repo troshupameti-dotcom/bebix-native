@@ -22,8 +22,10 @@ const SITE = "https://www.bebix.store";
 type Row = { id: number; kind: string; order_id: string; audience: "customer" | "admin"; to_email: string | null; dedupe_key: string | null };
 type Order = {
   id: string; full_name: string; phone: string; address: string; city: string; total_price: number; created_at: string;
-  items: { name?: string; price?: number; qty?: number }[] | null;
+  items: { id?: string; name?: string; price?: number; qty?: number; imageUrl?: string | null }[] | null;
 };
+/** Foto dhe kodi i produktit, për çdo artikull të porosisë. */
+type Meta = Map<string, { img: string | null; code: string }>;
 
 function isServiceRole(req: Request): boolean {
   const token = (req.headers.get("Authorization") ?? "").replace(/^Bearer\s+/i, "");
@@ -68,12 +70,18 @@ const CUSTOMER: Record<string, { subject: (r: string) => string; title: string; 
   },
 };
 
-function itemsTable(o: Order): string {
-  const rows = (o.items ?? []).map((i) =>
-    `<tr><td style="padding:8px 0;border-bottom:1px solid #eee;">${esc(i.name)} <span style="color:#888;">× ${esc(i.qty)}</span></td><td style="padding:8px 0;border-bottom:1px solid #eee;text-align:right;white-space:nowrap;">${eur(Number(i.price) * Number(i.qty))}</td></tr>`
-  ).join("");
+function itemsTable(o: Order, meta: Meta): string {
+  const rows = (o.items ?? []).map((i) => {
+    const m = i.id ? meta.get(i.id) : undefined;
+    const img = i.imageUrl || m?.img;
+    const photo = img
+      ? `<img src="${esc(img)}" width="56" height="56" alt="" style="display:block;width:56px;height:56px;object-fit:contain;background:#fff;border:1px solid #eee;border-radius:8px;">`
+      : "";
+    const code = m?.code ? `<br><span style="font-size:12px;color:#857c71;">Kodi: ${esc(m.code)}</span>` : "";
+    return `<tr><td style="padding:8px 10px 8px 0;border-bottom:1px solid #eee;width:56px;">${photo}</td><td style="padding:8px 0;border-bottom:1px solid #eee;">${esc(i.name)} <span style="color:#888;">× ${esc(i.qty)}</span>${code}</td><td style="padding:8px 0;border-bottom:1px solid #eee;text-align:right;white-space:nowrap;">${eur(Number(i.price) * Number(i.qty))}</td></tr>`;
+  }).join("");
   return `<table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="font-size:14px;color:#1c1a16;">${rows}
-    <tr><td style="padding:12px 0 0;font-weight:700;">Totali</td><td style="padding:12px 0 0;text-align:right;font-weight:700;">${eur(o.total_price)}</td></tr></table>`;
+    <tr><td></td><td style="padding:12px 0 0;font-weight:700;">Totali</td><td style="padding:12px 0 0;text-align:right;font-weight:700;">${eur(o.total_price)}</td></tr></table>`;
 }
 
 function shell(title: string, body: string): string {
@@ -88,16 +96,16 @@ function shell(title: string, body: string): string {
   </td></tr></table></body></html>`;
 }
 
-function render(row: Row, o: Order): { to: string; subject: string; html: string } | null {
+function render(row: Row, o: Order, meta: Meta): { to: string; subject: string; html: string } | null {
   const r = ref(o.id);
   if (row.audience === "admin") {
-    const body = `<p style="margin:0 0 12px;"><strong>${esc(o.full_name)}</strong><br>${esc(o.phone)}<br>${esc(o.address)}, ${esc(o.city)}</p>${itemsTable(o)}`;
+    const body = `<p style="margin:0 0 12px;"><strong>${esc(o.full_name)}</strong><br>${esc(o.phone)}<br>${esc(o.address)}, ${esc(o.city)}</p>${itemsTable(o, meta)}`;
     return { to: ADMIN_TO, subject: `Porosi e re ${r} · ${eur(o.total_price)} · ${o.city}`, html: shell(`Porosi e re ${r}`, body) };
   }
   const t = CUSTOMER[row.kind];
   if (!t || !row.to_email) return null;
   const body = `<p style="margin:0 0 16px;">${esc(t.lead)}</p>
-    <p style="margin:0 0 6px;font-weight:700;color:#1c1a16;">Porosia ${esc(r)}</p>${itemsTable(o)}
+    <p style="margin:0 0 6px;font-weight:700;color:#1c1a16;">Porosia ${esc(r)}</p>${itemsTable(o, meta)}
     <p style="margin:16px 0 0;"><strong>Dërgesa:</strong> ${esc(o.full_name)}, ${esc(o.address)}, ${esc(o.city)}</p>
     <p style="margin:16px 0 0;"><a href="${SITE}/sq/shop/orders" style="color:#1f3d38;font-weight:700;">Shiko porositë e mia</a></p>`;
   return { to: row.to_email, subject: t.subject(r), html: shell(t.title, body) };
@@ -126,7 +134,21 @@ serve(async (req) => {
         .eq("id", row.order_id)
         .maybeSingle();
       if (orderError || !order) throw new Error(orderError?.message ?? "porosia s'u gjet");
-      const mail = render(row, order as Order);
+      // Foto dhe kodi nga katalogu (porositë e vjetra s'e kanë foton te artikulli).
+      const ids = [...new Set(((order as Order).items ?? []).map((i) => i.id).filter((x): x is string => !!x))];
+      const meta: Meta = new Map();
+      if (ids.length) {
+        const [{ data: prods }, { data: pps }] = await Promise.all([
+          supabase.from("products").select("id, image_url").in("id", ids),
+          supabase.from("partner_products").select("product_id, sku").in("product_id", ids),
+        ]);
+        const sku = new Map((pps ?? []).map((p: { product_id: string; sku: string | null }) => [p.product_id, p.sku]));
+        for (const id of ids) {
+          const img = (prods ?? []).find((p: { id: string; image_url: string | null }) => p.id === id)?.image_url ?? null;
+          meta.set(id, { img, code: sku.get(id) || id.slice(0, 8).toUpperCase() });
+        }
+      }
+      const mail = render(row, order as Order, meta);
       if (!mail) throw new Error("s'ka email ose lloj i panjohur");
 
       const res = await fetch("https://api.resend.com/emails", {
