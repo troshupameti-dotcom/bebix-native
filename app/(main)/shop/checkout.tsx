@@ -44,6 +44,7 @@ export default function CheckoutScreen() {
   // pastaj cfare mungon.
   const [fullName, setFullName] = useState(() => state.profile.parentName ?? "");
   const [phone, setPhone] = useState("");
+  const [email, setEmail] = useState("");
   const [address, setAddress] = useState("");
   const [city, setCity] = useState("");
   const [loading, setLoading] = useState(false);
@@ -74,9 +75,10 @@ export default function CheckoutScreen() {
     AsyncStorage.getItem(GUEST_CONTACT_KEY)
       .then((raw) => {
         if (!active || !raw) return;
-        const saved = JSON.parse(raw) as Partial<Record<"fullName" | "phone" | "address" | "city", string>>;
+        const saved = JSON.parse(raw) as Partial<Record<"fullName" | "phone" | "address" | "city" | "email", string>>;
         setFullName((prev) => prev || saved.fullName || "");
         setPhone((prev) => prev || saved.phone || "");
+        setEmail((prev) => prev || saved.email || "");
         setAddress((prev) => prev || saved.address || "");
         setCity((prev) => prev || saved.city || "");
       })
@@ -116,6 +118,10 @@ export default function CheckoutScreen() {
     if (!canSubmit) return;
     if (!isValidPhone(phone)) {
       setError(t("co_err_phone"));
+      return;
+    }
+    if (authState === "out" && email.trim() && !/^\S+@\S+\.\S+$/.test(email.trim())) {
+      setError(t("co_err_email"));
       return;
     }
     setLoading(true);
@@ -161,10 +167,16 @@ export default function CheckoutScreen() {
         // Porosia ruhet në pajisje: statusi i saj del te "Porositë e mia" edhe
         // kur mysafiri del nga app-i dhe kthehet.
         if (typeof orderId === "string") void rememberGuestOrder(orderId);
+        // Email-i (opsional) për konfirmim: s'e prish kurrë porosinë nëse dështon.
+        if (email.trim() && typeof orderId === "string") {
+          void Promise.resolve(
+            supabase.rpc("set_order_email", { p_order_id: orderId, p_client_ref: orderRef.current, p_email: email.trim() })
+          ).catch(() => {});
+        }
         // Herën tjetër formulari del i mbushur, pa pasur nevojë për llogari.
         void AsyncStorage.setItem(
           GUEST_CONTACT_KEY,
-          JSON.stringify({ fullName: fullName.trim(), phone: phone.trim(), address: address.trim(), city: city.trim() })
+          JSON.stringify({ fullName: fullName.trim(), phone: phone.trim(), email: email.trim(), address: address.trim(), city: city.trim() })
         ).catch(() => {});
       }
 
@@ -183,7 +195,7 @@ export default function CheckoutScreen() {
     } finally {
       setLoading(false);
     }
-  }, [canSubmit, fullName, phone, address, city, state.cartItems, clearCart, cartTotal, replaceCartItems, t, authState]);
+  }, [canSubmit, fullName, phone, email, address, city, state.cartItems, clearCart, cartTotal, replaceCartItems, t, authState]);
 
   if (authState === "loading") {
     return (
@@ -310,6 +322,23 @@ export default function CheckoutScreen() {
           style={shadows.soft}
           className="bg-surface rounded-xl2 px-4 py-3 font-body text-sm text-ink mb-4"
         />
+
+        {authState === "out" && (
+          <>
+            <Text className="font-bodyMedium text-sm text-ink-soft mb-2">{t("co_email")}</Text>
+            <TextInput
+              value={email}
+              onChangeText={setEmail}
+              placeholder={t("co_ph_email")}
+              placeholderClassName="text-ink-faint"
+              keyboardType="email-address"
+              autoCapitalize="none"
+              autoCorrect={false}
+              style={shadows.soft}
+              className="bg-surface rounded-xl2 px-4 py-3 font-body text-sm text-ink mb-4"
+            />
+          </>
+        )}
 
         <Text className="font-bodyMedium text-sm text-ink-soft mb-2">{t("co_address")}</Text>
         <TextInput
