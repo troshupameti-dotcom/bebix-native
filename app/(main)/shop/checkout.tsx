@@ -118,7 +118,13 @@ export default function CheckoutScreen() {
 
   const quoteKey = `${country}|${state.cartItems.map((i) => i.id).join(",")}`;
   const shipping = quote?.key === quoteKey ? quote.fee : undefined;
-  const shippingFee = typeof shipping === "number" ? shipping : 0;
+  // Dërgesa e fundit e njohur mbahet gjatë ndërrimit të shtetit, që totali të mos kërcejë.
+  const shownFee = typeof shipping === "number" ? shipping : typeof quote?.fee === "number" ? quote.fee : undefined;
+  const shippingFee = shownFee ?? 0;
+  // Baza e njeh dërgesën vetëm pas migrimit; para tij s'tregohet shtet as dërgesë (porosia shkon si më parë).
+  const quoteWorks = quote !== null && quote.fee !== "na";
+  // Porosia pret çmimin e shtetit të zgjedhur, që ajo që shihet të jetë ajo që paguhet.
+  const quoteReady = quote !== null && (quote.fee === "na" || quote.key === quoteKey);
 
   // Çmimi i dërgesës e merr bazën, që vendi dhe produktet me "dërgesë falas" të numërohen njësoj si te porosia.
   useEffect(() => {
@@ -136,7 +142,7 @@ export default function CheckoutScreen() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [quoteKey]);
 
-  const canSubmit = !!(fullName.trim() && phone.trim() && address.trim() && city.trim() && state.cartItems.length > 0);
+  const canSubmit = !!(fullName.trim() && phone.trim() && address.trim() && city.trim() && state.cartItems.length > 0 && quoteReady);
 
   const submitOrder = useCallback(async () => {
     if (!canSubmit) return;
@@ -323,10 +329,10 @@ export default function CheckoutScreen() {
             <Text className="font-bodyMedium text-sm text-ink-soft">{t("co_products_total")}</Text>
             <Text className="font-bodyMedium text-sm text-ink">€{cartTotal().toFixed(2)}</Text>
           </View>
-          {typeof shipping === "number" ? (
+          {shownFee !== undefined ? (
             <View className="flex-row items-center justify-between pt-1.5">
               <Text className="font-bodyMedium text-sm text-ink-soft">{t("co_shipping")}</Text>
-              <Text className="font-bodyMedium text-sm text-ink">{shipping === 0 ? t("co_shipping_free") : `€${shipping.toFixed(2)}`}</Text>
+              <Text className="font-bodyMedium text-sm text-ink">{shownFee === 0 ? t("co_shipping_free") : `€${shownFee.toFixed(2)}`}</Text>
             </View>
           ) : null}
           <View className="flex-row items-center justify-between pt-2 mt-2 border-t border-cream-line">
@@ -396,8 +402,8 @@ export default function CheckoutScreen() {
           className="bg-surface rounded-xl2 px-4 py-3 font-body text-sm text-ink mb-4"
         />
 
-        <Text className="font-bodyMedium text-sm text-ink-soft mb-2">{t("co_country")}</Text>
-        <View className="flex-row gap-2 mb-6">
+        {quoteWorks ? <Text className="font-bodyMedium text-sm text-ink-soft mb-2">{t("co_country")}</Text> : null}
+        {quoteWorks ? <View className="flex-row gap-2 mb-6">
           {SHIPPING_COUNTRIES.map((c) => {
             const active = c.code === country;
             return (
@@ -416,7 +422,7 @@ export default function CheckoutScreen() {
               </Pressable>
             );
           })}
-        </View>
+        </View> : null}
 
         {changes.length > 0 && (
           <View className="bg-olive-bg rounded-xl2 p-3 mb-4">
