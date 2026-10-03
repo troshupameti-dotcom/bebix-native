@@ -7,6 +7,7 @@ import { PostCard } from "@/components/community/PostCard";
 import { fetchExpertById, fetchPostsByAuthor, toggleFollowExpert, CommunityExpert, CommunityPost } from "@/lib/communityData";
 import { BackButton, goBackOr } from "@/components/ui/BackButton";
 import { useTranslation } from "@/lib/i18n/LanguageContext";
+import { logWarn } from "@/lib/log";
 
 export default function ExpertProfileScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
@@ -24,7 +25,7 @@ export default function ExpertProfileScreen() {
       setExpert(e);
       setPosts(e?.userId ? await fetchPostsByAuthor(e.userId) : []);
     } catch (err) {
-      console.warn("Expert profile load error:", err);
+      logWarn("Expert profile load error:", err);
     } finally {
       setLoading(false);
     }

@@ -6,6 +6,7 @@ import { Icon } from "@/components/ui/Icon";
 import { shadows } from "@/lib/shadows";
 import { BackButton } from "@/components/ui/BackButton";
 import { useTranslation } from "@/lib/i18n/LanguageContext";
+import { logWarn } from "@/lib/log";
 import {
   fetchExperts, fetchGroups,
   toggleFollowExpert as apiToggleFollowExpert, toggleJoinGroup as apiToggleJoinGroup,
@@ -77,7 +78,7 @@ export default function ExploreScreen() {
       const [e, g] = await Promise.all([fetchExperts(), fetchGroups()]);
       setExperts(e); setGroups(g);
     } catch (err) {
-      console.warn("Explore load error:", err);
+      logWarn("Explore load error:", err);
     } finally {
       setLoading(false);
     }

@@ -7,6 +7,7 @@ import { PostCard } from "@/components/community/PostCard";
 import { fetchSavedPosts, CommunityPost } from "@/lib/communityData";
 import { BackButton } from "@/components/ui/BackButton";
 import { useTranslation } from "@/lib/i18n/LanguageContext";
+import { logWarn } from "@/lib/log";
 
 export default function SavedPostsScreen() {
   const router = useRouter();
@@ -19,7 +20,7 @@ export default function SavedPostsScreen() {
     try {
       setPosts(await fetchSavedPosts());
     } catch (err) {
-      console.warn("Saved posts load error:", err);
+      logWarn("Saved posts load error:", err);
     } finally {
       setLoading(false);
     }

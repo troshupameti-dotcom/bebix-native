@@ -13,6 +13,7 @@ import { BackButton, goBackOr } from "@/components/ui/BackButton";
 import { MAX_POST_MEDIA, MAX_VIDEO_SECONDS, MAX_FILE_BYTES, type LocalMedia } from "@/lib/community/media";
 import { formatVideoDuration } from "@/components/community/PostVideo";
 import { friendlyError } from "@/lib/errors/userMessage";
+import { logWarn } from "@/lib/log";
 
 const MAX_TEXT = 2000;
 
@@ -50,7 +51,7 @@ export default function NewPostScreen() {
       setTopics(t);
       setGroups(g);
     } catch (err) {
-      console.warn("New post load error:", err);
+      logWarn("New post load error:", err);
     } finally {
       setLoading(false);
     }

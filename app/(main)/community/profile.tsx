@@ -8,6 +8,7 @@ import { Icon } from "@/components/ui/Icon";
 import { Avatar, PostCard } from "@/components/community/PostCard";
 import { BackButton } from "@/components/ui/BackButton";
 import { getCurrentUserId, fetchPostsByAuthor, fetchExpertByUserId, CommunityExpert, CommunityPost } from "@/lib/communityData";
+import { logWarn } from "@/lib/log";
 
 export default function MyProfileScreen() {
   const router = useRouter();
@@ -26,7 +27,7 @@ export default function MyProfileScreen() {
       setPosts(p);
       setExpert(e);
     } catch (err) {
-      console.warn("My profile load error:", err);
+      logWarn("My profile load error:", err);
     } finally {
       setLoading(false);
     }

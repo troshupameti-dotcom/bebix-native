@@ -12,6 +12,7 @@ import { timeAgoLabel } from "@/lib/i18n/timeAgo";
 import { useTranslation } from "@/lib/i18n/LanguageContext";
 import { ModerationSheet, type ModerationTarget } from "@/components/community/ModerationSheet";
 import { BackButton, goBackOr } from "@/components/ui/BackButton";
+import { logWarn } from "@/lib/log";
 import {
   fetchPost, fetchComments, addComment, deleteComment,
   CommunityPost, CommunityComment,
@@ -91,7 +92,7 @@ export default function PostDetailScreen() {
       setPost(p);
       setComments(c);
     } catch (err) {
-      console.warn("Post detail load error:", err);
+      logWarn("Post detail load error:", err);
     } finally {
       setLoading(false);
     }

@@ -8,6 +8,7 @@ import { Icon } from "@/components/ui/Icon";
 import { useThemeColors } from "@/lib/theme/useThemeColors";
 import { shadows } from "@/lib/shadows";
 import { PostCard } from "@/components/community/PostCard";
+import { logWarn } from "@/lib/log";
 import {
   fetchGroups, fetchExperts, fetchTopics, fetchTips, fetchFeed, FEED_PAGE_SIZE,
   CommunityGroup, CommunityExpert, CommunityTopic, CommunityTip, CommunityPost,
@@ -70,7 +71,7 @@ export default function CommunityScreen() {
       });
       setHasMore((prev) => (p.length < FEED_PAGE_SIZE ? false : prev));
     } catch (err) {
-      console.warn("Community load error:", err);
+      logWarn("Community load error:", err);
     } finally {
       setLoading(false);
     }
@@ -87,7 +88,7 @@ export default function CommunityScreen() {
       });
       if (next.length < FEED_PAGE_SIZE) setHasMore(false);
     } catch (err) {
-      console.warn("Community load more error:", err);
+      logWarn("Community load more error:", err);
     } finally {
       setLoadingMore(false);
     }

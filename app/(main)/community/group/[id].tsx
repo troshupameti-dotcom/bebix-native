@@ -7,6 +7,7 @@ import { PostCard } from "@/components/community/PostCard";
 import { fetchGroupById, fetchPostsByGroup, toggleJoinGroup, CommunityGroup, CommunityPost } from "@/lib/communityData";
 import { BackButton, goBackOr } from "@/components/ui/BackButton";
 import { useTranslation } from "@/lib/i18n/LanguageContext";
+import { logWarn } from "@/lib/log";
 
 export default function GroupProfileScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
@@ -23,7 +24,7 @@ export default function GroupProfileScreen() {
       setGroup(await fetchGroupById(id));
       setPosts(await fetchPostsByGroup(id));
     } catch (err) {
-      console.warn("Group load error:", err);
+      logWarn("Group load error:", err);
     } finally {
       setLoading(false);
     }
