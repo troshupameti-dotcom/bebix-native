@@ -23,6 +23,8 @@ type Row = { id: number; kind: string; order_id: string; audience: "customer" | 
 type Order = {
   id: string; full_name: string; phone: string; address: string; city: string; total_price: number; created_at: string;
   items: { id?: string; name?: string; price?: number; qty?: number; imageUrl?: string | null }[] | null;
+  /** Dërgesa e përfshirë te totali (kolona ekziston pas migrimit; para tij mungon). */
+  shipping_fee?: number | null;
 };
 /** Foto dhe kodi i produktit, për çdo artikull të porosisë. */
 type Meta = Map<string, { img: string | null; code: string }>;
@@ -80,7 +82,11 @@ function itemsTable(o: Order, meta: Meta): string {
     const code = m?.code ? `<br><span style="font-size:12px;color:#857c71;">Kodi: ${esc(m.code)}</span>` : "";
     return `<tr><td style="padding:8px 10px 8px 0;border-bottom:1px solid #eee;width:56px;">${photo}</td><td style="padding:8px 0;border-bottom:1px solid #eee;">${esc(i.name)} <span style="color:#888;">× ${esc(i.qty)}</span>${code}</td><td style="padding:8px 0;border-bottom:1px solid #eee;text-align:right;white-space:nowrap;">${eur(Number(i.price) * Number(i.qty))}</td></tr>`;
   }).join("");
-  return `<table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="font-size:14px;color:#1c1a16;">${rows}
+  const ship = Number(o.shipping_fee) || 0;
+  const shipRow = ship > 0
+    ? `<tr><td></td><td style="padding:8px 0;color:#565047;">Dërgesa</td><td style="padding:8px 0;text-align:right;white-space:nowrap;">${eur(ship)}</td></tr>`
+    : "";
+  return `<table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="font-size:14px;color:#1c1a16;">${rows}${shipRow}
     <tr><td></td><td style="padding:12px 0 0;font-weight:700;">Totali</td><td style="padding:12px 0 0;text-align:right;font-weight:700;">${eur(o.total_price)}</td></tr></table>`;
 }
 
@@ -130,7 +136,8 @@ serve(async (req) => {
     try {
       const { data: order, error: orderError } = await supabase
         .from("orders")
-        .select("id, full_name, phone, address, city, total_price, created_at, items")
+        // select("*"): shipping_fee ekziston vetëm pas migrimit; funksioni punon edhe para tij.
+        .select("*")
         .eq("id", row.order_id)
         .maybeSingle();
       if (orderError || !order) throw new Error(orderError?.message ?? "porosia s'u gjet");

@@ -15,6 +15,7 @@ import type { TranslationKey } from "@/lib/i18n/translations";
 import { track } from "@/lib/analytics/posthog";
 import { friendlyError } from "@/lib/errors/userMessage";
 import { isValidPhone, newOrderRef, reconcileCart, type CartChange, type ProductNow } from "@/lib/shop/cartCheck";
+import { SHIPPING_COUNTRIES, type ShipCountry } from "@/lib/shop/shipping";
 
 /**
  * Gabimet e bazës vijnë si tekst teknik (p.sh. kufizime stoku). Klienti
@@ -35,7 +36,7 @@ function friendlyErrorKey(message: string): TranslationKey | null {
 export default function CheckoutScreen() {
   const router = useRouter();
   const { state, cartTotal, clearCart, replaceCartItems } = useAppState();
-  const { t } = useTranslation();
+  const { t, language } = useTranslation();
   // "loading" derisa lexohet sesioni lokal — pa këtë, ekrani i kyçjes
   // pulsonte për një moment edhe për përdoruesit e kyçur.
   const [authState, setAuthState] = useState<"loading" | "in" | "out">("loading");
@@ -47,6 +48,9 @@ export default function CheckoutScreen() {
   const [email, setEmail] = useState("");
   const [address, setAddress] = useState("");
   const [city, setCity] = useState("");
+  const [country, setCountry] = useState<ShipCountry>("XK");
+  // Dërgesa nga baza: fee numër, ose "na" kur baza s'e njeh ende (para migrimit): atëherë s'tregohet dërgesë.
+  const [quote, setQuote] = useState<{ key: string; fee: number | "na" } | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [done, setDone] = useState(false);
@@ -112,6 +116,26 @@ export default function CheckoutScreen() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
+  const quoteKey = `${country}|${state.cartItems.map((i) => i.id).join(",")}`;
+  const shipping = quote?.key === quoteKey ? quote.fee : undefined;
+  const shippingFee = typeof shipping === "number" ? shipping : 0;
+
+  // Çmimi i dërgesës e merr bazën, që vendi dhe produktet me "dërgesë falas" të numërohen njësoj si te porosia.
+  useEffect(() => {
+    if (state.cartItems.length === 0) return;
+    let active = true;
+    void supabase
+      .rpc("shipping_quote", { p_country: country, p_ids: state.cartItems.map((i) => i.id) })
+      .then(({ data, error: quoteError }) => {
+        if (!active) return;
+        setQuote({ key: quoteKey, fee: quoteError || typeof data !== "number" ? "na" : data });
+      });
+    return () => {
+      active = false;
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [quoteKey]);
+
   const canSubmit = !!(fullName.trim() && phone.trim() && address.trim() && city.trim() && state.cartItems.length > 0);
 
   const submitOrder = useCallback(async () => {
@@ -159,6 +183,8 @@ export default function CheckoutScreen() {
         p_city: city.trim(),
         p_items: state.cartItems,
         p_client_ref: orderRef.current,
+        // Vendi dërgohet vetëm kur baza e njeh (pas migrimit); përndryshe porosia shkon si më parë.
+        ...(typeof shipping === "number" ? { p_country: country } : {}),
       });
 
       if (rpcError) throw new Error(rpcError.message);
@@ -195,7 +221,7 @@ export default function CheckoutScreen() {
     } finally {
       setLoading(false);
     }
-  }, [canSubmit, fullName, phone, email, address, city, state.cartItems, clearCart, cartTotal, replaceCartItems, t, authState]);
+  }, [canSubmit, fullName, phone, email, address, city, country, shipping, state.cartItems, clearCart, cartTotal, replaceCartItems, t, authState]);
 
   if (authState === "loading") {
     return (
@@ -295,7 +321,17 @@ export default function CheckoutScreen() {
           ))}
           <View className="flex-row items-center justify-between pt-2 mt-1 border-t border-cream-line">
             <Text className="font-bodyMedium text-sm text-ink-soft">{t("co_products_total")}</Text>
-            <Text className="font-bodySemibold text-lg text-ink">€{cartTotal().toFixed(2)}</Text>
+            <Text className="font-bodyMedium text-sm text-ink">€{cartTotal().toFixed(2)}</Text>
+          </View>
+          {typeof shipping === "number" ? (
+            <View className="flex-row items-center justify-between pt-1.5">
+              <Text className="font-bodyMedium text-sm text-ink-soft">{t("co_shipping")}</Text>
+              <Text className="font-bodyMedium text-sm text-ink">{shipping === 0 ? t("co_shipping_free") : `€${shipping.toFixed(2)}`}</Text>
+            </View>
+          ) : null}
+          <View className="flex-row items-center justify-between pt-2 mt-2 border-t border-cream-line">
+            <Text className="font-bodySemibold text-sm text-ink">{t("co_grand_total")}</Text>
+            <Text className="font-bodySemibold text-lg text-ink">€{(cartTotal() + shippingFee).toFixed(2)}</Text>
           </View>
           <Text className="font-body text-[11px] text-ink-faint mt-2 leading-4">
             {t("co_delivery_note")}
@@ -357,8 +393,30 @@ export default function CheckoutScreen() {
           placeholder={t("co_ph_city")}
           placeholderClassName="text-ink-faint"
           style={shadows.soft}
-          className="bg-surface rounded-xl2 px-4 py-3 font-body text-sm text-ink mb-6"
+          className="bg-surface rounded-xl2 px-4 py-3 font-body text-sm text-ink mb-4"
         />
+
+        <Text className="font-bodyMedium text-sm text-ink-soft mb-2">{t("co_country")}</Text>
+        <View className="flex-row gap-2 mb-6">
+          {SHIPPING_COUNTRIES.map((c) => {
+            const active = c.code === country;
+            return (
+              <Pressable
+                key={c.code}
+                onPress={() => setCountry(c.code)}
+                accessibilityRole="button"
+                accessibilityState={{ selected: active }}
+                className={`flex-1 rounded-xl2 px-2 py-3 items-center ${active ? "bg-ink" : "bg-surface"}`}
+                style={active ? undefined : shadows.soft}
+              >
+                <Text className={`font-bodySemibold text-xs text-center ${active ? "text-on-accent" : "text-ink"}`} numberOfLines={2}>
+                  {language === "en" ? c.en : c.sq}
+                </Text>
+                <Text className={`font-body text-[11px] mt-0.5 ${active ? "text-on-accent" : "text-ink-faint"}`}>€{c.fee.toFixed(2)}</Text>
+              </Pressable>
+            );
+          })}
+        </View>
 
         {changes.length > 0 && (
           <View className="bg-olive-bg rounded-xl2 p-3 mb-4">
