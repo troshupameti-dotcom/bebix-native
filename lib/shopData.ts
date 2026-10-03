@@ -175,13 +175,19 @@ export type ShopCategory = {
   imageUrl: string | null;
 };
 
-let categoryCache: ShopCategory[] | null = null;
+/** Kategoritë mbahen pak minuta (jo gjithë sesionin), që ndryshimet e adminit të duken pa e rihapur app-in. */
+const CATEGORY_TTL_MS = 5 * 60 * 1000;
+let categoryCache: { at: number; list: ShopCategory[] } | null = null;
 
 export async function fetchCategories(): Promise<ShopCategory[]> {
-  if (categoryCache) return categoryCache;
+  if (categoryCache && Date.now() - categoryCache.at < CATEGORY_TTL_MS) return categoryCache.list;
   const { data, error } = await supabase.from("categories").select("id, key, label, icon").order("sort_order");
   if (error) throw error;
-  categoryCache = (data ?? []).map((c: any) => ({
+  // Vetëm kategoritë me të paktën një produkt aktiv: kategoria bosh te filtrat duket e papërfunduar.
+  const counts = await Promise.all(
+    (data ?? []).map((c: any) => supabase.from("products").select("id", { count: "exact", head: true }).eq("category_id", c.id).eq("is_active", true)),
+  );
+  const list = (data ?? []).filter((_: unknown, i: number) => (counts[i].count ?? 0) > 0).map((c: any) => ({
     id: c.id,
     key: c.key,
     label: c.label,
@@ -189,7 +195,8 @@ export async function fetchCategories(): Promise<ShopCategory[]> {
     emoji: emojiForCategory(c.icon),
     imageUrl: imageUrlForCategory(c.icon),
   }));
-  return categoryCache;
+  categoryCache = { at: Date.now(), list };
+  return list;
 }
 
 async function categoryIdFor(key: string | undefined): Promise<string | null> {
