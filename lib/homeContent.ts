@@ -36,6 +36,9 @@ export type Product = {
   merchant?: string | null;
   stock?: number;
   galleryUrls?: string[];
+  /** Mosha e përshtatshme, në muaj; null ose mungon = pa kufi. */
+  minAgeMonths?: number | null;
+  maxAgeMonths?: number | null;
 };
 
 export type Brand = {

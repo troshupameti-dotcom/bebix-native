@@ -16,6 +16,7 @@ import {
 import { ProductCard, ProductCardSkeleton } from "@/components/ProductCard";
 import { track } from "@/lib/analytics/posthog";
 import { friendlyError } from "@/lib/errors/userMessage";
+import { AGE_BANDS, bandForMonths, formatAgeRange, monthsSince, parseAgeBand } from "@/lib/shop/age";
 
 const PADDING_X = 20;
 const GRID_GAP = 12;
@@ -43,7 +44,7 @@ function Chip({ label, active, onPress }: { label: string; active: boolean; onPr
 
 export default function ShopScreen() {
   const router = useRouter();
-  const { t } = useTranslation();
+  const { t, language } = useTranslation();
   const { state } = useAppState();
   const theme = useThemeColors();
   const width = useContentWidth();
@@ -64,6 +65,11 @@ export default function ShopScreen() {
   const [category, setCategory] = useState<string>("all");
   const [sort, setSort] = useState<ProductSort>("newest");
   const [showSort, setShowSort] = useState(false);
+  // Grupmosha e zgjedhur ("0-3", "3-6"...), ose null. Bebi i profilit ka një shkurtore "Për [emri]".
+  const [ageKey, setAgeKey] = useState<string | null>(null);
+  const ageBand = parseAgeBand(ageKey);
+  const babyBand = bandForMonths(monthsSince(state.profile.babyDob));
+  const babyFirstName = (state.profile.nickname || state.profile.babyName || "").trim().split(" ")[0];
 
   const [items, setItems] = useState<Product[]>([]);
   const [total, setTotal] = useState(0);
@@ -85,7 +91,7 @@ export default function ShopScreen() {
   // mëparshëm duhen injoruar, përndryshe lista "kërcen" mbrapsht.
   const requestId = useRef(0);
 
-  const isFiltering = search.trim().length > 0 || category !== "all";
+  const isFiltering = search.trim().length > 0 || category !== "all" || ageBand !== null;
 
   // Kërkimi shkon te serveri, prandaj pritet derisa shkruesi të ndalet.
   useEffect(() => {
@@ -93,7 +99,7 @@ export default function ShopScreen() {
     return () => clearTimeout(timer);
   }, [query]);
 
-  const filterKey = `${search}|${category}|${sort}|${reloadNonce}`;
+  const filterKey = `${search}|${category}|${sort}|${ageKey ?? ""}|${reloadNonce}`;
   const loading = loadedKey !== filterKey && error === null;
 
   // Te gjitha shkrimet e state-it rrine brenda .then/.catch: sinkronisht
@@ -101,7 +107,7 @@ export default function ShopScreen() {
   useEffect(() => {
     const id = ++requestId.current;
     let active = true;
-    fetchProductPage({ search, category, sort, page: 0 })
+    fetchProductPage({ search, category, sort, page: 0, age: ageBand })
       .then((result) => {
         if (!active || id !== requestId.current) return;
         setItems(result.items);
@@ -116,14 +122,14 @@ export default function ShopScreen() {
         setError(friendlyError(e, t, "shop_load_error_title"));
       });
     return () => { active = false; };
-  }, [filterKey, search, category, sort, t]);
+  }, [filterKey, search, category, sort, ageBand, t]);
   const loadMore = useCallback(async () => {
     if (loadingMore || loading || !hasMore) return;
     const id = requestId.current;
     setLoadingMore(true);
     try {
       const next = page + 1;
-      const result = await fetchProductPage({ search, category, sort, page: next });
+      const result = await fetchProductPage({ search, category, sort, page: next, age: ageBand });
       if (id !== requestId.current) return;
       setItems((prev) => [...prev, ...result.items]);
       setHasMore(result.hasMore);
@@ -133,7 +139,7 @@ export default function ShopScreen() {
     } finally {
       if (id === requestId.current) setLoadingMore(false);
     }
-  }, [loadingMore, loading, hasMore, page, search, category, sort]);
+  }, [loadingMore, loading, hasMore, page, search, category, sort, ageBand]);
 
 
   // Markat dhe ofertat ngarkohen një herë; nuk varen nga filtrat.
@@ -227,6 +233,26 @@ export default function ShopScreen() {
           })}
         </ScrollView>
       )}
+      {/* "Mosha e bebit": produktet e përshtatshme për moshën; me profil, shkurtorja "Për [emri]" e zgjedh vetë grupin e bebit. */}
+      <Text className="font-bodySemibold text-base text-ink px-5 mt-3 mb-2">{t("shop_age_title")}</Text>
+      <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ paddingHorizontal: 20 }}>
+        {babyBand && babyFirstName ? (
+          <Chip
+            label={t("shop_age_for_baby", { name: babyFirstName })}
+            active={ageKey === babyBand.key}
+            onPress={() => setAgeKey(ageKey === babyBand.key ? null : babyBand.key)}
+          />
+        ) : null}
+        {AGE_BANDS.map((b) => (
+          <Chip
+            key={b.key}
+            label={formatAgeRange(b.from, b.to, language === "en" ? "en" : "sq") ?? b.key}
+            active={ageKey === b.key}
+            onPress={() => setAgeKey(ageKey === b.key ? null : b.key)}
+          />
+        ))}
+      </ScrollView>
+
       {!isFiltering && brands.length > 0 && (
         <>
           <Text className="font-bodySemibold text-base text-ink px-5 mt-2 mb-2">{t("shop_brands")}</Text>
@@ -282,7 +308,7 @@ export default function ShopScreen() {
         </ScrollView>
       )}
     </View>
-  ), [brands, onSale, categories, category, isFiltering, showSort, sort, total, router, t, theme]);
+  ), [brands, onSale, categories, category, isFiltering, showSort, sort, total, router, t, theme, ageKey, babyBand, babyFirstName, language]);
 
   const renderFooter = useCallback(() => {
     if (loadingMore) {

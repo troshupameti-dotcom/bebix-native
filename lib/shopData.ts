@@ -1,6 +1,7 @@
 import { supabase } from "@/lib/supabase/client";
 import { Product, Brand } from "@/lib/homeContent";
 import { IconName } from "@/components/ui/Icon";
+import { ageOverlapFilter, type AgeBand } from "@/lib/shop/age";
 
 /**
  * Lidhja e Shop-it me tabelën `products`.
@@ -19,7 +20,7 @@ export const PRODUCT_PAGE_SIZE = 24;
 
 /** Kolonat e nevojshme për një kartelë liste — pa `description`, pa `gallery_urls`. */
 const LIST_COLUMNS =
-  "id, name, price, compare_at_price, image_url, accent, rating, review_count, badge, stock, free_delivery, merchant_name, brands(name), categories(key, icon)";
+  "id, name, price, compare_at_price, image_url, accent, rating, review_count, badge, stock, free_delivery, merchant_name, min_age_months, max_age_months, brands(name), categories(key, icon)";
 
 const DETAIL_COLUMNS = `${LIST_COLUMNS}, description, gallery_urls`;
 
@@ -38,6 +39,8 @@ type ProductRow = {
   stock: number;
   free_delivery: boolean;
   merchant_name: string | null;
+  min_age_months: number | null;
+  max_age_months: number | null;
   brands: { name: string } | null;
   categories: { key: string; icon: string | null } | null;
 };
@@ -63,6 +66,8 @@ export type ProductQuery = {
   pageSize?: number;
   /** Vetëm produktet me çmim të vjetër më të lartë — për seksionin "Në ofertë". */
   onSaleOnly?: boolean;
+  /** Grupmosha: produktet e përshtatshme për këtë interval (ose pa kufi moshe). */
+  age?: AgeBand | null;
 };
 
 export type ProductPage = {
@@ -143,6 +148,8 @@ function mapRow(row: ProductRow): Product {
     freeDelivery: row.free_delivery ?? false,
     merchant: row.merchant_name ?? null,
     stock: row.stock ?? 0,
+    minAgeMonths: row.min_age_months ?? null,
+    maxAgeMonths: row.max_age_months ?? null,
     galleryUrls: Array.isArray(row.gallery_urls) ? row.gallery_urls : [],
   };
 }
@@ -233,6 +240,7 @@ export async function fetchProductPage(q: ProductQuery = {}): Promise<ProductPag
   if (categoryId) query = query.eq("category_id", categoryId);
   if (q.brandId) query = query.eq("brand_id", q.brandId);
   if (q.onSaleOnly) query = query.not("compare_at_price", "is", null);
+  if (q.age) query = query.or(ageOverlapFilter(q.age));
 
   const search = sanitize(q.search ?? "");
   if (search) {

@@ -6,6 +6,7 @@ import { shadows } from "@/lib/shadows";
 import { Product } from "@/lib/homeContent";
 import { productImage } from "@/lib/shop/image";
 import { useTranslation } from "@/lib/i18n/LanguageContext";
+import { formatAgeRange } from "@/lib/shop/age";
 
 type Props = {
   product: Product;
@@ -25,7 +26,8 @@ function discountPercent(product: Product): number | null {
 }
 
 export function ProductCard({ product, onPress, cardWidth }: Props) {
-  const { t } = useTranslation();
+  const { t, language } = useTranslation();
+  const ageLabel = formatAgeRange(product.minAgeMonths, product.maxAgeMonths, language === "en" ? "en" : "sq");
   const { toggleFavorite, isFavorite } = useAppState();
   const fav = isFavorite(product.id);
   // Inicializues dembel: nje Animated.Value e vetme per gjithe jeten e
@@ -141,9 +143,11 @@ export function ProductCard({ product, onPress, cardWidth }: Props) {
             {product.brand}
             {product.merchant && product.merchant !== product.brand ? ` · ${product.merchant}` : ""}
           </Text>
-          <Text className="font-bodyMedium text-sm text-ink mb-2 leading-5" numberOfLines={2}>
+          <Text className="font-bodyMedium text-sm text-ink leading-5" numberOfLines={2}>
             {product.name}
           </Text>
+          {ageLabel ? <Text className="font-bodyMedium text-[11px] text-olive mt-0.5" numberOfLines={1}>{ageLabel}</Text> : null}
+          <View className="h-2" />
           <View className="flex-row items-baseline flex-wrap">
             <Text className="font-bodySemibold text-base text-ink mr-2">€{product.price.toFixed(2)}</Text>
             {product.compareAtPrice != null && (
