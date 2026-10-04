@@ -165,12 +165,18 @@ function itemsTable(o: Order, meta: Meta, L: (typeof TX)[Lang]): string {
 }
 
 function shell(title: string, body: string, lang: Lang): string {
-  return `<!doctype html><html lang="${lang}"><body style="margin:0;background:#f8f6f2;font-family:Arial,Helvetica,sans-serif;">
+  // Logoja rri te një breshëri e errët me ngjyrë të vetën (shkronjat e çelëta, X e kaltër): me sfond të bardhë ose të zi
+  // (modaliteti i errët i Gmail-it e kthen të bardhën në të zezë) mbetet gjithmonë e lexueshme, sepse sfondi i saj nuk ndryshon.
+  return `<!doctype html><html lang="${lang}"><head><meta charset="utf-8"><meta name="color-scheme" content="light"><meta name="supported-color-schemes" content="light"></head><body style="margin:0;background:#f8f6f2;font-family:Arial,Helvetica,sans-serif;">
   <table role="presentation" width="100%" cellspacing="0" cellpadding="0"><tr><td align="center" style="padding:24px 12px;">
-    <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="max-width:520px;background:#ffffff;border-radius:16px;padding:28px;">
-      <tr><td style="padding-bottom:4px;"><img src="${SITE}/wordmark.png" width="120" alt="Bebix" style="display:block;width:120px;height:auto;border:0;font-size:22px;font-weight:700;color:#1f3d38;"></td></tr>
-      <tr><td style="font-size:18px;font-weight:700;color:#1c1a16;padding:12px 0 6px;">${esc(title)}</td></tr>
-      <tr><td style="font-size:14px;line-height:1.6;color:#565047;">${body}</td></tr>
+    <table role="presentation" width="100%" cellspacing="0" cellpadding="0" bgcolor="#ffffff" style="max-width:520px;background:#ffffff;border-radius:16px;overflow:hidden;">
+      <tr><td bgcolor="#1c2b43" style="background:#1c2b43;padding:20px 28px;"><img src="${SITE}/wordmark-dark.png" width="110" alt="Bebix" style="display:block;width:110px;height:auto;border:0;font-size:22px;font-weight:700;color:#f3f3f1;"></td></tr>
+      <tr><td style="padding:24px 28px 28px;">
+        <table role="presentation" width="100%" cellspacing="0" cellpadding="0">
+          <tr><td style="font-size:18px;font-weight:700;color:#1c1a16;padding:0 0 6px;">${esc(title)}</td></tr>
+          <tr><td style="font-size:14px;line-height:1.6;color:#565047;">${body}</td></tr>
+        </table>
+      </td></tr>
     </table>
     <p style="font-size:12px;color:#857c71;margin:16px 0 0;">Bebix · ${TX[lang].footer} · <a href="${SITE}" style="color:#857c71;">bebix.store</a></p>
   </td></tr></table></body></html>`;
@@ -201,7 +207,7 @@ function render(row: Row, o: Order, meta: Meta): { to: string; subject: string; 
   const body = `<p style="margin:0 0 16px;">${esc(lead)}</p>
     <p style="margin:0 0 6px;font-weight:700;color:#1c1a16;">${L.order} ${esc(r)}</p>${itemsTable(o, meta, L)}${payBlock}
     <p style="margin:16px 0 0;"><strong>${L.deliveryTo}</strong> ${esc(o.full_name)}, ${esc(o.address)}, ${esc(o.city)}</p>
-    <p style="margin:16px 0 0;"><a href="${SITE}/${lang}/shop/orders" style="color:#1f3d38;font-weight:700;">${L.seeOrders}</a></p>`;
+    <p style="margin:20px 0 0;"><a href="${SITE}/${lang}/shop/orders" style="display:inline-block;background:#1c2b43;color:#ffffff;font-weight:700;text-decoration:none;padding:11px 20px;border-radius:10px;">${L.seeOrders}</a></p>`;
   return { to: row.to_email, subject: t.subject(r), html: shell(t.title, body, lang) };
 }
 

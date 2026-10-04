@@ -136,7 +136,9 @@ export default function CheckoutScreen() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  const quoteKey = `${country}|${state.cartItems.map((i) => i.id).join(",")}`;
+  // Me kartë dërgesa është falas (e llogarit baza); çmimi rikërkohet kur ndryshon metoda.
+  const feeMethod = method === "card" && AVAILABLE_METHODS.includes("card") ? "card" : "cod";
+  const quoteKey = `${country}|${state.cartItems.map((i) => i.id).join(",")}|${feeMethod}`;
   const shipping = quote?.key === quoteKey ? quote.fee : undefined;
   // Dërgesa e fundit e njohur mbahet gjatë ndërrimit të shtetit, që totali të mos kërcejë.
   const shownFee = typeof shipping === "number" ? shipping : typeof quote?.fee === "number" ? quote.fee : undefined;
@@ -150,12 +152,17 @@ export default function CheckoutScreen() {
   useEffect(() => {
     if (state.cartItems.length === 0) return;
     let active = true;
-    void supabase
-      .rpc("shipping_quote", { p_country: country, p_ids: state.cartItems.map((i) => i.id) })
-      .then(({ data, error: quoteError }) => {
-        if (!active) return;
-        setQuote({ key: quoteKey, fee: quoteError || typeof data !== "number" ? "na" : data });
-      });
+    const args = { p_country: country, p_ids: state.cartItems.map((i) => i.id) };
+    const standard = () => supabase.rpc("shipping_quote", args);
+    // Para migrimit të dërgesës falas me kartë funksioni s'ekziston: atëherë mbetet çmimi i zakonshëm, që është
+    // edhe ai që e ngarkon baza, pra çmimi që shihet është gjithmonë ai që paguhet.
+    const request = feeMethod === "card"
+      ? Promise.resolve(supabase.rpc("shipping_quote_by_method", { ...args, p_method: "card" })).then((res) => (res.error ? standard() : res))
+      : standard();
+    void Promise.resolve(request).then(({ data, error: quoteError }) => {
+      if (!active) return;
+      setQuote({ key: quoteKey, fee: quoteError || typeof data !== "number" ? "na" : data });
+    });
     return () => {
       active = false;
     };

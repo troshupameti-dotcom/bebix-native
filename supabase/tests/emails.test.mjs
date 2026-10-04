@@ -76,6 +76,10 @@ check("admini: karta e paguar shfaqet (paid)", m.html.includes("<strong>Kartë</
 m = render(row("order_placed"), order(), meta);
 check("në dorëzim: teksti i zakonshëm mbetet", m.html.includes("Paguan kur ta marrësh"));
 
+m = render(row("order_placed"), order(), meta);
+check("logoja: shkronja të çelëta mbi breshëri të errët me sfond të vetin (lexohet edhe në modalitet të errët)", m.html.includes('wordmark-dark.png') && !m.html.includes('/wordmark.png') && m.html.includes('bgcolor="#1c2b43"'));
+check("emaili ka titullin, tekstin dhe lidhjen pas ndryshimit të strukturës", m.html.includes("Faleminderit për porosinë!") && m.html.includes("Shiko porositë e mia") && m.html.includes("bebix.store</a>"));
+
 m = render(row("order_placed"), order({ lang: "de" }), meta);
 check("gjuhë e panjohur: shqip", m.subject.startsWith("Porosia"));
 m = render({ ...row("order_placed"), to_email: null }, order(), meta);

@@ -11,6 +11,7 @@ import fs from "node:fs";
 
 const SHIPPING = new URL("../migrations/20261003180000_shipping_fee.sql", import.meta.url);
 const CARD = new URL("../migrations/20261004180000_card_payments.sql", import.meta.url);
+const FREE = new URL("../migrations/20261005120000_card_free_shipping.sql", import.meta.url);
 const db = new PGlite();
 process.on("uncaughtException", (e) => { console.log("GABIM i papritur:", String(e.message).slice(0, 300)); process.exit(1); });
 
@@ -32,7 +33,7 @@ create function public.place_order(a text, b text, c text, d text, e jsonb, f uu
 create function public.place_guest_order(a text, b text, c text, d text, e jsonb, f uuid) returns uuid language sql as $$ select null::uuid $$;
 `);
 
-for (const [name, file] of [["arkëtimit", SHIPPING], ["kartës", CARD]]) {
+for (const [name, file] of [["arkëtimit", SHIPPING], ["kartës", CARD], ["dërgesës falas me kartë", FREE]]) {
   try { await db.exec(fs.readFileSync(file, "utf8")); console.log(`OK  migrimi i ${name} u ekzekutua pa gabime`); }
   catch (e) { console.log(`GABIM te migrimi i ${name}:`, e.message); process.exit(1); }
 }
@@ -48,18 +49,27 @@ const place = async (method, country = "XK") => {
   const items = JSON.stringify([{ id: A, qty: 2, name: "x", price: 1 }]);
   const ref = crypto.randomUUID();
   const r = await one(`select public.place_guest_order(p_full_name => 'Ana Berisha', p_phone => '+383441${phone++}', p_address => 'Rr. Test 1', p_city => 'Prishtine', p_items => '${items}'::jsonb, p_client_ref => '${ref}'::uuid, p_country => '${country}', p_payment_method => '${method}') as id`);
-  return one(`select id, total_price::float8 as total, payment_method, payment_status, status from orders where id = $1`, [r.id]);
+  return one(`select id, total_price::float8 as total, shipping_fee::float8 as ship, payment_method, payment_status, status from orders where id = $1`, [r.id]);
 };
 
-// porosi me kartë
+// porosi me kartë: dërgesa falas, çdo vend
 let o = await place("card");
 check("kartë: porosia krijohet me pagesë 'pending'", o.payment_method === "card" && o.payment_status === "pending" && o.status === "pending", JSON.stringify(o));
-check("kartë: totali përfshin dërgesën (2×10 + 2.50)", o.total === 22.5);
+check("kartë Kosovë: dërgesa falas (totali 2×10, dërgesa 0)", o.total === 20 && o.ship === 0, JSON.stringify(o));
 o = await place("card", "AL");
-check("kartë Shqipëri: 20 + 5", o.total === 25, String(o.total));
-// metodat e tjera punojnë si më parë
-o = await place("cod"); check("në dorëzim: 'unpaid'", o.payment_status === "unpaid");
-o = await place("bank_transfer"); check("transfertë: 'pending'", o.payment_status === "pending");
+check("kartë Shqipëri: dërgesa falas (20)", o.total === 20 && o.ship === 0, JSON.stringify(o));
+o = await place("card", "MK");
+check("kartë Maqedoni: dërgesa falas (20)", o.total === 20 && o.ship === 0, JSON.stringify(o));
+// metodat e tjera paguajnë dërgesën si më parë
+o = await place("cod"); check("në dorëzim: 'unpaid' dhe dërgesa 2.50 (22.50)", o.payment_status === "unpaid" && o.total === 22.5 && o.ship === 2.5, JSON.stringify(o));
+o = await place("cod", "AL"); check("në dorëzim Shqipëri: 20 + 5", o.total === 25 && o.ship === 5, JSON.stringify(o));
+o = await place("bank_transfer"); check("transfertë: 'pending' dhe dërgesa 2.50 (22.50)", o.payment_status === "pending" && o.total === 22.5, JSON.stringify(o));
+// çmimi që e shfaq klienti përputhet me atë që ruhet
+const quote = async (country, method) => (await one(`select public.shipping_quote_by_method('${country}', array['${A}']::uuid[], '${method}')::float8 as q`)).q;
+check("kuota me kartë: 0 në çdo vend", (await quote("XK", "card")) === 0 && (await quote("AL", "card")) === 0 && (await quote("MK", "CARD")) === 0);
+check("kuota në dorëzim/transfertë: tarifa e vendit", (await quote("XK", "cod")) === 2.5 && (await quote("AL", "bank_transfer")) === 5);
+await rejects("kuota me kartë për vend të panjohur refuzohet", () => quote("DE", "card"), "nuk mbështetet");
+check("kuota pa metodë (parazgjedhja) = tarifa e vendit", (await one(`select public.shipping_quote_by_method('XK', array['${A}']::uuid[])::float8 as q`)).q === 2.5);
 await rejects("metodë e panjohur refuzohet", () => place("paypal"), "nuk është e hapur");
 
 // të drejtat nuk ndryshuan pas `create or replace`
@@ -67,6 +77,7 @@ const priv = async (role, sig) => (await one(`select has_function_privilege('${r
 check("anon NUK thërret place_order_core", !(await priv("anon", "public.place_order_core(uuid,text,text,text,text,jsonb,uuid,text,text,text)")));
 check("authenticated NUK thërret place_order_core", !(await priv("authenticated", "public.place_order_core(uuid,text,text,text,text,jsonb,uuid,text,text,text)")));
 check("anon thërret place_guest_order", await priv("anon", "public.place_guest_order(text,text,text,text,jsonb,uuid,text,text,text)"));
+check("anon thërret shipping_quote_by_method (kuota për vizitorët)", await priv("anon", "public.shipping_quote_by_method(text,uuid[],text)"));
 check("anon NUK thërret cancel_unpaid_card_orders", !(await priv("anon", "public.cancel_unpaid_card_orders(interval)")));
 check("authenticated NUK thërret cancel_unpaid_card_orders", !(await priv("authenticated", "public.cancel_unpaid_card_orders(interval)")));
 const dups = await one(`select count(*)::int c from pg_proc where pronamespace = 'public'::regnamespace and proname = 'place_order_core'`);
@@ -77,7 +88,7 @@ await db.exec(`update orders set created_at = now() - interval '3 hours' where p
 const fresh = await place("card"); // kartë e re, nuk duhet të preket
 const stale = (await one(`select id from orders where payment_method = 'card' and created_at < now() - interval '2 hours' limit 1`)).id;
 const cancelled = (await one(`select public.cancel_unpaid_card_orders() as n`)).n;
-check("anulohen kartat e papaguara më të vjetra se 2 orë (2 të tilla)", cancelled === 2, String(cancelled));
+check("anulohen kartat e papaguara më të vjetra se 2 orë (3 të tilla: Kosovë, Shqipëri, Maqedoni)", cancelled === 3, String(cancelled));
 const after = await one(`select status, payment_status from orders where id = $1`, [stale]);
 check("e anuluara: status 'cancelled', pagesa 'failed'", after.status === "cancelled" && after.payment_status === "failed", JSON.stringify(after));
 const freshAfter = await one(`select status, payment_status from orders where id = $1`, [fresh.id]);
