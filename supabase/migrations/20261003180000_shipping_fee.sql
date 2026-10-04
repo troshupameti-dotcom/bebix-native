@@ -1,4 +1,4 @@
--- Tarifa e dërgesës te porosia.
+-- Arkëtimi: tarifa e dërgesës dhe metoda e pagesës te porosia.
 --   Kosovë (XK): 2.50 €   ·   Shqipëri (AL): 5 €   ·   Maqedoni e Veriut (MK): 5 €
 -- Dërgesa është falas kur TË GJITHA produktet e porosisë janë shënuar "Dërgesë falas" te paneli.
 --
@@ -15,6 +15,17 @@ alter table public.orders drop constraint if exists orders_country_check;
 alter table public.orders add constraint orders_country_check check (country in ('XK', 'AL', 'MK'));
 alter table public.orders drop constraint if exists orders_shipping_fee_check;
 alter table public.orders add constraint orders_shipping_fee_check check (shipping_fee >= 0);
+
+-- Metoda dhe statusi i pagesës. 'cod' = paguan kur e merr (parazgjedhja); 'bank_transfer' = transfertë bankare
+-- (admini e shënon "paguar" kur arrin); 'card' ruhet për kur të lidhet një ofrues pagese me kartë.
+alter table public.orders add column if not exists payment_method text not null default 'cod';
+alter table public.orders add column if not exists payment_status text not null default 'unpaid';
+alter table public.orders add column if not exists paid_at timestamptz;
+alter table public.orders add column if not exists payment_reference text;
+alter table public.orders drop constraint if exists orders_payment_method_check;
+alter table public.orders add constraint orders_payment_method_check check (payment_method in ('cod', 'bank_transfer', 'card'));
+alter table public.orders drop constraint if exists orders_payment_status_check;
+alter table public.orders add constraint orders_payment_status_check check (payment_status in ('unpaid', 'pending', 'paid', 'failed', 'refunded'));
 
 -- 2) Tarifat (një vend i vetëm për t'i ndryshuar).
 create or replace function public.shipping_fee_for(p_country text)
@@ -63,7 +74,7 @@ drop function if exists public.place_order_core(uuid, text, text, text, text, js
 
 create function public.place_order_core(
   p_user uuid, p_full_name text, p_phone text, p_address text, p_city text, p_items jsonb, p_client_ref uuid,
-  p_country text default 'XK'
+  p_country text default 'XK', p_payment_method text default 'cod'
 )
 returns uuid
 language plpgsql
@@ -77,6 +88,7 @@ declare
   v_address       text := btrim(coalesce(p_address, ''));
   v_city          text := btrim(coalesce(p_city, ''));
   v_country       text := upper(coalesce(nullif(btrim(p_country), ''), 'XK'));
+  v_method        text := lower(coalesce(nullif(btrim(p_payment_method), ''), 'cod'));
   v_order_id      uuid;
   v_total         numeric := 0;
   v_shipping      numeric := 0;
@@ -103,6 +115,9 @@ begin
   end if;
   if public.shipping_fee_for(v_country) is null then
     raise exception 'Shteti i dërgesës nuk mbështetet.';
+  end if;
+  if v_method not in ('cod', 'bank_transfer') then
+    raise exception 'Kjo mënyrë pagese nuk është e hapur ende.';
   end if;
   if char_length(v_name) < 2 or char_length(v_name) > 100 then
     raise exception 'Shkruaj emrin dhe mbiemrin (2 deri në 100 shenja).';
@@ -181,8 +196,9 @@ begin
   -- Dërgesa: tarifa e vendit, ose 0 kur të gjitha produktet kanë dërgesë falas.
   v_shipping := case when v_all_free then 0 else public.shipping_fee_for(v_country) end;
 
-  insert into public.orders (user_id, full_name, phone, address, city, items, total_price, status, client_ref, country, shipping_fee)
-  values (p_user, v_name, v_phone, v_address, v_city, v_items, v_total + v_shipping, 'pending', p_client_ref, v_country, v_shipping)
+  insert into public.orders (user_id, full_name, phone, address, city, items, total_price, status, client_ref, country, shipping_fee, payment_method, payment_status)
+  values (p_user, v_name, v_phone, v_address, v_city, v_items, v_total + v_shipping, 'pending', p_client_ref, v_country, v_shipping,
+          v_method, case when v_method = 'bank_transfer' then 'pending' else 'unpaid' end)
   returning id into v_order_id;
   for v_item in select * from jsonb_array_elements(v_items) loop
     v_price := (v_item->>'price')::numeric;
@@ -227,7 +243,7 @@ $function$;
 
 create function public.place_order(
   p_full_name text, p_phone text, p_address text, p_city text, p_items jsonb,
-  p_client_ref uuid default null, p_country text default 'XK'
+  p_client_ref uuid default null, p_country text default 'XK', p_payment_method text default 'cod'
 )
 returns uuid
 language plpgsql
@@ -238,13 +254,13 @@ begin
   if auth.uid() is null then
     raise exception 'Duhet të jesh i loguar për të bërë porosi.';
   end if;
-  return public.place_order_core(auth.uid(), p_full_name, p_phone, p_address, p_city, p_items, p_client_ref, p_country);
+  return public.place_order_core(auth.uid(), p_full_name, p_phone, p_address, p_city, p_items, p_client_ref, p_country, p_payment_method);
 end;
 $function$;
 
 create function public.place_guest_order(
   p_full_name text, p_phone text, p_address text, p_city text, p_items jsonb, p_client_ref uuid,
-  p_country text default 'XK'
+  p_country text default 'XK', p_payment_method text default 'cod'
 )
 returns uuid
 language plpgsql
@@ -255,17 +271,17 @@ begin
   if p_client_ref is null then
     raise exception 'Mungon referenca e porosisë. Rifresko dhe provo përsëri.';
   end if;
-  return public.place_order_core(null, p_full_name, p_phone, p_address, p_city, p_items, p_client_ref, p_country);
+  return public.place_order_core(null, p_full_name, p_phone, p_address, p_city, p_items, p_client_ref, p_country, p_payment_method);
 end;
 $function$;
 
 -- 5) Të drejtat si më parë: `place_order_core` vetëm brenda bazës; `place_order` vetëm për të loguarit;
 --    `place_guest_order` dhe `shipping_quote` edhe për vizitorët.
-revoke all on function public.place_order_core(uuid, text, text, text, text, jsonb, uuid, text) from public, anon, authenticated;
-revoke all on function public.place_order(text, text, text, text, jsonb, uuid, text) from public, anon;
-grant execute on function public.place_order(text, text, text, text, jsonb, uuid, text) to authenticated;
-revoke all on function public.place_guest_order(text, text, text, text, jsonb, uuid, text) from public;
-grant execute on function public.place_guest_order(text, text, text, text, jsonb, uuid, text) to anon, authenticated;
+revoke all on function public.place_order_core(uuid, text, text, text, text, jsonb, uuid, text, text) from public, anon, authenticated;
+revoke all on function public.place_order(text, text, text, text, jsonb, uuid, text, text) from public, anon;
+grant execute on function public.place_order(text, text, text, text, jsonb, uuid, text, text) to authenticated;
+revoke all on function public.place_guest_order(text, text, text, text, jsonb, uuid, text, text) from public;
+grant execute on function public.place_guest_order(text, text, text, text, jsonb, uuid, text, text) to anon, authenticated;
 revoke all on function public.shipping_quote(text, uuid[]) from public;
 grant execute on function public.shipping_quote(text, uuid[]) to anon, authenticated;
 

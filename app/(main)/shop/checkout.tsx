@@ -16,6 +16,7 @@ import { track } from "@/lib/analytics/posthog";
 import { friendlyError } from "@/lib/errors/userMessage";
 import { isValidPhone, newOrderRef, reconcileCart, type CartChange, type ProductNow } from "@/lib/shop/cartCheck";
 import { SHIPPING_COUNTRIES, type ShipCountry } from "@/lib/shop/shipping";
+import { BANK_DETAILS, paymentReference, type PaymentMethod } from "@/lib/shop/payment";
 
 /**
  * Gabimet e bazës vijnë si tekst teknik (p.sh. kufizime stoku). Klienti
@@ -49,6 +50,9 @@ export default function CheckoutScreen() {
   const [address, setAddress] = useState("");
   const [city, setCity] = useState("");
   const [country, setCountry] = useState<ShipCountry>("XK");
+  const [method, setMethod] = useState<PaymentMethod>("cod");
+  // Çfarë u dërgua, për udhëzimet e pagesës në ekranin e fundit.
+  const [placedPay, setPlacedPay] = useState<{ method: PaymentMethod; amount: number } | null>(null);
   // Dërgesa nga baza: fee numër, ose "na" kur baza s'e njeh ende (para migrimit): atëherë s'tregohet dërgesë.
   const [quote, setQuote] = useState<{ key: string; fee: number | "na" } | null>(null);
   const [loading, setLoading] = useState(false);
@@ -190,11 +194,12 @@ export default function CheckoutScreen() {
         p_items: state.cartItems,
         p_client_ref: orderRef.current,
         // Vendi dërgohet vetëm kur baza e njeh (pas migrimit); përndryshe porosia shkon si më parë.
-        ...(typeof shipping === "number" ? { p_country: country } : {}),
+        ...(typeof shipping === "number" ? { p_country: country, p_payment_method: BANK_DETAILS ? method : "cod" } : {}),
       });
 
       if (rpcError) throw new Error(rpcError.message);
       setPlacedId(typeof orderId === "string" ? orderId : null);
+      setPlacedPay({ method: typeof shipping === "number" && BANK_DETAILS ? method : "cod", amount: cartTotal() + (typeof shipping === "number" ? shipping : 0) });
       if (guest) {
         // Porosia ruhet në pajisje: statusi i saj del te "Porositë e mia" edhe
         // kur mysafiri del nga app-i dhe kthehet.
@@ -227,7 +232,7 @@ export default function CheckoutScreen() {
     } finally {
       setLoading(false);
     }
-  }, [canSubmit, fullName, phone, email, address, city, country, shipping, state.cartItems, clearCart, cartTotal, replaceCartItems, t, authState]);
+  }, [canSubmit, fullName, phone, email, address, city, country, method, shipping, state.cartItems, clearCart, cartTotal, replaceCartItems, t, authState]);
 
   if (authState === "loading") {
     return (
@@ -252,6 +257,24 @@ export default function CheckoutScreen() {
         <Text className="font-body text-sm text-ink-soft text-center mb-6 leading-5">
           {isGuest ? t("co_guest_placed_body") : t("co_placed_body")}
         </Text>
+        {placedPay?.method === "bank_transfer" && BANK_DETAILS && placedId ? (
+          <View className="self-stretch rounded-xl2 bg-cream-soft p-4 mb-6">
+            <Text className="font-bodySemibold text-sm text-ink mb-2">{t("co_bank_title")}</Text>
+            {([
+              [t("co_bank_beneficiary"), BANK_DETAILS.beneficiary],
+              [t("co_bank_iban"), BANK_DETAILS.iban],
+              ...(BANK_DETAILS.bank ? [[t("co_bank_bank"), BANK_DETAILS.bank]] : []),
+              [t("co_bank_amount"), `€${placedPay.amount.toFixed(2)}`],
+              [t("co_bank_reference"), paymentReference(placedId)],
+            ] as [string, string][]).map(([label, value]) => (
+              <View key={label} className="flex-row justify-between py-1">
+                <Text className="font-body text-xs text-ink-faint mr-3">{label}</Text>
+                <Text selectable className="flex-1 text-right font-bodyMedium text-xs text-ink">{value}</Text>
+              </View>
+            ))}
+            <Text className="font-body text-[11px] text-ink-faint mt-2 leading-4">{t("co_bank_note")}</Text>
+          </View>
+        ) : null}
         {isGuest ? (
           <>
             <Pressable
@@ -423,6 +446,27 @@ export default function CheckoutScreen() {
             );
           })}
         </View> : null}
+
+        {quoteWorks && BANK_DETAILS ? (
+          <View className="mb-6">
+            <Text className="font-bodyMedium text-sm text-ink-soft mb-2">{t("co_pay_method")}</Text>
+            {(["cod", "bank_transfer"] as const).map((m) => {
+              const active = method === m;
+              return (
+                <Pressable
+                  key={m}
+                  onPress={() => setMethod(m)}
+                  accessibilityRole="radio"
+                  accessibilityState={{ selected: active }}
+                  className={`rounded-xl2 px-4 py-3 mb-2 border ${active ? "border-ink bg-cream-soft" : "border-cream-line bg-surface"}`}
+                >
+                  <Text className="font-bodySemibold text-sm text-ink">{t(m === "cod" ? "co_pay_cod" : "co_pay_bank")}</Text>
+                  <Text className="font-body text-xs text-ink-faint mt-0.5 leading-4">{t(m === "cod" ? "co_pay_cod_hint" : "co_pay_bank_hint")}</Text>
+                </Pressable>
+              );
+            })}
+          </View>
+        ) : null}
 
         {changes.length > 0 && (
           <View className="bg-olive-bg rounded-xl2 p-3 mb-4">

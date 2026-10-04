@@ -25,6 +25,9 @@ type Order = {
   items: { id?: string; name?: string; price?: number; qty?: number; imageUrl?: string | null }[] | null;
   /** Dërgesa e përfshirë te totali (kolona ekziston pas migrimit; para tij mungon). */
   shipping_fee?: number | null;
+  /** Metoda dhe statusi i pagesës (kolonat ekzistojnë pas migrimit). */
+  payment_method?: string | null;
+  payment_status?: string | null;
 };
 /** Foto dhe kodi i produktit, për çdo artikull të porosisë. */
 type Meta = Map<string, { img: string | null; code: string }>;
@@ -43,6 +46,10 @@ function isServiceRole(req: Request): boolean {
 const esc = (v: unknown) => String(v ?? "").replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]!));
 const eur = (n: number) => `€${Number(n || 0).toFixed(2)}`;
 const ref = (id: string) => `#${id.slice(0, 8).toUpperCase()}`;
+
+/** Të dhënat e bankës për transfertë: sekreti BANK_TRANSFER_TEXT te Supabase (tekst i lirë: përfituesi, IBAN, banka). */
+const BANK_TEXT = Deno.env.get("BANK_TRANSFER_TEXT") ?? "";
+const PAYMENT_LABEL: Record<string, string> = { cod: "Paguan në dorëzim", bank_transfer: "Transfertë bankare", card: "Kartë" };
 
 const CUSTOMER: Record<string, { subject: (r: string) => string; title: string; lead: string }> = {
   order_placed: {
@@ -105,13 +112,17 @@ function shell(title: string, body: string): string {
 function render(row: Row, o: Order, meta: Meta): { to: string; subject: string; html: string } | null {
   const r = ref(o.id);
   if (row.audience === "admin") {
-    const body = `<p style="margin:0 0 12px;"><strong>${esc(o.full_name)}</strong><br>${esc(o.phone)}<br>${esc(o.address)}, ${esc(o.city)}</p>${itemsTable(o, meta)}`;
+    const body = `<p style="margin:0 0 12px;"><strong>${esc(o.full_name)}</strong><br>${esc(o.phone)}<br>${esc(o.address)}, ${esc(o.city)}</p><p style="margin:0 0 12px;">Pagesa: <strong>${esc(PAYMENT_LABEL[o.payment_method ?? "cod"] ?? o.payment_method)}</strong>${o.payment_status && o.payment_status !== "unpaid" ? ` (${esc(o.payment_status)})` : ""}</p>${itemsTable(o, meta)}`;
     return { to: ADMIN_TO, subject: `Porosi e re ${r} · ${eur(o.total_price)} · ${o.city}`, html: shell(`Porosi e re ${r}`, body) };
   }
   const t = CUSTOMER[row.kind];
   if (!t || !row.to_email) return null;
+  // Transfertë bankare e pa paguar: udhëzimet e pagesës bashkë me referencën (kodin e porosisë).
+  const payBlock = o.payment_method === "bank_transfer" && o.payment_status !== "paid"
+    ? `<div style="margin:16px 0 0;padding:12px 14px;background:#f8f6f2;border-radius:10px;"><p style="margin:0 0 6px;font-weight:700;color:#1c1a16;">Pagesa me transfertë bankare</p>${BANK_TEXT ? `<p style="margin:0 0 6px;white-space:pre-line;">${esc(BANK_TEXT)}</p>` : ""}<p style="margin:0;">Shuma: <strong>${eur(o.total_price)}</strong> · Referenca: <strong>${esc(r)}</strong></p></div>`
+    : "";
   const body = `<p style="margin:0 0 16px;">${esc(t.lead)}</p>
-    <p style="margin:0 0 6px;font-weight:700;color:#1c1a16;">Porosia ${esc(r)}</p>${itemsTable(o, meta)}
+    <p style="margin:0 0 6px;font-weight:700;color:#1c1a16;">Porosia ${esc(r)}</p>${itemsTable(o, meta)}${payBlock}
     <p style="margin:16px 0 0;"><strong>Dërgesa:</strong> ${esc(o.full_name)}, ${esc(o.address)}, ${esc(o.city)}</p>
     <p style="margin:16px 0 0;"><a href="${SITE}/sq/shop/orders" style="color:#1f3d38;font-weight:700;">Shiko porositë e mia</a></p>`;
   return { to: row.to_email, subject: t.subject(r), html: shell(t.title, body) };
