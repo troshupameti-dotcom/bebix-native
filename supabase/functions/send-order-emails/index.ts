@@ -94,7 +94,7 @@ function shell(title: string, body: string): string {
   return `<!doctype html><html lang="sq"><body style="margin:0;background:#f8f6f2;font-family:Arial,Helvetica,sans-serif;">
   <table role="presentation" width="100%" cellspacing="0" cellpadding="0"><tr><td align="center" style="padding:24px 12px;">
     <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="max-width:520px;background:#ffffff;border-radius:16px;padding:28px;">
-      <tr><td style="font-size:22px;font-weight:700;color:#1f3d38;padding-bottom:4px;">Bebix</td></tr>
+      <tr><td style="padding-bottom:4px;"><img src="${SITE}/wordmark.png" width="120" alt="Bebix" style="display:block;width:120px;height:auto;border:0;font-size:22px;font-weight:700;color:#1f3d38;"></td></tr>
       <tr><td style="font-size:18px;font-weight:700;color:#1c1a16;padding:12px 0 6px;">${esc(title)}</td></tr>
       <tr><td style="font-size:14px;line-height:1.6;color:#565047;">${body}</td></tr>
     </table>

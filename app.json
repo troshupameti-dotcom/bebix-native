@@ -27,7 +27,7 @@
       "googleServicesFile": "./google-services.json",
       "adaptiveIcon": {
         "foregroundImage": "./assets/adaptive-icon.png",
-        "backgroundColor": "#F8F6F2"
+        "backgroundColor": "#F3F3F1"
       },
       "permissions": [
         "android.permission.CAMERA",
@@ -38,7 +38,7 @@
       [
         "expo-notifications",
         {
-          "icon": "./assets/adaptive-icon.png",
+          "icon": "./assets/notification-icon.png",
           "color": "#1F3D38"
         }
       ],

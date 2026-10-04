@@ -10,8 +10,8 @@ type LogoProps = {
   variant?: "wordmark" | "full";
 };
 
-/** Logoja e plotë (832×840, e tejdukshme): mjaft e madhe për ekranet 3x. */
-const FULL_RATIO = 840 / 832;
+/** Logoja e plotë: shenja "b" me fjalën poshtë (1314×1313, e tejdukshme): mjaft e madhe për ekranet 3x. */
+const FULL_RATIO = 1313 / 1314;
 
 /**
  * Fjala "bebix", e njëjta si te webi.
@@ -25,8 +25,8 @@ const FULL_RATIO = 840 / 832;
  * Tema e errët merr variantin ku shkronjat janë krem: navy-ja e ditës
  * zhduket mbi sfondin e natës. "x"-i blu mbetet i njëjtë në të dyja.
  */
-const ASSET_WIDTH = 804;
-const ASSET_HEIGHT = 229;
+const ASSET_WIDTH = 1011;
+const ASSET_HEIGHT = 286;
 
 export function Logo({ size = "lg", variant = "wordmark" }: LogoProps) {
   const { isDark } = useThemeColors();
