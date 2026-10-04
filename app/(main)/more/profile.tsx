@@ -109,7 +109,7 @@ export default function ProfileScreen() {
 
       <ScrollView contentContainerStyle={{ paddingBottom: 40 }} keyboardShouldPersistTaps="handled">
         <View className="items-center mb-6">
-          <Pressable onPress={pickPhoto} className="w-24 h-24 rounded-full bg-olive-bg items-center justify-center overflow-hidden mb-2">
+          <Pressable accessibilityRole="button" accessibilityLabel={t("prof_change_photo")} onPress={pickPhoto} className="w-24 h-24 rounded-full bg-olive-bg items-center justify-center overflow-hidden mb-2">
             {photo ? <Image source={{ uri: photo }} className="w-24 h-24" /> : <Icon name="camera" size={28} color="#6E7452" />}
           </Pressable>
           <Pressable onPress={pickPhoto}>

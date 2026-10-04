@@ -90,6 +90,8 @@ export default function ProductDetailsScreen() {
       <View className="flex-row items-center justify-between px-5 pt-2 mb-2">
         <BackButton fallback="/(main)/shop" />
         <Pressable
+          accessibilityRole="button"
+          accessibilityLabel={t(fav ? "a11y_unfavorite" : "a11y_favorite")}
           onPress={() => toggleFavorite({ id: product.id, name: product.name, price: `€${product.price.toFixed(2)}`, icon: product.icon })}
           style={shadows.soft}
           className="w-10 h-10 rounded-full bg-surface items-center justify-center"

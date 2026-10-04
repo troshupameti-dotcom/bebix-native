@@ -45,7 +45,7 @@ export default function WishlistScreen() {
                     <Text className="font-bodyMedium text-sm text-ink" numberOfLines={1}>{f.name}</Text>
                     <Text className="font-bodySemibold text-sm text-ink-soft mt-0.5">{f.price}</Text>
                   </View>
-                  <Pressable onPress={() => toggleFavorite(f)} className="p-2">
+                  <Pressable accessibilityRole="button" accessibilityLabel={t("a11y_remove")} onPress={() => toggleFavorite(f)} className="p-2">
                     <Icon name="close" size={16} color="#A79D8A" />
                   </Pressable>
                 </Pressable>

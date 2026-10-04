@@ -222,7 +222,7 @@ export default function MomentsScreen() {
 
             <View className="mt-4 flex-row items-center justify-between">
               <Text className="flex-1 font-display text-xl text-ink">{viewingMoment.title || t("moment_add")}</Text>
-              <Pressable onPress={toggleFavoriteViewing} hitSlop={8} className="ml-2">
+              <Pressable accessibilityRole="button" accessibilityLabel={t(viewingMoment.favorite ? "a11y_unfavorite" : "a11y_favorite")} onPress={toggleFavoriteViewing} hitSlop={8} className="ml-2">
                 <Icon name="heart" size={20} color={viewingMoment.favorite ? "#C9702E" : "#A79D8A"} />
               </Pressable>
             </View>

@@ -592,6 +592,7 @@ export default function BabyProfileScreen() {
             )}
           </Pressable>
           <Pressable
+            accessibilityRole="button" accessibilityLabel={t("a11y_edit")}
             onPress={() => router.push("/(main)/baby/settings")}
             className="h-9 w-9 items-center justify-center rounded-full bg-surface"
             style={shadows.press}
@@ -808,7 +809,7 @@ export default function BabyProfileScreen() {
                     placeholderClassName="text-ink-faint"
                     className="flex-1 font-body text-[13.5px] text-ink"
                   />
-                  <Pressable onPress={() => { setShowSearch(false); setSearch(""); }} hitSlop={8}>
+                  <Pressable accessibilityRole="button" accessibilityLabel={t("a11y_close")} onPress={() => { setShowSearch(false); setSearch(""); }} hitSlop={8}>
                     <Icon name="close" size={14} color="#A79D8A" />
                   </Pressable>
                 </View>
@@ -859,6 +860,7 @@ export default function BabyProfileScreen() {
                     </Text>
                   </Pressable>
                   <Pressable
+                    accessibilityRole="button" accessibilityLabel={t("a11y_select")}
                     onPress={() => {
                       haptics.select();
                       if (selectMode) exitSelectMode();
@@ -1029,16 +1031,16 @@ export default function BabyProfileScreen() {
                   {selectedIds.size} {t("bulk_selected_count")}
                 </Text>
                 <View className="flex-row gap-4">
-                  <Pressable onPress={bulkArchiveSelected} hitSlop={6}>
+                  <Pressable accessibilityRole="button" accessibilityLabel={t("a11y_archive")} onPress={bulkArchiveSelected} hitSlop={6}>
                     <Icon name="download" size={17} color="#FBF6EE" />
                   </Pressable>
-                  <Pressable onPress={bulkExportSelected} hitSlop={6}>
+                  <Pressable accessibilityRole="button" accessibilityLabel={t("a11y_export")} onPress={bulkExportSelected} hitSlop={6}>
                     <Icon name="chart" size={17} color="#FBF6EE" />
                   </Pressable>
-                  <Pressable onPress={bulkShareSelected} hitSlop={6}>
+                  <Pressable accessibilityRole="button" accessibilityLabel={t("a11y_share")} onPress={bulkShareSelected} hitSlop={6}>
                     <Icon name="share" size={17} color="#FBF6EE" />
                   </Pressable>
-                  <Pressable onPress={bulkDeleteSelected} hitSlop={6}>
+                  <Pressable accessibilityRole="button" accessibilityLabel={t("a11y_delete")} onPress={bulkDeleteSelected} hitSlop={6}>
                     <Icon name="close" size={17} color="#F87171" />
                   </Pressable>
                 </View>

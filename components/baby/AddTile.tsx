@@ -1,5 +1,6 @@
 import { Pressable } from "react-native";
 import { Icon } from "@/components/ui/Icon";
+import { useTranslation } from "@/lib/i18n/LanguageContext";
 
 type AddTileProps = {
   onPress: () => void;
@@ -7,8 +8,11 @@ type AddTileProps = {
 };
 
 export function AddTile({ onPress, style }: AddTileProps) {
+  const { t } = useTranslation();
   return (
     <Pressable
+      accessibilityRole="button"
+      accessibilityLabel={t("a11y_add")}
       onPress={onPress}
       className="border-cream-line"
       style={[

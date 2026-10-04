@@ -285,7 +285,7 @@ export default function BabySettingsScreen() {
                   {c.relation} {c.relation ? "· " : ""}{c.phone}
                 </Text>
               </View>
-              <Pressable onPress={() => baby.removeEmergencyContact(c.id)} hitSlop={8}>
+              <Pressable accessibilityRole="button" accessibilityLabel={t("a11y_remove")} onPress={() => baby.removeEmergencyContact(c.id)} hitSlop={8}>
                 <Icon name="close" size={16} color="#A79D8A" />
               </Pressable>
             </View>

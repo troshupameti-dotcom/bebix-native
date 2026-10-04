@@ -81,11 +81,11 @@ export function RecordSheet({
         <Text className="font-bodySemibold text-lg text-ink">{title}</Text>
         <View className="flex-row items-center gap-2">
           {onTogglePin && !isNew && (
-            <Pressable onPress={() => { haptics.select(); onTogglePin(); }} hitSlop={8} className="h-8 w-8 items-center justify-center rounded-full bg-cream-soft">
+            <Pressable accessibilityRole="button" accessibilityLabel={t(pinned ? "a11y_unpin" : "a11y_pin")} onPress={() => { haptics.select(); onTogglePin(); }} hitSlop={8} className="h-8 w-8 items-center justify-center rounded-full bg-cream-soft">
               <Icon name="heart" size={14} color={pinned ? "#C9702E" : "#A79D8A"} />
             </Pressable>
           )}
-          <Pressable onPress={onClose} hitSlop={8} className="h-8 w-8 items-center justify-center rounded-full bg-cream-soft">
+          <Pressable accessibilityRole="button" accessibilityLabel={t("a11y_close")} onPress={onClose} hitSlop={8} className="h-8 w-8 items-center justify-center rounded-full bg-cream-soft">
             <Icon name="close" size={14} color="#2C271F" />
           </Pressable>
         </View>
