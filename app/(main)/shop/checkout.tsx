@@ -16,7 +16,8 @@ import { track } from "@/lib/analytics/posthog";
 import { friendlyError } from "@/lib/errors/userMessage";
 import { isValidPhone, newOrderRef, reconcileCart, type CartChange, type ProductNow } from "@/lib/shop/cartCheck";
 import { SHIPPING_COUNTRIES, type ShipCountry } from "@/lib/shop/shipping";
-import { BANK_DETAILS, paymentReference, type PaymentMethod } from "@/lib/shop/payment";
+import { AVAILABLE_METHODS, BANK_DETAILS, paymentReference, type PaymentMethod } from "@/lib/shop/payment";
+import { startCardPayment } from "@/lib/shop/cardPayment";
 
 /**
  * Gabimet e bazës vijnë si tekst teknik (p.sh. kufizime stoku). Klienti
@@ -25,6 +26,17 @@ import { BANK_DETAILS, paymentReference, type PaymentMethod } from "@/lib/shop/p
 /** Kthen nje CELES perkthimi, ose null nese mesazhi s'njihet. */
 /** Kontakti i mysafirit, që formulari të dalë i mbushur herën tjetër. */
 const GUEST_CONTACT_KEY = "bebix_guest_contact_v1";
+
+const PAY_TITLE: Record<PaymentMethod, TranslationKey> = {
+  cod: "co_pay_cod",
+  card: "co_pay_card",
+  bank_transfer: "co_pay_bank",
+};
+const PAY_HINT: Record<PaymentMethod, TranslationKey> = {
+  cod: "co_pay_cod_hint",
+  card: "co_pay_card_hint",
+  bank_transfer: "co_pay_bank_hint",
+};
 
 function friendlyErrorKey(message: string): TranslationKey | null {
   const m = message.toLowerCase();
@@ -59,6 +71,10 @@ export default function CheckoutScreen() {
   const [error, setError] = useState<string | null>(null);
   const [done, setDone] = useState(false);
   const [placedId, setPlacedId] = useState<string | null>(null);
+  // Porosia me kartë u krijua: ekrani i fundit ofron "Paguaj me kartë" përsëri (faqja s'u hap, ose klienti e mbylli).
+  const [cardRetry, setCardRetry] = useState<{ id: string; ref: string } | null>(null);
+  const [cardBusy, setCardBusy] = useState(false);
+  const [cardFailed, setCardFailed] = useState(false);
   // Çka ndryshoi në shportë që kur u shtua (çmim, stok, produkt i hequr).
   const [changes, setChanges] = useState<CartChange[]>([]);
   // E njëjta referencë në çdo riprovim të kësaj porosie: nëse përgjigjja e
@@ -186,6 +202,9 @@ export default function CheckoutScreen() {
       // Pa llogari: e njëjta porosi, përmes `place_guest_order` (admini
       // e konfirmon me telefon). Me llogari: `place_order`, si më parë.
       const guest = authState === "out";
+      const sentRef = orderRef.current;
+      // Metoda dërgohet vetëm kur baza e njeh dërgesën (pas migrimit); përndryshe porosia shkon si më parë, "në dorëzim".
+      const sentMethod: PaymentMethod = typeof shipping === "number" && AVAILABLE_METHODS.includes(method) ? method : "cod";
       const { data: orderId, error: rpcError } = await supabase.rpc(guest ? "place_guest_order" : "place_order", {
         p_full_name: fullName.trim(),
         p_phone: phone.trim(),
@@ -194,21 +213,24 @@ export default function CheckoutScreen() {
         p_items: state.cartItems,
         p_client_ref: orderRef.current,
         // Vendi dërgohet vetëm kur baza e njeh (pas migrimit); përndryshe porosia shkon si më parë.
-        ...(typeof shipping === "number" ? { p_country: country, p_payment_method: BANK_DETAILS ? method : "cod", p_lang: language === "en" ? "en" : "sq" } : {}),
+        ...(typeof shipping === "number" ? { p_country: country, p_payment_method: sentMethod, p_lang: language === "en" ? "en" : "sq" } : {}),
       });
 
       if (rpcError) throw new Error(rpcError.message);
       setPlacedId(typeof orderId === "string" ? orderId : null);
-      setPlacedPay({ method: typeof shipping === "number" && BANK_DETAILS ? method : "cod", amount: cartTotal() + (typeof shipping === "number" ? shipping : 0) });
+      setPlacedPay({ method: sentMethod, amount: cartTotal() + (typeof shipping === "number" ? shipping : 0) });
+      const payByCard = sentMethod === "card" && typeof orderId === "string";
       if (guest) {
         // Porosia ruhet në pajisje: statusi i saj del te "Porositë e mia" edhe
         // kur mysafiri del nga app-i dhe kthehet.
         if (typeof orderId === "string") void rememberGuestOrder(orderId);
         // Email-i (opsional) për konfirmim: s'e prish kurrë porosinë nëse dështon.
         if (email.trim() && typeof orderId === "string") {
-          void Promise.resolve(
-            supabase.rpc("set_order_email", { p_order_id: orderId, p_client_ref: orderRef.current, p_email: email.trim() })
+          const saving = Promise.resolve(
+            supabase.rpc("set_order_email", { p_order_id: orderId, p_client_ref: sentRef, p_email: email.trim() })
           ).catch(() => {});
+          // Me kartë, email-i duhet të jetë te porosia para se të hapet faqja e pagesës (e merr Stripe për faturën).
+          if (payByCard) await saving;
         }
         // Herën tjetër formulari del i mbushur, pa pasur nevojë për llogari.
         void AsyncStorage.setItem(
@@ -223,6 +245,11 @@ export default function CheckoutScreen() {
       });
       clearCart();
       orderRef.current = newOrderRef();
+      if (payByCard) {
+        // Karta paguhet te faqja e Stripe; porosia shënohet "paguar" vetëm kur Stripe konfirmon (webhook).
+        setCardRetry({ id: orderId, ref: sentRef });
+        setCardFailed(!(await startCardPayment(orderId, sentRef, language === "en" ? "en" : "sq")));
+      }
       setDone(true);
     } catch (e: any) {
       const message = e?.message ?? "";
@@ -232,7 +259,16 @@ export default function CheckoutScreen() {
     } finally {
       setLoading(false);
     }
-  }, [canSubmit, fullName, phone, email, address, city, country, method, shipping, state.cartItems, clearCart, cartTotal, replaceCartItems, t, authState]);
+  }, [canSubmit, fullName, phone, email, address, city, country, method, shipping, state.cartItems, clearCart, cartTotal, replaceCartItems, t, authState, language]);
+
+  const retryCard = useCallback(async () => {
+    if (!cardRetry || cardBusy) return;
+    setCardBusy(true);
+    setCardFailed(false);
+    const opened = await startCardPayment(cardRetry.id, cardRetry.ref, language === "en" ? "en" : "sq");
+    setCardFailed(!opened);
+    setCardBusy(false);
+  }, [cardRetry, cardBusy, language]);
 
   if (authState === "loading") {
     return (
@@ -257,6 +293,21 @@ export default function CheckoutScreen() {
         <Text className="font-body text-sm text-ink-soft text-center mb-6 leading-5">
           {isGuest ? t("co_guest_placed_body") : t("co_placed_body")}
         </Text>
+        {cardRetry ? (
+          <View className="self-stretch rounded-xl2 bg-cream-soft p-4 mb-6">
+            <Text className="font-bodySemibold text-sm text-ink mb-1">{t("co_card_unpaid_title")}</Text>
+            <Text className="font-body text-xs text-ink-soft leading-5 mb-3">{t("co_card_unpaid_body")}</Text>
+            <Pressable
+              onPress={retryCard}
+              disabled={cardBusy}
+              accessibilityRole="button"
+              className={`bg-olive rounded-xl2 py-3 px-6 items-center ${cardBusy ? "opacity-50" : ""}`}
+            >
+              <Text className="font-bodyMedium text-sm text-on-accent">{cardBusy ? t("co_card_redirect") : t("co_card_retry")}</Text>
+            </Pressable>
+            {cardFailed ? <Text className="font-body text-xs text-orange leading-5 mt-2">{t("co_card_failed")}</Text> : null}
+          </View>
+        ) : null}
         {placedPay?.method === "bank_transfer" && BANK_DETAILS && placedId ? (
           <View className="self-stretch rounded-xl2 bg-cream-soft p-4 mb-6">
             <Text className="font-bodySemibold text-sm text-ink mb-2">{t("co_bank_title")}</Text>
@@ -447,10 +498,10 @@ export default function CheckoutScreen() {
           })}
         </View> : null}
 
-        {quoteWorks && BANK_DETAILS ? (
+        {quoteWorks && AVAILABLE_METHODS.length > 1 ? (
           <View className="mb-6">
             <Text className="font-bodyMedium text-sm text-ink-soft mb-2">{t("co_pay_method")}</Text>
-            {(["cod", "bank_transfer"] as const).map((m) => {
+            {AVAILABLE_METHODS.map((m) => {
               const active = method === m;
               return (
                 <Pressable
@@ -460,8 +511,8 @@ export default function CheckoutScreen() {
                   accessibilityState={{ selected: active }}
                   className={`rounded-xl2 px-4 py-3 mb-2 border ${active ? "border-ink bg-cream-soft" : "border-cream-line bg-surface"}`}
                 >
-                  <Text className="font-bodySemibold text-sm text-ink">{t(m === "cod" ? "co_pay_cod" : "co_pay_bank")}</Text>
-                  <Text className="font-body text-xs text-ink-faint mt-0.5 leading-4">{t(m === "cod" ? "co_pay_cod_hint" : "co_pay_bank_hint")}</Text>
+                  <Text className="font-bodySemibold text-sm text-ink">{t(PAY_TITLE[m])}</Text>
+                  <Text className="font-body text-xs text-ink-faint mt-0.5 leading-4">{t(PAY_HINT[m])}</Text>
                 </Pressable>
               );
             })}
@@ -498,7 +549,7 @@ export default function CheckoutScreen() {
           {loading ? (
             <ActivityIndicator className="text-on-accent" />
           ) : (
-            <Text className="font-bodySemibold text-sm text-on-accent">{t("co_confirm")}</Text>
+            <Text className="font-bodySemibold text-sm text-on-accent">{t(method === "card" && AVAILABLE_METHODS.includes("card") ? "co_card_confirm" : "co_confirm")}</Text>
           )}
         </Pressable>
       </ScrollView>

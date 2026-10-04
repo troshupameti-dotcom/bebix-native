@@ -76,7 +76,8 @@ const TX: Record<Lang, {
   },
 };
 
-type Template = { subject: (r: string) => string; title: string; lead: string; leadBank?: string };
+/** `lead`: paguan në dorëzim; `leadBank`: e paguar paraprakisht (transfertë, ose kartë kur s'ka tekst të veçantë); `leadCard`/`leadCardPaid`: karta, e pa paguar / e paguar. */
+type Template = { subject: (r: string) => string; title: string; lead: string; leadBank?: string; leadCard?: string; leadCardPaid?: string };
 
 const CUSTOMER: Record<Lang, Record<string, Template>> = {
   sq: {
@@ -85,6 +86,8 @@ const CUSTOMER: Record<Lang, Record<string, Template>> = {
       title: "Faleminderit për porosinë!",
       lead: "E morëm porosinë tënde dhe po e shqyrtojmë. Do të të njoftojmë sapo të konfirmohet. Paguan kur ta marrësh.",
       leadBank: "E morëm porosinë tënde. Do të konfirmohet sapo të arrijë pagesa me transfertë bankare.",
+      leadCard: "E morëm porosinë tënde. Do të konfirmohet sapo të përfundojë pagesa me kartë. Nëse e mbylle faqen e pagesës pa e përfunduar, porosia anulohet vetë pas dy orësh dhe mund ta bësh përsëri.",
+      leadCardPaid: "E morëm porosinë tënde dhe pagesën me kartë, faleminderit! Do të të njoftojmë sapo të konfirmohet.",
     },
     status_confirmed: {
       subject: (r) => `Porosia ${r} u konfirmua`,
@@ -106,6 +109,7 @@ const CUSTOMER: Record<Lang, Record<string, Template>> = {
       subject: (r) => `Porosia ${r} u anulua`,
       title: "Porosia u anulua",
       lead: "Porosia jote u anulua. Nëse nuk e prisje këtë, na shkruaj dhe e zgjidhim.",
+      leadCard: "Porosia jote u anulua sepse pagesa me kartë nuk u përfundua; s'të është zbritur asgjë. Nëse do ta blesh, bëj një porosi të re.",
     },
   },
   en: {
@@ -114,6 +118,8 @@ const CUSTOMER: Record<Lang, Record<string, Template>> = {
       title: "Thank you for your order!",
       lead: "We received your order and are reviewing it. We'll let you know as soon as it's confirmed. You pay when you receive it.",
       leadBank: "We received your order. It will be confirmed as soon as your bank transfer arrives.",
+      leadCard: "We received your order. It will be confirmed as soon as your card payment completes. If you closed the payment page without finishing, the order is cancelled automatically after two hours and you can place it again.",
+      leadCardPaid: "We received your order and your card payment, thank you! We'll let you know as soon as it's confirmed.",
     },
     status_confirmed: {
       subject: (r) => `Order ${r} confirmed`,
@@ -135,6 +141,7 @@ const CUSTOMER: Record<Lang, Record<string, Template>> = {
       subject: (r) => `Order ${r} cancelled`,
       title: "Order cancelled",
       lead: "Your order was cancelled. If you weren't expecting this, write to us and we'll sort it out.",
+      leadCard: "Your order was cancelled because the card payment was not completed; nothing was charged. If you still want it, place a new order.",
     },
   },
 };
@@ -182,7 +189,11 @@ function render(row: Row, o: Order, meta: Meta): { to: string; subject: string; 
   const t = CUSTOMER[lang][row.kind];
   if (!t || !row.to_email) return null;
   const bank = o.payment_method === "bank_transfer";
-  const lead = bank && t.leadBank ? t.leadBank : t.lead;
+  const card = o.payment_method === "card";
+  // Kartë: tekst i veçantë (e paguar ose jo), përndryshe si e paguar paraprakisht; e anuluar por e paguar mbetet teksti i zakonshëm.
+  const lead = card
+    ? ((o.payment_status === "paid" ? t.leadCardPaid : t.leadCard) ?? t.leadBank ?? t.lead)
+    : bank && t.leadBank ? t.leadBank : t.lead;
   // Transfertë bankare e pa paguar: udhëzimet e pagesës bashkë me referencën (kodin e porosisë).
   const payBlock = bank && o.payment_status !== "paid"
     ? `<div style="margin:16px 0 0;padding:12px 14px;background:#f8f6f2;border-radius:10px;"><p style="margin:0 0 6px;font-weight:700;color:#1c1a16;">${L.payTitle}</p>${BANK_TEXT ? `<p style="margin:0 0 6px;white-space:pre-line;">${esc(BANK_TEXT)}</p>` : ""}<p style="margin:0;">${L.amount}: <strong>${eur(o.total_price)}</strong> · ${L.reference}: <strong>${esc(r)}</strong></p></div>`

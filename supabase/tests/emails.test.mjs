@@ -57,6 +57,25 @@ check("transfertë e paguar: pa bllok pagese", !m.html.includes("Payment by bank
 
 m = render(row("order_placed", "admin"), order({ lang: "en", payment_method: "bank_transfer", payment_status: "pending" }), meta);
 check("admini: gjithmonë shqip, me mënyrën e pagesës", m.subject.startsWith("Porosi e re") && m.html.includes("Pagesa:") && m.html.includes("Transfertë bankare") && m.html.includes("· EN"));
+m = render(row("order_placed"), order({ lang: "en", payment_method: "card", payment_status: "pending" }), meta);
+check("kartë e pa paguar (en): pret pagesën, pa bllok transferte, pa 'pay when you receive'", m.html.includes("as soon as your card payment completes") && !m.html.includes("Payment by bank transfer") && !m.html.includes("IBAN") && !m.html.includes("You pay when you receive it"));
+m = render(row("order_placed"), order({ payment_method: "card", payment_status: "pending" }), meta);
+check("kartë e pa paguar (sq): teksti shqip", m.html.includes("pagesa me kartë") && !m.html.includes("Paguan kur ta marrësh") && !m.html.includes("IBAN"));
+m = render(row("order_placed"), order({ lang: "en", payment_method: "card", payment_status: "paid" }), meta);
+check("kartë e paguar (en): konfirmon pagesën", m.html.includes("your card payment, thank you"));
+m = render(row("status_shipped"), order({ lang: "en", payment_method: "card", payment_status: "paid" }), meta);
+check("kartë e nisur: 'on its way' pa 'pay when you receive'", m.html.includes("Your order is on its way.") && !m.html.includes("You pay when you receive it"));
+m = render(row("status_cancelled"), order({ lang: "en", payment_method: "card", payment_status: "failed" }), meta);
+check("kartë e anuluar pa pagesë: nuk është zbritur asgjë", m.html.includes("nothing was charged"));
+m = render(row("status_cancelled"), order({ lang: "en", payment_method: "card", payment_status: "paid" }), meta);
+check("kartë e anuluar por e paguar: teksti i zakonshëm, jo 'nothing was charged'", !m.html.includes("nothing was charged") && m.html.includes("Your order was cancelled."));
+m = render(row("order_placed", "admin"), order({ payment_method: "card", payment_status: "pending" }), meta);
+check("admini: karta shfaqet si Kartë (pending)", m.html.includes("<strong>Kartë</strong> (pending)"));
+m = render(row("order_placed", "admin"), order({ payment_method: "card", payment_status: "paid" }), meta);
+check("admini: karta e paguar shfaqet (paid)", m.html.includes("<strong>Kartë</strong> (paid)"));
+m = render(row("order_placed"), order(), meta);
+check("në dorëzim: teksti i zakonshëm mbetet", m.html.includes("Paguan kur ta marrësh"));
+
 m = render(row("order_placed"), order({ lang: "de" }), meta);
 check("gjuhë e panjohur: shqip", m.subject.startsWith("Porosia"));
 m = render({ ...row("order_placed"), to_email: null }, order(), meta);
