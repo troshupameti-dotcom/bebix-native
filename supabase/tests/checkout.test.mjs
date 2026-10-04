@@ -55,15 +55,15 @@ const partner = (await one(`insert into partners (company_name) values ('Partner
 await db.exec(`insert into partner_products (partner_id, product_id, stock) values ('${partner}', '${C}', 10)`);
 
 const items = (list) => JSON.stringify(list.map(([id, qty]) => ({ id, qty, name: "x", price: 1 })));
-const place = async ({ ref, list, country, method, guest = true }) => {
+const place = async ({ ref, list, country, method, lang, guest = true }) => {
   const args = [`'Test Person'`, `'+38344111222'`, `'Rr. Test 1'`, `'Prishtine'`, `'${items(list)}'::jsonb`, `'${ref}'::uuid`];
   const named = guest
     ? `p_full_name => 'Test Person', p_phone => '${nextPhone()}', p_address => 'Rr. Test 1', p_city => 'Prishtine', p_items => '${items(list)}'::jsonb, p_client_ref => '${ref}'::uuid`
     : `p_full_name => 'Test Person', p_phone => '${nextPhone()}', p_address => 'Rr. Test 1', p_city => 'Prishtine', p_items => '${items(list)}'::jsonb, p_client_ref => '${ref}'::uuid`;
-  const extra = (country ? `, p_country => '${country}'` : "") + (method ? `, p_payment_method => '${method}'` : "");
+  const extra = (country ? `, p_country => '${country}'` : "") + (method ? `, p_payment_method => '${method}'` : "") + (lang ? `, p_lang => '${lang}'` : "");
   const fn = guest ? "place_guest_order" : "place_order";
   const r = await one(`select public.${fn}(${named}${extra}) as id`);
-  return one(`select id, total_price::float8 as total, shipping_fee::float8 as ship, country, payment_method, payment_status from orders where id = $1`, [r.id]);
+  return one(`select id, total_price::float8 as total, shipping_fee::float8 as ship, country, payment_method, payment_status, lang from orders where id = $1`, [r.id]);
 };
 const uuid = () => crypto.randomUUID();
 let phoneSeq = 100000;
@@ -101,6 +101,16 @@ check("transfertë bankare: statusi 'pending'", o.payment_method === "bank_trans
 o = await place({ ref: uuid(), list: [[A, 1]], country: "XK", method: "cod" });
 check("në dorëzim: statusi 'unpaid'", o.payment_status === "unpaid");
 
+// gjuha e emailit
+o = await place({ ref: uuid(), list: [[A, 1]], country: "XK" });
+check("gjuha parazgjedhje: sq", o.lang === "sq", o.lang);
+o = await place({ ref: uuid(), list: [[A, 1]], country: "XK", lang: "en" });
+check("gjuha e emailit: en ruhet", o.lang === "en", o.lang);
+o = await place({ ref: uuid(), list: [[A, 1]], country: "XK", lang: "EN" });
+check("gjuha me shkronja të mëdha: en", o.lang === "en", o.lang);
+o = await place({ ref: uuid(), list: [[A, 1]], country: "XK", lang: "de" });
+check("gjuhë e panjohur bie te sq (gjuha e emailit)", o.lang === "sq", o.lang);
+
 // 6) refuzime
 const rejects = async (name, fn, fragment) => { try { await fn(); check(name, false, "nuk u refuzua"); } catch (e) { check(name, e.message.includes(fragment), e.message.slice(0, 70)); } };
 await rejects("karta nuk është e hapur", () => place({ ref: uuid(), list: [[A, 1]], country: "XK", method: "card" }), "nuk është e hapur");
@@ -136,11 +146,11 @@ check("place_order me hyrje: 10 + 5, transfertë", o.total === 15 && o.payment_s
 
 // 11) të drejtat
 const priv = async (role, sig) => (await one(`select has_function_privilege('${role}', '${sig}', 'execute') as ok`)).ok;
-check("anon mund të thërrasë place_guest_order", await priv("anon", "public.place_guest_order(text,text,text,text,jsonb,uuid,text,text)"));
-check("anon NUK mund të thërrasë place_order", !(await priv("anon", "public.place_order(text,text,text,text,jsonb,uuid,text,text)")));
-check("authenticated mund të thërrasë place_order", await priv("authenticated", "public.place_order(text,text,text,text,jsonb,uuid,text,text)"));
-check("anon NUK mund të thërrasë place_order_core", !(await priv("anon", "public.place_order_core(uuid,text,text,text,text,jsonb,uuid,text,text)")));
-check("authenticated NUK mund të thërrasë place_order_core", !(await priv("authenticated", "public.place_order_core(uuid,text,text,text,text,jsonb,uuid,text,text)")));
+check("anon mund të thërrasë place_guest_order", await priv("anon", "public.place_guest_order(text,text,text,text,jsonb,uuid,text,text,text)"));
+check("anon NUK mund të thërrasë place_order", !(await priv("anon", "public.place_order(text,text,text,text,jsonb,uuid,text,text,text)")));
+check("authenticated mund të thërrasë place_order", await priv("authenticated", "public.place_order(text,text,text,text,jsonb,uuid,text,text,text)"));
+check("anon NUK mund të thërrasë place_order_core", !(await priv("anon", "public.place_order_core(uuid,text,text,text,text,jsonb,uuid,text,text,text)")));
+check("authenticated NUK mund të thërrasë place_order_core", !(await priv("authenticated", "public.place_order_core(uuid,text,text,text,text,jsonb,uuid,text,text,text)")));
 check("anon mund të thërrasë shipping_quote", await priv("anon", "public.shipping_quote(text,uuid[])"));
 
 // 12) vetëm një version i secilit funksion (pa paqartësi)

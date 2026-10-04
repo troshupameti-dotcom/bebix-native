@@ -14,13 +14,16 @@ import { track } from "@/lib/analytics/posthog";
 import { ProductReviews, Stars } from "@/components/shop/ProductReviews";
 import { useTranslation } from "@/lib/i18n/LanguageContext";
 import { useContentWidth } from "@/lib/layout";
+import { GIFTS_ENABLED } from "@/lib/gifts/enabled";
+import { addGiftItem, isGiftsNotReady, isSignedIn } from "@/lib/gifts/api";
+import { formatAgeRange } from "@/lib/shop/age";
 
 
 
 
 export default function ProductDetailsScreen() {
   const width = useContentWidth();
-  const { t } = useTranslation();
+  const { t, language } = useTranslation();
   const router = useRouter();
   const { id } = useLocalSearchParams<{ id: string }>();
   const { toggleFavorite, isFavorite, addToCart } = useAppState();
@@ -53,6 +56,22 @@ export default function ProductDetailsScreen() {
   }, [id]);
 
   const avgRating = product?.rating ?? 0;
+  const ageText = formatAgeRange(product?.minAgeMonths, product?.maxAgeMonths, language === "en" ? "en" : "sq");
+
+  // Lista e dhuratave: mysafiri shkon te "kërko llogari" dhe kthehet këtu pas hyrjes.
+  async function addToGiftList() {
+    if (!product) return;
+    if (!(await isSignedIn())) {
+      router.push({ pathname: "/(auth)/require-account", params: { redirect: `/shop/${product.id}` } });
+      return;
+    }
+    try {
+      const result = await addGiftItem(product.id);
+      showToast(t(result === "added" ? "gift_added" : "gift_already"));
+    } catch (e) {
+      showToast(t(isGiftsNotReady(e) ? "gift_not_ready" : "gift_error"));
+    }
+  }
 
 
   if (product === undefined && !loadError) {
@@ -177,6 +196,17 @@ export default function ProductDetailsScreen() {
               </Text>
             )}
           </View>
+          {ageText ? <Text className="mt-2 font-bodyMedium text-[13px] text-olive">{ageText}</Text> : null}
+          {GIFTS_ENABLED ? (
+            <Pressable
+              onPress={addToGiftList}
+              accessibilityRole="button"
+              className="mt-4 flex-row items-center self-start rounded-full border border-cream-line bg-surface px-4 py-2"
+            >
+              <Icon name="sparkle" size={14} color="#6E7452" />
+              <Text className="ml-2 font-bodyMedium text-[13px] text-ink">{t("gift_add_to_list")}</Text>
+            </Pressable>
+          ) : null}
         </View>
 
         {/* Përshkrimi i vërtetë nga paneli — asgjë e gjeneruar */}

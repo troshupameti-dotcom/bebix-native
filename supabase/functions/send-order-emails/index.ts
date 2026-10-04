@@ -7,6 +7,9 @@ import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
  * Çelësi i Resend (`RESEND_API_KEY`) është sekret i funksionit, vendoset te
  * Supabase → Edge Functions → Secrets; s'rri kurrë në kod. Pa të, funksioni
  * s'bën asgjë dhe emailet presin në radhë (nuk humbasin).
+ *
+ * Emaili te klienti del në gjuhën që përdorte kur porositi (`orders.lang`: sq ose en;
+ * para migrimit kolona mungon dhe del shqip). Emaili te admini është gjithmonë shqip.
  */
 
 const supabase = createClient(Deno.env.get("SUPABASE_URL")!, Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!, {
@@ -19,6 +22,7 @@ const REPLY_TO = "info.bebix@gmail.com";
 const ADMIN_TO = Deno.env.get("ADMIN_ALERT_EMAIL") ?? "info.bebix@gmail.com";
 const SITE = "https://www.bebix.store";
 
+type Lang = "sq" | "en";
 type Row = { id: number; kind: string; order_id: string; audience: "customer" | "admin"; to_email: string | null; dedupe_key: string | null };
 type Order = {
   id: string; full_name: string; phone: string; address: string; city: string; total_price: number; created_at: string;
@@ -28,6 +32,8 @@ type Order = {
   /** Metoda dhe statusi i pagesës (kolonat ekzistojnë pas migrimit). */
   payment_method?: string | null;
   payment_status?: string | null;
+  /** Gjuha e klientit në çastin e porosisë (kolona ekziston pas migrimit). */
+  lang?: string | null;
 };
 /** Foto dhe kodi i produktit, për çdo artikull të porosisë. */
 type Meta = Map<string, { img: string | null; code: string }>;
@@ -49,83 +55,143 @@ const ref = (id: string) => `#${id.slice(0, 8).toUpperCase()}`;
 
 /** Të dhënat e bankës për transfertë: sekreti BANK_TRANSFER_TEXT te Supabase (tekst i lirë: përfituesi, IBAN, banka). */
 const BANK_TEXT = Deno.env.get("BANK_TRANSFER_TEXT") ?? "";
-const PAYMENT_LABEL: Record<string, string> = { cod: "Paguan në dorëzim", bank_transfer: "Transfertë bankare", card: "Kartë" };
 
-const CUSTOMER: Record<string, { subject: (r: string) => string; title: string; lead: string }> = {
-  order_placed: {
-    subject: (r) => `Porosia ${r} u pranua`,
-    title: "Faleminderit për porosinë!",
-    lead: "E morëm porosinë tënde dhe po e shqyrtojmë. Do të të njoftojmë sapo të konfirmohet. Paguan kur ta marrësh.",
+/** Fjalët e përbashkëta të emailit, sipas gjuhës. */
+const TX: Record<Lang, {
+  code: string; delivery: string; total: string; deliveryTo: string; seeOrders: string; footer: string;
+  payTitle: string; amount: string; reference: string; order: string; payment: string;
+  paymentLabel: Record<string, string>;
+}> = {
+  sq: {
+    code: "Kodi", delivery: "Dërgesa", total: "Totali", deliveryTo: "Dërgesa:", seeOrders: "Shiko porositë e mia",
+    footer: "Për bebin tënd, me dashuri", payTitle: "Pagesa me transfertë bankare", amount: "Shuma", reference: "Referenca",
+    order: "Porosia", payment: "Pagesa",
+    paymentLabel: { cod: "Paguan në dorëzim", bank_transfer: "Transfertë bankare", card: "Kartë" },
   },
-  status_confirmed: {
-    subject: (r) => `Porosia ${r} u konfirmua`,
-    title: "Porosia u konfirmua",
-    lead: "Porosia jote u konfirmua dhe po përgatitet për dërgesë.",
-  },
-  status_shipped: {
-    subject: (r) => `Porosia ${r} është nisur`,
-    title: "Porosia është nisur",
-    lead: "Porosia jote është në rrugë. Paguan kur ta marrësh.",
-  },
-  status_delivered: {
-    subject: (r) => `Porosia ${r} u dorëzua`,
-    title: "Porosia u dorëzua",
-    lead: "Porosia jote u dorëzua. Faleminderit që zgjodhe Bebix!",
-  },
-  status_cancelled: {
-    subject: (r) => `Porosia ${r} u anulua`,
-    title: "Porosia u anulua",
-    lead: "Porosia jote u anulua. Nëse nuk e prisje këtë, na shkruaj dhe e zgjidhim.",
+  en: {
+    code: "Code", delivery: "Delivery", total: "Total", deliveryTo: "Delivery to:", seeOrders: "See my orders",
+    footer: "For your baby, with love", payTitle: "Payment by bank transfer", amount: "Amount", reference: "Reference",
+    order: "Order", payment: "Payment",
+    paymentLabel: { cod: "Pay on delivery", bank_transfer: "Bank transfer", card: "Card" },
   },
 };
 
-function itemsTable(o: Order, meta: Meta): string {
+type Template = { subject: (r: string) => string; title: string; lead: string; leadBank?: string };
+
+const CUSTOMER: Record<Lang, Record<string, Template>> = {
+  sq: {
+    order_placed: {
+      subject: (r) => `Porosia ${r} u pranua`,
+      title: "Faleminderit për porosinë!",
+      lead: "E morëm porosinë tënde dhe po e shqyrtojmë. Do të të njoftojmë sapo të konfirmohet. Paguan kur ta marrësh.",
+      leadBank: "E morëm porosinë tënde. Do të konfirmohet sapo të arrijë pagesa me transfertë bankare.",
+    },
+    status_confirmed: {
+      subject: (r) => `Porosia ${r} u konfirmua`,
+      title: "Porosia u konfirmua",
+      lead: "Porosia jote u konfirmua dhe po përgatitet për dërgesë.",
+    },
+    status_shipped: {
+      subject: (r) => `Porosia ${r} është nisur`,
+      title: "Porosia është nisur",
+      lead: "Porosia jote është në rrugë. Paguan kur ta marrësh.",
+      leadBank: "Porosia jote është në rrugë.",
+    },
+    status_delivered: {
+      subject: (r) => `Porosia ${r} u dorëzua`,
+      title: "Porosia u dorëzua",
+      lead: "Porosia jote u dorëzua. Faleminderit që zgjodhe Bebix!",
+    },
+    status_cancelled: {
+      subject: (r) => `Porosia ${r} u anulua`,
+      title: "Porosia u anulua",
+      lead: "Porosia jote u anulua. Nëse nuk e prisje këtë, na shkruaj dhe e zgjidhim.",
+    },
+  },
+  en: {
+    order_placed: {
+      subject: (r) => `Order ${r} received`,
+      title: "Thank you for your order!",
+      lead: "We received your order and are reviewing it. We'll let you know as soon as it's confirmed. You pay when you receive it.",
+      leadBank: "We received your order. It will be confirmed as soon as your bank transfer arrives.",
+    },
+    status_confirmed: {
+      subject: (r) => `Order ${r} confirmed`,
+      title: "Order confirmed",
+      lead: "Your order is confirmed and is being prepared for delivery.",
+    },
+    status_shipped: {
+      subject: (r) => `Order ${r} is on its way`,
+      title: "Your order is on its way",
+      lead: "Your order is on its way. You pay when you receive it.",
+      leadBank: "Your order is on its way.",
+    },
+    status_delivered: {
+      subject: (r) => `Order ${r} delivered`,
+      title: "Order delivered",
+      lead: "Your order was delivered. Thank you for choosing Bebix!",
+    },
+    status_cancelled: {
+      subject: (r) => `Order ${r} cancelled`,
+      title: "Order cancelled",
+      lead: "Your order was cancelled. If you weren't expecting this, write to us and we'll sort it out.",
+    },
+  },
+};
+
+function itemsTable(o: Order, meta: Meta, L: (typeof TX)[Lang]): string {
   const rows = (o.items ?? []).map((i) => {
     const m = i.id ? meta.get(i.id) : undefined;
     const img = i.imageUrl || m?.img;
     const photo = img
       ? `<img src="${esc(img)}" width="56" height="56" alt="" style="display:block;width:56px;height:56px;object-fit:contain;background:#fff;border:1px solid #eee;border-radius:8px;">`
       : "";
-    const code = m?.code ? `<br><span style="font-size:12px;color:#857c71;">Kodi: ${esc(m.code)}</span>` : "";
+    const code = m?.code ? `<br><span style="font-size:12px;color:#857c71;">${L.code}: ${esc(m.code)}</span>` : "";
     return `<tr><td style="padding:8px 10px 8px 0;border-bottom:1px solid #eee;width:56px;">${photo}</td><td style="padding:8px 0;border-bottom:1px solid #eee;">${esc(i.name)} <span style="color:#888;">× ${esc(i.qty)}</span>${code}</td><td style="padding:8px 0;border-bottom:1px solid #eee;text-align:right;white-space:nowrap;">${eur(Number(i.price) * Number(i.qty))}</td></tr>`;
   }).join("");
   const ship = Number(o.shipping_fee) || 0;
   const shipRow = ship > 0
-    ? `<tr><td></td><td style="padding:8px 0;color:#565047;">Dërgesa</td><td style="padding:8px 0;text-align:right;white-space:nowrap;">${eur(ship)}</td></tr>`
+    ? `<tr><td></td><td style="padding:8px 0;color:#565047;">${L.delivery}</td><td style="padding:8px 0;text-align:right;white-space:nowrap;">${eur(ship)}</td></tr>`
     : "";
   return `<table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="font-size:14px;color:#1c1a16;">${rows}${shipRow}
-    <tr><td></td><td style="padding:12px 0 0;font-weight:700;">Totali</td><td style="padding:12px 0 0;text-align:right;font-weight:700;">${eur(o.total_price)}</td></tr></table>`;
+    <tr><td></td><td style="padding:12px 0 0;font-weight:700;">${L.total}</td><td style="padding:12px 0 0;text-align:right;font-weight:700;">${eur(o.total_price)}</td></tr></table>`;
 }
 
-function shell(title: string, body: string): string {
-  return `<!doctype html><html lang="sq"><body style="margin:0;background:#f8f6f2;font-family:Arial,Helvetica,sans-serif;">
+function shell(title: string, body: string, lang: Lang): string {
+  return `<!doctype html><html lang="${lang}"><body style="margin:0;background:#f8f6f2;font-family:Arial,Helvetica,sans-serif;">
   <table role="presentation" width="100%" cellspacing="0" cellpadding="0"><tr><td align="center" style="padding:24px 12px;">
     <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="max-width:520px;background:#ffffff;border-radius:16px;padding:28px;">
       <tr><td style="padding-bottom:4px;"><img src="${SITE}/wordmark.png" width="120" alt="Bebix" style="display:block;width:120px;height:auto;border:0;font-size:22px;font-weight:700;color:#1f3d38;"></td></tr>
       <tr><td style="font-size:18px;font-weight:700;color:#1c1a16;padding:12px 0 6px;">${esc(title)}</td></tr>
       <tr><td style="font-size:14px;line-height:1.6;color:#565047;">${body}</td></tr>
     </table>
-    <p style="font-size:12px;color:#857c71;margin:16px 0 0;">Bebix · Për bebin tënd, me dashuri · <a href="${SITE}" style="color:#857c71;">bebix.store</a></p>
+    <p style="font-size:12px;color:#857c71;margin:16px 0 0;">Bebix · ${TX[lang].footer} · <a href="${SITE}" style="color:#857c71;">bebix.store</a></p>
   </td></tr></table></body></html>`;
 }
 
 function render(row: Row, o: Order, meta: Meta): { to: string; subject: string; html: string } | null {
   const r = ref(o.id);
   if (row.audience === "admin") {
-    const body = `<p style="margin:0 0 12px;"><strong>${esc(o.full_name)}</strong><br>${esc(o.phone)}<br>${esc(o.address)}, ${esc(o.city)}</p><p style="margin:0 0 12px;">Pagesa: <strong>${esc(PAYMENT_LABEL[o.payment_method ?? "cod"] ?? o.payment_method)}</strong>${o.payment_status && o.payment_status !== "unpaid" ? ` (${esc(o.payment_status)})` : ""}</p>${itemsTable(o, meta)}`;
-    return { to: ADMIN_TO, subject: `Porosi e re ${r} · ${eur(o.total_price)} · ${o.city}`, html: shell(`Porosi e re ${r}`, body) };
+    const L = TX.sq;
+    const body = `<p style="margin:0 0 12px;"><strong>${esc(o.full_name)}</strong><br>${esc(o.phone)}<br>${esc(o.address)}, ${esc(o.city)}</p><p style="margin:0 0 12px;">${L.payment}: <strong>${esc(L.paymentLabel[o.payment_method ?? "cod"] ?? o.payment_method)}</strong>${o.payment_status && o.payment_status !== "unpaid" ? ` (${esc(o.payment_status)})` : ""}${o.lang === "en" ? " · EN" : ""}</p>${itemsTable(o, meta, L)}`;
+    return { to: ADMIN_TO, subject: `Porosi e re ${r} · ${eur(o.total_price)} · ${o.city}`, html: shell(`Porosi e re ${r}`, body, "sq") };
   }
-  const t = CUSTOMER[row.kind];
+
+  const lang: Lang = o.lang === "en" ? "en" : "sq";
+  const L = TX[lang];
+  const t = CUSTOMER[lang][row.kind];
   if (!t || !row.to_email) return null;
+  const bank = o.payment_method === "bank_transfer";
+  const lead = bank && t.leadBank ? t.leadBank : t.lead;
   // Transfertë bankare e pa paguar: udhëzimet e pagesës bashkë me referencën (kodin e porosisë).
-  const payBlock = o.payment_method === "bank_transfer" && o.payment_status !== "paid"
-    ? `<div style="margin:16px 0 0;padding:12px 14px;background:#f8f6f2;border-radius:10px;"><p style="margin:0 0 6px;font-weight:700;color:#1c1a16;">Pagesa me transfertë bankare</p>${BANK_TEXT ? `<p style="margin:0 0 6px;white-space:pre-line;">${esc(BANK_TEXT)}</p>` : ""}<p style="margin:0;">Shuma: <strong>${eur(o.total_price)}</strong> · Referenca: <strong>${esc(r)}</strong></p></div>`
+  const payBlock = bank && o.payment_status !== "paid"
+    ? `<div style="margin:16px 0 0;padding:12px 14px;background:#f8f6f2;border-radius:10px;"><p style="margin:0 0 6px;font-weight:700;color:#1c1a16;">${L.payTitle}</p>${BANK_TEXT ? `<p style="margin:0 0 6px;white-space:pre-line;">${esc(BANK_TEXT)}</p>` : ""}<p style="margin:0;">${L.amount}: <strong>${eur(o.total_price)}</strong> · ${L.reference}: <strong>${esc(r)}</strong></p></div>`
     : "";
-  const body = `<p style="margin:0 0 16px;">${esc(t.lead)}</p>
-    <p style="margin:0 0 6px;font-weight:700;color:#1c1a16;">Porosia ${esc(r)}</p>${itemsTable(o, meta)}${payBlock}
-    <p style="margin:16px 0 0;"><strong>Dërgesa:</strong> ${esc(o.full_name)}, ${esc(o.address)}, ${esc(o.city)}</p>
-    <p style="margin:16px 0 0;"><a href="${SITE}/sq/shop/orders" style="color:#1f3d38;font-weight:700;">Shiko porositë e mia</a></p>`;
-  return { to: row.to_email, subject: t.subject(r), html: shell(t.title, body) };
+  const body = `<p style="margin:0 0 16px;">${esc(lead)}</p>
+    <p style="margin:0 0 6px;font-weight:700;color:#1c1a16;">${L.order} ${esc(r)}</p>${itemsTable(o, meta, L)}${payBlock}
+    <p style="margin:16px 0 0;"><strong>${L.deliveryTo}</strong> ${esc(o.full_name)}, ${esc(o.address)}, ${esc(o.city)}</p>
+    <p style="margin:16px 0 0;"><a href="${SITE}/${lang}/shop/orders" style="color:#1f3d38;font-weight:700;">${L.seeOrders}</a></p>`;
+  return { to: row.to_email, subject: t.subject(r), html: shell(t.title, body, lang) };
 }
 
 const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
@@ -147,7 +213,7 @@ serve(async (req) => {
     try {
       const { data: order, error: orderError } = await supabase
         .from("orders")
-        // select("*"): shipping_fee ekziston vetëm pas migrimit; funksioni punon edhe para tij.
+        // select("*"): shipping_fee, payment_*, lang ekzistojnë vetëm pas migrimit; funksioni punon edhe para tij.
         .select("*")
         .eq("id", row.order_id)
         .maybeSingle();

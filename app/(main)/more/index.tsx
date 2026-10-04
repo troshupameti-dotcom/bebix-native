@@ -9,6 +9,7 @@ import { shadows } from "@/lib/shadows";
 import { supabase } from "@/lib/supabase/client";
 import { useAuthUser } from "@/lib/hooks/useAuthUser";
 import { unregisterPushToken } from "@/lib/notifications";
+import { GIFTS_ENABLED } from "@/lib/gifts/enabled";
 
 type Row = {
   icon: IconName;
@@ -84,6 +85,7 @@ export default function MoreScreen() {
           rows={[
             { icon: "cube", label: t("my_orders"), onPress: () => router.push("/shop/orders") },
             { icon: "heart", label: t("saved_products"), onPress: () => router.push("/shop/wishlist") },
+            ...(GIFTS_ENABLED ? [{ icon: "sparkle" as const, label: t("gift_title"), onPress: () => router.push("/more/gifts") }] : []),
             { icon: "bookmark", label: t("saved_posts"), onPress: () => router.push("/community/saved") },
           ]}
         />

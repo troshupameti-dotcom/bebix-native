@@ -194,7 +194,7 @@ export default function CheckoutScreen() {
         p_items: state.cartItems,
         p_client_ref: orderRef.current,
         // Vendi dërgohet vetëm kur baza e njeh (pas migrimit); përndryshe porosia shkon si më parë.
-        ...(typeof shipping === "number" ? { p_country: country, p_payment_method: BANK_DETAILS ? method : "cod" } : {}),
+        ...(typeof shipping === "number" ? { p_country: country, p_payment_method: BANK_DETAILS ? method : "cod", p_lang: language === "en" ? "en" : "sq" } : {}),
       });
 
       if (rpcError) throw new Error(rpcError.message);
