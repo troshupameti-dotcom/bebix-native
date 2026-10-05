@@ -1,5 +1,6 @@
 import { supabase } from "@/lib/supabase/client";
 import type { TranslationKey } from "@/lib/i18n/translations";
+import type { PaymentMethod } from "@/lib/shop/payment";
 
 /**
  * Porositë e klientit. Statusi ndryshohet nga paneli i adminit; këtu
@@ -19,6 +20,8 @@ export type OrderItem = {
   icon?: string | null;
 };
 
+export type PaymentStatus = "unpaid" | "pending" | "paid" | "failed" | "refunded";
+
 export type MyOrder = {
   id: string;
   createdAt: string;
@@ -29,6 +32,13 @@ export type MyOrder = {
   address: string;
   city: string;
   items: OrderItem[];
+  /** Si paguhet porosia (parazgjedhja "cod": porositë e vjetra dhe ato të mysafirit pa këtë fushë). */
+  paymentMethod: PaymentMethod;
+  paymentStatus: PaymentStatus;
+  /** Dërgesa e përfshirë te totali. */
+  shippingFee: number;
+  /** Referenca sekrete e porosisë (vetëm porositë e llogarisë): me të hapet përsëri pagesa me kartë. */
+  clientRef: string | null;
 };
 
 /** Kontakti i porosisë së fundit, për të parambushur checkout-in. */
@@ -62,6 +72,9 @@ function mapItems(raw: unknown): OrderItem[] {
   });
 }
 
+const PAYMENT_METHODS: readonly string[] = ["cod", "bank_transfer", "card"];
+const PAYMENT_STATUSES: readonly string[] = ["unpaid", "pending", "paid", "failed", "refunded"];
+
 export function mapOrder(row: Record<string, any>): MyOrder {
   return {
     id: row.id,
@@ -73,6 +86,10 @@ export function mapOrder(row: Record<string, any>): MyOrder {
     address: row.address ?? "",
     city: row.city ?? "",
     items: mapItems(row.items),
+    paymentMethod: PAYMENT_METHODS.includes(row.payment_method) ? row.payment_method : "cod",
+    paymentStatus: PAYMENT_STATUSES.includes(row.payment_status) ? row.payment_status : "unpaid",
+    shippingFee: Number(row.shipping_fee) || 0,
+    clientRef: typeof row.client_ref === "string" ? row.client_ref : null,
   };
 }
 
@@ -83,7 +100,7 @@ export async function fetchMyOrders(): Promise<MyOrder[]> {
 
   const { data, error } = await supabase
     .from("orders")
-    .select("id, created_at, status, total_price, full_name, phone, address, city, items")
+    .select("id, created_at, status, total_price, full_name, phone, address, city, items, shipping_fee, payment_method, payment_status, client_ref")
     .eq("user_id", userId)
     .order("created_at", { ascending: false })
     .limit(50);
@@ -139,6 +156,40 @@ export function orderStatusHintKey(status: OrderStatus): TranslationKey {
     delivered: "order_hint_delivered",
     cancelled: "order_hint_cancelled",
   }[status] as TranslationKey;
+}
+
+/**
+ * Si paguhet porosia, për etiketën te lista: me kartë ose transfertë (e paguar, në pritje, e dështuar, e rimbursuar),
+ * ose "paguan kur ta marrësh".
+ */
+export function orderPaymentLabelKey(o: Pick<MyOrder, "paymentMethod" | "paymentStatus">): TranslationKey {
+  if (o.paymentMethod === "card") {
+    if (o.paymentStatus === "paid") return "myorders_paid_card";
+    if (o.paymentStatus === "refunded") return "myorders_refunded";
+    if (o.paymentStatus === "failed") return "myorders_card_failed";
+    return "myorders_awaiting_card";
+  }
+  if (o.paymentMethod === "bank_transfer") {
+    if (o.paymentStatus === "paid") return "myorders_paid_bank";
+    if (o.paymentStatus === "refunded") return "myorders_refunded";
+    return "myorders_awaiting_bank";
+  }
+  return "myorders_cod";
+}
+
+/** Pagesa me kartë e hapur ende: mund të paguhet përsëri (faqja u mbyll para kohe). */
+export function canPayByCard(o: Pick<MyOrder, "paymentMethod" | "paymentStatus" | "status" | "clientRef">): boolean {
+  return o.paymentMethod === "card" && o.paymentStatus === "pending" && o.status === "pending" && !!o.clientRef;
+}
+
+/** Shpjegimi i statusit; për porositë me pagesë paraprake nuk thotë "paguan kur ta marrësh". */
+export function orderHintKeyFor(o: Pick<MyOrder, "status" | "paymentMethod" | "paymentStatus">): TranslationKey {
+  const prepaid = o.paymentMethod !== "cod";
+  if (o.status === "pending" && o.paymentMethod === "card") {
+    return o.paymentStatus === "paid" ? "order_hint_card_paid" : o.paymentStatus === "failed" ? "order_hint_card_failed" : "order_hint_card_pending";
+  }
+  if (o.status === "shipped" && prepaid) return "order_hint_shipped_prepaid";
+  return orderStatusHintKey(o.status);
 }
 
 /** Hapat e dukshëm te ekrani; "cancelled" s'ka vijë kohore. */
