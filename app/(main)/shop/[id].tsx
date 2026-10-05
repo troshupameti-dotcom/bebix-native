@@ -26,7 +26,8 @@ export default function ProductDetailsScreen() {
   const { t, language } = useTranslation();
   const router = useRouter();
   const { id } = useLocalSearchParams<{ id: string }>();
-  const { toggleFavorite, isFavorite, addToCart } = useAppState();
+  const { toggleFavorite, isFavorite, addToCart, state: appState } = useAppState();
+  const cartCount = appState.cartCount;
   const { showToast } = useToast();
   const [slide, setSlide] = useState(0);
 
@@ -108,15 +109,31 @@ export default function ProductDetailsScreen() {
     <SafeAreaView className="flex-1 bg-cream" edges={["top"]}>
       <View className="flex-row items-center justify-between px-5 pt-2 mb-2">
         <BackButton fallback="/(main)/shop" />
-        <Pressable
-          accessibilityRole="button"
-          accessibilityLabel={t(fav ? "a11y_unfavorite" : "a11y_favorite")}
-          onPress={() => toggleFavorite({ id: product.id, name: product.name, price: `€${product.price.toFixed(2)}`, icon: product.icon })}
-          style={shadows.soft}
-          className="w-10 h-10 rounded-full bg-surface items-center justify-center"
-        >
-          <Icon name="heart" size={18} color={fav ? "#C9702E" : "#2C271F"} />
-        </Pressable>
+        <View className="flex-row items-center gap-2.5">
+          <Pressable
+            accessibilityRole="button"
+            accessibilityLabel={t(fav ? "a11y_unfavorite" : "a11y_favorite")}
+            onPress={() => toggleFavorite({ id: product.id, name: product.name, price: `€${product.price.toFixed(2)}`, icon: product.icon })}
+            style={shadows.soft}
+            className="w-10 h-10 rounded-full bg-surface items-center justify-center"
+          >
+            <Icon name="heart" size={18} color={fav ? "#C9702E" : "#2C271F"} />
+          </Pressable>
+          <Pressable
+            accessibilityRole="button"
+            accessibilityLabel={t("cart_title")}
+            onPress={() => router.push("/shop/cart")}
+            style={shadows.soft}
+            className="w-10 h-10 rounded-full bg-surface items-center justify-center"
+          >
+            <Icon name="cart" size={18} color="#2C271F" />
+            {cartCount > 0 && (
+              <View className="absolute -top-1 -right-1 min-w-4 h-4 px-1 rounded-full bg-orange items-center justify-center">
+                <Text className="text-on-accent text-[10px] font-bodySemibold">{cartCount}</Text>
+              </View>
+            )}
+          </Pressable>
+        </View>
       </View>
 
       <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={{ paddingBottom: 130 }}>

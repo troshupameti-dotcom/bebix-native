@@ -338,7 +338,7 @@ export default function CheckoutScreen() {
             <Pressable
               onPress={() => {
                 router.dismissAll();
-                router.replace("/shop/orders");
+                router.replace("/shop"); router.push("/shop/orders"); // stiva: Dyqani, pastaj Porositë; "mbrapa" kthen te Dyqani, jo te kreu
               }}
               className="bg-olive rounded-xl2 py-3 px-6 mb-3"
             >
@@ -356,7 +356,7 @@ export default function CheckoutScreen() {
             // zbrazët (porosia sapo u dërgua), në vend të vendit të vërtetë
             // ku ishte përdoruesi para se të fillonte blerjen.
             router.dismissAll();
-            router.replace("/shop/orders");
+            router.replace("/shop"); router.push("/shop/orders"); // stiva: Dyqani, pastaj Porositë; "mbrapa" kthen te Dyqani, jo te kreu
           }}
           className="bg-olive rounded-xl2 py-3 px-6 mb-3"
         >

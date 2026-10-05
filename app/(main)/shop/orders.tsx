@@ -210,7 +210,15 @@ export default function MyOrdersScreen() {
     }
   }, [t]);
 
-  useFocusEffect(useCallback(() => { load(); }, [load]));
+  // Statusi ndryshohet nga admini (konfirmim, nisje) dhe nga Stripe (pagesa): lista rifreskohet vetë çdo 12 sekonda
+  // sa është ekrani i hapur, që klienti të mos duhet ta tërheqë poshtë.
+  useFocusEffect(
+    useCallback(() => {
+      void load();
+      const id = setInterval(() => void load(), 12_000);
+      return () => clearInterval(id);
+    }, [load])
+  );
 
   return (
     <SafeAreaView className="flex-1 bg-cream" edges={["top"]}>
