@@ -33,7 +33,15 @@ export default function CartScreen() {
           <>
             <ScrollView className="px-5" showsVerticalScrollIndicator={false} contentContainerStyle={{ paddingBottom: 20 }}>
               {state.cartItems.map((item) => (
-                <View key={item.id} style={shadows.soft} className="bg-surface rounded-xl2 p-3 flex-row items-center mb-3">
+                // Prekja kudo te rreshti i produktit (jo te butonat – / + / Hiq) të çon te përfundimi i porosisë.
+                <Pressable
+                  key={item.id}
+                  onPress={() => router.push("/shop/checkout")}
+                  accessibilityRole="button"
+                  accessibilityLabel={t("cart_continue")}
+                  style={shadows.soft}
+                  className="bg-surface rounded-xl2 p-3 flex-row items-center mb-3 active:opacity-80"
+                >
                   <View
                     className={`w-16 h-16 rounded-xl items-center justify-center overflow-hidden mr-3 ${item.imageUrl ? "" : "bg-olive-bg"}`}
                     style={item.imageUrl ? { backgroundColor: "#FFFFFF", padding: 4 } : undefined}
@@ -71,7 +79,7 @@ export default function CartScreen() {
                       </Pressable>
                     </View>
                   </View>
-                </View>
+                </Pressable>
               ))}
 
               <Pressable
