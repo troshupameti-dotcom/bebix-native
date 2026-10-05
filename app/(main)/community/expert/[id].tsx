@@ -1,5 +1,5 @@
 import { useCallback, useState } from "react";
-import { View, Text, ScrollView, Pressable, ActivityIndicator } from "react-native";
+import { View, Text, ScrollView, Pressable, ActivityIndicator, RefreshControl } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useLocalSearchParams, useRouter, useFocusEffect } from "expo-router";
 import { Icon } from "@/components/ui/Icon";
@@ -7,19 +7,25 @@ import { PostCard } from "@/components/community/PostCard";
 import { fetchExpertById, fetchPostsByAuthor, toggleFollowExpert, CommunityExpert, CommunityPost } from "@/lib/communityData";
 import { BackButton, goBackOr } from "@/components/ui/BackButton";
 import { useTranslation } from "@/lib/i18n/LanguageContext";
+import { useThemeColors } from "@/lib/theme/useThemeColors";
+import { useSpecialties } from "@/lib/community/useSpecialties";
+import { specialtyEmoji, specialtyLabel } from "@/lib/community/specialties";
 import { logWarn } from "@/lib/log";
 
 export default function ExpertProfileScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const router = useRouter();
-  const { t } = useTranslation();
+  const { t, language } = useTranslation();
+  const theme = useThemeColors();
+  const specialties = useSpecialties();
   const [loading, setLoading] = useState(true);
+  const [refreshing, setRefreshing] = useState(false);
   const [expert, setExpert] = useState<CommunityExpert | null>(null);
   const [posts, setPosts] = useState<CommunityPost[]>([]);
 
-  const load = useCallback(async () => {
+  const load = useCallback(async (quiet = false) => {
     if (!id) return;
-    setLoading(true);
+    if (!quiet) setLoading(true);
     try {
       const e = await fetchExpertById(id);
       setExpert(e);
@@ -32,6 +38,12 @@ export default function ExpertProfileScreen() {
   }, [id]);
 
   useFocusEffect(useCallback(() => { load(); }, [load]));
+
+  const onRefresh = useCallback(async () => {
+    setRefreshing(true);
+    await load(true);
+    setRefreshing(false);
+  }, [load]);
 
   async function handleFollow() {
     if (!expert) return;
@@ -73,29 +85,50 @@ export default function ExpertProfileScreen() {
         <Text className="font-bodySemibold text-base text-ink">{t("cexp_profile")}</Text>
       </View>
 
-      <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={{ paddingBottom: 40 }}>
+      <ScrollView
+        showsVerticalScrollIndicator={false}
+        contentContainerStyle={{ paddingBottom: 40 }}
+        refreshControl={
+          <RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={theme.olive} colors={[theme.olive]} progressBackgroundColor={theme.surface} />
+        }
+      >
         <View className="px-5 items-center mt-2 mb-5">
           <View className={`w-20 h-20 rounded-full items-center justify-center mb-3 ${bg}`}>
-            <Icon name={expert.icon} size={32} color={fg} />
+            {expert.specialty ? (
+              <Text className="text-3xl">{specialtyEmoji(expert.specialty, specialties.list)}</Text>
+            ) : (
+              <Icon name={expert.icon} size={32} color={fg} />
+            )}
           </View>
           <View className="flex-row items-center mb-1">
             <Text className="font-bodySemibold text-lg text-ink">{expert.name}</Text>
             <Icon name="check" size={14} color="#6E7452" />
           </View>
-          <Text className="font-body text-xs text-ink-faint mb-1">{expert.kind} · {expert.experienceYears} vite përvojë</Text>
-          <Text className="font-bodyMedium text-xs text-ink-soft mb-4">⭐ {expert.rating} ({expert.reviewCount} vlerësime)</Text>
+          <Text className="font-bodySemibold text-xs text-olive mb-1">
+            {specialtyLabel(expert.specialty, language, specialties.list) ?? expert.kind}
+          </Text>
+          {expert.experienceYears > 0 && (
+            <Text className="font-body text-xs text-ink-faint mb-1">{t("cexp_years", { n: expert.experienceYears })}</Text>
+          )}
+          {/* Vlerësimi shfaqet vetëm kur ka vlerësime të vërteta (5.0 fillestar pa asnjë votë nuk është vlerësim). */}
+          {expert.reviewCount > 0 && (
+            <Text className="font-bodyMedium text-xs text-ink-soft mb-1">
+              {t("cexp_rating", { rating: expert.rating.toFixed(1), n: expert.reviewCount })}
+            </Text>
+          )}
+          <View className="h-3" />
           {!!expert.bio && (
             <Text className="font-body text-sm text-ink-soft text-center leading-5 mb-4 px-4">{expert.bio}</Text>
           )}
           <Pressable onPress={handleFollow} className={`px-6 py-2.5 rounded-full ${expert.followed ? "bg-cream-soft" : "bg-olive"}`}>
             <Text className={`font-bodySemibold text-xs ${expert.followed ? "text-ink-soft" : "text-on-accent"}`}>
-              {expert.followed ? "Ndjekur ✓" : "Ndiq"}
+              {expert.followed ? `${t("cexp_following")} ✓` : t("cexp_follow")}
             </Text>
           </Pressable>
         </View>
 
         <View className="px-5 mb-3">
-          <Text className="font-bodySemibold text-sm text-ink">Postimet ({posts.length})</Text>
+          <Text className="font-bodySemibold text-sm text-ink">{t("cexp_posts", { n: posts.length })}</Text>
         </View>
         {posts.length === 0 ? (
           <Text className="font-body text-xs text-ink-faint px-5">{t("cexp_no_posts")}</Text>

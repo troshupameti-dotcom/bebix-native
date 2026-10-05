@@ -6,19 +6,14 @@ import { shadows } from "@/lib/shadows";
 import { fetchMyApplication, submitApplication, ExpertApplication } from "@/lib/expertApplications";
 import { BackButton } from "@/components/ui/BackButton";
 import { useTranslation } from "@/lib/i18n/LanguageContext";
-import type { TranslationKey } from "@/lib/i18n/translations";
 import { friendlyError } from "@/lib/errors/userMessage";
-
-const SPECIALIZATIONS: { value: string; labelKey: TranslationKey }[] = [
-  { value: "Pediatër", labelKey: "doc_spec_pediatrician" },
-  { value: "Nutricionist", labelKey: "doc_spec_nutritionist" },
-  { value: "Konsulente Gjidhënieje", labelKey: "doc_spec_lactation" },
-  { value: "Psikolog Fëmijësh", labelKey: "doc_spec_psychologist" },
-  { value: "Trajner Gjumi", labelKey: "doc_spec_sleep" },
-];
+import { useSpecialties } from "@/lib/community/useSpecialties";
+import { specialtyLabel } from "@/lib/community/specialties";
 
 function StatusBanner({ app }: { app: ExpertApplication }) {
-  const { t } = useTranslation();
+  const { t, language } = useTranslation();
+  const { list } = useSpecialties();
+  const dept = specialtyLabel(app.specialtyKey, language, list) ?? app.specialization;
   const config = {
     pending: { bg: "bg-olive-bg", fg: "text-olive", label: t("doc_status_pending") },
     approved: { bg: "bg-olive-bg", fg: "text-olive", label: t("doc_status_approved") },
@@ -27,7 +22,7 @@ function StatusBanner({ app }: { app: ExpertApplication }) {
   return (
     <View style={shadows.soft} className={`rounded-xl2 p-4 mb-5 ${config.bg}`}>
       <Text className={`font-bodySemibold text-sm mb-1 ${config.fg}`}>{config.label}</Text>
-      <Text className="font-body text-xs text-ink-soft mb-1">{app.fullName} · {app.specialization}</Text>
+      <Text className="font-body text-xs text-ink-soft mb-1">{app.fullName} · {dept}</Text>
       <Text className="font-body text-[11px] text-ink-faint">{t("doc_license_label", { n: app.licenseNumber })}</Text>
       {app.adminNote && (
         <Text className="font-body text-xs text-ink-soft mt-2">{t("doc_admin_note", { note: app.adminNote })}</Text>
@@ -37,7 +32,8 @@ function StatusBanner({ app }: { app: ExpertApplication }) {
 }
 
 export default function DoctorRegistrationScreen() {
-  const { t } = useTranslation();
+  const { t, language } = useTranslation();
+  const specialties = useSpecialties();
   const [loading, setLoading] = useState(true);
   const [existing, setExisting] = useState<ExpertApplication | null>(null);
   const [submitting, setSubmitting] = useState(false);
@@ -45,7 +41,8 @@ export default function DoctorRegistrationScreen() {
 
   const [fullName, setFullName] = useState("");
   const [licenseNumber, setLicenseNumber] = useState("");
-  const [specialization, setSpecialization] = useState(SPECIALIZATIONS[0].value);
+  // Reparti zgjidhet me dorë (asnjë parazgjedhje): aplikimi pa reparte nuk dërgohet.
+  const [specialtyKey, setSpecialtyKey] = useState<string | null>(null);
   const [experienceYears, setExperienceYears] = useState("");
   const [phone, setPhone] = useState("");
   const [bio, setBio] = useState("");
@@ -62,17 +59,18 @@ export default function DoctorRegistrationScreen() {
     }, [t])
   );
 
-  const canSubmit = fullName.trim() && licenseNumber.trim() && phone.trim() && !submitting;
+  const canSubmit = fullName.trim() && licenseNumber.trim() && phone.trim() && specialtyKey && !submitting;
 
   async function handleSubmit() {
-    if (!canSubmit) return;
+    if (!canSubmit || !specialtyKey) return;
     setSubmitting(true);
     setError(null);
     try {
       await submitApplication({
         fullName: fullName.trim(),
         licenseNumber: licenseNumber.trim(),
-        specialization,
+        specialization: specialtyLabel(specialtyKey, "sq", specialties.list) ?? specialtyKey,
+        specialtyKey,
         experienceYears: Number(experienceYears) || 0,
         phone: phone.trim(),
         bio: bio.trim(),
@@ -123,22 +121,29 @@ export default function DoctorRegistrationScreen() {
                 <TextInput value={licenseNumber} onChangeText={setLicenseNumber} placeholder={t("doc_ph_license")} placeholderClassName="text-ink-faint" className="font-body text-sm text-ink" />
               </View>
 
-              <Text className="font-bodySemibold text-xs text-ink-soft mb-1.5">{t("doc_specialty")}</Text>
-              <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ paddingBottom: 4 }} className="mb-4">
-                {SPECIALIZATIONS.map((s) => {
-                  const active = specialization === s.value;
+              <Text className="font-bodySemibold text-xs text-ink-soft mb-1">{t("doc_specialty")}</Text>
+              <Text className="font-body text-[11px] text-ink-faint mb-2 leading-4">{t("doc_dept_hint")}</Text>
+              {/* Repartet (pediatër, gjinekolog/e, ortoped, psikolog/e, ...) si një rrjet që mbështillet: të gjitha shihen njëherësh. */}
+              <View className="flex-row flex-wrap mb-4">
+                {specialties.list.map((s) => {
+                  const active = specialtyKey === s.key;
                   return (
                     <Pressable
-                      key={s.value}
-                      onPress={() => setSpecialization(s.value)}
+                      key={s.key}
+                      onPress={() => setSpecialtyKey(s.key)}
+                      accessibilityRole="radio"
+                      accessibilityState={{ selected: active }}
                       style={shadows.soft}
-                      className={`rounded-full px-4 py-2 mr-2 ${active ? "bg-olive" : "bg-surface"}`}
+                      className={`flex-row items-center rounded-full px-3.5 py-2 mr-2 mb-2 ${active ? "bg-olive" : "bg-surface"}`}
                     >
-                      <Text className={`font-bodyMedium text-xs ${active ? "text-on-accent" : "text-ink"}`}>{t(s.labelKey)}</Text>
+                      <Text className="text-sm mr-1.5">{s.emoji}</Text>
+                      <Text className={`font-bodyMedium text-xs ${active ? "text-on-accent" : "text-ink"}`}>
+                        {language === "en" ? s.labelEn : s.label}
+                      </Text>
                     </Pressable>
                   );
                 })}
-              </ScrollView>
+              </View>
 
               <Text className="font-bodySemibold text-xs text-ink-soft mb-1.5">{t("doc_years")}</Text>
               <View style={shadows.soft} className="bg-surface rounded-xl2 px-4 py-3 mb-4">

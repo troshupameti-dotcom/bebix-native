@@ -8,6 +8,7 @@ import {
   type PostMedia,
   type StoredMedia,
 } from "@/lib/community/media";
+import { sanitizeSearch } from "@/lib/community/feedFilters";
 
 export type Accent = "olive" | "orange";
 
@@ -25,7 +26,10 @@ export type CommunityExpert = {
   id: string;
   userId: string | null;
   name: string;
+  /** Teksti i lirë i specializimit (e vjetra); emri i repartit del nga `specialty`. */
   kind: string;
+  /** Çelësi i repartit (pediatrician, orthopedist, ...), null kur s'është caktuar ende. */
+  specialty: string | null;
   bio: string;
   experienceYears: number;
   languages: string[];
@@ -55,6 +59,8 @@ export type CommunityPost = {
   authorName: string;
   authorInitial: string;
   authorIsExpert: boolean;
+  /** Reparti i autorit kur është ekspert (nga pamja `community_feed`, pas migrimit të repartave). */
+  authorSpecialty: string | null;
   accent: Accent;
   kind: string;
   text: string;
@@ -70,6 +76,8 @@ export type CommunityPost = {
   media: PostMedia[];
 };
 
+export type CommentExpert = { kind: string; specialty: string | null };
+
 export type CommunityComment = {
   id: string;
   postId: string;
@@ -78,6 +86,8 @@ export type CommunityComment = {
   parentId: string | null;
   text: string;
   at: string;
+  /** Kur autori i komentit është ekspert i verifikuar (përgjigjet e mjekëve duhet të dallohen). */
+  expert: CommentExpert | null;
 };
 
 export async function getCurrentUserId(): Promise<string | null> {
@@ -162,6 +172,25 @@ export async function toggleJoinGroup(groupId: string, joined: boolean) {
 // Ekspertët
 // ---------------------------------------------------------------------
 
+function mapExpert(e: any, followed: boolean): CommunityExpert {
+  return {
+    id: e.id,
+    userId: e.user_id,
+    name: e.name,
+    kind: e.kind,
+    // Kolona ekziston pas migrimit të repartave; para tij mungon dhe eksperti del me tekstin e lirë.
+    specialty: e.specialty_key ?? null,
+    bio: e.bio,
+    experienceYears: e.experience_years,
+    languages: e.languages ?? [],
+    rating: Number(e.rating),
+    reviewCount: e.review_count,
+    icon: e.icon,
+    accent: e.accent,
+    followed,
+  };
+}
+
 export async function fetchExperts(): Promise<CommunityExpert[]> {
   const uid = await getCurrentUserId();
   const { data, error } = await supabase.from("community_experts").select("*").order("rating", { ascending: false });
@@ -173,20 +202,7 @@ export async function fetchExperts(): Promise<CommunityExpert[]> {
     followedIds = new Set((mine ?? []).map((m) => m.expert_id));
   }
 
-  return (data ?? []).map((e: any) => ({
-    id: e.id,
-    userId: e.user_id,
-    name: e.name,
-    kind: e.kind,
-    bio: e.bio,
-    experienceYears: e.experience_years,
-    languages: e.languages ?? [],
-    rating: Number(e.rating),
-    reviewCount: e.review_count,
-    icon: e.icon,
-    accent: e.accent,
-    followed: followedIds.has(e.id),
-  }));
+  return (data ?? []).map((e: any) => mapExpert(e, followedIds.has(e.id)));
 }
 
 export async function fetchExpertById(id: string): Promise<CommunityExpert | null> {
@@ -206,20 +222,7 @@ export async function fetchExpertById(id: string): Promise<CommunityExpert | nul
     followed = !!f;
   }
 
-  return {
-    id: data.id,
-    userId: data.user_id,
-    name: data.name,
-    kind: data.kind,
-    bio: data.bio,
-    experienceYears: data.experience_years,
-    languages: data.languages ?? [],
-    rating: Number(data.rating),
-    reviewCount: data.review_count,
-    icon: data.icon,
-    accent: data.accent,
-    followed,
-  };
+  return mapExpert(data, followed);
 }
 
 export async function toggleFollowExpert(expertId: string, followed: boolean) {
@@ -261,6 +264,7 @@ function mapFeedRow(p: any, likedIds: Set<string>, savedIds: Set<string>): Commu
     authorName: p.author_name,
     authorInitial: p.author_initial,
     authorIsExpert: p.author_is_expert,
+    authorSpecialty: p.author_specialty ?? null,
     accent: p.accent,
     kind: p.kind,
     text: p.text,
@@ -288,10 +292,58 @@ export const FEED_PAGE_SIZE = 20;
  * Më parë lexohej e gjithë rrjedha dhe të gjitha pëlqimet e ruajtjet e
  * përdoruesit — me mijëra postime, ekrani hapej gjithnjë e më ngadalë.
  */
-export async function fetchFeed(options: { before?: string; limit?: number } = {}): Promise<CommunityPost[]> {
+export type FeedTab = "all" | "experts" | "following";
+
+export type FeedOptions = {
+  before?: string;
+  limit?: number;
+  /** "all" = për ty, "experts" = vetëm postimet e ekspertëve, "following" = ekspertët që ndjek dhe grupet ku je anëtar. */
+  tab?: FeedTab;
+  topic?: string | null;
+  /** Kërkim te teksti, tema dhe autori — te serveri, mes të gjitha postimeve (jo vetëm atyre të ngarkuara). */
+  query?: string;
+  /** Reparti i ekspertit (vetëm me tab "experts", dhe vetëm pas migrimit të repartave). */
+  specialty?: string | null;
+};
+
+/** Autorët (ekspertët) dhe grupet që ndjek përdoruesi: baza e skedës "Të ndjekurit". */
+async function followScope(uid: string): Promise<{ authorIds: string[]; groupIds: string[] }> {
+  const [{ data: follows }, { data: groups }] = await Promise.all([
+    supabase.from("community_expert_follows").select("expert_id").eq("user_id", uid),
+    supabase.from("community_group_members").select("group_id").eq("user_id", uid),
+  ]);
+  const expertIds = (follows ?? []).map((f) => f.expert_id as string);
+  let authorIds: string[] = [];
+  if (expertIds.length) {
+    const { data: experts } = await supabase.from("community_experts").select("user_id").in("id", expertIds);
+    authorIds = (experts ?? []).map((e) => e.user_id as string | null).filter((x): x is string => !!x);
+  }
+  return { authorIds, groupIds: (groups ?? []).map((g) => g.group_id as string) };
+}
+
+export async function fetchFeed(options: FeedOptions = {}): Promise<CommunityPost[]> {
   const uid = await getCurrentUserId();
   let query = supabase.from("community_feed").select("*");
   if (options.before) query = query.lt("created_at", options.before);
+
+  const tab = options.tab ?? "all";
+  if (tab === "experts") {
+    query = query.eq("author_is_expert", true);
+    if (options.specialty) query = query.eq("author_specialty", options.specialty);
+  } else if (tab === "following") {
+    if (!uid) return [];
+    const { authorIds, groupIds } = await followScope(uid);
+    const parts = [
+      authorIds.length ? `author_id.in.(${authorIds.join(",")})` : "",
+      groupIds.length ? `group_id.in.(${groupIds.join(",")})` : "",
+    ].filter(Boolean);
+    if (parts.length === 0) return [];
+    query = query.or(parts.join(","));
+  }
+  if (options.topic) query = query.eq("tag", options.topic);
+  const q = sanitizeSearch(options.query ?? "");
+  if (q) query = query.or(`text.ilike.*${q}*,tag.ilike.*${q}*,author_name.ilike.*${q}*`);
+
   const { data, error } = await query
     .order("created_at", { ascending: false })
     .limit(options.limit ?? FEED_PAGE_SIZE);
@@ -479,6 +531,19 @@ export async function toggleSave(postId: string, saved: boolean) {
 // Komentet
 // ---------------------------------------------------------------------
 
+/** Cilët nga këta përdorues janë ekspertë të verifikuar (user_id -> lloji dhe reparti). */
+async function expertsByUserId(userIds: string[]): Promise<Map<string, CommentExpert>> {
+  const map = new Map<string, CommentExpert>();
+  if (userIds.length === 0) return map;
+  let res = await supabase.from("community_experts").select("user_id,kind,specialty_key").in("user_id", userIds);
+  // Para migrimit të repartave kolona `specialty_key` s'ekziston: përsëri lexohet vetëm lloji.
+  if (res.error) res = (await supabase.from("community_experts").select("user_id,kind").in("user_id", userIds)) as typeof res;
+  for (const e of (res.data ?? []) as { user_id: string | null; kind: string; specialty_key?: string | null }[]) {
+    if (e.user_id) map.set(e.user_id, { kind: e.kind, specialty: e.specialty_key ?? null });
+  }
+  return map;
+}
+
 export async function fetchComments(postId: string): Promise<CommunityComment[]> {
   const [{ data, error }, blocked] = await Promise.all([
     supabase
@@ -489,9 +554,9 @@ export async function fetchComments(postId: string): Promise<CommunityComment[]>
     fetchBlockedUserIds(),
   ]);
   if (error) throw error;
-  return (data ?? [])
-    .filter((c: any) => !blocked.has(c.author_id))
-    .map((c: any) => ({
+  const visible = (data ?? []).filter((c: any) => !blocked.has(c.author_id));
+  const experts = await expertsByUserId([...new Set(visible.map((c: any) => c.author_id as string))]);
+  return visible.map((c: any) => ({
     id: c.id,
     postId: c.post_id,
     authorId: c.author_id,
@@ -499,7 +564,19 @@ export async function fetchComments(postId: string): Promise<CommunityComment[]>
     parentId: c.parent_id,
     text: c.text,
     at: c.created_at,
+    expert: experts.get(c.author_id) ?? null,
   }));
+}
+
+/** Koha e postimit më të ri në rrjedhë: pas saj kontrollohet nëse ka postime të reja ("Postime të reja ↑"). */
+export async function fetchNewestPostAt(): Promise<string | null> {
+  const { data } = await supabase
+    .from("community_feed")
+    .select("created_at")
+    .order("created_at", { ascending: false })
+    .limit(1)
+    .maybeSingle();
+  return (data?.created_at as string | undefined) ?? null;
 }
 
 export async function addComment(input: { postId: string; text: string; parentId?: string | null; authorName: string }) {
@@ -572,18 +649,5 @@ export async function fetchExpertByUserId(userId: string): Promise<CommunityExpe
   const { data, error } = await supabase.from("community_experts").select("*").eq("user_id", userId).maybeSingle();
   if (error) throw error;
   if (!data) return null;
-  return {
-    id: data.id,
-    userId: data.user_id,
-    name: data.name,
-    kind: data.kind,
-    bio: data.bio,
-    experienceYears: data.experience_years,
-    languages: data.languages ?? [],
-    rating: Number(data.rating),
-    reviewCount: data.review_count,
-    icon: data.icon,
-    accent: data.accent,
-    followed: false,
-  };
+  return mapExpert(data, false);
 }

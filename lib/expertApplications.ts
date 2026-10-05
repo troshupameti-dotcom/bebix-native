@@ -6,7 +6,10 @@ export type ExpertApplication = {
   id: string;
   fullName: string;
   licenseNumber: string;
+  /** Teksti i specializimit (emri i repartit në çastin e aplikimit, ose teksti i lirë i aplikimeve të vjetra). */
   specialization: string;
+  /** Çelësi i repartit (pediatrician, orthopedist, ...), null te aplikimet e vjetra. */
+  specialtyKey: string | null;
   experienceYears: number;
   phone: string;
   bio: string;
@@ -38,6 +41,7 @@ export async function fetchMyApplication(): Promise<ExpertApplication | null> {
     fullName: data.full_name,
     licenseNumber: data.license_number,
     specialization: data.specialization,
+    specialtyKey: data.specialty_key ?? null,
     experienceYears: data.experience_years,
     phone: data.phone,
     bio: data.bio,
@@ -51,14 +55,16 @@ export async function fetchMyApplication(): Promise<ExpertApplication | null> {
 export async function submitApplication(input: {
   fullName: string;
   licenseNumber: string;
+  /** Emri i repartit të zgjedhur (ruhet edhe si tekst, që aplikimi të lexohet pa listën e repartave). */
   specialization: string;
+  specialtyKey: string | null;
   experienceYears: number;
   phone: string;
   bio: string;
 }) {
   const uid = await currentUserId();
   if (!uid) throw new Error("Duhesh me qenë i kyçun.");
-  const { error } = await supabase.from("expert_applications").insert({
+  const row = {
     user_id: uid,
     full_name: input.fullName,
     license_number: input.licenseNumber,
@@ -67,6 +73,14 @@ export async function submitApplication(input: {
     phone: input.phone,
     bio: input.bio,
     status: "pending",
-  });
-  if (error) throw error;
+  };
+  const { error } = await supabase.from("expert_applications").insert({ ...row, specialty_key: input.specialtyKey });
+  if (!error) return;
+  // Para migrimit të repartave kolona `specialty_key` s'ekziston: aplikimi dërgohet me tekstin e repartit, si më parë.
+  if (/specialty_key/i.test(error.message ?? "")) {
+    const retry = await supabase.from("expert_applications").insert(row);
+    if (!retry.error) return;
+    throw retry.error;
+  }
+  throw error;
 }

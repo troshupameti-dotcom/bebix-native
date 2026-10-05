@@ -14,6 +14,7 @@ import {
   toggleSave as apiToggleSave,
 } from "@/lib/communityData";
 import { PostMediaGrid } from "@/components/community/PostMediaGrid";
+import { ExpertBadge } from "@/components/community/ExpertBadge";
 import { ModerationSheet, type ModerationTarget } from "@/components/community/ModerationSheet";
 
 
@@ -51,6 +52,15 @@ export function PostCard({ post, onOpen, onRemoved, interactiveMedia = false }: 
   const [menu, setMenu] = useState<ModerationTarget | null>(null);
   const isMine = !!myId && myId === post.authorId;
 
+  // Rifreskimi (tërheqja poshtë) sjell numra të rinj: kartela i ndjek, jo i mban ata që kishte kur u hap.
+  const [seen, setSeen] = useState({ liked: post.liked, saved: post.saved, likeCount: post.likeCount });
+  if (seen.liked !== post.liked || seen.saved !== post.saved || seen.likeCount !== post.likeCount) {
+    setSeen({ liked: post.liked, saved: post.saved, likeCount: post.likeCount });
+    setLiked(post.liked);
+    setSaved(post.saved);
+    setLikeCount(post.likeCount);
+  }
+
   async function handleLike() {
     haptics.tap();
     const next = !liked;
@@ -86,12 +96,7 @@ export function PostCard({ post, onOpen, onRemoved, interactiveMedia = false }: 
       style={shadows.soft}
       className={`bg-surface rounded-xl2 p-4 mb-4 mx-5 ${post.authorIsExpert ? "border-l-[3px] border-olive" : ""}`}
     >
-      {post.authorIsExpert && (
-        <View className="flex-row items-center bg-olive-bg self-start rounded-full px-2.5 py-1 mb-3">
-          <Icon name="shield" size={11} color="#6E7452" />
-          <Text className="font-bodySemibold text-[10px] text-olive ml-1">{t("pc_verified_expert")}</Text>
-        </View>
-      )}
+      {post.authorIsExpert && <ExpertBadge specialty={post.authorSpecialty} />}
 
       <View className="flex-row items-center mb-3">
         <Avatar initial={post.authorInitial} accent={post.accent} />
@@ -118,6 +123,9 @@ export function PostCard({ post, onOpen, onRemoved, interactiveMedia = false }: 
         <View className="self-start bg-cream-soft rounded-full px-2.5 py-1 mb-2">
           <Text className="font-bodyMedium text-[11px] text-ink-soft">{post.tag}</Text>
         </View>
+      ) : null}
+      {post.authorIsExpert ? (
+        <Text className="font-body text-[10px] leading-4 text-ink-faint mb-1">{t("pc_expert_disclaimer")}</Text>
       ) : null}
 
       <View className="flex-row items-center justify-between mt-1 pt-3 border-t border-cream-line">

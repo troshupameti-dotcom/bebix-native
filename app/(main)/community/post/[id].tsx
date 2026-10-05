@@ -1,5 +1,5 @@
 import { useCallback, useState } from "react";
-import { View, Text, ScrollView, Pressable, TextInput, KeyboardAvoidingView, Platform, ActivityIndicator, Alert } from "react-native";
+import { View, Text, ScrollView, Pressable, TextInput, KeyboardAvoidingView, Platform, ActivityIndicator, Alert, RefreshControl } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useLocalSearchParams, useFocusEffect } from "expo-router";
 import { useAppState } from "@/lib/state/AppStateContext";
@@ -8,8 +8,10 @@ import { haptics } from "@/lib/haptics";
 import { useCurrentUserId } from "@/lib/hooks/useCurrentUserId";
 import { Icon } from "@/components/ui/Icon";
 import { Avatar, PostCard } from "@/components/community/PostCard";
+import { ExpertBadge } from "@/components/community/ExpertBadge";
 import { timeAgoLabel } from "@/lib/i18n/timeAgo";
 import { useTranslation } from "@/lib/i18n/LanguageContext";
+import { useThemeColors } from "@/lib/theme/useThemeColors";
 import { ModerationSheet, type ModerationTarget } from "@/components/community/ModerationSheet";
 import { BackButton, goBackOr } from "@/components/ui/BackButton";
 import { logWarn } from "@/lib/log";
@@ -46,8 +48,10 @@ function CommentRow({
           }}
           delayLongPress={350}
           style={shadows.soft}
-          className="bg-surface rounded-xl2 px-3 py-2.5"
+          className={`bg-surface rounded-xl2 px-3 py-2.5 ${comment.expert ? "border-l-[3px] border-olive" : ""}`}
         >
+          {/* Përgjigjet e mjekëve dhe të ekspertëve dallohen me reparte, jo vetëm me emër. */}
+          {comment.expert ? <ExpertBadge specialty={comment.expert.specialty} kind={comment.expert.kind} compact /> : null}
           <Text className="font-bodySemibold text-xs text-ink mb-0.5">{comment.authorName}</Text>
           <Text className="font-body text-xs text-ink-soft leading-5">{comment.text}</Text>
         </Pressable>
@@ -73,10 +77,12 @@ function CommentRow({
 
 export default function PostDetailScreen() {
   const { t } = useTranslation();
+  const theme = useThemeColors();
   const { id } = useLocalSearchParams<{ id: string }>();
   const { state } = useAppState();
   const myId = useCurrentUserId();
   const [loading, setLoading] = useState(true);
+  const [refreshing, setRefreshing] = useState(false);
   const [post, setPost] = useState<CommunityPost | null>(null);
   const [comments, setComments] = useState<CommunityComment[]>([]);
   const [draft, setDraft] = useState("");
@@ -84,9 +90,9 @@ export default function PostDetailScreen() {
   const [sending, setSending] = useState(false);
   const [commentMenu, setCommentMenu] = useState<ModerationTarget | null>(null);
 
-  const load = useCallback(async () => {
+  const load = useCallback(async (quiet = false) => {
     if (!id) return;
-    setLoading(true);
+    if (!quiet) setLoading(true);
     try {
       const [p, c] = await Promise.all([fetchPost(id), fetchComments(id)]);
       setPost(p);
@@ -99,6 +105,13 @@ export default function PostDetailScreen() {
   }, [id]);
 
   useFocusEffect(useCallback(() => { load(); }, [load]));
+
+  // Tërhiq poshtë për komentet e reja (si te Facebook-u): rifreskon postimin dhe komentet pa e fshehur ekranin.
+  const onRefresh = useCallback(async () => {
+    setRefreshing(true);
+    await load(true);
+    setRefreshing(false);
+  }, [load]);
 
   const topLevel = comments.filter((c) => c.parentId === null);
   const repliesOf = (commentId: string) => comments.filter((c) => c.parentId === commentId);
@@ -157,7 +170,14 @@ export default function PostDetailScreen() {
       </View>
 
       <KeyboardAvoidingView className="flex-1" behavior={Platform.OS === "ios" ? "padding" : undefined} keyboardVerticalOffset={90}>
-        <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={{ paddingBottom: 24 }} keyboardShouldPersistTaps="handled">
+        <ScrollView
+          showsVerticalScrollIndicator={false}
+          contentContainerStyle={{ paddingBottom: 24 }}
+          keyboardShouldPersistTaps="handled"
+          refreshControl={
+            <RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={theme.olive} colors={[theme.olive]} progressBackgroundColor={theme.surface} />
+          }
+        >
           <PostCard
             post={post}
             onOpen={() => {}}
@@ -229,7 +249,7 @@ export default function PostDetailScreen() {
           await deleteComment(commentMenu.id);
           setComments((prev) => prev.filter((c) => c.id !== commentMenu.id && c.parentId !== commentMenu.id));
         }}
-        onBlocked={load}
+        onBlocked={() => void load()}
       />
     </SafeAreaView>
   );

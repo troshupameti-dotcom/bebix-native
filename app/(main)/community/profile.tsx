@@ -9,11 +9,14 @@ import { Avatar, PostCard } from "@/components/community/PostCard";
 import { BackButton } from "@/components/ui/BackButton";
 import { getCurrentUserId, fetchPostsByAuthor, fetchExpertByUserId, CommunityExpert, CommunityPost } from "@/lib/communityData";
 import { logWarn } from "@/lib/log";
+import { useSpecialties } from "@/lib/community/useSpecialties";
+import { specialtyLabel } from "@/lib/community/specialties";
 
 export default function MyProfileScreen() {
   const router = useRouter();
   const { state } = useAppState();
-  const { t } = useTranslation();
+  const { t, language } = useTranslation();
+  const specialties = useSpecialties();
   const [loading, setLoading] = useState(true);
   const [posts, setPosts] = useState<CommunityPost[]>([]);
   const [expert, setExpert] = useState<CommunityExpert | null>(null);
@@ -66,7 +69,9 @@ export default function MyProfileScreen() {
           {expert ? (
             <View className="flex-row items-center bg-olive-bg rounded-full px-3 py-1 mb-2">
               <Icon name="shield" size={12} color="#6E7452" />
-              <Text className="font-bodySemibold text-[11px] text-olive ml-1.5">{t("cprof_verified_kind", { kind: expert.kind })}</Text>
+              <Text className="font-bodySemibold text-[11px] text-olive ml-1.5">
+                {t("cprof_verified_kind", { kind: specialtyLabel(expert.specialty, language, specialties.list) ?? expert.kind })}
+              </Text>
             </View>
           ) : (
             <Pressable onPress={() => router.push("/more/doctor-registration")}>
