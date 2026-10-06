@@ -1,4 +1,4 @@
-﻿import { ageText, buildHealthReportHtml } from "@/lib/healthReport";
+import { ageText, buildHealthReportHtml } from "@/lib/healthReport";
 import { initialBabyState, type BabyModuleState } from "@/lib/state/babyTypes";
 import { emptyProfile } from "@/lib/state/types";
 

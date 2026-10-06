@@ -12,7 +12,7 @@ import { parseBloodType } from "@/lib/baby/medicalSync";
 import { AddTile } from "@/components/baby/AddTile";
 import { FormField } from "@/components/baby/FormField";
 import { DateTimeField } from "@/components/baby/DateTimeField";
-import { InfoRow } from "@/components/baby/InfoRow";
+import { MedicalTile } from "@/components/baby/MedicalTile";
 import { BottomSheet } from "@/components/ui/BottomSheet";
 import { PickerSheetContent, PickerOption } from "@/components/baby/PickerSheetContent";
 import { useAppState, active } from "@/lib/state/AppStateContext";
@@ -755,32 +755,33 @@ export default function BabyProfileScreen() {
 
             {/* Info mjekësore — dikur ishte tab "Shëndeti", tash pjesë kompakte e Ditarit */}
             <SectionHeader title={t("baby_medical_info")} editable editing={editMedical} onToggleEdit={() => toggleEdit(setEditMedical)} />
-            <View style={shadows.soft} className="rounded-xl3 border border-ink/10 bg-surface px-5">
+            <View className="flex-row flex-wrap gap-3">
               {b.medicalInfo
                 .filter((m) => b.medicalActiveKeys.includes(m.key))
                 .map((m) => (
-                  <InfoRow
-                    key={m.key}
-                    rowKey={m.key}
-                    label={m.isCustom ? m.label ?? "" : t(m.labelKey as never)}
-                    value={m.value}
-                    isCustom={m.isCustom}
-                    editing={editMedical}
-                    placeholder={t("value_field")}
-                    onChangeValue={(v) => {
-                      baby.updateMedicalRow(m.key, { value: v });
-                      // Drejtimi tjetër: grupi i gjakut, mjeku dhe alergjitë mbeten
-                      // të njëjta edhe te cilësimet e bebit.
-                      if (m.key === "doctor") updateProfile({ pediatrician: v });
-                      else if (m.key === "allergies") updateProfile({ allergies: v });
-                      else if (m.key === "blood") {
-                        const blood = parseBloodType(v);
-                        if (blood !== undefined) updateProfile({ bloodType: blood });
-                      }
-                    }}
-                    onChangeLabel={(v) => baby.updateMedicalRow(m.key, { label: v })}
-                    onRemove={() => baby.removeMedicalRow(m.key)}
-                  />
+                  <View key={m.key} style={{ width: "47.5%" }}>
+                    <MedicalTile
+                      rowKey={m.key}
+                      label={m.isCustom ? m.label ?? "" : t(m.labelKey as never)}
+                      value={m.value}
+                      isCustom={m.isCustom}
+                      editing={editMedical}
+                      placeholder={t("value_field")}
+                      onChangeValue={(v) => {
+                        baby.updateMedicalRow(m.key, { value: v });
+                        // Drejtimi tjetër: grupi i gjakut, mjeku dhe alergjitë mbeten
+                        // të njëjta edhe te cilësimet e bebit.
+                        if (m.key === "doctor") updateProfile({ pediatrician: v });
+                        else if (m.key === "allergies") updateProfile({ allergies: v });
+                        else if (m.key === "blood") {
+                          const blood = parseBloodType(v);
+                          if (blood !== undefined) updateProfile({ bloodType: blood });
+                        }
+                      }}
+                      onChangeLabel={(v) => baby.updateMedicalRow(m.key, { label: v })}
+                      onRemove={() => baby.removeMedicalRow(m.key)}
+                    />
+                  </View>
                 ))}
             </View>
             {editMedical && (

@@ -1,5 +1,7 @@
 import { useCallback, useState } from "react";
-import { View, Text, ScrollView, Pressable, ActivityIndicator } from "react-native";
+import { View, Text, ScrollView, Pressable, ActivityIndicator, Image } from "react-native";
+import * as ImagePicker from "expo-image-picker";
+import { setMyExpertPhoto } from "@/lib/community/expertPhoto";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useRouter, useFocusEffect } from "expo-router";
 import { useAppState } from "@/lib/state/AppStateContext";
@@ -20,6 +22,8 @@ export default function MyProfileScreen() {
   const [loading, setLoading] = useState(true);
   const [posts, setPosts] = useState<CommunityPost[]>([]);
   const [expert, setExpert] = useState<CommunityExpert | null>(null);
+  const [photoBusy, setPhotoBusy] = useState(false);
+  const [photoError, setPhotoError] = useState<string | null>(null);
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -37,6 +41,21 @@ export default function MyProfileScreen() {
   }, []);
 
   useFocusEffect(useCallback(() => { load(); }, [load]));
+
+  async function changePhoto() {
+    setPhotoError(null);
+    const result = await ImagePicker.launchImageLibraryAsync({ mediaTypes: ["images"], allowsEditing: true, aspect: [1, 1], quality: 0.8 });
+    if (result.canceled || !result.assets[0]) return;
+    setPhotoBusy(true);
+    try {
+      await setMyExpertPhoto({ uri: result.assets[0].uri, mimeType: result.assets[0].mimeType ?? null });
+      await load();
+    } catch (err) {
+      setPhotoError(err instanceof Error ? err.message : t("cprof_photo_failed"));
+    } finally {
+      setPhotoBusy(false);
+    }
+  }
 
   const name = state.profile.parentName || "Ti";
   const initial = name.trim().charAt(0).toUpperCase() || "T";
@@ -60,7 +79,20 @@ export default function MyProfileScreen() {
 
       <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={{ paddingBottom: 40 }}>
         <View className="px-5 items-center mt-2 mb-5">
-          <Avatar initial={initial} accent="olive" size={72} />
+          {expert ? (
+            // Mjeku zgjedh foton e vet të profilit; ruhet te llogaria dhe shfaqet te profili i tij publik.
+            <Pressable onPress={changePhoto} disabled={photoBusy} accessibilityRole="button" accessibilityLabel={t("cprof_change_photo")} className="items-center">
+              {expert.photoUrl ? (
+                <Image source={{ uri: expert.photoUrl }} style={{ width: 88, height: 88, borderRadius: 44 }} />
+              ) : (
+                <Avatar initial={initial} accent="olive" size={88} />
+              )}
+              <Text className="mt-2 font-bodyMedium text-xs text-olive">{photoBusy ? "…" : t("cprof_change_photo")}</Text>
+            </Pressable>
+          ) : (
+            <Avatar initial={initial} accent="olive" size={72} />
+          )}
+          {photoError ? <Text className="mt-1 font-body text-xs text-orange">{photoError}</Text> : null}
           <View className="flex-row items-center mt-3 mb-1">
             <Text className="font-bodySemibold text-lg text-ink">{name}</Text>
             {expert && <Icon name="check" size={14} color="#6E7452" />}

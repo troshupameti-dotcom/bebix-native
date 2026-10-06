@@ -190,11 +190,8 @@ export async function fetchCategories(): Promise<ShopCategory[]> {
   if (categoryCache && Date.now() - categoryCache.at < CATEGORY_TTL_MS) return categoryCache.list;
   const { data, error } = await supabase.from("categories").select("id, key, label, icon").order("sort_order");
   if (error) throw error;
-  // Vetëm kategoritë me të paktën një produkt aktiv: kategoria bosh te filtrat duket e papërfunduar.
-  const counts = await Promise.all(
-    (data ?? []).map((c: any) => supabase.from("products").select("id", { count: "exact", head: true }).eq("category_id", c.id).eq("is_active", true)),
-  );
-  const list = (data ?? []).filter((_: unknown, i: number) => (counts[i].count ?? 0) > 0).map((c: any) => ({
+  // Të gjitha kategoritë, njësoj si te webi (edhe pa produkte ende): dyqani duhet të duket i plotë.
+  const list = (data ?? []).map((c: any) => ({
     id: c.id,
     key: c.key,
     label: c.label,

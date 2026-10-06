@@ -1,5 +1,5 @@
 import { useCallback, useState } from "react";
-import { View, Text, ScrollView, Pressable, ActivityIndicator, RefreshControl } from "react-native";
+import { View, Text, ScrollView, Pressable, ActivityIndicator, RefreshControl, Image } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useLocalSearchParams, useRouter, useFocusEffect } from "expo-router";
 import { Icon } from "@/components/ui/Icon";
@@ -94,7 +94,9 @@ export default function ExpertProfileScreen() {
       >
         <View className="px-5 items-center mt-2 mb-5">
           <View className={`w-20 h-20 rounded-full items-center justify-center mb-3 ${bg}`}>
-            {expert.specialty ? (
+            {expert.photoUrl ? (
+              <Image source={{ uri: expert.photoUrl }} style={{ width: 80, height: 80, borderRadius: 40 }} />
+            ) : expert.specialty ? (
               <Text className="text-3xl">{specialtyEmoji(expert.specialty, specialties.list)}</Text>
             ) : (
               <Icon name={expert.icon} size={32} color={fg} />

@@ -9,6 +9,7 @@ import { Icon } from "@/components/ui/Icon";
 import { categoryPhoto } from "@/lib/shop/categoryPhotos";
 import { useThemeColors } from "@/lib/theme/useThemeColors";
 import { Product, Brand } from "@/lib/homeContent";
+import { BrandMarquee } from "@/components/shop/BrandMarquee";
 import {
   fetchProductPage, fetchBrands, fetchCategories,
   type ProductSort, type ShopCategory, PRODUCT_PAGE_SIZE,
@@ -256,20 +257,7 @@ export default function ShopScreen() {
       {!isFiltering && brands.length > 0 && (
         <>
           <Text className="font-bodySemibold text-base text-ink px-5 mt-2 mb-2">{t("shop_brands")}</Text>
-          <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ paddingHorizontal: 20 }}>
-            {brands.map((b) => (
-              <Pressable key={b.id} onPress={() => router.push(`/shop/brand/${b.id}`)} className="mr-1.5 w-[54px] items-center">
-                <View className="h-[52px] w-[52px] items-center justify-center overflow-hidden rounded-xl border border-cream-line bg-surface">
-                  {b.logoUrl ? (
-                    <Image source={{ uri: b.logoUrl }} className="w-full h-full" resizeMode="cover" />
-                  ) : (
-                    <Icon name={b.icon} size={20} color={theme.inkFaint} />
-                  )}
-                </View>
-                <Text className="mt-1 text-center font-bodyMedium text-[10px] text-ink-soft" numberOfLines={1}>{b.name}</Text>
-              </Pressable>
-            ))}
-          </ScrollView>
+          <BrandMarquee brands={brands} color={theme.inkFaint} onOpen={(b) => router.push(`/shop/brand/${b.id}`)} />
         </>
       )}
 

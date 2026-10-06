@@ -40,7 +40,7 @@ export type LocalMedia = {
  * `fetch` mbi file:// dështon ose kthen 0 bajt në disa pajisje Android,
  * prandaj mbetet vetëm si rrugë rezervë.
  */
-async function readBytes(uri: string): Promise<ArrayBuffer> {
+export async function readBytes(uri: string): Promise<ArrayBuffer> {
   try {
     const bytes = await new File(uri).arrayBuffer();
     if (bytes.byteLength > 0) return bytes;

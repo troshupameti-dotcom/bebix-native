@@ -9,6 +9,7 @@ import {
   type StoredMedia,
 } from "@/lib/community/media";
 import { sanitizeSearch } from "@/lib/community/feedFilters";
+import { expertPhotoUrl } from "@/lib/community/expertPhoto";
 
 export type Accent = "olive" | "orange";
 
@@ -30,6 +31,8 @@ export type CommunityExpert = {
   kind: string;
   /** Çelësi i repartit (pediatrician, orthopedist, ...), null kur s'është caktuar ende. */
   specialty: string | null;
+  /** URL e fotos së profilit (zgjedhur nga eksperti), null kur s'ka. */
+  photoUrl: string | null;
   bio: string;
   experienceYears: number;
   languages: string[];
@@ -180,6 +183,7 @@ function mapExpert(e: any, followed: boolean): CommunityExpert {
     kind: e.kind,
     // Kolona ekziston pas migrimit të repartave; para tij mungon dhe eksperti del me tekstin e lirë.
     specialty: e.specialty_key ?? null,
+    photoUrl: expertPhotoUrl(e.photo_path),
     bio: e.bio,
     experienceYears: e.experience_years,
     languages: e.languages ?? [],

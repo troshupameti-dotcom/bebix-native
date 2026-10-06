@@ -1,5 +1,5 @@
 import { useCallback, useMemo, useState } from "react";
-import { View, Text, ScrollView, Pressable, ActivityIndicator, RefreshControl, TextInput } from "react-native";
+import { View, Text, ScrollView, Pressable, ActivityIndicator, RefreshControl, TextInput, Image } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useRouter, useFocusEffect } from "expo-router";
 import { Icon } from "@/components/ui/Icon";
@@ -27,7 +27,13 @@ function ExpertRow({
   return (
     <Pressable onPress={onOpen} style={shadows.soft} className="bg-surface rounded-xl2 p-4 mb-3 flex-row items-center">
       <View className={`w-12 h-12 rounded-full items-center justify-center mr-3 ${bg}`}>
-        {emoji ? <Text className="text-xl">{emoji}</Text> : <Icon name={expert.icon} size={22} color={fg} />}
+        {expert.photoUrl ? (
+          <Image source={{ uri: expert.photoUrl }} style={{ width: 48, height: 48, borderRadius: 24 }} />
+        ) : emoji ? (
+          <Text className="text-xl">{emoji}</Text>
+        ) : (
+          <Icon name={expert.icon} size={22} color={fg} />
+        )}
       </View>
       <View className="flex-1">
         <View className="flex-row items-center">
