@@ -1,6 +1,6 @@
 import { Pressable } from "react-native";
 import { router, type Href } from "expo-router";
-import { previousPath, currentPath, decideBack, lastPathInOtherSection } from "@/lib/navigation/history";
+import { previousPath, currentPath, decideBack, lastPathInOtherSection, rewindTo } from "@/lib/navigation/history";
 import { Icon } from "@/components/ui/Icon";
 import { haptics } from "@/lib/haptics";
 import { shadows } from "@/lib/shadows";
@@ -25,6 +25,7 @@ export function goBackOr(fallback: Href) {
   const decision = decideBack(previousPath(), current);
 
   if (decision.kind === "goto") {
+    rewindTo(decision.path);
     router.replace(decision.path as Href);
     return;
   }
@@ -38,6 +39,7 @@ export function goBackOr(fallback: Href) {
   // hapave brenda së njëjtës pjesë (shih lastPathInOtherSection) — kërko
   // më thellë në histori para se të dorëzohesh te fallback-u statik.
   const other = lastPathInOtherSection(current);
+  if (other) rewindTo(other);
   router.replace((other ?? fallback) as Href);
 }
 

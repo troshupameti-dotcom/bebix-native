@@ -92,9 +92,9 @@ export default function CheckoutScreen() {
     return () => { active = false; sub.subscription.unsubscribe(); };
   }, []);
 
-  // Mysafiri: kontakti i porosisë së fundit, i ruajtur në këtë telefon.
+  // Kontakti i porosisë së fundit, i ruajtur në këtë telefon (mysafir dhe me llogari): s'varet nga rrjeti.
   useEffect(() => {
-    if (authState !== "out") return;
+    if (authState === "loading") return;
     let active = true;
     AsyncStorage.getItem(GUEST_CONTACT_KEY)
       .then((raw) => {
@@ -239,12 +239,12 @@ export default function CheckoutScreen() {
           // Me kartë, email-i duhet të jetë te porosia para se të hapet faqja e pagesës (e merr Stripe për faturën).
           if (payByCard) await saving;
         }
-        // Herën tjetër formulari del i mbushur, pa pasur nevojë për llogari.
-        void AsyncStorage.setItem(
-          GUEST_CONTACT_KEY,
-          JSON.stringify({ fullName: fullName.trim(), phone: phone.trim(), email: email.trim(), address: address.trim(), city: city.trim() })
-        ).catch(() => {});
       }
+      // Herën tjetër formulari del i mbushur: adresa ruhet në këtë telefon për këdo (me llogari ose mysafir).
+      void AsyncStorage.setItem(
+        GUEST_CONTACT_KEY,
+        JSON.stringify({ fullName: fullName.trim(), phone: phone.trim(), email: email.trim(), address: address.trim(), city: city.trim() })
+      ).catch(() => {});
 
       track("order_placed", {
         items: state.cartItems.reduce((n, i) => n + i.qty, 0),

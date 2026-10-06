@@ -1,4 +1,5 @@
 import { View, Text, Pressable, Image, ScrollView, Alert } from "react-native";
+import { Price } from "@/components/ui/Price";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useRouter } from "expo-router";
 import { useAppState } from "@/lib/state/AppStateContext";
@@ -54,8 +55,8 @@ export default function CartScreen() {
                   </View>
 
                   <View className="flex-1">
-                    <Text className="font-bodyMedium text-sm text-ink" numberOfLines={2}>{item.name}</Text>
-                    <Text className="font-bodySemibold text-sm text-ink mt-1">€{item.price.toFixed(2)}</Text>
+                    <Text className="font-display text-[15px] text-ink" numberOfLines={2}>{item.name}</Text>
+                    <View className="mt-1"><Price price={item.price} size="sm" /></View>
 
                     <View className="flex-row items-center mt-2">
                       <Pressable

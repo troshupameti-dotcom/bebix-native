@@ -4,6 +4,7 @@ import { View, Text, ScrollView, Pressable, Image, ActivityIndicator, FlatList }
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import { useAppState } from "@/lib/state/AppStateContext";
+import { Price } from "@/components/ui/Price";
 import { Icon } from "@/components/ui/Icon";
 import { shadows } from "@/lib/shadows";
 import { Product } from "@/lib/homeContent";
@@ -205,14 +206,7 @@ export default function ProductDetailsScreen() {
               </Text>
             </View>
           )}
-          <View className="flex-row items-baseline">
-            <Text className="mr-2 font-display text-[30px] text-ink">€{product.price.toFixed(2)}</Text>
-            {product.compareAtPrice && (
-              <Text className="font-body text-[15px] text-ink-faint line-through">
-                €{product.compareAtPrice.toFixed(2)}
-              </Text>
-            )}
-          </View>
+          <Price price={product.price} compareAt={product.compareAtPrice} size="lg" display />
           {ageText ? <Text className="mt-2 font-bodyMedium text-[13px] text-olive">{ageText}</Text> : null}
           {GIFTS_ENABLED ? (
             <Pressable

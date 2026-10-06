@@ -7,6 +7,7 @@ import { Product } from "@/lib/homeContent";
 import { productImage } from "@/lib/shop/image";
 import { useTranslation } from "@/lib/i18n/LanguageContext";
 import { formatAgeRange } from "@/lib/shop/age";
+import { Price } from "@/components/ui/Price";
 
 type Props = {
   product: Product;
@@ -143,19 +144,13 @@ export function ProductCard({ product, onPress, cardWidth }: Props) {
             {product.brand}
             {product.merchant && product.merchant !== product.brand ? ` · ${product.merchant}` : ""}
           </Text>
-          <Text className="font-bodyMedium text-sm text-ink leading-5" numberOfLines={2}>
+          {/* Emri me shkronja të mëdha dhe të trasha (bold). */}
+          <Text className="font-display text-[15px] text-ink leading-5" numberOfLines={2}>
             {product.name}
           </Text>
           {ageLabel ? <Text className="font-bodyMedium text-[11px] text-olive mt-0.5" numberOfLines={1}>{ageLabel}</Text> : null}
           <View className="h-2" />
-          <View className="flex-row items-baseline flex-wrap">
-            <Text className="font-bodySemibold text-base text-ink mr-2">€{product.price.toFixed(2)}</Text>
-            {product.compareAtPrice != null && (
-              <Text className="font-body text-xs text-ink-faint line-through">
-                €{product.compareAtPrice.toFixed(2)}
-              </Text>
-            )}
-          </View>
+          <Price price={product.price} compareAt={product.compareAtPrice} size="md" />
           {savings != null && (
             <Text className="font-bodyMedium text-xs text-olive mt-1">
               {t("prod_save_amount", { amount: savings.toFixed(2) })}

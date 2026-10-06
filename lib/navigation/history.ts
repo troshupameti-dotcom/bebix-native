@@ -77,6 +77,20 @@ export function lastPathInOtherSection(current: string | null): string | null {
   return null;
 }
 
+/**
+ * Pas një kthimi të shprehur te `path`, historiku duhet të mbyllet aty ku u kthye përdoruesi: ekranet pas tij hiqen.
+ * Pa këtë, "mbrapa" nga një njoftim te ekrani i vaksinave të çonte te njoftimet, dhe "mbrapa" prej andej
+ * përsëri te vaksinat (rrethi), në vend të kreut.
+ */
+export function rewindTo(path: string): void {
+  for (let i = history.length - 2; i >= 0; i--) {
+    if (history[i] === path) {
+      history = history.slice(0, i + 1);
+      return;
+    }
+  }
+}
+
 /** Vetëm për teste. */
 export function resetHistory(paths: string[] = []): void {
   history = [...paths];
