@@ -1,9 +1,10 @@
 import { useCallback, useState } from "react";
-import { View, Text, ScrollView, Pressable, TextInput, ActivityIndicator, KeyboardAvoidingView, Platform } from "react-native";
+import { View, Text, ScrollView, Pressable, TextInput, ActivityIndicator, KeyboardAvoidingView, Platform, Image } from "react-native";
+import * as ImagePicker from "expo-image-picker";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useFocusEffect } from "expo-router";
 import { shadows } from "@/lib/shadows";
-import { fetchMyApplication, submitApplication, ExpertApplication } from "@/lib/expertApplications";
+import { fetchMyApplication, submitApplication, uploadLicensePhoto, ExpertApplication, type LicensePhoto } from "@/lib/expertApplications";
 import { BackButton } from "@/components/ui/BackButton";
 import { useTranslation } from "@/lib/i18n/LanguageContext";
 import { friendlyError } from "@/lib/errors/userMessage";
@@ -43,6 +44,7 @@ export default function DoctorRegistrationScreen() {
   const [licenseNumber, setLicenseNumber] = useState("");
   // Reparti zgjidhet me dorë (asnjë parazgjedhje): aplikimi pa reparte nuk dërgohet.
   const [specialtyKey, setSpecialtyKey] = useState<string | null>(null);
+  const [licensePhoto, setLicensePhoto] = useState<LicensePhoto | null>(null);
   const [experienceYears, setExperienceYears] = useState("");
   const [phone, setPhone] = useState("");
   const [bio, setBio] = useState("");
@@ -59,14 +61,32 @@ export default function DoctorRegistrationScreen() {
     }, [t])
   );
 
-  const canSubmit = fullName.trim() && licenseNumber.trim() && phone.trim() && specialtyKey && !submitting;
+  const canSubmit = fullName.trim() && licenseNumber.trim() && phone.trim() && specialtyKey && licensePhoto && !submitting;
+
+  async function pickLicense(fromCamera: boolean) {
+    const options: ImagePicker.ImagePickerOptions = { mediaTypes: ["images"], quality: 0.8 };
+    if (fromCamera) {
+      const perm = await ImagePicker.requestCameraPermissionsAsync();
+      if (!perm.granted) {
+        setError(t("doc_license_camera_blocked"));
+        return;
+      }
+    }
+    const result = fromCamera ? await ImagePicker.launchCameraAsync(options) : await ImagePicker.launchImageLibraryAsync(options);
+    if (!result.canceled && result.assets[0]) {
+      setError(null);
+      setLicensePhoto({ uri: result.assets[0].uri, mimeType: result.assets[0].mimeType ?? null });
+    }
+  }
 
   async function handleSubmit() {
-    if (!canSubmit || !specialtyKey) return;
+    if (!canSubmit || !specialtyKey || !licensePhoto) return;
     setSubmitting(true);
     setError(null);
     try {
+      const licensePhotoPath = await uploadLicensePhoto(licensePhoto);
       await submitApplication({
+        licensePhotoPath,
         fullName: fullName.trim(),
         licenseNumber: licenseNumber.trim(),
         specialization: specialtyLabel(specialtyKey, "sq", specialties.list) ?? specialtyKey,
@@ -120,6 +140,26 @@ export default function DoctorRegistrationScreen() {
               <View style={shadows.soft} className="bg-surface rounded-xl2 px-4 py-3 mb-4">
                 <TextInput value={licenseNumber} onChangeText={setLicenseNumber} placeholder={t("doc_ph_license")} placeholderClassName="text-ink-faint" className="font-body text-sm text-ink" />
               </View>
+
+              <Text className="font-bodySemibold text-xs text-ink-soft mb-1">{t("doc_license_photo")}</Text>
+              <Text className="font-body text-[11px] text-ink-faint mb-2 leading-4">{t("doc_license_photo_hint")}</Text>
+              {licensePhoto ? (
+                <View className="mb-4 items-center">
+                  <Image source={{ uri: licensePhoto.uri }} className="h-44 w-full rounded-xl2" resizeMode="cover" />
+                  <Pressable onPress={() => setLicensePhoto(null)} hitSlop={8} className="mt-2">
+                    <Text className="font-bodyMedium text-xs text-orange">{t("doc_license_photo_remove")}</Text>
+                  </Pressable>
+                </View>
+              ) : (
+                <View className="mb-4 flex-row gap-2.5">
+                  <Pressable onPress={() => pickLicense(true)} accessibilityRole="button" style={shadows.soft} className="flex-1 items-center rounded-xl2 bg-surface py-3">
+                    <Text className="font-bodyMedium text-xs text-ink">{t("doc_license_photo_camera")}</Text>
+                  </Pressable>
+                  <Pressable onPress={() => pickLicense(false)} accessibilityRole="button" style={shadows.soft} className="flex-1 items-center rounded-xl2 bg-surface py-3">
+                    <Text className="font-bodyMedium text-xs text-ink">{t("doc_license_photo_gallery")}</Text>
+                  </Pressable>
+                </View>
+              )}
 
               <Text className="font-bodySemibold text-xs text-ink-soft mb-1">{t("doc_specialty")}</Text>
               <Text className="font-body text-[11px] text-ink-faint mb-2 leading-4">{t("doc_dept_hint")}</Text>

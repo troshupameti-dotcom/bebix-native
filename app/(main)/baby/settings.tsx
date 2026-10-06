@@ -4,7 +4,7 @@ import { router } from "expo-router";
 import { SafeAreaView } from "react-native-safe-area-context";
 import * as ImagePicker from "expo-image-picker";
 import DateTimePicker, { DateTimePickerAndroid } from "@react-native-community/datetimepicker";
-import { Icon } from "@/components/ui/Icon";
+import { Icon, type IconName } from "@/components/ui/Icon";
 import { FormField } from "@/components/baby/FormField";
 import { useAppState } from "@/lib/state/AppStateContext";
 import { useTranslation } from "@/lib/i18n/LanguageContext";
@@ -242,33 +242,33 @@ export default function BabySettingsScreen() {
         </View>
 
         <Text className="mb-2 mt-6 font-bodySemibold text-base text-ink">{t("baby_medical_info")}</Text>
-        <View style={shadows.soft} className="gap-4 rounded-xl3 border border-ink/10 bg-surface p-5">
-          <View className="gap-1.5">
-            <Text className="font-bodyMedium text-[13px] text-ink-soft">{t("baby_settings_blood_type")}</Text>
-            <View className="flex-row flex-wrap gap-2">
-              {BLOOD_TYPES.map((bt) => (
-                <Pressable
-                  key={bt}
-                  onPress={() => setBloodType(bt)}
-                  className={`rounded-xl border px-3.5 py-2 ${bloodType === bt ? "border-ink bg-ink" : "border-ink/10 bg-surface"}`}
-                >
-                  <Text className={`font-bodyMedium text-[12.5px] ${bloodType === bt ? "text-cream" : "text-ink"}`}>{bt}</Text>
-                </Pressable>
-              ))}
+        {/* Njësoj si kontaktet e emergjencës më poshtë: rreshta me rreth-ikonë, titull i vogël dhe vlerë e trashë. */}
+        <View style={shadows.soft} className="rounded-xl3 border border-ink/10 bg-surface px-5">
+          <View className="flex-row items-start border-b border-ink/8 py-3">
+            <View className="mr-3 mt-0.5 h-9 w-9 items-center justify-center rounded-full bg-olive-bg">
+              <Icon name="heart" size={16} color="#6E7452" />
+            </View>
+            <View className="flex-1">
+              <Text className="mb-2 font-body text-xs text-ink-soft">{t("baby_settings_blood_type")}</Text>
+              <View className="flex-row flex-wrap gap-2">
+                {BLOOD_TYPES.map((bt) => (
+                  <Pressable
+                    key={bt}
+                    onPress={() => setBloodType(bt)}
+                    accessibilityRole="button"
+                    accessibilityState={{ selected: bloodType === bt }}
+                    className={`rounded-xl border px-3 py-1.5 ${bloodType === bt ? "border-ink bg-ink" : "border-ink/10 bg-surface"}`}
+                  >
+                    <Text className={`font-bodyMedium text-[12.5px] ${bloodType === bt ? "text-cream" : "text-ink"}`}>{bt}</Text>
+                  </Pressable>
+                ))}
+              </View>
             </View>
           </View>
-          <Field label={t("baby_settings_allergies")}>
-            <TextInput value={allergies} onChangeText={setAllergies} className="font-body text-[15px] text-ink" />
-          </Field>
-          <Field label={t("baby_settings_pediatrician")}>
-            <TextInput value={pediatrician} onChangeText={setPediatrician} className="font-body text-[15px] text-ink" />
-          </Field>
-          <Field label={t("baby_settings_medical_notes")}>
-            <TextInput value={medicalNotes} onChangeText={setMedicalNotes} multiline className="font-body text-[15px] text-ink" />
-          </Field>
-          <Field label={t("baby_settings_parent_notes")}>
-            <TextInput value={parentNotes} onChangeText={setParentNotes} multiline className="font-body text-[15px] text-ink" />
-          </Field>
+          <MedicalRow icon="shield" label={t("baby_settings_allergies")} value={allergies} onChange={setAllergies} />
+          <MedicalRow icon="user" label={t("baby_settings_pediatrician")} value={pediatrician} onChange={setPediatrician} />
+          <MedicalRow icon="edit" label={t("baby_settings_medical_notes")} value={medicalNotes} onChange={setMedicalNotes} multiline />
+          <MedicalRow icon="edit" label={t("baby_settings_parent_notes")} value={parentNotes} onChange={setParentNotes} multiline last />
         </View>
 
         <Pressable onPress={save} className="mt-5 items-center rounded-2xl bg-ink py-4">
@@ -365,6 +365,29 @@ export default function BabySettingsScreen() {
         </Modal>
       )}
     </SafeAreaView>
+  );
+}
+
+function MedicalRow({
+  icon, label, value, onChange, multiline, last,
+}: { icon: IconName; label: string; value: string; onChange: (v: string) => void; multiline?: boolean; last?: boolean }) {
+  return (
+    <View className={`flex-row items-center py-3 ${last ? "" : "border-b border-ink/8"}`}>
+      <View className="mr-3 h-9 w-9 items-center justify-center rounded-full bg-olive-bg">
+        <Icon name={icon} size={16} color="#6E7452" />
+      </View>
+      <View className="flex-1">
+        <Text className="font-body text-xs text-ink-soft">{label}</Text>
+        <TextInput
+          value={value}
+          onChangeText={onChange}
+          multiline={multiline}
+          placeholder="—"
+          placeholderClassName="text-ink-faint"
+          className="py-0.5 font-bodySemibold text-[13.5px] text-ink"
+        />
+      </View>
+    </View>
   );
 }
 

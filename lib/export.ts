@@ -8,7 +8,9 @@ import * as FileSystem from "expo-file-system/legacy";
 import * as Sharing from "expo-sharing";
 import * as Print from "expo-print";
 import { BabyModuleState } from "@/lib/state/types";
+import type { BabyProfile } from "@/lib/state/types";
 import { active } from "@/lib/state/AppStateContext";
+import { buildHealthReportHtml } from "@/lib/healthReport";
 
 type ExportRow = { kind: string; date: string; title: string; details: string };
 
@@ -72,13 +74,6 @@ async function shareFile(uri: string, mimeType: string) {
   }
 }
 
-export async function exportAsJSON(b: BabyModuleState, babyName: string) {
-  const rows = buildExportRows(b);
-  const uri = FileSystem.cacheDirectory + `bebix-${babyName.replace(/\s+/g, "-").toLowerCase()}.json`;
-  await FileSystem.writeAsStringAsync(uri, JSON.stringify(rows, null, 2));
-  await shareFile(uri, "application/json");
-}
-
 export async function exportAsCSV(b: BabyModuleState, babyName: string) {
   const rows = buildExportRows(b);
   const header = "Kind,Date,Title,Details";
@@ -89,38 +84,12 @@ export async function exportAsCSV(b: BabyModuleState, babyName: string) {
   await shareFile(uri, "text/csv");
 }
 
-export async function exportAsPDF(b: BabyModuleState, babyName: string) {
-  const rows = buildExportRows(b);
-  const rowsHtml = rows
-    .map(
-      (r) =>
-        `<tr><td>${escapeHtml(r.kind)}</td><td>${escapeHtml(new Date(r.date).toLocaleString())}</td><td>${escapeHtml(r.title)}</td><td>${escapeHtml(r.details)}</td></tr>`
-    )
-    .join("");
-  const html = `
-    <html>
-      <head><meta charset="utf-8" />
-        <style>
-          body { font-family: -apple-system, sans-serif; color: #2C271F; padding: 24px; }
-          h1 { font-size: 20px; }
-          table { width: 100%; border-collapse: collapse; margin-top: 16px; }
-          th, td { text-align: left; padding: 8px; border-bottom: 1px solid #E9DFCC; font-size: 11px; }
-          th { color: #6B6154; font-weight: 600; }
-        </style>
-      </head>
-      <body>
-        <h1>Bebix — ${escapeHtml(babyName)}</h1>
-        <p style="color:#6B6154;font-size:12px;">Exported ${new Date().toLocaleString()}</p>
-        <table>
-          <thead><tr><th>Type</th><th>Date</th><th>Title</th><th>Details</th></tr></thead>
-          <tbody>${rowsHtml}</tbody>
-        </table>
-      </body>
-    </html>`;
+/**
+ * PDF-ja është raporti shëndetësor (shih lib/healthReport.ts): profili, alergjitë, rritja, vaksinat, kartela mjekësore
+ * dhe kontaktet e emergjencës, me datën e gjenerimit të çastit. Pa ushqyerje, pelena apo gjumë.
+ */
+export async function exportAsPDF(profile: BabyProfile, b: BabyModuleState, lang: "sq" | "en", babyLabel: string) {
+  const html = buildHealthReportHtml(profile, b, lang, new Date(), babyLabel);
   const { uri } = await Print.printToFileAsync({ html });
   await shareFile(uri, "application/pdf");
-}
-
-function escapeHtml(s: string): string {
-  return s.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
 }

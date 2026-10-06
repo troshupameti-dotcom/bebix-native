@@ -755,12 +755,13 @@ export default function BabyProfileScreen() {
 
             {/* Info mjekësore — dikur ishte tab "Shëndeti", tash pjesë kompakte e Ditarit */}
             <SectionHeader title={t("baby_medical_info")} editable editing={editMedical} onToggleEdit={() => toggleEdit(setEditMedical)} />
-            <View style={shadows.soft} className="rounded-xl2 border border-ink/10 bg-surface px-4">
+            <View style={shadows.soft} className="rounded-xl3 border border-ink/10 bg-surface px-5">
               {b.medicalInfo
                 .filter((m) => b.medicalActiveKeys.includes(m.key))
                 .map((m) => (
                   <InfoRow
                     key={m.key}
+                    rowKey={m.key}
                     label={m.isCustom ? m.label ?? "" : t(m.labelKey as never)}
                     value={m.value}
                     isCustom={m.isCustom}

@@ -1,3 +1,4 @@
+import { File } from "expo-file-system";
 import { supabase } from "@/lib/supabase/client";
 
 export type ApplicationStatus = "pending" | "approved" | "rejected";
@@ -52,6 +53,35 @@ export async function fetchMyApplication(): Promise<ExpertApplication | null> {
   };
 }
 
+const LICENSE_BUCKET = "expert-licenses";
+
+/** Foto e zgjedhur nga telefoni, ende pa u ngarkuar. */
+export type LicensePhoto = { uri: string; mimeType?: string | null };
+
+/** Ngarkon foton e licencës te bucket-i privat, në dosjen e përdoruesit. Kthen rrugën e ruajtur te aplikimi. */
+export async function uploadLicensePhoto(photo: LicensePhoto): Promise<string> {
+  const uid = await currentUserId();
+  if (!uid) throw new Error("Duhesh me qenë i kyçun.");
+  const mime = (photo.mimeType ?? "").toLowerCase();
+  const ext = mime.includes("png") ? "png" : mime.includes("webp") ? "webp" : mime.includes("heic") ? "heic" : "jpg";
+  const contentType = ext === "jpg" ? "image/jpeg" : `image/${ext}`;
+  const path = `${uid}/license-${Date.now()}.${ext}`;
+
+  let bytes: ArrayBuffer | null = null;
+  try {
+    bytes = await new File(photo.uri).arrayBuffer();
+  } catch {
+    // content:// nga zgjedhësi i Android-it: rruga rezervë me fetch.
+  }
+  if (!bytes || bytes.byteLength === 0) bytes = await (await fetch(photo.uri)).arrayBuffer();
+  if (bytes.byteLength === 0) throw new Error("Fotoja u lexua bosh.");
+  if (bytes.byteLength > 10 * 1024 * 1024) throw new Error("Fotoja është mbi 10 MB.");
+
+  const { error } = await supabase.storage.from(LICENSE_BUCKET).upload(path, bytes, { contentType });
+  if (error) throw new Error(`Ngarkimi i fotos dështoi: ${error.message}`);
+  return path;
+}
+
 export async function submitApplication(input: {
   fullName: string;
   licenseNumber: string;
@@ -61,10 +91,13 @@ export async function submitApplication(input: {
   experienceYears: number;
   phone: string;
   bio: string;
+  /** Rruga e fotos së licencës (nga `uploadLicensePhoto`). */
+  licensePhotoPath: string;
 }) {
   const uid = await currentUserId();
   if (!uid) throw new Error("Duhesh me qenë i kyçun.");
   const row = {
+    license_photo_path: input.licensePhotoPath,
     user_id: uid,
     full_name: input.fullName,
     license_number: input.licenseNumber,
