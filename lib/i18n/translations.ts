@@ -259,6 +259,13 @@ export const translations = {
     growth_weight: "Pesha",
     info_rh: "Grupi Rh",
     ms_smile: "Buzëqeshja e parë",
+    ms_rolling: "Rrotullohet",
+    ms_sitting: "Ulet vetë",
+    ms_steps: "Hapat e parë",
+    ms_crawling: "Zvarritet",
+    ms_first_words: "Fjalët e para",
+    ms_standing: "Qëndron në këmbë",
+    ms_waving: "Përshëndet me dorë",
 
     // ---- Dynamic type labels (feeding/diaper/medical) ----
     feeding_type_bottle: "Shishe",
@@ -1315,6 +1322,13 @@ export const translations = {
     growth_weight: "Weight",
     info_rh: "Rh Factor",
     ms_smile: "First smile",
+    ms_rolling: "Rolling over",
+    ms_sitting: "Sitting up",
+    ms_steps: "First steps",
+    ms_crawling: "Crawling",
+    ms_first_words: "First words",
+    ms_standing: "Standing",
+    ms_waving: "Waving",
 
     feeding_type_bottle: "Bottle",
     feeding_type_breast: "Breastfeeding",
