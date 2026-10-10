@@ -1,4 +1,5 @@
-import { useMemo, useState } from "react";
+import { useCallback, useMemo, useState } from "react";
+import { JustSaved } from "@/components/baby/JustSaved";
 import { View, Text, ScrollView, Pressable } from "react-native";
 import { MotiView } from "moti";
 import { SafeAreaView } from "react-native-safe-area-context";
@@ -45,8 +46,11 @@ export default function DiaperScreen() {
   function quickLog(type: DiaperType) {
     const id = baby.addDiaperEntry({ type });
     haptics.success();
-    showToast(t("quick_saved"), () => baby.deleteDiaperEntry(id));
+    setJustSaved({ id, text: t("quick_saved_what", { what: t(`diaper_type_${type}` as never) }) });
   }
+  // Shiriti "U shënua · Ndrysho · Fshi" pas çdo shënimi të shpejtë.
+  const [justSaved, setJustSaved] = useState<{ id: string; text: string } | null>(null);
+  const clearJustSaved = useCallback(() => setJustSaved(null), []);
 
   const stats = useMemo(() => {
     const now = new Date();
@@ -118,6 +122,25 @@ export default function DiaperScreen() {
             />
           ))}
         </View>
+
+        {justSaved && (
+          <JustSaved
+            savedKey={justSaved.id}
+            text={justSaved.text}
+            onDone={clearJustSaved}
+            onEdit={() => {
+              const entry = log.find((e) => e.id === justSaved.id);
+              setJustSaved(null);
+              if (entry) openEdit(entry);
+            }}
+            onDelete={() => {
+              const id = justSaved.id;
+              setJustSaved(null);
+              baby.deleteDiaperEntry(id);
+              showToast(t("deleted_toast"), () => baby.restoreDiaperEntry(id));
+            }}
+          />
+        )}
 
         <View className="mt-5" />
         <StatsRow

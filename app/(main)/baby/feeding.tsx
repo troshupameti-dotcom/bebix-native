@@ -1,5 +1,10 @@
-import { useMemo, useState } from "react";
-import { View, Text, ScrollView, Pressable } from "react-native";
+import { useCallback, useEffect, useMemo, useState } from "react";
+import { View, Text, ScrollView, Pressable, TextInput } from "react-native";
+import { shadows } from "@/lib/shadows";
+import { JustSaved } from "@/components/baby/JustSaved";
+import {
+  elapsedSeconds, finishTimer, formatElapsed, loadTimer, saveTimer, startTimer, suggestedSide, switchSide, type BreastTimer,
+} from "@/lib/baby/breastTimer";
 import { MotiView } from "moti";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { Icon } from "@/components/ui/Icon";
@@ -15,7 +20,7 @@ import { haptics } from "@/lib/haptics";
 import { formatTime } from "@/lib/dateUtils";
 import { FeedingEntry, FeedingType, BreastSide } from "@/lib/state/types";
 import { BackButton } from "@/components/ui/BackButton";
-import { SinceHero, LogTile, AmountRow, LogRow, TONES, type Tone } from "@/components/baby/LogTiles";
+import { SinceHero, LogRow, TONES, type Tone } from "@/components/baby/LogTiles";
 
 /** Ngjyra e çdo lloji: gjiri rozë, shishja kaltër, ushqimi jeshil. */
 const TYPE_TONE: Record<FeedingType, Tone> = {
@@ -27,8 +32,23 @@ const TYPE_TONE: Record<FeedingType, Tone> = {
   medicine: TONES.purple,
 };
 
-/** Sasite qe zgjidhen me shpesh; e fundit e perdorur del e para. */
-const COMMON_ML = [60, 90, 120, 150, 180];
+/** Sasitë e shpejta të biberonit; e fundit e përdorur shtohet kur s'është mes tyre. */
+const QUICK_ML = [60, 90, 120];
+
+function quickAmounts(last: number | null): number[] {
+  return last != null && !QUICK_ML.includes(last) ? [...QUICK_ML, last].sort((a, b) => a - b) : QUICK_ML;
+}
+
+/** Tri llojet e shënimit të shpejtë. Formula, uji dhe ilaçi shënohen te "Shto me detaje". */
+type QuickType = "breast" | "bottle" | "solid";
+const QUICK_TYPES: QuickType[] = ["breast", "bottle", "solid"];
+const QUICK_TONE: Record<QuickType, Tone> = { breast: TONES.pink, bottle: TONES.blue, solid: TONES.green };
+
+function quickTypeOf(type: FeedingType | undefined): QuickType {
+  if (type === "solid") return "solid";
+  if (type === "bottle" || type === "formula") return "bottle";
+  return "breast";
+}
 
 const TYPES: FeedingType[] = ["breast", "bottle", "formula", "solid", "water", "medicine"];
 const TYPE_ICON: Record<FeedingType, "droplet" | "bath" | "spoon" | "pill"> = {
@@ -102,22 +122,100 @@ export default function FeedingScreen() {
     };
   }, [log]);
 
-  // Shenim me nje prekje: koha eshte tani, llojin e zgjedh butoni.
-  // Detajet mbeten te formulari i plote, por nuk jane kusht per te
-  // mbajtur historikun.
-  function quickLog(entry: Partial<FeedingEntry>) {
-    const id = baby.addFeedingEntry(entry);
-    haptics.success();
-    setBottleOpen(false);
-    showToast(t("quick_saved"), () => baby.deleteFeedingEntry(id));
-  }
-  const [bottleOpen, setBottleOpen] = useState(false);
-
   /** Sasia e fundit e shishes: prindi jep te njejten disa dite me radhe. */
   const lastBottleMl = useMemo(() => {
     const last = log.find((e) => e.amountMl != null && (e.type === "bottle" || e.type === "formula"));
     return last?.amountMl ?? null;
   }, [log]);
+  const lastBreastSide = useMemo(() => log.find((e) => e.type === "breast")?.side ?? null, [log]);
+
+  // ---- Shënimi me një prekje ----
+  // Lloji i parazgjedhur është ai i shënimit të fundit; "Ushqeva tani" e ruan menjëherë me orën aktuale.
+  const [pickedType, setPickedType] = useState<QuickType | null>(null);
+  const quickType: QuickType = pickedType ?? quickTypeOf(log[0]?.type);
+  const [pickedSide, setPickedSide] = useState<"left" | "right" | null>(null);
+  const side = pickedSide ?? suggestedSide(lastBreastSide);
+  const [pickedMl, setPickedMl] = useState<number | null>(null);
+  const [otherMl, setOtherMl] = useState("");
+  const typedMl = Number(otherMl.replace(",", "."));
+  const bottleMl = otherMl.trim() && typedMl > 0 && typedMl <= 500 ? Math.round(typedMl) : pickedMl ?? lastBottleMl;
+
+  // Timeri i gjirit (start/stop si te gjumi): ruhet te telefoni, mbijeton mbylljen e app-it.
+  const [timer, setTimer] = useState<BreastTimer | null>(null);
+  const [tick, setTick] = useState(() => new Date());
+  useEffect(() => {
+    let alive = true;
+    void loadTimer().then((v) => alive && setTimer(v));
+    return () => {
+      alive = false;
+    };
+  }, []);
+  useEffect(() => {
+    if (!timer) return;
+    const id = setInterval(() => setTick(new Date()), 1000);
+    return () => clearInterval(id);
+  }, [timer]);
+
+  // Shiriti "U shënua · Ndrysho · Fshi" pas çdo shënimi të shpejtë.
+  const [justSaved, setJustSaved] = useState<{ id: string; text: string } | null>(null);
+  const clearJustSaved = useCallback(() => setJustSaved(null), []);
+
+  function describe(entry: Partial<FeedingEntry>): string {
+    return [
+      t(`feeding_type_${entry.type}` as never),
+      entry.side ? t(`feeding_side_${entry.side}` as never) : null,
+      entry.amountMl ? `${entry.amountMl} ml` : null,
+      entry.durationMin ? `${entry.durationMin} min` : null,
+    ]
+      .filter(Boolean)
+      .join(" · ");
+  }
+
+  function quickLog(entry: Partial<FeedingEntry>) {
+    const id = baby.addFeedingEntry(entry);
+    haptics.success();
+    setOtherMl("");
+    setPickedMl(null);
+    setJustSaved({ id, text: t("quick_saved_what", { what: describe(entry) }) });
+  }
+
+  function startBreastTimer() {
+    haptics.tap();
+    const next = startTimer(side);
+    setTimer(next);
+    setTick(new Date());
+    void saveTimer(next);
+  }
+  function changeTimerSide(s: "left" | "right") {
+    setPickedSide(s);
+    if (!timer) return;
+    haptics.select();
+    const next = switchSide(timer, s);
+    setTimer(next);
+    void saveTimer(next);
+  }
+  function stopBreastTimer() {
+    if (!timer) return;
+    const done = finishTimer(timer);
+    setTimer(null);
+    void saveTimer(null);
+    quickLog({ type: "breast", side: done.side, at: done.at, durationMin: done.durationMin });
+  }
+
+  /** "Ushqeva tani": ruan menjëherë sipas llojit të zgjedhur (gjiri me timer në ecje: e ndal dhe e ruan). */
+  function feedNow() {
+    if (quickType === "breast") {
+      if (timer) stopBreastTimer();
+      else quickLog({ type: "breast", side });
+    } else if (quickType === "bottle") {
+      quickLog({ type: "bottle", amountMl: bottleMl ?? null });
+    } else {
+      quickLog({ type: "solid" });
+    }
+  }
+
+  const tone = QUICK_TONE[quickType];
+  const elapsed = timer ? formatElapsed(elapsedSeconds(timer, tick)) : null;
 
   function openNew() {
     haptics.tap();
@@ -202,44 +300,147 @@ export default function FeedingScreen() {
         />
 
         <Text className="mb-2 font-bodyMedium text-xs uppercase text-ink-faint">{t("quick_log_title")}</Text>
-        <View className="flex-row" style={{ gap: 10 }}>
-          <LogTile
-            label={t("feeding_type_breast")}
-            sub={t("feeding_side_left")}
-            icon="droplet"
-            tone={TONES.pink}
-            onPress={() => quickLog({ type: "breast", side: "left" })}
-          />
-          <LogTile
-            label={t("feeding_type_breast")}
-            sub={t("feeding_side_right")}
-            icon="droplet"
-            tone={TONES.pink}
-            onPress={() => quickLog({ type: "breast", side: "right" })}
-          />
+
+        {/* Lloji: Gji / Biberon / Ushqim i ngurtë. Parazgjedhja: lloji i shënimit të fundit. */}
+        <View className="flex-row rounded-2xl bg-cream-soft p-1" accessibilityRole="tablist">
+          {QUICK_TYPES.map((qt) => {
+            const on = quickType === qt;
+            return (
+              <Pressable
+                key={qt}
+                onPress={() => {
+                  haptics.select();
+                  setPickedType(qt);
+                }}
+                accessibilityRole="tab"
+                accessibilityState={{ selected: on }}
+                style={{ minHeight: 48, backgroundColor: on ? QUICK_TONE[qt].tint : "transparent" }}
+                className="flex-1 flex-row items-center justify-center gap-1.5 rounded-xl"
+              >
+                <Icon name={TYPE_ICON[qt]} size={15} color={on ? "#FFFFFF" : QUICK_TONE[qt].tint} />
+                <Text className="font-bodySemibold text-[13.5px]" style={{ color: on ? "#FFFFFF" : QUICK_TONE[qt].tint }} numberOfLines={1}>
+                  {t(`feeding_type_${qt}` as never)}
+                </Text>
+              </Pressable>
+            );
+          })}
         </View>
-        <View className="mt-2.5 flex-row" style={{ gap: 10 }}>
-          <LogTile
-            label={t("feeding_type_bottle")}
-            sub={lastBottleMl ? `${lastBottleMl} ml` : t("feeding_pick_amount")}
-            icon="bath"
-            tone={TONES.blue}
-            selected={bottleOpen}
-            onPress={() => setBottleOpen((o) => !o)}
-          />
-          <LogTile
-            label={t("feeding_type_solid")}
-            icon="spoon"
-            tone={TONES.green}
-            onPress={() => quickLog({ type: "solid" })}
-          />
-        </View>
-        {bottleOpen && (
-          <AmountRow
-            amounts={COMMON_ML}
-            lastUsed={lastBottleMl}
-            tone={TONES.blue}
-            onPick={(ml) => quickLog({ type: "bottle", amountMl: ml })}
+
+        {quickType === "breast" && (
+          <View style={[shadows.soft, { backgroundColor: tone.tintBg }]} className="mt-3 rounded-xl3 p-4">
+            <View className="flex-row" style={{ gap: 8 }}>
+              {(["left", "right"] as const).map((s) => {
+                const on = (timer ? timer.side : side) === s;
+                return (
+                  <Pressable
+                    key={s}
+                    onPress={() => changeTimerSide(s)}
+                    accessibilityRole="radio"
+                    accessibilityState={{ selected: on }}
+                    style={{ minHeight: 48, backgroundColor: on ? tone.tint : "#FFFFFF" }}
+                    className="flex-1 items-center justify-center rounded-2xl"
+                  >
+                    <Text className="font-bodySemibold text-[14px]" style={{ color: on ? "#FFFFFF" : tone.tint }}>
+                      {t(`feeding_side_${s}` as never)}
+                    </Text>
+                  </Pressable>
+                );
+              })}
+            </View>
+            {timer ? (
+              <View className="mt-4 items-center">
+                <Text className="font-bodyMedium text-[13px]" style={{ color: tone.tint }}>
+                  {t("feeding_timer_running", { side: t(`feeding_side_${timer.side}` as never) })}
+                </Text>
+                <Text className="mt-1 font-display text-[44px] leading-[52px] text-ink" accessibilityLiveRegion="polite">
+                  {elapsed}
+                </Text>
+                <Text className="mt-1 text-center font-body text-[12px] text-ink-soft">{t("feeding_timer_hint")}</Text>
+              </View>
+            ) : (
+              <Pressable
+                onPress={startBreastTimer}
+                accessibilityRole="button"
+                style={{ minHeight: 56, borderColor: tone.tint }}
+                className="mt-3 flex-row items-center justify-center gap-2 rounded-2xl border-2 bg-surface"
+              >
+                <Icon name="play" size={16} color={tone.tint} />
+                <Text className="font-bodySemibold text-[15px]" style={{ color: tone.tint }}>{t("feeding_timer_start")}</Text>
+              </Pressable>
+            )}
+          </View>
+        )}
+
+        {quickType === "bottle" && (
+          <View style={[shadows.soft, { backgroundColor: tone.tintBg }]} className="mt-3 rounded-xl3 p-4">
+            <View className="flex-row flex-wrap" style={{ gap: 8 }}>
+              {quickAmounts(lastBottleMl).map((ml) => {
+                const on = !otherMl.trim() && bottleMl === ml;
+                return (
+                  <Pressable
+                    key={ml}
+                    onPress={() => {
+                      haptics.select();
+                      setOtherMl("");
+                      setPickedMl(ml);
+                    }}
+                    accessibilityRole="radio"
+                    accessibilityState={{ selected: on }}
+                    style={{ minHeight: 48, backgroundColor: on ? tone.tint : "#FFFFFF" }}
+                    className="items-center justify-center rounded-full px-5"
+                  >
+                    <Text className="font-bodySemibold text-[15px]" style={{ color: on ? "#FFFFFF" : tone.tint }}>{ml} ml</Text>
+                  </Pressable>
+                );
+              })}
+            </View>
+            <TextInput
+              value={otherMl}
+              onChangeText={(v) => setOtherMl(v.replace(/[^0-9.,]/g, "").slice(0, 4))}
+              keyboardType="number-pad"
+              placeholder={t("feeding_other_amount")}
+              placeholderClassName="text-ink-faint"
+              accessibilityLabel={t("feeding_other_amount")}
+              className="mt-3 rounded-2xl border border-ink/10 bg-surface px-4 py-3 font-body text-[15px] text-ink"
+              style={{ minHeight: 48 }}
+            />
+          </View>
+        )}
+
+        {/* Butoni kryesor: një prekje, me orën e tanishme. */}
+        <Pressable
+          onPress={feedNow}
+          accessibilityRole="button"
+          accessibilityHint={quickType === "bottle" && bottleMl ? `${bottleMl} ml` : undefined}
+          style={[shadows.soft, { minHeight: 64, backgroundColor: tone.tint }]}
+          className="mt-3 flex-row items-center justify-center gap-2.5 rounded-2xl px-5 active:opacity-85"
+        >
+          <Icon name={quickType === "breast" && timer ? "check" : TYPE_ICON[quickType]} size={20} color="#FFFFFF" />
+          <Text className="font-bodySemibold text-[17px] text-white" numberOfLines={1}>
+            {quickType === "breast" && timer
+              ? `${t("feeding_now_stop")} · ${elapsed}`
+              : quickType === "bottle" && bottleMl
+                ? `${t("feeding_now")} · ${bottleMl} ml`
+                : t("feeding_now")}
+          </Text>
+        </Pressable>
+
+        {justSaved && (
+          <JustSaved
+            savedKey={justSaved.id}
+            text={justSaved.text}
+            onDone={clearJustSaved}
+            onEdit={() => {
+              const entry = log.find((e) => e.id === justSaved.id);
+              setJustSaved(null);
+              if (entry) openEdit(entry);
+            }}
+            onDelete={() => {
+              const id = justSaved.id;
+              setJustSaved(null);
+              baby.deleteFeedingEntry(id);
+              showToast(t("deleted_toast"), () => baby.restoreFeedingEntry(id));
+            }}
           />
         )}
 
