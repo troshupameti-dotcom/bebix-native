@@ -10,6 +10,7 @@ import { shadows } from "@/lib/shadows";
 import { PostCard } from "@/components/community/PostCard";
 import { DailyQuestionCard } from "@/components/community/DailyQuestionCard";
 import { AskExpertBar } from "@/components/community/AskExpertBar";
+import { SuggestedGroupsCard } from "@/components/community/SuggestedGroupsCard";
 import { logWarn } from "@/lib/log";
 import { useSpecialties } from "@/lib/community/useSpecialties";
 import { specialtyLabel } from "@/lib/community/specialties";
@@ -258,6 +259,8 @@ export default function CommunityScreen() {
           <DailyQuestionCard refreshKey={questionKey} />
           {/* Pyet ekspertin (privat) dhe, për ekspertët, radha e pyetjeve. */}
           <AskExpertBar refreshKey={questionKey} />
+          {/* Grupe për bebin tënd: sugjerim sipas moshës dhe kohës së lindjes. */}
+          <SuggestedGroupsCard refreshKey={questionKey} />
         </View>
       ) : null}
 

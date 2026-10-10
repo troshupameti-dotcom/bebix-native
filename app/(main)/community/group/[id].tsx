@@ -95,11 +95,16 @@ export default function GroupProfileScreen() {
           <Text className="font-bodySemibold text-lg text-ink mb-1 text-center">{group.name}</Text>
           <Text className="font-body text-xs text-ink-faint mb-3">{t("cexp_members", { n: group.memberCount.toLocaleString() })}</Text>
           <Text className="font-body text-sm text-ink-soft text-center leading-5 mb-4 px-4">{group.description}</Text>
-          <Pressable onPress={handleJoin} className={`px-6 py-2.5 rounded-full ${group.joined ? "bg-cream-soft" : "bg-olive"}`}>
-            <Text className={`font-bodySemibold text-xs ${group.joined ? "text-ink-soft" : "text-on-accent"}`}>
-              {group.joined ? `${t("cexplore_joined")} ✓` : t("cexplore_join")}
-            </Text>
-          </Pressable>
+          {/* Grupet sipas moshës/lindjes hyhen vetëm nga sugjerimi (në bazë); dalja është e lirë. */}
+          {group.kind !== "topic" && !group.joined ? (
+            <Text className="font-body text-xs text-ink-faint text-center px-6">{t("ag_join_from_suggestion")}</Text>
+          ) : (
+            <Pressable onPress={handleJoin} className={`px-6 py-2.5 rounded-full ${group.joined ? "bg-cream-soft" : "bg-olive"}`}>
+              <Text className={`font-bodySemibold text-xs ${group.joined ? "text-ink-soft" : "text-on-accent"}`}>
+                {group.joined ? `${t("cexplore_joined")} ✓` : t("cexplore_join")}
+              </Text>
+            </Pressable>
+          )}
         </View>
 
         <View className="px-5 mb-3">

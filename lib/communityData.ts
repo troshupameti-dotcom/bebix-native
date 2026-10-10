@@ -21,7 +21,43 @@ export type CommunityGroup = {
   accent: Accent;
   memberCount: number;
   joined: boolean;
+  /** "topic" (si deri tani), "age" ose "birth_cohort" (sugjerohen sipas bebit). */
+  kind: "topic" | "age" | "birth_cohort";
+  autoKey: string | null;
 };
+
+const GROUP_COLUMNS = "id,name,description,icon,accent,member_count";
+
+/**
+ * Grupet me llojin e tyre. Para migrimit të grupeve automatike kolonat
+ * `kind`/`auto_key` s'ekzistojnë: lexohen si më parë dhe të gjitha janë "topic".
+ */
+async function selectGroups(filter?: (q: any) => any): Promise<any[]> {
+  const base = (cols: string) => {
+    const q = supabase.from("community_groups").select(cols);
+    return filter ? filter(q) : q.order("name");
+  };
+  const res = await base(`${GROUP_COLUMNS},kind,auto_key`);
+  if (!res.error) return res.data ?? [];
+  if (res.error.code !== "42703") throw res.error;
+  const old = await base(GROUP_COLUMNS);
+  if (old.error) throw old.error;
+  return old.data ?? [];
+}
+
+function mapGroup(g: any, joined: boolean): CommunityGroup {
+  return {
+    id: g.id,
+    name: g.name,
+    description: g.description,
+    icon: g.icon,
+    accent: g.accent,
+    memberCount: g.member_count ?? 0,
+    joined,
+    kind: g.kind === "age" || g.kind === "birth_cohort" ? g.kind : "topic",
+    autoKey: g.auto_key ?? null,
+  };
+}
 
 export type CommunityExpert = {
   id: string;
@@ -104,11 +140,7 @@ export async function getCurrentUserId(): Promise<string | null> {
 
 export async function fetchGroups(): Promise<CommunityGroup[]> {
   const uid = await getCurrentUserId();
-  const { data: groups, error } = await supabase
-    .from("community_groups")
-    .select("id,name,description,icon,accent,member_count")
-    .order("name");
-  if (error) throw error;
+  const groups = await selectGroups();
 
   let joinedIds = new Set<string>();
   if (uid) {
@@ -116,25 +148,17 @@ export async function fetchGroups(): Promise<CommunityGroup[]> {
     joinedIds = new Set((mine ?? []).map((m) => m.group_id));
   }
 
-  return (groups ?? []).map((g: any) => ({
-    id: g.id,
-    name: g.name,
-    description: g.description,
-    icon: g.icon,
-    accent: g.accent,
-    memberCount: g.member_count ?? 0,
-    joined: joinedIds.has(g.id),
-  }));
+  // Grupet sipas moshës/lindjes hyhen vetëm nga sugjerimi: në lista dalin
+  // vetëm ato ku je tashmë anëtar (edhe te zgjedhja e grupit për postim).
+  return groups
+    .map((g) => mapGroup(g, joinedIds.has(g.id)))
+    .filter((g) => g.kind === "topic" || g.joined);
 }
 
 export async function fetchGroupById(id: string): Promise<CommunityGroup | null> {
   const uid = await getCurrentUserId();
-  const { data, error } = await supabase
-    .from("community_groups")
-    .select("id,name,description,icon,accent,member_count")
-    .eq("id", id)
-    .maybeSingle();
-  if (error) throw error;
+  const rows = await selectGroups((q) => q.eq("id", id).limit(1));
+  const data = rows[0];
   if (!data) return null;
 
   let joined = false;
@@ -148,15 +172,7 @@ export async function fetchGroupById(id: string): Promise<CommunityGroup | null>
     joined = !!m;
   }
 
-  return {
-    id: data.id,
-    name: data.name,
-    description: data.description,
-    icon: data.icon,
-    accent: data.accent,
-    memberCount: (data as any).member_count ?? 0,
-    joined,
-  };
+  return mapGroup(data, joined);
 }
 
 export async function toggleJoinGroup(groupId: string, joined: boolean) {

@@ -9,6 +9,7 @@ import { useTranslation } from "@/lib/i18n/LanguageContext";
 import { useThemeColors } from "@/lib/theme/useThemeColors";
 import { logWarn } from "@/lib/log";
 import { useSpecialties } from "@/lib/community/useSpecialties";
+import { SuggestedGroupsCard } from "@/components/community/SuggestedGroupsCard";
 import { specialtyEmoji, specialtyLabel, type Specialty } from "@/lib/community/specialties";
 import {
   fetchExperts, fetchGroups,
@@ -108,11 +109,14 @@ export default function ExploreScreen() {
   const [groups, setGroups] = useState<CommunityGroup[]>([]);
   const [dept, setDept] = useState<string | null>(null);
   const [search, setSearch] = useState("");
+  // Rifreskon sugjerimet e grupeve bashkë me listën (kthimi te ekrani, tërheqja poshtë).
+  const [groupsKey, setGroupsKey] = useState(0);
 
   const load = useCallback(async () => {
     try {
       const [e, g] = await Promise.all([fetchExperts(), fetchGroups()]);
       setExperts(e); setGroups(g);
+      setGroupsKey((k) => k + 1);
     } catch (err) {
       logWarn("Explore load error:", err);
     } finally {
@@ -272,12 +276,20 @@ export default function ExploreScreen() {
               visible.map(renderExpert)
             )}
           </>
-        ) : groups.length === 0 ? (
-          <Text className="font-body text-xs text-ink-faint">{t("cexplore_no_groups")}</Text>
         ) : (
-          groups.map((g) => (
-            <GroupRow key={g.id} group={g} onOpen={() => router.push(`/community/group/${g.id}`)} onToggleJoin={() => handleJoin(g)} />
-          ))
+          <>
+            {/* Grupet sipas moshës së bebit: sugjerim, prindi bashkohet vetë. */}
+            <View className="-mx-5">
+              <SuggestedGroupsCard refreshKey={groupsKey} showProfileLink />
+            </View>
+            {groups.length === 0 ? (
+              <Text className="font-body text-xs text-ink-faint">{t("cexplore_no_groups")}</Text>
+            ) : (
+              groups.map((g) => (
+                <GroupRow key={g.id} group={g} onOpen={() => router.push(`/community/group/${g.id}`)} onToggleJoin={() => handleJoin(g)} />
+              ))
+            )}
+          </>
         )}
       </ScrollView>
     </SafeAreaView>
