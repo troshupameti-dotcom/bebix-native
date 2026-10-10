@@ -29,6 +29,7 @@ import { MemoriesCard } from "@/components/baby/MemoriesCard";
 import { CelebrationModal } from "@/components/baby/CelebrationModal";
 import { useCelebration } from "@/lib/baby/useCelebration";
 import { TeamCard } from "@/components/baby/TeamCard";
+import { ShopSuggestionCard } from "@/components/shop/ShopSuggestionCard";
 import { FamilyView } from "@/components/baby/FamilyView";
 import { useHouseholdRole } from "@/lib/hooks/useHouseholdRole";
 import { SyncBadge } from "@/components/baby/SyncBadge";
@@ -694,6 +695,9 @@ export default function BabyProfileScreen() {
 
             {/* Çfarë vjen më pas, nga ritmi i vetë bebit. */}
             <TodayCard feedings={feedings} sleeps={sleeps} diapers={diapers} babyDob={profile.babyDob} />
+
+            {/* Dyqani: një kartë e vetme (pelenat, madhësia, mosha), mbyllet me "Jo tani". */}
+            <ShopSuggestionCard />
 
             {/* Kujtimet: sot para 1 muaji / 1 viti, filmi i muajit, kapsula, libri. */}
             <MemoriesCard baby={b} profile={profile} babyName={babyName} />

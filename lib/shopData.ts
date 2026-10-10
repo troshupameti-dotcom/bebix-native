@@ -317,6 +317,25 @@ export async function fetchFeaturedProducts(limit = 6): Promise<Product[]> {
   return (data as unknown as ProductRow[]).map(mapRow);
 }
 
+/**
+ * Produktet me kufi moshe që i përshtaten moshës së bebit (në muaj) — për
+ * sugjerimin e vetëm te Home/Dyqani. Produktet "për të gjitha moshat" s'hyjnë.
+ */
+export async function fetchAgeProducts(months: number, limit = 40): Promise<Product[]> {
+  const { data, error } = await supabase
+    .from("products")
+    .select(LIST_COLUMNS)
+    .eq("is_active", true)
+    .gt("stock", 0)
+    .or("min_age_months.not.is.null,max_age_months.not.is.null")
+    .or(ageOverlapFilter({ key: "now", from: months, to: months }))
+    .order("rating", { ascending: false })
+    .limit(limit);
+
+  if (error) throw error;
+  return (data as unknown as ProductRow[]).map(mapRow);
+}
+
 export async function fetchBrands(limit = 40): Promise<Brand[]> {
   const { data, error } = await supabase.from("brands").select("*").order("name").limit(limit);
   if (error) throw error;

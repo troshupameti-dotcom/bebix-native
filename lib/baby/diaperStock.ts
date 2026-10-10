@@ -22,8 +22,8 @@ const DAY = 86_400_000;
 const KEY = "bebix_diaper_stock_v1";
 /** Prag i sigurt: edhe pa mesatare, nën kaq pelena kërkon porosi. */
 export const LOW_COUNT = 6;
-/** Dërgesa zgjat; kur të mjaftojnë për më pak se kaq ditë, porosit. */
-export const LOW_DAYS = 2;
+/** Dërgesa në Kosovë zgjat 1–3 ditë; kur të mjaftojnë për kaq ditë ose më pak, porosit. */
+export const LOW_DAYS = 3;
 
 export function estimateDiaperStock(stock: DiaperStock, entries: { at: string }[], now: number = Date.now()): DiaperStockEstimate {
   const since = new Date(stock.setAt).getTime();

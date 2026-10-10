@@ -18,6 +18,7 @@ import { ProductCard, ProductCardSkeleton } from "@/components/ProductCard";
 import { track } from "@/lib/analytics/posthog";
 import { friendlyError } from "@/lib/errors/userMessage";
 import { AGE_BANDS, bandForMonths, formatAgeRange, monthsSince, parseAgeBand } from "@/lib/shop/age";
+import { ShopSuggestionCard } from "@/components/shop/ShopSuggestionCard";
 
 const PADDING_X = 20;
 const GRID_GAP = 12;
@@ -233,6 +234,12 @@ export default function ShopScreen() {
             );
           })}
         </ScrollView>
+      )}
+      {/* Një sugjerim i vetëm: pelenat po mbarojnë, madhësia tjetër, ose diçka për moshën. */}
+      {!isFiltering && (
+        <View className="px-5 mt-3">
+          <ShopSuggestionCard placement="shop" />
+        </View>
       )}
       {/* "Mosha e bebit": produktet e përshtatshme për moshën; me profil, shkurtorja "Për [emri]" e zgjedh vetë grupin e bebit. */}
       <Text className="font-bodySemibold text-base text-ink px-5 mt-3 mb-2">{t("shop_age_title")}</Text>

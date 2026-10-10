@@ -67,7 +67,8 @@ export function DiaperStockCard({ entries }: { entries: { at: string }[] }) {
     if (lastItem) {
       addToCart({ id: lastItem.id, name: lastItem.name, price: lastItem.price, imageUrl: lastItem.imageUrl ?? null, icon: lastItem.icon ?? "cube" }, lastItem.qty);
       showToast(t("diaper_stock_added"));
-      router.push("/shop/cart");
+      // Një prekje: drejt te përfundimi i porosisë, jo te shporta.
+      router.push("/shop/checkout");
     } else {
       router.push({ pathname: "/(main)/shop", params: { q: "pelena" } });
     }
