@@ -9,6 +9,7 @@ import { useThemeColors } from "@/lib/theme/useThemeColors";
 import { shadows } from "@/lib/shadows";
 import { PostCard } from "@/components/community/PostCard";
 import { DailyQuestionCard } from "@/components/community/DailyQuestionCard";
+import { AskExpertBar } from "@/components/community/AskExpertBar";
 import { logWarn } from "@/lib/log";
 import { useSpecialties } from "@/lib/community/useSpecialties";
 import { specialtyLabel } from "@/lib/community/specialties";
@@ -255,6 +256,8 @@ export default function CommunityScreen() {
       {tab === "all" && !filtering ? (
         <View className="-mt-4 mb-3">
           <DailyQuestionCard refreshKey={questionKey} />
+          {/* Pyet ekspertin (privat) dhe, për ekspertët, radha e pyetjeve. */}
+          <AskExpertBar refreshKey={questionKey} />
         </View>
       ) : null}
 

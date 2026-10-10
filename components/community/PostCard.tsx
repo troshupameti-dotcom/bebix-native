@@ -15,6 +15,7 @@ import {
 } from "@/lib/communityData";
 import { PostMediaGrid } from "@/components/community/PostMediaGrid";
 import { ExpertBadge } from "@/components/community/ExpertBadge";
+import { EXPERT_QA_TAG } from "@/lib/community/expertQuestions";
 import { ModerationSheet, type ModerationTarget } from "@/components/community/ModerationSheet";
 
 
@@ -121,7 +122,7 @@ export function PostCard({ post, onOpen, onRemoved, interactiveMedia = false }: 
       <PostMediaGrid media={post.media} interactive={interactiveMedia} onPress={interactiveMedia ? undefined : onOpen} />
       {post.tag ? (
         <View className="self-start bg-cream-soft rounded-full px-2.5 py-1 mb-2">
-          <Text className="font-bodyMedium text-[11px] text-ink-soft">{post.tag}</Text>
+          <Text className="font-bodyMedium text-[11px] text-ink-soft">{post.tag === EXPERT_QA_TAG ? t("eq_feed_label") : post.tag}</Text>
         </View>
       ) : null}
       {post.authorIsExpert ? (
