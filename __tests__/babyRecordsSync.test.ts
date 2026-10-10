@@ -7,7 +7,7 @@ jest.mock("@react-native-async-storage/async-storage", () =>
   require("@react-native-async-storage/async-storage/jest/async-storage-mock")
 );
 jest.mock("@/lib/supabase/client", () => ({ supabase: {} }));
-jest.mock("@/lib/baby/household", () => ({ resolveDataOwnerId: jest.fn() }));
+jest.mock("@/lib/baby/household", () => ({ resolveDataOwnerId: jest.fn(), resolveMyRole: jest.fn(async () => "parent") }));
 jest.mock("@/lib/baby/momentPhotos", () => ({
   isLocalFileUri: () => false,
   signedUrlForMoment: jest.fn(),

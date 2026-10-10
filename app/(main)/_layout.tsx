@@ -11,6 +11,9 @@ import { useThemeColors } from "@/lib/theme/useThemeColors";
 import { listenForNotificationOpens, registerForPushNotificationsAsync, syncWeeklyRecapReminder } from "@/lib/notifications";
 import { isNotificationEnabled } from "@/lib/notifications/catalog";
 import { useAppState } from "@/lib/state/AppStateContext";
+import { saveMyMemberProfile } from "@/lib/baby/household";
+import { relationFromProfile } from "@/lib/baby/team";
+import { useHouseholdRole } from "@/lib/hooks/useHouseholdRole";
 import { routeForNotification } from "@/lib/notifications/routing";
 import { useBabyRecordsSync } from "@/lib/hooks/useBabyRecordsSync";
 
@@ -42,7 +45,7 @@ const GUEST_ALLOWED_TABS = new Set(["shop"]);
  * "require-account", i cili e kthen te funksioni origjinal pas login-it.
  */
 export default function MainLayout() {
-  const { t } = useTranslation();
+  const { t, lang } = useTranslation();
   const { loading, isAuthenticated, isGuest } = useOnboardingStatus();
   const theme = useThemeColors();
   const insets = useSafeAreaInsets();
@@ -101,6 +104,16 @@ export default function MainLayout() {
   useEffect(() => {
     void syncWeeklyRecapReminder({ enabled: weeklyOn, title: weeklyTitle, body: weeklyBody });
   }, [weeklyOn, weeklyTitle, weeklyBody, pushReady]);
+
+  // Emri, lidhja dhe gjuha ime te familja: partneri sheh "Mami" te "Ekipi sot"
+  // dhe njoftimet e tij për mua vijnë në gjuhën time.
+  const role = useHouseholdRole();
+  const parentName = state.profile.parentName ?? null;
+  const relation = relationFromProfile(state.profile.relation, role);
+  useEffect(() => {
+    if (!isAuthenticated) return;
+    void saveMyMemberProfile({ displayName: parentName, relation, lang }).catch(() => {});
+  }, [isAuthenticated, parentName, relation, lang]);
 
   // Prekja e një njoftimi hap ekranin që i përket (postimi, porosia, ushqyerja...).
   useEffect(() => {

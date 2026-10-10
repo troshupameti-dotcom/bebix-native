@@ -28,6 +28,9 @@ import { WeeklyRecapCard } from "@/components/baby/WeeklyRecapCard";
 import { MemoriesCard } from "@/components/baby/MemoriesCard";
 import { CelebrationModal } from "@/components/baby/CelebrationModal";
 import { useCelebration } from "@/lib/baby/useCelebration";
+import { TeamCard } from "@/components/baby/TeamCard";
+import { FamilyView } from "@/components/baby/FamilyView";
+import { useHouseholdRole } from "@/lib/hooks/useHouseholdRole";
 import { SyncBadge } from "@/components/baby/SyncBadge";
 import { DayClock } from "@/components/baby/DayClock";
 import { liveStatus, durationLabel } from "@/lib/baby/dayStats";
@@ -288,6 +291,8 @@ export default function BabyProfileScreen() {
   const babyName = profile.nickname || profile.babyName || t("your_baby");
   // Dita e 100-të, muajt, ditëlindja, arritjet e reja — një herë secila.
   const celebration = useCelebration(profile.babyDob, b.moments);
+  // Gjyshërit (vetëm shikim) shohin pamjen e familjes, pa butona shënimi.
+  const role = useHouseholdRole();
   const ageText = profile.babyDob ? computeAgeText(profile.babyDob, lang) : "";
   const upcomingVaccineCount = active(b.vaccines).filter((v) => !v.givenDate).length;
   const growth = useMemo(() => latestGrowth(b.growthHistory), [b.growthHistory]);
@@ -576,6 +581,15 @@ export default function BabyProfileScreen() {
   }
 
 
+  if (role === "viewer") {
+    return (
+      <>
+        <FamilyView profile={profile} baby={b} babyName={babyName} ageText={ageText} />
+        <CelebrationModal celebration={celebration.current} babyName={babyName} onClose={celebration.dismiss} canAddPhoto={false} />
+      </>
+    );
+  }
+
   return (
     <SafeAreaView className="flex-1 bg-cream" edges={["top"]}>
       <View className="flex-row items-center justify-between px-5 pb-2 pt-2">
@@ -671,6 +685,9 @@ export default function BabyProfileScreen() {
                 vinte nga faqja e vjeter kryesore, ku rrinte nje tab larg
                 nga bebi dhe e perzier me produkte. */}
             <NowCard status={status} onToggleSleep={toggleSleep} />
+
+            {/* Dy prindër: kush bëri çfarë sot, faleminderit, turni i natës. */}
+            <TeamCard />
 
             {/* E hënë–e mërkurë: java e kaluar, vetëm lajmet e mira si trend. */}
             <WeeklyRecapCard feedings={feedings} sleeps={sleeps} diapers={diapers} babyName={profile.babyName} />

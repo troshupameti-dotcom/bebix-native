@@ -1,6 +1,6 @@
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { supabase } from "@/lib/supabase/client";
-import { resolveDataOwnerIdStrict } from "@/lib/baby/household";
+import { resolveDataOwnerIdStrict, resolveMyRole } from "@/lib/baby/household";
 import type { BabyModuleState, Moment } from "@/lib/state/babyTypes";
 import {
   AnyBabyRecord,
@@ -331,7 +331,9 @@ export async function syncBabyRecords(baby: BabyModuleState): Promise<Partial<Ba
   const startedAt = new Date().toISOString();
   const lastSync = await AsyncStorage.getItem(LAST_SYNC_KEY);
   const migrated = await AsyncStorage.getItem(MIGRATED_KEY);
-  const localRecords = collectLocal(baby);
+  // Gjyshërit (shikues) vetëm lexojnë: asgjë nga ky telefon s'dërgohet.
+  const readOnly = (await resolveMyRole()) === "viewer";
+  const localRecords = readOnly ? [] : collectLocal(baby);
 
   // 1) Fotot/videot e momenteve shkojnë te Storage para metadatave, që rreshti
   //    të ruhet bashkë me `storagePath`.

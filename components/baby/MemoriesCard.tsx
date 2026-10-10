@@ -58,7 +58,7 @@ function LinkRow({ icon, tone, title, sub, onPress, busy }: { icon: IconName; to
  * "Kujtimet" te faqja e bebit: sot para 1 muaji / 6 muajsh / 1 viti, filmi
  * i muajit të kaluar (1–7 të muajit), kapsula e kohës dhe libri i vitit të parë.
  */
-export function MemoriesCard({ baby, profile, babyName }: { baby: BabyModuleState; profile: BabyProfile; babyName: string }) {
+export function MemoriesCard({ baby, profile, babyName, viewer = false }: { baby: BabyModuleState; profile: BabyProfile; babyName: string; viewer?: boolean }) {
   const { t, lang } = useTranslation();
   const { showToast } = useToast();
   const [bookBusy, setBookBusy] = useState(false);
@@ -91,6 +91,7 @@ export function MemoriesCard({ baby, profile, babyName }: { baby: BabyModuleStat
       {today ? (
         <Pressable
           onPress={() => router.push("/(main)/baby/moments")}
+          disabled={viewer}
           accessibilityRole="button"
           accessibilityLabel={t("memories_on_this_day", { ago: agoLabel(today.ago, t) })}
           className="mb-2 mt-2"
@@ -113,13 +114,16 @@ export function MemoriesCard({ baby, profile, babyName }: { baby: BabyModuleStat
           onPress={() => router.push({ pathname: "/(main)/baby/month-recap", params: { month: recap.month } })}
         />
       ) : null}
-      <LinkRow
-        icon="lock"
-        tone={TONES.amber}
-        title={t("capsule_title")}
-        sub={t("capsule_sub")}
-        onPress={() => router.push("/(main)/baby/time-capsule")}
-      />
+      {/* Kapsula është e prindërve; gjyshërit s'e shohin. */}
+      {viewer ? null : (
+        <LinkRow
+          icon="lock"
+          tone={TONES.amber}
+          title={t("capsule_title")}
+          sub={t("capsule_sub")}
+          onPress={() => router.push("/(main)/baby/time-capsule")}
+        />
+      )}
       <LinkRow icon="download" tone={TONES.blue} title={t("book_title")} sub={t("book_sub")} onPress={makeBook} busy={bookBusy} />
     </View>
   );

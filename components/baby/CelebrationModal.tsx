@@ -51,7 +51,18 @@ function Confetti() {
  * Karta e madhe e festimit: dita e 100-të, muajt, ditëlindja, arritja e re.
  * Del një herë; "Faleminderit" e mbyll, "Shto një foto" çon te Momentet.
  */
-export function CelebrationModal({ celebration, babyName, onClose }: { celebration: Celebration | null; babyName: string; onClose: () => void }) {
+export function CelebrationModal({
+  celebration,
+  babyName,
+  onClose,
+  canAddPhoto = true,
+}: {
+  celebration: Celebration | null;
+  babyName: string;
+  onClose: () => void;
+  /** Gjyshërit (vetëm shikim) s'shtojnë foto. */
+  canAddPhoto?: boolean;
+}) {
   const { t } = useTranslation();
   useEffect(() => {
     if (celebration) haptics.success();
@@ -110,20 +121,22 @@ export function CelebrationModal({ celebration, babyName, onClose }: { celebrati
             {body}
           </Text>
 
-          <Pressable
-            onPress={() => {
-              haptics.tap();
-              onClose();
-              router.push("/(main)/baby/moments");
-            }}
-            accessibilityRole="button"
-            className="mt-6 w-full items-center rounded-2xl py-4"
-            style={{ backgroundColor: "#17212B", minHeight: 56 }}
-          >
-            <Text className="font-bodySemibold text-[15px]" style={{ color: "#FFF8EF" }}>
-              {t("celebrate_add_photo")}
-            </Text>
-          </Pressable>
+          {canAddPhoto ? (
+            <Pressable
+              onPress={() => {
+                haptics.tap();
+                onClose();
+                router.push("/(main)/baby/moments");
+              }}
+              accessibilityRole="button"
+              className="mt-6 w-full items-center rounded-2xl py-4"
+              style={{ backgroundColor: "#17212B", minHeight: 56 }}
+            >
+              <Text className="font-bodySemibold text-[15px]" style={{ color: "#FFF8EF" }}>
+                {t("celebrate_add_photo")}
+              </Text>
+            </Pressable>
+          ) : null}
           <Pressable onPress={onClose} accessibilityRole="button" className="mt-2 w-full items-center py-3.5" style={{ minHeight: 48 }}>
             <Text className="font-bodyMedium text-[15px]" style={{ color: "#5C6670" }}>
               {t("celebrate_thanks")}

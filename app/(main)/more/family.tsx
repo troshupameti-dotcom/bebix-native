@@ -1,5 +1,5 @@
 import { useCallback, useState } from "react";
-import { View, Text, TextInput, Pressable, ActivityIndicator, ScrollView, Alert, Share, KeyboardAvoidingView, Platform } from "react-native";
+import { View, Text, TextInput, Pressable, ActivityIndicator, ScrollView, Alert, Share, KeyboardAvoidingView, Platform, Switch } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useFocusEffect } from "expo-router";
 import { Icon } from "@/components/ui/Icon";
@@ -10,8 +10,10 @@ import { useThemeColors } from "@/lib/theme/useThemeColors";
 import { useTranslation } from "@/lib/i18n/LanguageContext";
 import { useCurrentUserId } from "@/lib/hooks/useCurrentUserId";
 import {
-  fetchHousehold, createInviteCode, joinHousehold, leaveHousehold, HouseholdState,
+  fetchHousehold, createInviteCode, joinHousehold, leaveHousehold, HouseholdState, fetchPeople, fetchShareCare, setShareCare,
 } from "@/lib/baby/household";
+import { personLabel, type HouseholdPerson, type HouseholdRole } from "@/lib/baby/team";
+import { useHouseholdRole } from "@/lib/hooks/useHouseholdRole";
 import { syncBabyRecords } from "@/lib/baby/babyRecordsSync";
 import { retrySync } from "@/lib/baby/syncStatus";
 import { useAppState } from "@/lib/state/AppStateContext";
@@ -25,7 +27,10 @@ export default function FamilyScreen() {
 
   const [household, setHousehold] = useState<HouseholdState | null>(null);
   const [loading, setLoading] = useState(true);
-  const [code, setCode] = useState<string | null>(null);
+  const [code, setCode] = useState<{ code: string; role: HouseholdRole } | null>(null);
+  const [people, setPeople] = useState<HouseholdPerson[]>([]);
+  const [shareCare, setShareCareState] = useState(false);
+  const myRole = useHouseholdRole();
   const [joinCode, setJoinCode] = useState("");
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -33,7 +38,11 @@ export default function FamilyScreen() {
 
   const load = useCallback(async () => {
     try {
-      setHousehold(await fetchHousehold());
+      const h = await fetchHousehold();
+      setHousehold(h);
+      // Emrat dhe "gjyshërit shohin kujdesin": pa migrimin, thjesht mungojnë.
+      fetchPeople().then(setPeople).catch(() => {});
+      if (h?.isOwner) fetchShareCare(h.ownerId).then(setShareCareState).catch(() => {});
     } catch (e: unknown) {
       setError(friendlyError(e, t, "fam_err_load"));
     } finally {
@@ -43,12 +52,12 @@ export default function FamilyScreen() {
 
   useFocusEffect(useCallback(() => { load(); }, [load]));
 
-  async function handleCreateCode() {
+  async function handleCreateCode(role: HouseholdRole) {
     setBusy(true);
     setError(null);
     try {
-      const fresh = await createInviteCode();
-      setCode(fresh);
+      const fresh = await createInviteCode(role);
+      setCode({ code: fresh, role });
       haptics.tap();
     } catch (e: unknown) {
       setError(friendlyError(e, t, "fam_err_code"));
@@ -108,6 +117,23 @@ export default function FamilyScreen() {
     );
   }
 
+  async function toggleShareCare(value: boolean) {
+    if (!household) return;
+    haptics.select();
+    setShareCareState(value);
+    try {
+      await setShareCare(household.ownerId, value);
+    } catch (e: unknown) {
+      setShareCareState(!value);
+      setError(friendlyError(e, t, "fam_err_action"));
+    }
+  }
+
+  const nameOf = (memberId: string, fallback: string) => {
+    const p = people.find((x) => x.userId === memberId);
+    return p ? personLabel(p, t) : fallback;
+  };
+
   if (loading) {
     return (
       <SafeAreaView className="flex-1 bg-cream items-center justify-center">
@@ -153,29 +179,45 @@ export default function FamilyScreen() {
 
                 {code ? (
                   <>
+                    <Text className="font-bodyMedium text-xs text-ink-soft mb-2">
+                      {code.role === "viewer" ? t("fam_code_for_viewer") : t("fam_code_for_parent")}
+                    </Text>
                     <View className="bg-cream-soft rounded-xl2 py-4 items-center mb-3">
-                      <Text className="font-display text-3xl text-ink tracking-[6px]">{code}</Text>
+                      <Text className="font-display text-3xl text-ink tracking-[6px]">{code.code}</Text>
                     </View>
                     <Pressable
-                      onPress={() => Share.share({ message: `Bashkohu me bebin tonë te Bebix me kodin: ${code}` })}
+                      onPress={() =>
+                        Share.share({ message: t(code.role === "viewer" ? "fam_share_viewer" : "fam_share_parent", { code: code.code }) })
+                      }
                       className="bg-olive rounded-xl2 py-3 items-center"
                     >
                       <Text className="font-bodyMedium text-sm text-on-accent">{t("fam_send_code")}</Text>
                     </Pressable>
                   </>
                 ) : (
-                  <Pressable
-                    onPress={handleCreateCode}
-                    disabled={busy}
-                    className="bg-olive rounded-xl2 py-3 items-center"
-                    style={{ opacity: busy ? 0.5 : 1 }}
-                  >
-                    {busy ? (
-                      <ActivityIndicator color={theme.onAccent} />
-                    ) : (
-                      <Text className="font-bodySemibold text-sm text-on-accent">{t("fam_create_code")}</Text>
-                    )}
-                  </Pressable>
+                  <>
+                    <Pressable
+                      onPress={() => handleCreateCode("parent")}
+                      disabled={busy}
+                      className="bg-olive rounded-xl2 py-3 items-center"
+                      style={{ opacity: busy ? 0.5 : 1, minHeight: 48, justifyContent: "center" }}
+                    >
+                      {busy ? (
+                        <ActivityIndicator color={theme.onAccent} />
+                      ) : (
+                        <Text className="font-bodySemibold text-sm text-on-accent">{t("fam_create_code")}</Text>
+                      )}
+                    </Pressable>
+                    <Pressable
+                      onPress={() => handleCreateCode("viewer")}
+                      disabled={busy}
+                      className="bg-cream-soft rounded-xl2 py-3 items-center mt-2"
+                      style={{ opacity: busy ? 0.5 : 1, minHeight: 48, justifyContent: "center" }}
+                    >
+                      <Text className="font-bodySemibold text-sm text-ink">{t("fam_invite_viewer")}</Text>
+                    </Pressable>
+                    <Text className="font-body text-[11px] text-ink-faint leading-4 mt-2">{t("fam_invite_viewer_hint")}</Text>
+                  </>
                 )}
               </View>
 
@@ -202,7 +244,14 @@ export default function FamilyScreen() {
                       <View className="w-9 h-9 rounded-full bg-cream-soft items-center justify-center mr-3">
                         <Icon name="family" size={16} color={theme.inkSoft} />
                       </View>
-                      <Text className="flex-1 font-body text-sm text-ink">{t("fam_other_parent")}</Text>
+                      <View className="flex-1">
+                        <Text className="font-body text-sm text-ink">
+                          {nameOf(m.memberId, m.role === "viewer" ? t("rel_grandparent") : t("fam_other_parent"))}
+                        </Text>
+                        <Text className="font-body text-[11px] text-ink-faint">
+                          {m.role === "viewer" ? t("fam_role_viewer") : t("fam_role_parent")}
+                        </Text>
+                      </View>
                       <Pressable
                         onPress={() => confirmLeave(m.memberId, household!.ownerId, false)}
                         hitSlop={8}
@@ -215,6 +264,16 @@ export default function FamilyScreen() {
                   ))
                 )}
               </View>
+
+              {members.some((m) => m.role === "viewer") ? (
+                <View style={shadows.soft} className="bg-surface rounded-xl2 p-4 mb-4 flex-row items-center">
+                  <View className="flex-1 mr-3">
+                    <Text className="font-bodySemibold text-sm text-ink">{t("fam_share_care")}</Text>
+                    <Text className="font-body text-xs text-ink-soft leading-5 mt-0.5">{t("fam_share_care_hint")}</Text>
+                  </View>
+                  <Switch value={shareCare} onValueChange={(v) => void toggleShareCare(v)} accessibilityLabel={t("fam_share_care")} />
+                </View>
+              ) : null}
 
               <View style={shadows.soft} className="bg-surface rounded-xl2 p-4">
                 <Text className="font-bodySemibold text-sm text-ink mb-1">{t("fam_have_code")}</Text>
@@ -248,9 +307,9 @@ export default function FamilyScreen() {
                   <Icon name="family" size={18} color="#6E7452" />
                 </View>
                 <View className="flex-1">
-                  <Text className="font-bodySemibold text-sm text-ink">{t("fam_member_title")}</Text>
+                  <Text className="font-bodySemibold text-sm text-ink">{myRole === "viewer" ? t("fam_viewer_title") : t("fam_member_title")}</Text>
                   <Text className="font-body text-xs text-ink-soft mt-0.5">
-                    {t("fam_member_body")}
+                    {myRole === "viewer" ? t("fam_viewer_body") : t("fam_member_body")}
                   </Text>
                 </View>
               </View>
