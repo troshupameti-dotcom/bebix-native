@@ -736,10 +736,11 @@ function buildValue(state: AppState, dispatch: React.Dispatch<Action>) {
       unarchiveFeedingEntry: (id: string) => update((cur) => ({ feedingLog: withUnarchive(cur.feedingLog, id) })),
 
       // ---- Sleep ----
-      startSleep: (isNap: boolean) => {
+      // `from`: kur vjen nga widget-i — id dhe ora e prekjes, jo e zbrazjes së radhës.
+      startSleep: (isNap: boolean, from?: { id: string; at: string }) => {
         const at = nowIso();
         const item: SleepEntry = {
-          id: uid(), startAt: at, endAt: null, pausedIntervalsMin: 0, pausedAt: null, isNap, quality: null,
+          id: from?.id ?? uid(), startAt: from?.at ?? at, endAt: null, pausedIntervalsMin: 0, pausedAt: null, isNap, quality: null,
           note: "", createdAt: at, updatedAt: at, editCount: 0, deletedAt: null, archivedAt: null,
         };
         update((cur) => ({ sleepLog: withAdd(cur.sleepLog, item) }));
@@ -766,9 +767,9 @@ function buildValue(state: AppState, dispatch: React.Dispatch<Action>) {
           };
         });
       },
-      endSleep: (id: string) => {
+      endSleep: (id: string, endAt?: string) => {
         const at = nowIso();
-        update((cur) => ({ sleepLog: cur.sleepLog.map((s) => (s.id === id ? { ...s, endAt: at, updatedAt: at, editCount: s.editCount + 1 } : s)) }));
+        update((cur) => ({ sleepLog: cur.sleepLog.map((s) => (s.id === id ? { ...s, endAt: endAt ?? at, updatedAt: at, editCount: s.editCount + 1 } : s)) }));
       },
       updateSleepEntry: (id: string, patch: Partial<SleepEntry>) =>
         update((cur) => {

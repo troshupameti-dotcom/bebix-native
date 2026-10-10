@@ -65,7 +65,27 @@
       "expo-web-browser",
       "expo-video",
       "@sentry/react-native",
-      "expo-apple-authentication"
+      "expo-apple-authentication",
+      [
+        "react-native-android-widget",
+        {
+          "widgets": [
+            {
+              "name": "BebixQuick",
+              "label": "Bebix",
+              "description": "Ushqimi, pelena dhe gjumi me një prekje",
+              "minWidth": "250dp",
+              "minHeight": "110dp",
+              "targetCellWidth": 4,
+              "targetCellHeight": 2,
+              "maxResizeWidth": "420dp",
+              "maxResizeHeight": "220dp",
+              "resizeMode": "horizontal|vertical",
+              "updatePeriodMillis": 1800000
+            }
+          ]
+        }
+      ]
     ],
     "extra": {
       "router": {

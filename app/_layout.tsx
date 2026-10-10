@@ -17,6 +17,7 @@ import { recordPath } from "@/lib/navigation/history";
 import { BrandSplash } from "@/components/ui/BrandSplash";
 import { MAX_CONTENT_WIDTH } from "@/lib/layout";
 import { OfflineBanner } from "@/components/ui/OfflineBanner";
+import { WidgetBridge } from "@/components/widgets/WidgetBridge";
 import { View } from "react-native";
 
 // Kur një ekran rrëzohet, shfaqet ky në vend të ekranit të bardhë.
@@ -60,6 +61,7 @@ function RootLayout() {
     <GestureHandlerRootView style={{ flex: 1 }}>
       <LanguageProvider>
         <AppStateProvider>
+          <WidgetBridge />
           <ToastProvider>
             <ThemedStack />
           </ToastProvider>

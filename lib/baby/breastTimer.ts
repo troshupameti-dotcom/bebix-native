@@ -1,4 +1,5 @@
 import AsyncStorage from "@react-native-async-storage/async-storage";
+import { DeviceEventEmitter } from "react-native";
 import type { BreastSide } from "@/lib/state/babyTypes";
 
 /**
@@ -75,6 +76,9 @@ export async function loadTimer(): Promise<BreastTimer | null> {
   }
 }
 
+/** Njofton widget-in që timeri nisi, ndërroi gji ose u ndal. */
+export const BREAST_TIMER_EVENT = "bebixBreastTimer";
+
 export async function saveTimer(timer: BreastTimer | null): Promise<void> {
   try {
     if (timer) await AsyncStorage.setItem(BREAST_TIMER_KEY, JSON.stringify(timer));
@@ -82,6 +86,7 @@ export async function saveTimer(timer: BreastTimer | null): Promise<void> {
   } catch {
     // Pa ruajtje: timeri vazhdon në ekran, por s'mbijeton mbylljen e app-it.
   }
+  DeviceEventEmitter.emit(BREAST_TIMER_EVENT);
 }
 
 /** Gjiri që sugjerohet herën tjetër: tjetri nga i fundit (rregulli i zakonshëm i ndërrimit). */
