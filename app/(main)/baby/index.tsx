@@ -26,6 +26,7 @@ import { NowCard } from "@/components/baby/NowCard";
 import { SyncBadge } from "@/components/baby/SyncBadge";
 import { DayClock } from "@/components/baby/DayClock";
 import { liveStatus, durationLabel } from "@/lib/baby/dayStats";
+import { isNapAt } from "@/lib/baby/sleepKind";
 import {
   buildDayClock,
   clockTotals,
@@ -166,7 +167,7 @@ export default function BabyProfileScreen() {
   function toggleSleep() {
     const ongoing = sleeps.find((entry) => !entry.endAt);
     if (ongoing) baby.endSleep(ongoing.id);
-    else baby.startSleep(true);
+    else baby.startSleep(isNapAt(new Date()));
   }
 
   function greeting() {

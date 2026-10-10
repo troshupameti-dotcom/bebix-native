@@ -3,6 +3,7 @@ import { AppState as RNAppState, DeviceEventEmitter, Platform } from "react-nati
 import { useAppState } from "@/lib/state/AppStateContext";
 import { useTranslation } from "@/lib/i18n/LanguageContext";
 import { BREAST_TIMER_EVENT, loadTimer } from "@/lib/baby/breastTimer";
+import { isNapAt } from "@/lib/baby/sleepKind";
 import { applyPending, planDrain, type WidgetAction } from "@/lib/widgets/queue";
 import { buildSnapshot, sameSnapshot } from "@/lib/widgets/snapshot";
 import { drainQueue, loadSnapshot, QUEUE_EVENT, saveSnapshot } from "@/lib/widgets/store";
@@ -42,7 +43,7 @@ export function WidgetBridge() {
       applied = planDrain(queue, { diaperLog: cur.baby.diaperLog, sleepLog: cur.baby.sleepLog });
       for (const a of applied) {
         if (a.kind === "diaper") actions.addDiaperEntry({ id: a.id, type: a.type, at: a.at });
-        else if (a.kind === "sleep_start") actions.startSleep(true, { id: a.id, at: a.at });
+        else if (a.kind === "sleep_start") actions.startSleep(isNapAt(a.at), { id: a.id, at: a.at });
         else actions.endSleep(a.sleepId, a.at);
       }
     }).then(async (count) => {
