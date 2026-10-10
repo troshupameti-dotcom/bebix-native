@@ -24,6 +24,7 @@ import { shadows } from "@/lib/shadows";
 import { useThemeColors } from "@/lib/theme/useThemeColors";
 import { NowCard } from "@/components/baby/NowCard";
 import { TodayCard } from "@/components/baby/TodayCard";
+import { DaySummaryCard } from "@/components/baby/DaySummaryCard";
 import { WeeklyRecapCard } from "@/components/baby/WeeklyRecapCard";
 import { MemoriesCard } from "@/components/baby/MemoriesCard";
 import { CelebrationModal } from "@/components/baby/CelebrationModal";
@@ -712,6 +713,9 @@ export default function BabyProfileScreen() {
             {/* Gjendja e castit dhe tre veprimet e perditshme — kjo pjese
                 vinte nga faqja e vjeter kryesore, ku rrinte nje tab larg
                 nga bebi dhe e perzier me produkte. */}
+            {/* Sot: ushqimet, pelenat, gjumi — krahasuar me dje në të njëjtën orë. */}
+            <DaySummaryCard feedings={feedings} sleeps={sleeps} diapers={diapers} />
+
             <NowCard status={status} onToggleSleep={toggleSleep} />
 
             {/* Si je sot? (privat, një herë në ditë) dhe, për mamin, javët pas lindjes. */}

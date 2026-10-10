@@ -107,6 +107,45 @@ export function buildDayRhythm(
   };
 }
 
+/**
+ * Shumat e një dite kalendarike (nga mesnata lokale e `day`), deri në
+ * `until` kur dita s'ka mbaruar ende ose kur krahasohet "deri në këtë orë".
+ *
+ *  - Ilaçet s'numërohen si ushqim (rrinë në të njëjtën listë).
+ *  - Gjumi që kapërcen mesnatën numërohet vetëm për pjesën brenda ditës.
+ *  - Gjumi që vazhdon: deri tani; i pauzuar: deri te pauza.
+ */
+export function dayTotals(
+  feedings: FeedingEntry[],
+  sleeps: SleepEntry[],
+  diapers: DiaperEntry[],
+  day: Date,
+  until: Date
+): TodayTotals {
+  const start = new Date(day.getFullYear(), day.getMonth(), day.getDate()).getTime();
+  const dayEnd = new Date(day.getFullYear(), day.getMonth(), day.getDate() + 1).getTime();
+  const end = Math.min(dayEnd, until.getTime());
+  const inside = (iso: string | null | undefined) => {
+    const t = time(iso);
+    return t !== null && t >= start && t < end;
+  };
+
+  let sleepMs = 0;
+  for (const sleep of sleeps) {
+    const from = time(sleep.startAt);
+    if (from === null) continue;
+    const to = time(sleep.endAt) ?? time(sleep.pausedAt) ?? until.getTime();
+    const overlap = Math.min(to, end) - Math.max(from, start);
+    if (overlap > 0) sleepMs += overlap;
+  }
+
+  return {
+    feedings: feedings.filter((f) => f.type !== "medicine" && inside(f.at)).length,
+    diapers: diapers.filter((d) => inside(d.at)).length,
+    sleepMinutes: Math.round(sleepMs / 60000),
+  };
+}
+
 /** Sa ka ndodhur sot — nga mesnata, jo 24 orët e fundit. */
 export function todayTotals(
   feedings: FeedingEntry[],
@@ -114,26 +153,43 @@ export function todayTotals(
   diapers: DiaperEntry[],
   now: Date = new Date()
 ): TodayTotals {
-  const midnight = new Date(now.getFullYear(), now.getMonth(), now.getDate()).getTime();
-  const end = now.getTime();
+  return dayTotals(feedings, sleeps, diapers, now, now);
+}
 
-  const feedingCount = feedings.filter((f) => (time(f.at) ?? 0) >= midnight).length;
-  const diaperCount = diapers.filter((d) => (time(d.at) ?? 0) >= midnight).length;
+/** "+1 nga dje" / "−30 min nga dje" / "njësoj si dje". Pa vlerësime — vetëm numra. */
+export function deltaLabel(delta: number, kind: "count" | "minutes", t: Translate): string {
+  if (delta === 0) return t("sum_same");
+  const sign = delta > 0 ? "+" : "−";
+  const abs = Math.abs(delta);
+  const value = kind === "minutes" ? durationLabel(abs, t) : String(abs);
+  return t("sum_vs_yesterday", { v: `${sign}${value}` });
+}
 
-  let sleepMs = 0;
-  for (const sleep of sleeps) {
-    const from = time(sleep.startAt);
-    if (from === null) continue;
-    const to = time(sleep.endAt) ?? end;
-    // Gjumi që kapërcen mesnatën numërohet vetëm për pjesën e sotme.
-    const overlap = Math.min(to, end) - Math.max(from, midnight);
-    if (overlap > 0) sleepMs += overlap;
-  }
+export type DayDelta = { feedings: number | null; diapers: number | null; sleepMinutes: number | null };
 
+/**
+ * Sot kundrejt dje, deri në të njëjtën orë (që në mëngjes të mos dalë "−6
+ * nga dje" vetëm sepse dita s'ka mbaruar). Krahasimi i një lloji jepet vetëm
+ * kur dje ka pasur të paktën një shënim të tij — përndryshe null.
+ */
+export function compareWithYesterday(
+  feedings: FeedingEntry[],
+  sleeps: SleepEntry[],
+  diapers: DiaperEntry[],
+  now: Date = new Date()
+): { today: TodayTotals; delta: DayDelta } {
+  const today = dayTotals(feedings, sleeps, diapers, now, now);
+  const yesterday = new Date(now.getFullYear(), now.getMonth(), now.getDate() - 1);
+  const sameTimeYesterday = new Date(now.getFullYear(), now.getMonth(), now.getDate() - 1, now.getHours(), now.getMinutes(), now.getSeconds());
+  const soFar = dayTotals(feedings, sleeps, diapers, yesterday, sameTimeYesterday);
+  const whole = dayTotals(feedings, sleeps, diapers, yesterday, new Date(now.getFullYear(), now.getMonth(), now.getDate()));
   return {
-    feedings: feedingCount,
-    diapers: diaperCount,
-    sleepMinutes: Math.round(sleepMs / 60000),
+    today,
+    delta: {
+      feedings: whole.feedings > 0 ? today.feedings - soFar.feedings : null,
+      diapers: whole.diapers > 0 ? today.diapers - soFar.diapers : null,
+      sleepMinutes: whole.sleepMinutes > 0 ? today.sleepMinutes - soFar.sleepMinutes : null,
+    },
   };
 }
 

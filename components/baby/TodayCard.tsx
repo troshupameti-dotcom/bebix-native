@@ -5,7 +5,6 @@ import { TONES, type Tone } from "@/components/baby/LogTiles";
 import { shadows } from "@/lib/shadows";
 import { useTranslation } from "@/lib/i18n/LanguageContext";
 import { formatTime } from "@/lib/dateUtils";
-import { durationLabel, todayTotals } from "@/lib/baby/dayStats";
 import { buildPredictions, type PredictedWindow } from "@/lib/baby/predictions";
 import type { DiaperEntry, FeedingEntry, SleepEntry } from "@/lib/state/babyTypes";
 import type { TranslationKey } from "@/lib/i18n/translations";
@@ -37,7 +36,6 @@ export function TodayCard({
     () => buildPredictions({ feedingLog: feedings, sleepLog: sleeps, diaperLog: diapers }, babyDob, now),
     [feedings, sleeps, diapers, babyDob, now]
   );
-  const totals = useMemo(() => todayTotals(feedings, sleeps, diapers, now), [feedings, sleeps, diapers, now]);
 
   const asleep = sleeps.some((s) => !s.endAt);
   const sleepWindow = asleep ? p.nextWake : p.nextSleep;
@@ -46,7 +44,7 @@ export function TodayCard({
     <View style={shadows.soft} className="mt-5 rounded-xl3 bg-surface p-4">
       <View className="mb-3 flex-row items-center gap-2">
         <Icon name="sparkle" size={15} color={TONES.amber.tint} />
-        <Text className="font-bodySemibold text-base text-ink">{t("today_card_title")}</Text>
+        <Text className="font-bodySemibold text-base text-ink">{t("pred_card_title")}</Text>
       </View>
 
       <PredictionRow
@@ -69,14 +67,8 @@ export function TodayCard({
         lang={lang}
       />
 
-      <Text className="mt-3.5 font-bodyMedium text-[13px] text-ink">
-        {t("today_totals", {
-          f: totals.feedings,
-          d: totals.diapers,
-          s: totals.sleepMinutes > 0 ? durationLabel(totals.sleepMinutes, t) : "0",
-        })}
-      </Text>
-      <Text className="mt-2 font-body text-[11px] leading-4 text-ink-faint">{t("pred_disclaimer")}</Text>
+      {/* Shumat e ditës janë te karta "Sot" (DaySummaryCard), në krye. */}
+      <Text className="mt-3 font-body text-[11px] leading-4 text-ink-faint">{t("pred_disclaimer")}</Text>
     </View>
   );
 }
