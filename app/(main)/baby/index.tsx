@@ -33,6 +33,9 @@ import { ShopSuggestionCard } from "@/components/shop/ShopSuggestionCard";
 import { FamilyView } from "@/components/baby/FamilyView";
 import { useHouseholdRole } from "@/lib/hooks/useHouseholdRole";
 import { NightMode } from "@/components/baby/NightMode";
+import { CheckInCard } from "@/components/parent/CheckInCard";
+import { DevelopmentCard } from "@/components/parent/DevelopmentCard";
+import { PostpartumCard } from "@/components/parent/PostpartumCard";
 import { setNightOverride, useNightMode } from "@/lib/baby/nightMode";
 import { SyncBadge } from "@/components/baby/SyncBadge";
 import { DayClock } from "@/components/baby/DayClock";
@@ -708,6 +711,10 @@ export default function BabyProfileScreen() {
                 nga bebi dhe e perzier me produkte. */}
             <NowCard status={status} onToggleSleep={toggleSleep} />
 
+            {/* Si je sot? (privat, një herë në ditë) dhe, për mamin, javët pas lindjes. */}
+            <CheckInCard parentName={profile.parentName} />
+            <PostpartumCard babyDob={profile.babyDob} relation={profile.relation} />
+
             {/* Dy prindër: kush bëri çfarë sot, faleminderit, turni i natës. */}
             <TeamCard />
 
@@ -716,6 +723,9 @@ export default function BabyProfileScreen() {
 
             {/* Çfarë vjen më pas, nga ritmi i vetë bebit. */}
             <TodayCard feedings={feedings} sleeps={sleeps} diapers={diapers} babyDob={profile.babyDob} />
+
+            {/* Këtë javë: çfarë mëson bebi + 3 ide loje (përmbajtja nga paneli). */}
+            <DevelopmentCard babyDob={profile.babyDob} />
 
             {/* Dyqani: një kartë e vetme (pelenat, madhësia, mosha), mbyllet me "Jo tani". */}
             <ShopSuggestionCard />

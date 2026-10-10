@@ -114,6 +114,7 @@ export default function MoreScreen() {
           title={t("section_account")}
           rows={[
             { icon: "family", label: t("family_title"), onPress: () => router.push("/more/family") },
+            { icon: "heart", label: t("care_title"), onPress: () => router.push("/(main)/baby/parent-care") },
             // Mysafiri s'ka llogari për të fshirë.
             ...(provider ? [{ icon: "close" as const, label: t("delete_account"), onPress: () => router.push("/more/delete-account") }] : []),
           ]}

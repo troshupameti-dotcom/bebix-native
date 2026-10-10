@@ -20,6 +20,7 @@ const BY_TYPE: Record<string, string> = {
   weekly: "/(main)/baby",
   team: "/(main)/baby",
   shift: "/(main)/baby",
+  care: "/(main)/baby/parent-care",
   offer: "/(main)/shop",
 };
 

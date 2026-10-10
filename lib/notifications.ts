@@ -166,6 +166,39 @@ export async function syncWeeklyRecapReminder(opts: { enabled: boolean; title: s
 }
 
 /**
+ * Kujtesë lokale që e ndez vetë prindi (p.sh. "Pi ujë" çdo ditë në 11:00, ose
+ * kontrolli pas lindjes një herë). `null` e heq. Kthen false kur s'u
+ * planifikua (pa leje ose pa modulin) — UI e kthen çelësin mbrapsht.
+ */
+export async function setLocalReminder(
+  id: string,
+  reminder: { title: string; body: string; daily?: { hour: number; minute: number }; date?: Date; route?: string } | null
+): Promise<boolean> {
+  const Notifications = loadNotifications();
+  if (!Notifications) return false;
+  try {
+    await Notifications.cancelScheduledNotificationAsync(id);
+    if (!reminder) return true;
+    let { status } = await Notifications.getPermissionsAsync();
+    // Prindi e ndezi vetë: këtu ka kuptim të kërkohet leja.
+    if (status !== "granted") status = (await Notifications.requestPermissionsAsync()).status;
+    if (status !== "granted") return false;
+    const trigger = reminder.date
+      ? { type: Notifications.SchedulableTriggerInputTypes.DATE, date: reminder.date, channelId: "default" }
+      : { type: Notifications.SchedulableTriggerInputTypes.DAILY, hour: reminder.daily?.hour ?? 9, minute: reminder.daily?.minute ?? 0, channelId: "default" };
+    await Notifications.scheduleNotificationAsync({
+      identifier: id,
+      content: { title: reminder.title, body: reminder.body, data: { type: "care", route: reminder.route ?? null } },
+      trigger,
+    });
+    return true;
+  } catch (e) {
+    log("Kujtesa s'u planifikua:", e);
+    return false;
+  }
+}
+
+/**
  * Dëgjon prekjen e njoftimeve dhe thërret `onOpen` me `data`-n e tyre — edhe
  * për njoftimin që e hapi app-in nga e mbyllura. Kthen funksionin që ndal dëgjimin.
  */
