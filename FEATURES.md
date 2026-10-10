@@ -79,6 +79,12 @@ Një **kartë e vetme sugjerimi** te faqja e bebit dhe në krye të Dyqanit, me 
 - Zgjedh foton nga momentet. Logoja e vogël Bebix del poshtë.
 - **"Ndaje"** hap listën e telefonit: Instagram, WhatsApp, ose ruaje te fotot.
 
+## "Çfarë ka të re"
+- **Çfarë bën:** pas build-it të ri, faqja e bebit hap një herë listën e veçorive të reja. Prekja e një rreshti të çon te veçoria.
+- **Kush e sheh:** vetëm ata që e kishin përdorur app-in më parë. Përdoruesit e rinj s'e shohin.
+- **Ku e rihap:** **Më shumë → Çfarë ka të re**.
+- **Herën tjetër:** për një listë të re, ndrysho `WHATS_NEW_VERSION` dhe rreshtat te `lib/whatsNew.ts`; ekrani del sërish një herë.
+
 ---
 
 ## Çfarë pret llogarinë Apple

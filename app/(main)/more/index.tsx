@@ -123,6 +123,7 @@ export default function MoreScreen() {
         <Section
           title={t("section_help")}
           rows={[
+            { icon: "sparkle", label: t("wn_title"), onPress: () => router.push("/more/whats-new") },
             { icon: "comment", label: t("help_center"), onPress: () => router.push("/more/help") },
             { icon: "family", label: t("about_bebix"), onPress: () => router.push("/more/about") },
             { icon: "lock", label: t("legal"), onPress: () => router.push("/more/legal") },

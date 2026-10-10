@@ -33,6 +33,7 @@ import { ShopSuggestionCard } from "@/components/shop/ShopSuggestionCard";
 import { FamilyView } from "@/components/baby/FamilyView";
 import { useHouseholdRole } from "@/lib/hooks/useHouseholdRole";
 import { NightMode } from "@/components/baby/NightMode";
+import { WhatsNewModal } from "@/components/WhatsNew";
 import { CheckInCard } from "@/components/parent/CheckInCard";
 import { DevelopmentCard } from "@/components/parent/DevelopmentCard";
 import { PostpartumCard } from "@/components/parent/PostpartumCard";
@@ -129,7 +130,7 @@ function DayTile({ color, label, value }: { color: string; label: string; value:
 
 export default function BabyProfileScreen() {
   const { t, lang } = useTranslation();
-  const { state, baby, updateProfile } = useAppState();
+  const { state, baby, updateProfile, hydrated } = useAppState();
   const { showToast } = useToast();
   const { profile } = state;
   const b = state.baby;
@@ -303,6 +304,8 @@ export default function BabyProfileScreen() {
   const role = useHouseholdRole();
   // Ora 3 e natës: ekran i errët me butona të mëdhenj (vetë natën ose me 🌙).
   const night = useNightMode();
+  // "Çfarë ka të re" del një herë pas përditësimit; festimi pret derisa të mbyllet.
+  const [whatsNewOpen, setWhatsNewOpen] = useState(false);
   const ageText = profile.babyDob ? computeAgeText(profile.babyDob, lang) : "";
   const upcomingVaccineCount = active(b.vaccines).filter((v) => !v.givenDate).length;
   const growth = useMemo(() => latestGrowth(b.growthHistory), [b.growthHistory]);
@@ -1204,7 +1207,13 @@ export default function BabyProfileScreen() {
           }}
         />
       </BottomSheet>
-      <CelebrationModal celebration={celebration.current} babyName={babyName} onClose={celebration.dismiss} />
+      {hydrated ? (
+        <WhatsNewModal
+          hasHistory={!!profile.babyName || b.feedingLog.length + b.diaperLog.length + b.sleepLog.length + b.moments.length > 0}
+          onVisibleChange={setWhatsNewOpen}
+        />
+      ) : null}
+      <CelebrationModal celebration={whatsNewOpen ? null : celebration.current} babyName={babyName} onClose={celebration.dismiss} />
     </SafeAreaView>
   );
 }
