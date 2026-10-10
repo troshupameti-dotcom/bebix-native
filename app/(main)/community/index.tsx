@@ -8,6 +8,7 @@ import { Icon } from "@/components/ui/Icon";
 import { useThemeColors } from "@/lib/theme/useThemeColors";
 import { shadows } from "@/lib/shadows";
 import { PostCard } from "@/components/community/PostCard";
+import { DailyQuestionCard } from "@/components/community/DailyQuestionCard";
 import { logWarn } from "@/lib/log";
 import { useSpecialties } from "@/lib/community/useSpecialties";
 import { specialtyLabel } from "@/lib/community/specialties";
@@ -74,6 +75,8 @@ export default function CommunityScreen() {
   const [refreshing, setRefreshing] = useState(false);
   const [failed, setFailed] = useState(false);
   const [newPosts, setNewPosts] = useState(false);
+  // Rifreskon "Pyetjen e ditës" bashkë me rrjedhën (tërhiqje poshtë, kthim te skeda).
+  const [questionKey, setQuestionKey] = useState(0);
 
   // Filtrat aktualë, të lexueshëm nga funksionet e qëndrueshme (pa i rikrijuar sa herë shkruan një shkronjë).
   // Ndryshohen vetëm nga `changeFilters`, ndaj ky ref është gjithmonë i njëjtë me gjendjen `filters`.
@@ -167,6 +170,7 @@ export default function CommunityScreen() {
 
   const onRefresh = useCallback(async () => {
     setRefreshing(true);
+    setQuestionKey((k) => k + 1);
     await Promise.all([loadStatic(), reload({ reset: true, spinner: false })]);
     setRefreshing(false);
   }, [loadStatic, reload]);
@@ -192,6 +196,7 @@ export default function CommunityScreen() {
       void reload(firstFocus.current ? { reset: true, spinner: true } : { reset: false, spinner: false });
       // Grupet, ekspertët, temat dhe këshillat (numrat, "ndjekur") rifreskohen sa herë kthehesh këtu.
       void loadStatic();
+      setQuestionKey((k) => k + 1);
       firstFocus.current = false;
       const id = setInterval(() => void checkNewPosts(), NEW_POSTS_POLL_MS);
       return () => clearInterval(id);
@@ -246,6 +251,13 @@ export default function CommunityScreen() {
 
   const header = (
     <View>
+      {/* Pyetja e ditës: arsye për të hyrë pa shkruar postim të gjatë (vetëm te "Për ty", pa filtra). */}
+      {tab === "all" && !filtering ? (
+        <View className="-mt-4 mb-3">
+          <DailyQuestionCard refreshKey={questionKey} />
+        </View>
+      ) : null}
+
       <View className="px-5">
         <View className="flex-row items-center bg-surface border border-cream-line rounded-xl2 px-3.5 py-2.5">
           <Icon name="search" size={18} color={theme.inkFaint} />

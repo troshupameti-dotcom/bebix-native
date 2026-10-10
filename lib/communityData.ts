@@ -536,7 +536,7 @@ export async function toggleSave(postId: string, saved: boolean) {
 // ---------------------------------------------------------------------
 
 /** Cilët nga këta përdorues janë ekspertë të verifikuar (user_id -> lloji dhe reparti). */
-async function expertsByUserId(userIds: string[]): Promise<Map<string, CommentExpert>> {
+export async function expertsByUserId(userIds: string[]): Promise<Map<string, CommentExpert>> {
   const map = new Map<string, CommentExpert>();
   if (userIds.length === 0) return map;
   let res = await supabase.from("community_experts").select("user_id,kind,specialty_key").in("user_id", userIds);
