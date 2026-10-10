@@ -11,6 +11,10 @@ import { BabyModuleState } from "@/lib/state/types";
 import type { BabyProfile } from "@/lib/state/types";
 import { active } from "@/lib/state/AppStateContext";
 import { buildHealthReportHtml } from "@/lib/healthReport";
+import { buildFirstYearBook, buildFirstYearBookHtml } from "@/lib/firstYearBook";
+import { isLocalFileUri, signedUrlForMoment } from "@/lib/baby/momentPhotos";
+import { File, Paths } from "expo-file-system";
+import type { Moment } from "@/lib/state/babyTypes";
 
 type ExportRow = { kind: string; date: string; title: string; details: string };
 
@@ -91,5 +95,37 @@ export async function exportAsCSV(b: BabyModuleState, babyName: string) {
 export async function exportAsPDF(profile: BabyProfile, b: BabyModuleState, lang: "sq" | "en", babyLabel: string) {
   const html = buildHealthReportHtml(profile, b, lang, new Date(), babyLabel);
   const { uri } = await Print.printToFileAsync({ html });
+  await shareFile(uri, "application/pdf");
+}
+
+/** Foto e një momenti si data URI për PDF-në: skedari lokal lexohet direkt, ai i serverit shkarkohet përkohësisht. */
+async function momentDataUri(m: Moment): Promise<string | null> {
+  const mime = /\.png($|\?)/i.test(m.storagePath ?? m.uri ?? "") ? "image/png" : "image/jpeg";
+  try {
+    if (isLocalFileUri(m.uri)) return `data:${mime};base64,${await new File(m.uri).base64()}`;
+    if (!m.storagePath) return null;
+    const url = await signedUrlForMoment(m.storagePath);
+    if (!url) return null;
+    const tmp = await File.downloadFileAsync(url, new File(Paths.cache, `book-${m.id}.img`), { idempotent: true });
+    try {
+      return `data:${mime};base64,${await tmp.base64()}`;
+    } finally {
+      tmp.delete();
+    }
+  } catch {
+    // Foto që s'lexohet (fshirë, pa rrjet): faqja del pa të, libri vazhdon.
+    return null;
+  }
+}
+
+/** "Libri i vitit të parë" si PDF (shih lib/firstYearBook.ts). */
+export async function exportFirstYearBook(profile: BabyProfile, b: BabyModuleState, lang: "sq" | "en", babyLabel: string) {
+  const book = buildFirstYearBook(profile, b, new Date(), babyLabel);
+  const images: Record<string, string> = {};
+  for (const m of book.months.flatMap((mm) => mm.photos)) {
+    const uri = await momentDataUri(m);
+    if (uri) images[m.id] = uri;
+  }
+  const { uri } = await Print.printToFileAsync({ html: buildFirstYearBookHtml(book, lang, images) });
   await shareFile(uri, "application/pdf");
 }

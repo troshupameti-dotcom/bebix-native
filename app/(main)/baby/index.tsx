@@ -25,6 +25,9 @@ import { useThemeColors } from "@/lib/theme/useThemeColors";
 import { NowCard } from "@/components/baby/NowCard";
 import { TodayCard } from "@/components/baby/TodayCard";
 import { WeeklyRecapCard } from "@/components/baby/WeeklyRecapCard";
+import { MemoriesCard } from "@/components/baby/MemoriesCard";
+import { CelebrationModal } from "@/components/baby/CelebrationModal";
+import { useCelebration } from "@/lib/baby/useCelebration";
 import { SyncBadge } from "@/components/baby/SyncBadge";
 import { DayClock } from "@/components/baby/DayClock";
 import { liveStatus, durationLabel } from "@/lib/baby/dayStats";
@@ -283,6 +286,8 @@ export default function BabyProfileScreen() {
 
   // Pa emër: "Bebi", jo emri demo "Elira" që u dilte të gjithë prindërve pa emër.
   const babyName = profile.nickname || profile.babyName || t("your_baby");
+  // Dita e 100-të, muajt, ditëlindja, arritjet e reja — një herë secila.
+  const celebration = useCelebration(profile.babyDob, b.moments);
   const ageText = profile.babyDob ? computeAgeText(profile.babyDob, lang) : "";
   const upcomingVaccineCount = active(b.vaccines).filter((v) => !v.givenDate).length;
   const growth = useMemo(() => latestGrowth(b.growthHistory), [b.growthHistory]);
@@ -672,6 +677,9 @@ export default function BabyProfileScreen() {
 
             {/* Çfarë vjen më pas, nga ritmi i vetë bebit. */}
             <TodayCard feedings={feedings} sleeps={sleeps} diapers={diapers} babyDob={profile.babyDob} />
+
+            {/* Kujtimet: sot para 1 muaji / 1 viti, filmi i muajit, kapsula, libri. */}
+            <MemoriesCard baby={b} profile={profile} babyName={babyName} />
 
             <DayClock
               clock={clock}
@@ -1144,6 +1152,7 @@ export default function BabyProfileScreen() {
           }}
         />
       </BottomSheet>
+      <CelebrationModal celebration={celebration.current} babyName={babyName} onClose={celebration.dismiss} />
     </SafeAreaView>
   );
 }
