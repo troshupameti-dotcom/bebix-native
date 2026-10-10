@@ -85,7 +85,33 @@
             }
           ]
         }
-      ]
+      ],
+      [
+        "expo-widgets",
+        {
+          "bundleIdentifier": "com.bebix.app.widgets",
+          "groupIdentifier": "group.com.bebix.app",
+          "frequentUpdates": false,
+          "widgets": [
+            {
+              "name": "BebixQuick",
+              "displayName": "Bebix",
+              "description": "Ushqimi, pelena dhe gjumi me një prekje",
+              "ios": {
+                "supportedFamilies": [
+                  "systemSmall",
+                  "systemMedium",
+                  "accessoryRectangular",
+                  "accessoryCircular",
+                  "accessoryInline"
+                ]
+              }
+            }
+          ]
+        }
+      ],
+      "./plugins/withBebixShortcuts",
+      "./plugins/withBebixAppIntents"
     ],
     "extra": {
       "router": {

@@ -1,4 +1,5 @@
-import { useMemo, useState } from "react";
+import { useCallback, useMemo, useState } from "react";
+import { JustSaved } from "@/components/baby/JustSaved";
 import { View, Text, ScrollView, Pressable } from "react-native";
 import { MotiView } from "moti";
 import { SafeAreaView } from "react-native-safe-area-context";
@@ -92,6 +93,21 @@ export default function SleepScreen() {
   }
   const editingEntry = editingId ? log.find((e) => e.id === editingId) : null;
 
+  // "U ruajt · Ndrysho · Fshi" pas nisjes ose mbarimit të gjumit, si te ushqyerja dhe pelenat.
+  const [justSaved, setJustSaved] = useState<{ id: string; key: string; text: string } | null>(null);
+  const clearJustSaved = useCallback(() => setJustSaved(null), []);
+  function start(isNap: boolean) {
+    haptics.success();
+    const id = `s${Date.now().toString(36)}${Math.random().toString(36).slice(2, 6)}`;
+    baby.startSleep(isNap, { id, at: new Date().toISOString() });
+    setJustSaved({ id, key: `${id}:start`, text: t("sleep_saved_start") });
+  }
+  function stop(id: string) {
+    haptics.success();
+    baby.endSleep(id);
+    setJustSaved({ id, key: `${id}:end`, text: t("sleep_saved_end") });
+  }
+
   return (
     <SafeAreaView className="flex-1 bg-cream" edges={["top"]}>
       <View className="flex-row items-center gap-3 px-4 pb-3 pt-2">
@@ -153,7 +169,7 @@ export default function SleepScreen() {
                         {entry.pausedAt ? t("sleep_resume") : t("sleep_pause")}
                       </Text>
                     </Pressable>
-                    <Pressable onPress={() => baby.endSleep(entry.id)} className="rounded-full bg-ink px-3 py-1.5">
+                    <Pressable onPress={() => stop(entry.id)} className="rounded-full bg-ink px-3 py-1.5">
                       <Text className="font-bodySemibold text-[11px] text-cream">{t("sleep_end")}</Text>
                     </Pressable>
                   </View>
@@ -166,13 +182,30 @@ export default function SleepScreen() {
         )}
       </ScrollView>
 
-      <View className="flex-row gap-2.5 px-5 pb-6">
+      {justSaved ? (
+        <View className="px-5">
+          <JustSaved
+            savedKey={justSaved.key}
+            text={justSaved.text}
+            onDone={clearJustSaved}
+            onEdit={() => {
+              const entry = log.find((e) => e.id === justSaved.id);
+              setJustSaved(null);
+              if (entry) openEdit(entry);
+            }}
+            onDelete={() => {
+              const id = justSaved.id;
+              setJustSaved(null);
+              baby.deleteSleepEntry(id);
+              showToast(t("deleted_toast"), () => baby.restoreSleepEntry(id));
+            }}
+          />
+        </View>
+      ) : null}
+      <View className="flex-row gap-2.5 px-5 pb-6 pt-3">
         <Pressable
           disabled={!!ongoing}
-          onPress={() => {
-            haptics.tap();
-            baby.startSleep(true);
-          }}
+          onPress={() => start(true)}
           className={`flex-1 flex-row items-center justify-center gap-2 rounded-2xl py-4 ${ongoing ? "bg-ink/30" : "bg-ink"}`}
         >
           <Icon name="moon" size={16} color="#FBF6EE" />
@@ -180,10 +213,7 @@ export default function SleepScreen() {
         </Pressable>
         <Pressable
           disabled={!!ongoing}
-          onPress={() => {
-            haptics.tap();
-            baby.startSleep(false);
-          }}
+          onPress={() => start(false)}
           className={`flex-1 flex-row items-center justify-center gap-2 rounded-2xl py-4 ${ongoing ? "bg-ink/30" : "bg-olive"}`}
         >
           <Icon name="moon" size={16} color="#FBF6EE" />

@@ -6,7 +6,10 @@ Widget-i në ekranin kryesor të telefonit tregon kur u ushqye bebi, kur u ndër
 |---|---|
 | Android: widget-i në ekranin kryesor | ✅ gati për provë |
 | Lidhjet `bebix://` (për widget, Shortcuts, NFC) | ✅ gati |
-| iPhone: widget-et, ekrani i kyçur, Dynamic Island | ⏳ faza tjetër (duhet llogaria Apple) |
+| Android: shortcuts (mbaj gishtin mbi ikonën) | ✅ gati për provë |
+| Modaliteti i natës (ora 3 e natës) | ✅ gati për provë |
+| iPhone: widget-et, ekrani i kyçur, Live Activity / Dynamic Island | ✅ i shkruar, ⏳ provohet pas llogarisë Apple |
+| iPhone: Siri ("Hey Siri, Bebix wet diaper") | ✅ i shkruar, ⏳ provohet pas llogarisë Apple |
 | Ora (Apple Watch / Wear OS) | 📝 vetëm plani |
 
 ---
@@ -89,30 +92,54 @@ adb shell am start -a android.intent.action.VIEW -d "bebix://log/diaper?type=wet
 
 ---
 
-## b) Pas pagesës së Apple Developer ($99/vit)
+## b) Shortcuts në Android dhe modaliteti i natës (provohen tani)
 
-Kjo bëhet në fazën tjetër. Hapat që do të duhen:
+**Shortcuts:** mbaj gishtin mbi ikonën e Bebix. Dalin **E lagët**, **Bajga**, **Gjumi** dhe **Ushqim**.
+- Mund t'i tërheqësh edhe si ikona më vete në ekranin kryesor.
+- Shënojnë njësoj si widget-i: me orën e prekjes, pa dyfishim, edhe pa internet.
+- Google Assistant: "Hey Google, hap Bebix" punon kudo. Thirrja e një shortcut-i me emër ("Hey Google, Bebix E lagët") varet nga telefoni dhe gjuha. Shqipja s'mbështetet nga Assistant-i, ndaj në anglisht përdor emrat "Wet", "Dirty", "Sleep".
 
-1. **Llogaria Apple Developer** (si person, ose si kompani pas D-U-N-S).
-2. Unë shtoj **`expo-widgets`**: libraria zyrtare e Expo SDK 57 për widget-et e iPhone-it dhe Live Activities. E zgjodha në vend të `@bacons/apple-targets`, sepse është pjesë e Expo dhe s'kërkon kod Swift më vete.
-   - Widget i vogël dhe i mesëm, plus widget-et e ekranit të kyçur.
-   - Butonat brenda widget-it (iOS 17+) për pelenën dhe gjumin, me të njëjtën radhë si në Android.
-   - **Live Activity / Dynamic Island**: timeri i gjumit dhe i gjirit numëron në ekranin e kyçur.
-   - App Group: `group.com.bebix.app`.
-3. Ti ekzekuton:
-   ```powershell
-   npx eas-cli build -p ios --profile preview
-   ```
-   EAS të kërkon të hysh me Apple ID. Certifikatat, App Group-in dhe identifikuesin e widget-it (`com.bebix.app.widgets`) i krijon vetë.
-4. Për ta instaluar në iPhone pa App Store, regjistro telefonin një herë:
-   ```powershell
-   npx eas-cli device:create
-   ```
-5. Për App Store: `npx eas-cli build -p ios --profile production`, pastaj `npx eas-cli submit -p ios`.
+**Modaliteti i natës:**
+- Ndizet vetë **22:00–06:00**. E fik ose e ndez te Më shumë → Pamja → "Modaliteti i natës automatikisht".
+- E ndez edhe me **🌙** lart te faqja e bebit.
+- Ekrani bëhet shumë i errët, me ngjyrë të ngrohtë, pa animacione, me 4 butona të mëdhenj poshtë: Ushqim, E lagët, Bajga, Fli/U zgjua.
+- Butoni i ushqimit ndjek llojin e fundit: gjiri nis/ndal timerin, biberoni ruan sasinë e fundit.
+- Pas çdo prekjeje: dridhje + "✓ U ruajt · Anulo".
+- **Dil** e fik deri në mëngjes (07:00).
+
+**"U ruajt" pas çdo shënimi:** ushqyerja, pelenat dhe tani edhe gjumi (nisja dhe mbarimi) kanë shiritin "U ruajt · Ndrysho · Fshi".
 
 ---
 
-## c) Google Play
+## c) Pas pagesës së Apple Developer ($99/vit)
+
+Kodi i iPhone-it është **i shkruar dhe gati për build**. S'është provuar ende, sepse pa llogari Apple s'bëhet build për iOS.
+
+Çfarë përmban:
+- **Widget-et** (`expo-widgets`, libraria zyrtare e Expo SDK 57): i vogël, i mesëm (me lidhjet E lagët / Bajga / Gjumi) dhe tre për ekranin e kyçur. Ndjekin temën e errët/çelët dhe gjuhën e app-it.
+- **Live Activity / Dynamic Island:** kur nis gjumi ose timeri i gjirit, kohëmatësi numëron vetë në ekranin e kyçur dhe në Dynamic Island. Mbyllet vetë kur mbaron.
+- **Siri / Shortcuts:** "Hey Siri, log a wet diaper in Bebix", "Bebix dirty diaper", "Bebix sleep", "Log a feeding in Bebix". Siri s'flet shqip, ndaj frazat janë në anglisht. Në app-in Shortcuts mund t'i riemërtosh si të duash.
+- App Group: `group.com.bebix.app`; identifikuesi i widget-it: `com.bebix.app.widgets`.
+
+Hapat:
+1. **Llogaria Apple Developer** (si person, ose si kompani pas D-U-N-S).
+2. Ti ekzekuton:
+   ```powershell
+   npx eas-cli build -p ios --profile preview
+   ```
+   EAS të kërkon të hysh me Apple ID. Certifikatat, App Group-in dhe identifikuesin e widget-it i krijon vetë.
+3. Për ta instaluar në iPhone pa App Store, regjistro telefonin një herë:
+   ```powershell
+   npx eas-cli device:create
+   ```
+4. Provo: shto widget-in, nis një gjumë (duhet të dalë Live Activity) dhe thuaj "Hey Siri, Bebix wet diaper".
+5. Për App Store: `npx eas-cli build -p ios --profile production`, pastaj `npx eas-cli submit -p ios`.
+
+**Nëse build-i i parë i iOS dështon:** dërgoma log-un e EAS. Si zgjidhje e përkohshme, hiq nga `app.json` rreshtin `"./plugins/withBebixAppIntents"` (Siri) ose blloku `"expo-widgets"` (widget-et), dhe pjesa tjetër ndërtohet normalisht.
+
+---
+
+## d) Google Play
 
 Widget-i s'kërkon asgjë të veçantë nga Google Play: shkon brenda të njëjtit app.
 
@@ -127,7 +154,7 @@ Widget-i s'kërkon asgjë të veçantë nga Google Play: shkon brenda të njëjt
 
 ---
 
-## d) Ora (vetëm plani, s'është ndërtuar)
+## e) Ora (vetëm plani, s'është ndërtuar)
 
 - **Apple Watch:** shtohet pas iOS-it. Tri butona të mëdhenj (pelenë, fle/u zgjua, ushqeva) dhe "komplikacion" në fytyrën e orës me orën e ushqimit të fundit. Përdor të njëjtën radhë: ora dërgon veprimin te iPhone-i, iPhone-i e shkruan në ditar.
 - **Wear OS (Samsung Galaxy Watch):** "Tile" me të njëjtat tri butona, i lidhur me telefonin.

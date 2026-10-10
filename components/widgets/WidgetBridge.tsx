@@ -7,9 +7,15 @@ import { isNapAt } from "@/lib/baby/sleepKind";
 import { applyPending, planDrain, type WidgetAction } from "@/lib/widgets/queue";
 import { buildSnapshot, sameSnapshot } from "@/lib/widgets/snapshot";
 import { drainQueue, loadSnapshot, QUEUE_EVENT, saveSnapshot } from "@/lib/widgets/store";
+import { syncIosWidgets } from "@/lib/widgets/iosSync";
+import type { WidgetSnapshot } from "@/lib/widgets/snapshot";
 
-/** Rivizatimi i widget-eve në ekranin kryesor (vetëm Android tani; iOS në fazën tjetër). */
-async function reloadWidgets() {
+/** Rivizatimi i widget-eve: Android (react-native-android-widget) dhe iPhone (expo-widgets + Live Activity). */
+async function reloadWidgets(snapshot: WidgetSnapshot | null) {
+  if (Platform.OS === "ios") {
+    if (snapshot) await syncIosWidgets(snapshot);
+    return;
+  }
   if (Platform.OS !== "android") return;
   try {
     // eslint-disable-next-line @typescript-eslint/no-require-imports
@@ -52,7 +58,7 @@ export function WidgetBridge() {
       // për një çast te gjendja e vjetër (radha tani është bosh).
       const updated = applyPending(await loadSnapshot(), applied);
       if (updated) await saveSnapshot(updated);
-      await reloadWidgets();
+      await reloadWidgets(updated);
     });
   }, []);
 
@@ -82,7 +88,7 @@ export function WidgetBridge() {
       const next = buildSnapshot({ lang, babyName, feedingLog, diaperLog, sleepLog, breastTimer, now: new Date() });
       if (!alive || sameSnapshot(await loadSnapshot(), next)) return;
       await saveSnapshot(next);
-      await reloadWidgets();
+      await reloadWidgets(next);
     }, 300);
     return () => {
       alive = false;

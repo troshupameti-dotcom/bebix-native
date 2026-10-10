@@ -32,6 +32,8 @@ import { TeamCard } from "@/components/baby/TeamCard";
 import { ShopSuggestionCard } from "@/components/shop/ShopSuggestionCard";
 import { FamilyView } from "@/components/baby/FamilyView";
 import { useHouseholdRole } from "@/lib/hooks/useHouseholdRole";
+import { NightMode } from "@/components/baby/NightMode";
+import { setNightOverride, useNightMode } from "@/lib/baby/nightMode";
 import { SyncBadge } from "@/components/baby/SyncBadge";
 import { DayClock } from "@/components/baby/DayClock";
 import { liveStatus, durationLabel } from "@/lib/baby/dayStats";
@@ -175,8 +177,10 @@ export default function BabyProfileScreen() {
 
   function toggleSleep() {
     const ongoing = sleeps.find((entry) => !entry.endAt);
+    haptics.success();
     if (ongoing) baby.endSleep(ongoing.id);
     else baby.startSleep(isNapAt(new Date()));
+    showToast(t(ongoing ? "sleep_saved_end" : "sleep_saved_start"));
   }
 
   function greeting() {
@@ -294,6 +298,8 @@ export default function BabyProfileScreen() {
   const celebration = useCelebration(profile.babyDob, b.moments);
   // Gjyshërit (vetëm shikim) shohin pamjen e familjes, pa butona shënimi.
   const role = useHouseholdRole();
+  // Ora 3 e natës: ekran i errët me butona të mëdhenj (vetë natën ose me 🌙).
+  const night = useNightMode();
   const ageText = profile.babyDob ? computeAgeText(profile.babyDob, lang) : "";
   const upcomingVaccineCount = active(b.vaccines).filter((v) => !v.givenDate).length;
   const growth = useMemo(() => latestGrowth(b.growthHistory), [b.growthHistory]);
@@ -582,6 +588,8 @@ export default function BabyProfileScreen() {
   }
 
 
+  if (night.active && role !== "viewer") return <NightMode />;
+
   if (role === "viewer") {
     return (
       <>
@@ -601,6 +609,19 @@ export default function BabyProfileScreen() {
           <Text className="font-display text-2xl text-ink">{babyName}</Text>
         </View>
         <View className="flex-row gap-2">
+          <Pressable
+            onPress={() => {
+              haptics.tap();
+              setNightOverride("on");
+            }}
+            hitSlop={6}
+            accessibilityRole="button"
+            accessibilityLabel={t("night_turn_on")}
+            className="h-9 w-9 items-center justify-center rounded-full bg-surface"
+            style={shadows.press}
+          >
+            <Icon name="moon" size={16} color={isDark ? "#F7F1E4" : "#2C271F"} />
+          </Pressable>
           <Pressable
             onPress={() => router.push("/(main)/notifications")}
             hitSlop={6}
