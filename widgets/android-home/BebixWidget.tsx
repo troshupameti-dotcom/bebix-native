@@ -97,11 +97,15 @@ function Body({ snapshot, p, lang, now, compact }: { snapshot: WidgetSnapshot | 
       ? wt(lang, "widget_awake")
       : "";
   const feedValue = s.breastSince ? clockLabel(s.breastSince, now) : s.feeding ? clockLabel(s.feeding.at, now) : none;
+  // Ushqimi tjetër i parashikuar, kur ende s'ka ardhur ora; përndryshe lloji i të fundit.
+  const nextFeed = s.nextFeedingAt && new Date(s.nextFeedingAt).getTime() > now.getTime() ? s.nextFeedingAt : null;
   const feedDetail = s.breastSince
     ? wt(lang, "widget_breast_running")
-    : s.feeding
-      ? feedingLabel(lang, s.feeding.type)
-      : "";
+    : nextFeed
+      ? wt(lang, "widget_next", { time: clockLabel(nextFeed, now) })
+      : s.feeding
+        ? feedingLabel(lang, s.feeding.type)
+        : "";
 
   return (
     <FlexWidget

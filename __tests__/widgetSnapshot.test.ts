@@ -41,6 +41,14 @@ describe("pamja e widget-it", () => {
     expect(s.lastWakeAt).toBe("2026-10-10T07:30:00Z");
   });
 
+  it("ushqimi tjetër i parashikuar kalon te pamja (widget-i: 'Tjetri ~16:00')", () => {
+    const feedingLog: FeedingEntry[] = [];
+    for (const d of [6, 7, 8, 9, 10]) for (let h = 7; h <= 13; h += 3) feedingLog.push(feed(`f${d}${h}`, new Date(2026, 9, d, h).toISOString()));
+    const s = buildSnapshot({ ...base, feedingLog, now: new Date(2026, 9, 10, 14) });
+    expect(s.nextFeedingAt).toBe(new Date(2026, 9, 10, 16).toISOString());
+    expect(buildSnapshot(base).nextFeedingAt).toBeNull();
+  });
+
   it("timeri i gjirit kalon te pamja", () => {
     const s = buildSnapshot({ ...base, breastTimer: { startedAt: "2026-10-10T11:50:00Z", side: "left", sides: ["left"] } });
     expect(s.breastSince).toBe("2026-10-10T11:50:00Z");

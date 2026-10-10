@@ -23,6 +23,8 @@ import { computeAgeText, formatDate, formatTime } from "@/lib/dateUtils";
 import { shadows } from "@/lib/shadows";
 import { useThemeColors } from "@/lib/theme/useThemeColors";
 import { NowCard } from "@/components/baby/NowCard";
+import { TodayCard } from "@/components/baby/TodayCard";
+import { WeeklyRecapCard } from "@/components/baby/WeeklyRecapCard";
 import { SyncBadge } from "@/components/baby/SyncBadge";
 import { DayClock } from "@/components/baby/DayClock";
 import { liveStatus, durationLabel } from "@/lib/baby/dayStats";
@@ -664,6 +666,12 @@ export default function BabyProfileScreen() {
                 vinte nga faqja e vjeter kryesore, ku rrinte nje tab larg
                 nga bebi dhe e perzier me produkte. */}
             <NowCard status={status} onToggleSleep={toggleSleep} />
+
+            {/* E hënë–e mërkurë: java e kaluar, vetëm lajmet e mira si trend. */}
+            <WeeklyRecapCard feedings={feedings} sleeps={sleeps} diapers={diapers} babyName={profile.babyName} />
+
+            {/* Çfarë vjen më pas, nga ritmi i vetë bebit. */}
+            <TodayCard feedings={feedings} sleeps={sleeps} diapers={diapers} babyDob={profile.babyDob} />
 
             <DayClock
               clock={clock}

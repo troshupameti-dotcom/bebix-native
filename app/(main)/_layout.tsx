@@ -1,5 +1,5 @@
 import { log } from "@/lib/log";
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Tabs, router, usePathname } from "expo-router";
 import { BackHandler, View } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
@@ -8,7 +8,9 @@ import { useTranslation } from "@/lib/i18n/LanguageContext";
 import { TranslationKey } from "@/lib/i18n/translations";
 import { useOnboardingStatus } from "@/lib/hooks/useOnboardingStatus";
 import { useThemeColors } from "@/lib/theme/useThemeColors";
-import { listenForNotificationOpens, registerForPushNotificationsAsync } from "@/lib/notifications";
+import { listenForNotificationOpens, registerForPushNotificationsAsync, syncWeeklyRecapReminder } from "@/lib/notifications";
+import { isNotificationEnabled } from "@/lib/notifications/catalog";
+import { useAppState } from "@/lib/state/AppStateContext";
 import { routeForNotification } from "@/lib/notifications/routing";
 import { useBabyRecordsSync } from "@/lib/hooks/useBabyRecordsSync";
 
@@ -72,6 +74,8 @@ export default function MainLayout() {
   // Push token merret vetem per perdorues te kycur (jo per guest-at) dhe
   // vetem nje here per session — ref-i e ndal perseritjen ne re-render.
   const pushRegistered = useRef(false);
+  // Leja e njoftimeve vjen pas regjistrimit: atëherë planifikohet edhe përmbledhja e javës.
+  const [pushReady, setPushReady] = useState(false);
   useEffect(() => {
     if (!isAuthenticated) {
       // Dalje nga llogaria: lejo regjistrimin perseri per perdoruesin e radhes.
@@ -81,10 +85,22 @@ export default function MainLayout() {
     if (pushRegistered.current) return;
     pushRegistered.current = true;
 
-    registerForPushNotificationsAsync().catch((e) => {
-      log("Regjistrimi i push notifications deshtoi:", e);
-    });
+    registerForPushNotificationsAsync()
+      .then(() => setPushReady(true))
+      .catch((e) => {
+        log("Regjistrimi i push notifications deshtoi:", e);
+      });
   }, [isAuthenticated]);
+
+  // Përmbledhja e së hënës: planifikohet pas lejes së push-it, hiqet kur fiket ose del nga llogaria.
+  const { state } = useAppState();
+  const weeklyOn = isAuthenticated && isNotificationEnabled(state.notificationPrefs, "baby_weekly");
+  const babyName = state.profile.babyName?.trim() || null;
+  const weeklyTitle = babyName ? t("weekly_push_title", { name: babyName }) : t("weekly_push_title_plain");
+  const weeklyBody = t("weekly_push_body");
+  useEffect(() => {
+    void syncWeeklyRecapReminder({ enabled: weeklyOn, title: weeklyTitle, body: weeklyBody });
+  }, [weeklyOn, weeklyTitle, weeklyBody, pushReady]);
 
   // Prekja e një njoftimi hap ekranin që i përket (postimi, porosia, ushqyerja...).
   useEffect(() => {

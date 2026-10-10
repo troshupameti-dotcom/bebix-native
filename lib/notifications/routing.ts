@@ -17,6 +17,7 @@ const BY_TYPE: Record<string, string> = {
   growth: "/(main)/baby/growth",
   milestone: "/(main)/baby",
   birthday: "/(main)/baby",
+  weekly: "/(main)/baby",
   offer: "/(main)/shop",
 };
 

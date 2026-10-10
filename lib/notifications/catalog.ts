@@ -25,6 +25,7 @@ export type NotificationKey =
   | "baby_growth"
   | "baby_milestone"
   | "baby_birthday"
+  | "baby_weekly"
   // Dyqani
   | "shop_order"
   | "shop_review_request"
@@ -58,6 +59,8 @@ export const NOTIFICATION_CATALOG: NotificationEntry[] = [
   { key: "baby_growth",    group: "baby", icon: "chart",   labelKey: "notif_baby_growth",    hintKey: "notif_baby_growth_hint",    default: true },
   { key: "baby_milestone", group: "baby", icon: "sparkle", labelKey: "notif_baby_milestone", hintKey: "notif_baby_milestone_hint", default: true },
   { key: "baby_birthday",  group: "baby", icon: "flame",   labelKey: "notif_baby_birthday",  hintKey: "notif_baby_birthday_hint",  default: true },
+  // Dërguesi është vetë telefoni (njoftim lokal i së hënës, lib/notifications.ts), jo serveri.
+  { key: "baby_weekly",    group: "baby", icon: "star",    labelKey: "notif_baby_weekly",    hintKey: "notif_baby_weekly_hint",    default: true },
 
   // --- Dyqani ---------------------------------------------------------
   { key: "shop_order",          group: "shop", icon: "cube",  labelKey: "notif_shop_order",   hintKey: "notif_shop_order_hint",   default: true },

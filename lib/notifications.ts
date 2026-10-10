@@ -139,6 +139,32 @@ export async function unregisterPushToken(): Promise<void> {
   }
 }
 
+const WEEKLY_RECAP_ID = "bebix-weekly-recap";
+
+/**
+ * Përmbledhja e së hënës: njoftim lokal çdo të hënë në 09:00 (jashtë orëve
+ * të qeta), një herë në javë. S'kërkon leje vetë — përdor atë që u dha te
+ * hyrja; pa leje, ose kur prindi e fik, hiqet.
+ */
+export async function syncWeeklyRecapReminder(opts: { enabled: boolean; title: string; body: string }): Promise<void> {
+  const Notifications = loadNotifications();
+  if (!Notifications) return;
+  try {
+    await Notifications.cancelScheduledNotificationAsync(WEEKLY_RECAP_ID);
+    if (!opts.enabled) return;
+    const { status } = await Notifications.getPermissionsAsync();
+    if (status !== "granted") return;
+    await Notifications.scheduleNotificationAsync({
+      identifier: WEEKLY_RECAP_ID,
+      content: { title: opts.title, body: opts.body, data: { type: "weekly" } },
+      // 1 = e diel, pra 2 = e hëna.
+      trigger: { type: Notifications.SchedulableTriggerInputTypes.WEEKLY, weekday: 2, hour: 9, minute: 0, channelId: "default" },
+    });
+  } catch (e) {
+    log("Përmbledhja javore s'u planifikua:", e);
+  }
+}
+
 /**
  * Dëgjon prekjen e njoftimeve dhe thërret `onOpen` me `data`-n e tyre — edhe
  * për njoftimin që e hapi app-in nga e mbyllura. Kthen funksionin që ndal dëgjimin.
