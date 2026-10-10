@@ -6,6 +6,14 @@ import { haptics } from "@/lib/haptics";
 import { useTranslation } from "@/lib/i18n/LanguageContext";
 import type { Celebration } from "@/lib/baby/celebrations";
 
+/** Festimi → parametrat e ekranit "Krijo kartë". */
+function cardParamsFor(c: Celebration): Record<string, string> {
+  if (c.kind === "month") return { kind: "month", n: String(c.months) };
+  if (c.kind === "year") return { kind: "year", n: String(c.years) };
+  if (c.kind === "milestone") return { kind: "milestone", momentId: c.momentId };
+  return { kind: c.kind };
+}
+
 const COLORS = ["#F08DB6", "#8DBDE8", "#C9A0DD", "#E5B567", "#9CC98A", "#F3A07F"];
 const PIECES = 28;
 
@@ -137,6 +145,21 @@ export function CelebrationModal({
               </Text>
             </Pressable>
           ) : null}
+          {/* Karta për Instagram/WhatsApp me foton e bebit. */}
+          <Pressable
+            onPress={() => {
+              haptics.tap();
+              onClose();
+              router.push({ pathname: "/(main)/baby/share-card", params: cardParamsFor(c) });
+            }}
+            accessibilityRole="button"
+            className="mt-2 w-full flex-row items-center justify-center rounded-2xl py-3.5"
+            style={{ minHeight: 52, borderWidth: 1.5, borderColor: "#17212B" }}
+          >
+            <Text className="font-bodySemibold text-[15px]" style={{ color: "#17212B" }}>
+              {t("card_share_celebration")}
+            </Text>
+          </Pressable>
           <Pressable onPress={onClose} accessibilityRole="button" className="mt-2 w-full items-center py-3.5" style={{ minHeight: 48 }}>
             <Text className="font-bodyMedium text-[15px]" style={{ color: "#5C6670" }}>
               {t("celebrate_thanks")}

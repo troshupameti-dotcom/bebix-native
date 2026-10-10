@@ -5,6 +5,7 @@ import { SafeAreaView } from "react-native-safe-area-context";
 import * as ImagePicker from "expo-image-picker";
 import { Icon, IconName } from "@/components/ui/Icon";
 import { RecordSheet } from "@/components/baby/RecordSheet";
+import { router } from "expo-router";
 import { FormField } from "@/components/baby/FormField";
 import { DateTimeField } from "@/components/baby/DateTimeField";
 import { BottomSheet } from "@/components/ui/BottomSheet";
@@ -244,7 +245,23 @@ export default function MomentsScreen() {
               </View>
             )}
 
-            <View className="mt-5 flex-row gap-2.5">
+            {/* Kartë e bukur për Instagram/WhatsApp nga ky moment. */}
+            <Pressable
+              onPress={() => {
+                const m = viewingMoment;
+                haptics.tap();
+                setViewingId(null);
+                router.push({ pathname: "/(main)/baby/share-card", params: { kind: m.type === "milestone" ? "milestone" : "moment", momentId: m.id } });
+              }}
+              accessibilityRole="button"
+              className="mt-5 flex-row items-center justify-center gap-2 rounded-2xl bg-ink py-3.5"
+              style={{ minHeight: 52 }}
+            >
+              <Icon name="share" size={15} color="#FBF6EE" />
+              <Text className="font-bodySemibold text-[13.5px] text-cream">{t("card_make")}</Text>
+            </Pressable>
+
+            <View className="mt-2.5 flex-row gap-2.5">
               <Pressable onPress={openEditFromView} className="flex-1 flex-row items-center justify-center gap-2 rounded-2xl bg-cream-soft py-3.5">
                 <Icon name="edit" size={15} color="#2C271F" />
                 <Text className="font-bodySemibold text-[13.5px] text-ink">{t("edit_action")}</Text>
