@@ -1,6 +1,6 @@
 import { log } from "@/lib/log";
 import { useEffect, useRef, useState } from "react";
-import { Tabs, router, usePathname } from "expo-router";
+import { Tabs, router, usePathname, type Href } from "expo-router";
 import { BackHandler, View } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { Icon, IconName } from "@/components/ui/Icon";
@@ -16,6 +16,7 @@ import { relationFromProfile } from "@/lib/baby/team";
 import { useHouseholdRole } from "@/lib/hooks/useHouseholdRole";
 import { routeForNotification } from "@/lib/notifications/routing";
 import { useBabyRecordsSync } from "@/lib/hooks/useBabyRecordsSync";
+import { currentPath, hardwareBackTarget, previousPath, rewindTo } from "@/lib/navigation/history";
 
 // AI-ja rri ne mes: aty ku ishte butoni rrethor, pra duart e mesuara e
 // gjejne ne te njejtin vend, dhe eshte pika me e arritshme me gisht.
@@ -57,6 +58,19 @@ export default function MainLayout() {
       router.replace("/(auth)/login");
     }
   }, [loading, canBrowse]);
+
+  // Butoni fizik "mbrapa" i Android-it ndjek historikun e vërtetë si BackButton-i
+  // (p.sh. Më shumë -> Porositë e mia -> mbrapa = Më shumë, jo Dyqani).
+  useEffect(() => {
+    const sub = BackHandler.addEventListener("hardwareBackPress", () => {
+      const target = hardwareBackTarget(previousPath(), currentPath());
+      if (!target) return false;
+      rewindTo(target);
+      router.replace(target as Href);
+      return true;
+    });
+    return () => sub.remove();
+  }, []);
 
   // Mysafiri në faqen kryesore të Dyqanit: "prapa" e çon te hyrja (ku mund të
   // hyjë ose të regjistrohet), jo te Bebi dhe as jashtë app-it.

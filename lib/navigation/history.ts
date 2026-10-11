@@ -61,6 +61,25 @@ export function decideBack(previous: string | null, current: string | null): Bac
   return { kind: "pop" };
 }
 
+/** Rrënjët e tab-eve: aty "mbrapa" i Android-it ndjek sjelljen e tab-eve (firstRoute / dalje). */
+const TAB_ROOTS = new Set(["/", "/baby", "/shop", "/ai-chat", "/community", "/more"]);
+/** Ekranet jashtë (main): stiva e rrënjës i kthen vetë saktë. */
+const OUTSIDE_MAIN = new Set(["log", "sleep", "auth"]);
+
+/**
+ * Ku duhet ta çojë butoni fizik "mbrapa" i Android-it, ose null kur sjellja
+ * native është e saktë. E njëjta logjikë si BackButton: pa këtë, "Më shumë" ->
+ * "Porositë e mia" -> mbrapa (sistemi) përfundonte te Dyqani.
+ */
+export function hardwareBackTarget(previous: string | null, current: string | null): string | null {
+  if (!current) return null;
+  const clean = current.split("?")[0];
+  if (TAB_ROOTS.has(clean)) return null;
+  if (OUTSIDE_MAIN.has(sectionOf(clean) ?? "")) return null;
+  const decision = decideBack(previous, current);
+  return decision.kind === "goto" ? decision.path : null;
+}
+
 /**
  * Rruga e fundit që i përket një pjese TJETËR të app-it, duke kërkuar prapa
  * në krejt historikun — jo vetëm një hap. Përdoret kur stiva nismore (pop)

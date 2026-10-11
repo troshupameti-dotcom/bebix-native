@@ -1,7 +1,8 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { View, Text, Pressable, Image, ActivityIndicator } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
-import { router, useLocalSearchParams } from "expo-router";
+import { useLocalSearchParams } from "expo-router";
+import { goBackOr } from "@/components/ui/BackButton";
 import { MotiView } from "moti";
 import { captureRef } from "react-native-view-shot";
 import * as Sharing from "expo-sharing";
@@ -189,7 +190,7 @@ export default function MonthRecapScreen() {
             {sharing ? <ActivityIndicator color="#fff" size="small" /> : <Icon name="share" size={16} color="#fff" />}
             <Text className="font-bodySemibold text-[13px] text-white">{t("month_recap_share")}</Text>
           </Pressable>
-          <Pressable onPress={() => (router.canGoBack() ? router.back() : router.replace("/(main)/baby"))} accessibilityRole="button" accessibilityLabel={t("close_action")} className="h-11 w-11 items-center justify-center rounded-full bg-black/25">
+          <Pressable onPress={() => goBackOr("/(main)/baby")} accessibilityRole="button" accessibilityLabel={t("close_action")} className="h-11 w-11 items-center justify-center rounded-full bg-black/25">
             <Icon name="close" size={18} color="#fff" />
           </Pressable>
         </View>
