@@ -1,38 +1,47 @@
-import { useEffect, useState } from "react";
-import { AccessibilityInfo, Animated, Easing, Image, Pressable, Text, View } from "react-native";
+import { useCallback, useEffect, useRef, useState } from "react";
+import { AccessibilityInfo, Image, Pressable, ScrollView, Text, View, type NativeScrollEvent, type NativeSyntheticEvent } from "react-native";
 import { Icon } from "@/components/ui/Icon";
 import type { Brand } from "@/lib/homeContent";
 
 /**
- * Markat si shirit logosh që rrëshqet ngadalë pa pushim, si te webi. Me pak marka (nën 6) qëndron i palëvizshëm,
- * sepse një shirit që ikën me dy logo duket bosh; po ashtu kur pajisja kërkon pak lëvizje.
- * Logot mbeten të prekshme gjatë lëvizjes.
+ * Markat si shirit logosh që rrëshqet ngadalë vetë. Kur prindi e prek, shiriti
+ * ndalet dhe kalon nën kontrollin e tij: e lëviz majtas-djathtas ose prek një
+ * markë. Pasi heq gishtin (dhe shiriti ndalet), lëvizja vetë rifillon.
+ *
+ * Pa fund në të dy drejtimet: lista vihet tri herë radhazi dhe pozicioni mbahet
+ * te kopja e mesme — kur del prej saj, kërcen pa u vënë re një gjatësi më tej.
+ * Me pak marka (nën 6) ose kur pajisja kërkon pak lëvizje, rri e palëvizshme.
  */
-const TILE = 54;
-const GAP = 10;
+const LOGO = 56;
+const COLUMN = 72;
+const GAP = 14;
 /** Pikselë në sekondë: i ngadaltë, që logot të lexohen. */
-const SPEED = 28;
+const SPEED = 26;
+/** Pas sa kohësh nga lëshimi i gishtit rifillon lëvizja vetë. */
+const RESUME_MS = 1200;
 
 function Tile({ brand, color, onPress }: { brand: Brand; color: string; onPress: () => void }) {
   return (
-    <Pressable onPress={onPress} accessibilityRole="button" accessibilityLabel={brand.name} style={{ width: TILE, marginRight: GAP }} className="items-center">
-      <View className="h-[52px] w-[52px] items-center justify-center overflow-hidden rounded-xl border border-cream-line bg-surface">
-        {brand.logoUrl ? (
-          <Image source={{ uri: brand.logoUrl }} className="h-full w-full" resizeMode="cover" />
-        ) : (
-          <Icon name={brand.icon} size={20} color={color} />
-        )}
+    <Pressable onPress={onPress} accessibilityRole="button" accessibilityLabel={brand.name} style={{ width: COLUMN, marginRight: GAP }} className="items-center">
+      <View style={{ width: LOGO, height: LOGO }} className="items-center justify-center overflow-hidden rounded-2xl border border-cream-line bg-surface">
+        {brand.logoUrl ? <Image source={{ uri: brand.logoUrl }} className="h-full w-full" resizeMode="cover" /> : <Icon name={brand.icon} size={22} color={color} />}
       </View>
-      <Text className="mt-1 text-center font-bodyMedium text-[10px] text-ink-soft" numberOfLines={1}>{brand.name}</Text>
+      <Text className="mt-1.5 text-center font-bodyMedium text-[10.5px] text-ink-soft" numberOfLines={1}>
+        {brand.name}
+      </Text>
     </Pressable>
   );
 }
 
 export function BrandMarquee({ brands, color, onOpen }: { brands: Brand[]; color: string; onOpen: (b: Brand) => void }) {
-  const [x] = useState(() => new Animated.Value(0));
-  const [rowWidth, setRowWidth] = useState(0);
   const [reduceMotion, setReduceMotion] = useState(false);
   const moving = brands.length >= 6 && !reduceMotion;
+  const scrollRef = useRef<ScrollView>(null);
+  const offset = useRef(0);
+  const touching = useRef(false);
+  const resumeAt = useRef(0);
+  // Gjerësia e një kopjeje të listës.
+  const rowWidth = brands.length * (COLUMN + GAP);
 
   useEffect(() => {
     let alive = true;
@@ -42,31 +51,112 @@ export function BrandMarquee({ brands, color, onOpen }: { brands: Brand[]; color
     };
   }, []);
 
-  useEffect(() => {
-    if (!moving || rowWidth <= 0) return;
-    x.setValue(0);
-    const loop = Animated.loop(
-      Animated.timing(x, { toValue: -rowWidth, duration: (rowWidth / SPEED) * 1000, easing: Easing.linear, useNativeDriver: true })
-    );
-    loop.start();
-    return () => loop.stop();
-  }, [moving, rowWidth, x]);
+  // Mbaje pozicionin te kopja e mesme: pa fund majtas dhe djathtas.
+  const wrap = useCallback(
+    (x: number) => {
+      if (x < rowWidth * 0.5) return x + rowWidth;
+      if (x > rowWidth * 1.5) return x - rowWidth;
+      return x;
+    },
+    [rowWidth]
+  );
 
-  const row = brands.map((b) => <Tile key={b.id} brand={b} color={color} onPress={() => onOpen(b)} />);
+  // Nis te kopja e mesme.
+  useEffect(() => {
+    if (!moving) return;
+    offset.current = rowWidth;
+    requestAnimationFrame(() => scrollRef.current?.scrollTo({ x: rowWidth, animated: false }));
+  }, [moving, rowWidth]);
+
+  // Lëvizja vetë, kornizë pas kornize, kur s'e prek askush.
+  useEffect(() => {
+    if (!moving) return;
+    let frame = 0;
+    let last = Date.now();
+    const tick = () => {
+      const now = Date.now();
+      const dt = Math.min(0.05, (now - last) / 1000);
+      last = now;
+      if (!touching.current && now >= resumeAt.current) {
+        const next = wrap(offset.current + SPEED * dt);
+        offset.current = next;
+        scrollRef.current?.scrollTo({ x: next, animated: false });
+      }
+      frame = requestAnimationFrame(tick);
+    };
+    frame = requestAnimationFrame(tick);
+    return () => cancelAnimationFrame(frame);
+  }, [moving, wrap]);
+
+  const onScroll = (e: NativeSyntheticEvent<NativeScrollEvent>) => {
+    if (!touching.current && Date.now() < resumeAt.current) {
+      // Rrëshqitja pas lëshimit (momentum): ndiq pozicionin, pa kërcime.
+      offset.current = e.nativeEvent.contentOffset.x;
+      return;
+    }
+    if (touching.current) offset.current = e.nativeEvent.contentOffset.x;
+  };
+
+  const release = (e: NativeSyntheticEvent<NativeScrollEvent>) => {
+    const x = e.nativeEvent.contentOffset.x;
+    const wrapped = wrap(x);
+    offset.current = wrapped;
+    if (wrapped !== x) scrollRef.current?.scrollTo({ x: wrapped, animated: false });
+  };
+
+  const row = (prefix: string, hidden: boolean) => (
+    <View
+      key={prefix}
+      style={{ flexDirection: "row" }}
+      accessibilityElementsHidden={hidden}
+      importantForAccessibility={hidden ? "no-hide-descendants" : "auto"}
+    >
+      {brands.map((b) => (
+        <Tile key={`${prefix}-${b.id}`} brand={b} color={color} onPress={() => onOpen(b)} />
+      ))}
+    </View>
+  );
 
   if (!moving) {
-    return <View className="flex-row px-5">{row}</View>;
+    return (
+      <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ paddingHorizontal: 20 }}>
+        {row("a", false)}
+      </ScrollView>
+    );
   }
 
   return (
-    <View style={{ overflow: "hidden" }}>
-      <Animated.View style={{ flexDirection: "row", transform: [{ translateX: x }] }}>
-        {/* Dy kopje radhazi: kur e para del jashtë, e dyta është saktësisht aty ku nisi e para. */}
-        <View style={{ flexDirection: "row", paddingLeft: 20 }} onLayout={(e) => setRowWidth(e.nativeEvent.layout.width)}>{row}</View>
-        <View style={{ flexDirection: "row", paddingLeft: 20 }} accessibilityElementsHidden importantForAccessibility="no-hide-descendants">
-          {brands.map((b) => <Tile key={`c-${b.id}`} brand={b} color={color} onPress={() => onOpen(b)} />)}
-        </View>
-      </Animated.View>
-    </View>
+    <ScrollView
+      ref={scrollRef}
+      horizontal
+      showsHorizontalScrollIndicator={false}
+      scrollEventThrottle={16}
+      decelerationRate="normal"
+      onTouchStart={() => {
+        touching.current = true;
+      }}
+      onTouchEnd={() => {
+        touching.current = false;
+        resumeAt.current = Date.now() + RESUME_MS;
+      }}
+      onScrollBeginDrag={() => {
+        touching.current = true;
+      }}
+      onScrollEndDrag={(e) => {
+        touching.current = false;
+        resumeAt.current = Date.now() + RESUME_MS;
+        release(e);
+      }}
+      onMomentumScrollEnd={(e) => {
+        resumeAt.current = Date.now() + RESUME_MS;
+        release(e);
+      }}
+      onScroll={onScroll}
+    >
+      {/* Tri kopje: e mesmja është ajo që shihet; dy anësoret e bëjnë shiritin pa fund. */}
+      {row("a", true)}
+      {row("b", false)}
+      {row("c", true)}
+    </ScrollView>
   );
 }

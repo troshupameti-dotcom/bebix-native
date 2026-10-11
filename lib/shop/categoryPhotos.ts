@@ -21,6 +21,8 @@ import type { ImageSourcePropType } from "react-native";
  * internetit — ato zakonisht janë me të drejta autoriale.
  */
 export const CATEGORY_PHOTOS: Record<string, ImageSourcePropType> = {
+  // "Të gjitha": nga fotoja e produkteve te ekrani i mirëseardhjes (e app-it vetë, jo nga Pexels).
+  all: require("@/assets/images/categories/te-gjitha.jpg"),
   Ushqyerje: require("@/assets/images/categories/ushqyerje.jpg"),
   veshje: require("@/assets/images/categories/veshje.jpg"),
   gjumi: require("@/assets/images/categories/gjumi.jpg"),

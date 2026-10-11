@@ -16,6 +16,7 @@ Te prera ne katror dhe ripermasuar ne 256x256, cilesi 82.
 | dhoma.jpg | pexels.com/photo/4713247 |
 | nena.jpg | pexels.com/photo/4876253 |
 | dhurata.jpg | pexels.com/photo/5872362 |
+| te-gjitha.jpg | prerë nga assets/images/onboarding/shop-products.jpg (foto e app-it) |
 
 **Mos i zevendeso me figura nga kerkimi i thjeshte i internetit.** Ato
 zakonisht jane me te drejta autoriale dhe app-i eshte komercial. Perdor
