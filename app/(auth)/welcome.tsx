@@ -17,7 +17,7 @@ import type { TranslationKey } from "@/lib/i18n/translations";
 
 const SLIDES: { taglineKey: TranslationKey; image: number }[] = [
   { taglineKey: "welcome_tagline_1", image: require("@/assets/images/onboarding/baby-first-steps.jpg") },
-  { taglineKey: "welcome_tagline_2", image: require("@/assets/images/onboarding/track-illustration.png") },
+  { taglineKey: "welcome_tagline_2", image: require("@/assets/images/onboarding/track-illustration.jpg") },
   { taglineKey: "welcome_tagline_3", image: require("@/assets/images/onboarding/shop-products.jpg") },
 ];
 
