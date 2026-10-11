@@ -12,9 +12,11 @@ import type { Brand } from "@/lib/homeContent";
  * te kopja e mesme — kur del prej saj, kërcen pa u vënë re një gjatësi më tej.
  * Me pak marka (nën 6) ose kur pajisja kërkon pak lëvizje, rri e palëvizshme.
  */
-const LOGO = 56;
-const COLUMN = 72;
-const GAP = 14;
+/** Logot: drejtkëndësha kompaktë, me të njëjtën hapësirë të vogël mes tyre. */
+const LOGO_W = 84;
+const LOGO_H = 52;
+const COLUMN = LOGO_W;
+const GAP = 8;
 /** Pikselë në sekondë: i ngadaltë, që logot të lexohen. */
 const SPEED = 26;
 /** Pas sa kohësh nga lëshimi i gishtit rifillon lëvizja vetë. */
@@ -23,10 +25,10 @@ const RESUME_MS = 1200;
 function Tile({ brand, color, onPress }: { brand: Brand; color: string; onPress: () => void }) {
   return (
     <Pressable onPress={onPress} accessibilityRole="button" accessibilityLabel={brand.name} style={{ width: COLUMN, marginRight: GAP }} className="items-center">
-      <View style={{ width: LOGO, height: LOGO }} className="items-center justify-center overflow-hidden rounded-2xl border border-cream-line bg-surface">
-        {brand.logoUrl ? <Image source={{ uri: brand.logoUrl }} className="h-full w-full" resizeMode="cover" /> : <Icon name={brand.icon} size={22} color={color} />}
+      <View style={{ width: LOGO_W, height: LOGO_H }} className="items-center justify-center overflow-hidden rounded-xl border border-cream-line bg-surface">
+        {brand.logoUrl ? <Image source={{ uri: brand.logoUrl }} style={{ width: LOGO_W - 12, height: LOGO_H - 12 }} resizeMode="contain" /> : <Icon name={brand.icon} size={22} color={color} />}
       </View>
-      <Text className="mt-1.5 text-center font-bodyMedium text-[10.5px] text-ink-soft" numberOfLines={1}>
+      <Text className="mt-1 text-center font-bodyMedium text-[10.5px] text-ink-soft" numberOfLines={1}>
         {brand.name}
       </Text>
     </Pressable>

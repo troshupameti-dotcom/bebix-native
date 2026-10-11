@@ -235,14 +235,8 @@ export default function ShopScreen() {
           })}
         </ScrollView>
       )}
-      {/* Një sugjerim i vetëm: pelenat po mbarojnë, madhësia tjetër, ose diçka për moshën. */}
-      {!isFiltering && (
-        <View className="px-5 mt-3">
-          <ShopSuggestionCard placement="shop" />
-        </View>
-      )}
-      {/* "Mosha e bebit": produktet e përshtatshme për moshën; me profil, shkurtorja "Për [emri]" e zgjedh vetë grupin e bebit. */}
-      <Text className="font-bodySemibold text-base text-ink px-5 mt-3 mb-2">{t("shop_age_title")}</Text>
+      {/* "Mosha e bebit" menjëherë pas kategorive: produktet e përshtatshme për moshën; me profil, shkurtorja "Për [emri]" e zgjedh vetë grupin e bebit. */}
+      <Text className="font-bodySemibold text-base text-ink px-5 mt-2 mb-2">{t("shop_age_title")}</Text>
       <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ paddingHorizontal: 20 }}>
         {babyBand && babyFirstName ? (
           <Chip
@@ -266,6 +260,13 @@ export default function ShopScreen() {
           <Text className="font-bodySemibold text-base text-ink px-5 mt-2 mb-2">{t("shop_brands")}</Text>
           <BrandMarquee brands={brands} color={theme.inkFaint} onOpen={(b) => router.push(`/shop/brand/${b.id}`)} />
         </>
+      )}
+
+      {/* Një sugjerim i vetëm: pelenat po mbarojnë, madhësia tjetër, ose diçka për moshën. */}
+      {!isFiltering && (
+        <View className="px-5 mt-4">
+          <ShopSuggestionCard placement="shop" />
+        </View>
       )}
 
       {!isFiltering && onSale.length > 0 && (
