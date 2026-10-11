@@ -111,7 +111,8 @@
         }
       ],
       "./plugins/withBebixShortcuts",
-      "./plugins/withBebixAppIntents"
+      "./plugins/withBebixAppIntents",
+      "./plugins/withWorkManagerFix"
     ],
     "extra": {
       "router": {
