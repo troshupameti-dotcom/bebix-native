@@ -40,17 +40,17 @@ const DOCS: { title: string; body: string }[] = [
       "• Dyqani: emri, telefoni dhe adresa që shkruan te porosia, bashkë me produktet e porositura.\n" +
       "• Telefoni: një identifikues për njoftimet (push token), nëse i lejon njoftimet.\n" +
       "• Rrëzimet e app-it: kur app-i rrëzohet, dërgohet një raport teknik (modeli i telefonit, versioni i sistemit dhe i app-it, vendi i gabimit) — pa emër, pa email, pa të dhënat e bebit.\n" +
-      "• Përdorimi: ngjarje të përgjithshme si hapja e dyqanit ose krijimi i një porosie, pa emra, pa adresa, pa email.\n\n" +
+      "• Përdorimi: ngjarje të përgjithshme si hapja e app-it, hapja e dyqanit, krijimi i një porosie, regjistrimi i një ushqyerjeje, gjumi ose pelene (vetëm lloji dhe ora, jo sasia apo shënimet), ftesa te Familja dhe sa lloje njoftimesh ke fikur. Lidhen me një identifikues të rastësishëm ose me ID-në teknike të llogarisë, pa emra, pa adresa, pa email dhe pa emrin apo datëlindjen e bebit.\n\n" +
       "KU RUHEN\n" +
       "Te Supabase, në serverë brenda Bashkimit Evropian (Frankfurt). Fotot e momenteve rrinë në një hapësirë private: i sheh vetëm ti dhe prindi që fton te Familja, me një lidhje të përkohshme. Postimet, komentet dhe fotot e Komunitetit janë publike: i sheh kushdo, edhe në faqen e webit www.bebix.store.\n\n" +
       "PSE\n" +
       "Për të ta ofruar shërbimin që kërkon: ruajtja e historikut të bebit, njoftimet që zgjedh, komuniteti dhe dërgimi i porosive. Të dhënat e bebit i përpunojmë me pëlqimin tënd; porositë, sepse na duhen për të përmbushur blerjen.\n\n" +
       "ME KË NDAHEN\n" +
-      "Nuk i shesim të dhënat tua, asnjëherë. I ndajmë vetëm me ata që na ndihmojnë ta ofrojmë shërbimin: Supabase (ruajtja, BE), Vercel (faqja e webit; regjistrat teknikë si adresa IP), Expo (dërgimi i njoftimeve), Sentry (raportet e rrëzimeve), Resend (email-et e konfirmimit dhe të rikthimit të fjalëkalimit), Google ose Apple (vetëm kur zgjedh të hysh me ta), dhe partnerin që të dërgon porosinë — atij i shkojnë emri, telefoni dhe adresa, pa të cilat dërgesa nuk bëhet dot. Asgjë prej të dhënave të bebit nuk u jepet partnerëve. Kur fton një prind tjetër te Familja, ai sheh dhe shton të dhënat e bebit njësoj si ti.\n\n" +
+      "Nuk i shesim të dhënat tua, asnjëherë. I ndajmë vetëm me ata që na ndihmojnë ta ofrojmë shërbimin: Supabase (ruajtja, BE), Vercel (faqja e webit; regjistrat teknikë si adresa IP), Expo (dërgimi i njoftimeve), Sentry (raportet e rrëzimeve), PostHog (statistikat e përdorimit të përshkruara më lart; serverë në SHBA), Resend (email-et e konfirmimit dhe të rikthimit të fjalëkalimit), Google ose Apple (vetëm kur zgjedh të hysh me ta), dhe partnerin që të dërgon porosinë — atij i shkojnë emri, telefoni dhe adresa, pa të cilat dërgesa nuk bëhet dot. Asgjë prej të dhënave të bebit nuk u jepet partnerëve. Kur fton një prind tjetër te Familja, ai sheh dhe shton të dhënat e bebit njësoj si ti.\n\n" +
       "SA KOHË\n" +
       "Të dhënat e llogarisë dhe të bebit rrinë derisa ta fshish llogarinë. Porositë ruhen edhe pas fshirjes, të anonimizuara, sepse na kërkohen për kontabilitet.\n\n" +
       "TË DREJTAT E TUA\n" +
-      "Mund të shohësh dhe të ndryshosh të dhënat brenda app-it, t'i eksportosh si PDF, CSV ose JSON nga Bebi → Cilësimet → Eksporto, dhe ta fshish llogarinë nga Cilësimet → Fshi llogarinë. Për çdo kërkesë tjetër — akses, korrigjim, kufizim, kundërshtim — shkruajna te " + SUPPORT_EMAIL + " dhe përgjigjemi brenda 30 ditëve.",
+      "Mund të shohësh dhe të ndryshosh të dhënat brenda app-it, t'i eksportosh si PDF ose CSV nga Bebi → Cilësimet → Eksporto, dhe ta fshish llogarinë nga Cilësimet → Fshi llogarinë. Për çdo kërkesë tjetër — akses, korrigjim, kufizim, kundërshtim — shkruajna te " + SUPPORT_EMAIL + " dhe përgjigjemi brenda 30 ditëve.",
   },
   {
     title: "Fshirja e llogarisë dhe e të dhënave",
