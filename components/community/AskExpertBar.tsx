@@ -6,7 +6,7 @@ import { shadows } from "@/lib/shadows";
 import { haptics } from "@/lib/haptics";
 import { useThemeColors } from "@/lib/theme/useThemeColors";
 import { useTranslation } from "@/lib/i18n/LanguageContext";
-import { fetchQueue, fetchUnreadCount, isVerifiedExpert } from "@/lib/community/expertQuestions";
+import { fetchExpertQuestionsStatus, fetchQueue, isVerifiedExpert } from "@/lib/community/expertQuestions";
 
 /**
  * "Pyet ekspertin" + "Pyetjet e mia" (me pikë të kuqe kur ka përgjigje të
@@ -19,10 +19,16 @@ export function AskExpertBar({ refreshKey }: { refreshKey: number }) {
   const theme = useThemeColors();
   const [unread, setUnread] = useState(0);
   const [queueCount, setQueueCount] = useState<number | null>(null);
+  // false = migrimi s'është ekzekutuar në server: butonat fshihen.
+  const [available, setAvailable] = useState(false);
 
   useEffect(() => {
     let alive = true;
-    void fetchUnreadCount().then((n) => alive && setUnread(n));
+    void fetchExpertQuestionsStatus().then((s) => {
+      if (!alive) return;
+      setAvailable(s.available);
+      setUnread(s.unread);
+    });
     void isVerifiedExpert().then(async (expert) => {
       if (!alive) return;
       if (!expert) return setQueueCount(null);
@@ -42,6 +48,8 @@ export function AskExpertBar({ refreshKey }: { refreshKey: number }) {
     haptics.tap();
     router.push(path);
   };
+
+  if (!available) return null;
 
   return (
     <View className="mx-5 mt-3">

@@ -1,4 +1,4 @@
-import { BODY_MAX, categoryKey, cleanBody, errorKey, remainingThisWeek, statusKey, waitingHours, CATEGORIES } from "@/lib/community/expertQuestions";
+import { BODY_MAX, categoryKey, cleanBody, errorKey, isMissingTable, remainingThisWeek, statusKey, waitingHours, CATEGORIES } from "@/lib/community/expertQuestions";
 import { translations } from "@/lib/i18n/translations";
 
 jest.mock("@/lib/supabase/client", () => ({ supabase: {} }));
@@ -40,5 +40,14 @@ describe("pyet ekspertin", () => {
       expect(translations.en[categoryKey(c)]).toBeTruthy();
     }
     expect(categoryKey("panjohur")).toBe("eq_cat_other");
+  });
+});
+
+describe("pa migrimin në server", () => {
+  it("tabela që mungon njihet (butonat fshihen), gabimet e tjera jo", () => {
+    expect(isMissingTable({ code: "PGRST205" })).toBe(true);
+    expect(isMissingTable({ code: "42P01" })).toBe(true);
+    expect(isMissingTable({ code: "42501" })).toBe(false);
+    expect(isMissingTable(null)).toBe(false);
   });
 });

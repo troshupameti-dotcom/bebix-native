@@ -112,15 +112,26 @@ export async function fetchMyQuestions(): Promise<MyQuestion[]> {
   }));
 }
 
-/** Sa përgjigje të palexuara ka prindi (pika e kuqe). */
-export async function fetchUnreadCount(): Promise<number> {
+/** Tabela s'ekziston (migrimi s'është ekzekutuar ende): PostgREST e kthen si PGRST205, Postgres si 42P01. */
+export function isMissingTable(error: { code?: string } | null): boolean {
+  return !!error && (error.code === "PGRST205" || error.code === "42P01");
+}
+
+/**
+ * Sa përgjigje të palexuara ka prindi (pika e kuqe), dhe a ekziston fare veçoria
+ * në server: pa migrimin, butonat s'shfaqen, që prindi të mos shkruajë një pyetje
+ * që s'dërgohet dot.
+ */
+export async function fetchExpertQuestionsStatus(): Promise<{ available: boolean; unread: number }> {
+  // GET me limit 0 (jo HEAD): vetëm kështu gabimi vjen me kodin e tij.
   const { count, error } = await supabase
     .from("expert_questions")
-    .select("id", { count: "exact", head: true })
+    .select("id", { count: "exact" })
     .eq("status", "answered")
-    .is("answer_read_at", null);
-  if (error) return 0;
-  return count ?? 0;
+    .is("answer_read_at", null)
+    .limit(0);
+  if (isMissingTable(error)) return { available: false, unread: 0 };
+  return { available: true, unread: error ? 0 : (count ?? 0) };
 }
 
 export async function markAnswersRead(): Promise<void> {
