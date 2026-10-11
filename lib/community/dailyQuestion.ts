@@ -1,120 +1,74 @@
 import { supabase } from "@/lib/supabase/client";
-import { expertsByUserId, fetchBlockedUserIds, getCurrentUserId, type CommentExpert } from "@/lib/communityData";
+import type { CommunityComment } from "@/lib/communityData";
+import type { TranslationKey } from "@/lib/i18n/translations";
 
 /**
- * Pyetja e ditës te Komuniteti: një pyetje në ditë (tabela `daily_questions`,
- * sipas `active_date`) dhe përgjigje të shkurtra (`daily_question_answers`,
- * një për prind, e ndryshueshme). Emrin e autorit e vendos serveri, si te
- * komentet.
+ * "Pyetja e ditës" te Komuniteti. Çdo pyetje ka një postim bazë nga llogaria
+ * editoriale e Bebix-it; përgjigjet janë komentet e atij postimi (kështu
+ * raportimi, bllokimi dhe njoftimet janë ato ekzistuese). Baza kontrollon:
+ * një përgjigje (koment i parë) për prind, 1–280 shkronja; ndryshimi bëhet me
+ * `edit_daily_answer`. Dita: Europe/Belgrade, e njëjtë për të gjithë.
  */
 
-export const ANSWER_MAX = 280;
+export const DAILY_ANSWER_MAX = 280;
 /** Sa përgjigje dalin direkt te karta. */
-export const CARD_PREVIEW = 3;
+export const CARD_PREVIEW = 2;
 
-export type DailyQuestion = { id: string; text: string; date: string };
+export type DailyQuestion = { id: string; text: string; date: string; postId: string; answerCount: number };
 
-export type DailyAnswer = {
-  id: string;
-  authorId: string;
-  authorName: string;
-  text: string;
-  at: string;
-  edited: boolean;
-  expert: CommentExpert | null;
-};
-
-const pad = (n: number) => String(n).padStart(2, "0");
-/** Data lokale e telefonit ("2026-10-13") — pyetja ndryshon në mesnatën e prindit. */
-export const localDateKey = (d: Date = new Date()) => `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
+type Row = { id: string; text: string; text_en: string | null; active_date: string; post_id: string | null; answer_count: number };
 
 /** Teksti në gjuhën e app-it; pa anglisht, shqip. */
-export function questionText(row: { text_sq: string; text_en: string | null }, lang: "sq" | "en"): string {
-  return lang === "en" && row.text_en?.trim() ? row.text_en.trim() : row.text_sq.trim();
+export function questionText(row: { text: string; text_en: string | null }, lang: "sq" | "en"): string {
+  return lang === "en" && row.text_en?.trim() ? row.text_en.trim() : row.text.trim();
 }
 
 /** Përgjigja e vlefshme: 1–280 shkronja pas pastrimit; null kur s'është. */
 export function cleanAnswer(text: string): string | null {
   const t = text.replace(/\s+/g, " ").trim();
-  return t.length >= 1 && t.length <= ANSWER_MAX ? t : null;
+  return t.length >= 1 && t.length <= DAILY_ANSWER_MAX ? t : null;
 }
 
-/** Pyetja e sotme, ose null kur për sot s'ka (karta s'shfaqet). */
-export async function fetchTodayQuestion(lang: "sq" | "en", now: Date = new Date()): Promise<DailyQuestion | null> {
-  const { data, error } = await supabase
-    .from("daily_questions")
-    .select("id, text_sq, text_en, active_date")
-    .eq("active_date", localDateKey(now))
-    .maybeSingle();
+/** Rreshti i serverit → pyetja e sotme; null kur s'ka (karta s'shfaqet). */
+export function toDailyQuestion(rows: Row[] | null | undefined, lang: "sq" | "en"): DailyQuestion | null {
+  const r = rows?.[0];
+  if (!r || !r.post_id) return null;
+  return { id: r.id, text: questionText(r, lang), date: r.active_date, postId: r.post_id, answerCount: Number(r.answer_count) || 0 };
+}
+
+/** Përgjigjet (komentet e para), më të rejat para; përgjigjet ndaj tyre s'numërohen. */
+export function latestAnswers(comments: CommunityComment[], limit: number = CARD_PREVIEW): CommunityComment[] {
+  return comments
+    .filter((c) => c.parentId === null)
+    .sort((a, b) => (a.at < b.at ? 1 : -1))
+    .slice(0, limit);
+}
+
+/** Përgjigja ime te kjo pyetje (një e vetme), ose null. */
+export function myAnswer(comments: CommunityComment[], myId: string | null): CommunityComment | null {
+  if (!myId) return null;
+  return comments.find((c) => c.parentId === null && c.authorId === myId) ?? null;
+}
+
+/** Gabimet e bazës → teksti për prindin. */
+export function answerErrorKey(err: unknown): TranslationKey {
+  const msg = err instanceof Error ? err.message : String((err as { message?: string })?.message ?? err);
+  if (msg.includes("daily_answer_exists")) return "dq_err_exists";
+  if (msg.includes("daily_answer_length")) return "dq_err_length";
+  return "dq_save_failed";
+}
+
+/** Pyetja e sotme (serveri krijon postimin bazë herën e parë), ose null. */
+export async function fetchTodayQuestion(lang: "sq" | "en"): Promise<DailyQuestion | null> {
+  const { data, error } = await supabase.rpc("today_daily_question");
   if (error) throw error;
-  if (!data) return null;
-  return { id: data.id, text: questionText(data, lang), date: data.active_date };
+  return toDailyQuestion(data as Row[] | null, lang);
 }
 
-export async function fetchQuestionById(id: string, lang: "sq" | "en"): Promise<DailyQuestion | null> {
-  const { data, error } = await supabase.from("daily_questions").select("id, text_sq, text_en, active_date").eq("id", id).maybeSingle();
-  if (error) throw error;
-  return data ? { id: data.id, text: questionText(data, lang), date: data.active_date } : null;
-}
-
-type AnswerRow = { id: string; author_id: string; author_name: string | null; text: string; created_at: string; updated_at: string };
-
-/**
- * Përgjigjet (më të parat para), pa ato të përdoruesve të bllokuar, me
- * numrin total. `limit` për kartën; pa `limit`, të gjitha.
- */
-export async function fetchAnswers(questionId: string, limit?: number): Promise<{ answers: DailyAnswer[]; total: number; mine: DailyAnswer | null }> {
-  let query = supabase
-    .from("daily_question_answers")
-    .select("id, author_id, author_name, text, created_at, updated_at", { count: "exact" })
-    .eq("question_id", questionId)
-    .order("created_at", { ascending: true });
-  if (limit) query = query.limit(limit + 10); // pak më shumë: disa mund të jenë të bllokuar
-  const [{ data, error, count }, blocked, uid] = await Promise.all([query, fetchBlockedUserIds(), getCurrentUserId()]);
-  if (error) throw error;
-
-  const rows = ((data ?? []) as AnswerRow[]).filter((r) => !blocked.has(r.author_id));
-  const experts = await expertsByUserId([...new Set(rows.map((r) => r.author_id))]);
-  const all = rows.map((r) => ({
-    id: r.id,
-    authorId: r.author_id,
-    authorName: r.author_name || "Prind",
-    text: r.text,
-    at: r.created_at,
-    edited: new Date(r.updated_at).getTime() - new Date(r.created_at).getTime() > 60_000,
-    expert: experts.get(r.author_id) ?? null,
-  }));
-
-  // Përgjigja ime, edhe kur s'është mes të parave (për "Ndrysho përgjigjen").
-  let mine = all.find((a) => a.authorId === uid) ?? null;
-  if (!mine && uid && limit) {
-    const { data: own } = await supabase
-      .from("daily_question_answers")
-      .select("id, author_id, author_name, text, created_at, updated_at")
-      .eq("question_id", questionId)
-      .eq("author_id", uid)
-      .maybeSingle();
-    if (own) {
-      const r = own as AnswerRow;
-      mine = { id: r.id, authorId: r.author_id, authorName: r.author_name || "Prind", text: r.text, at: r.created_at, edited: false, expert: null };
-    }
-  }
-  return { answers: limit ? all.slice(0, limit) : all, total: count ?? all.length, mine };
-}
-
-/** Ruaj ose ndrysho përgjigjen time (një për pyetje). */
-export async function saveAnswer(questionId: string, text: string, authorName: string): Promise<void> {
-  const uid = await getCurrentUserId();
-  if (!uid) throw new Error("Duhet të jesh i kyçur.");
+/** Ndrysho përgjigjen time (komentet s'kanë UPDATE: kalon nga baza, me kufirin 280). */
+export async function editDailyAnswer(commentId: string, text: string): Promise<void> {
   const clean = cleanAnswer(text);
-  if (!clean) throw new Error("Përgjigja duhet të ketë 1–280 shkronja.");
-  const { error } = await supabase
-    .from("daily_question_answers")
-    .upsert({ question_id: questionId, author_id: uid, author_name: authorName.trim(), text: clean }, { onConflict: "question_id,author_id" });
-  if (error) throw error;
-}
-
-export async function deleteAnswer(id: string): Promise<void> {
-  const { error } = await supabase.from("daily_question_answers").delete().eq("id", id);
-  if (error) throw error;
+  if (!clean) throw new Error("daily_answer_length");
+  const { error } = await supabase.rpc("edit_daily_answer", { p_comment: commentId, p_text: clean });
+  if (error) throw new Error(error.message);
 }

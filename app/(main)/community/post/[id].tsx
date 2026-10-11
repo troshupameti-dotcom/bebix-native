@@ -20,6 +20,7 @@ import {
   CommunityPost, CommunityComment,
 } from "@/lib/communityData";
 import { friendlyError } from "@/lib/errors/userMessage";
+import { answerErrorKey, DAILY_ANSWER_MAX, editDailyAnswer, myAnswer } from "@/lib/community/dailyQuestion";
 
 const MAX_COMMENT = 1000;
 
@@ -78,7 +79,8 @@ function CommentRow({
 export default function PostDetailScreen() {
   const { t } = useTranslation();
   const theme = useThemeColors();
-  const { id } = useLocalSearchParams<{ id: string }>();
+  // `compose=1`: hapur nga "Përgjigju" te karta e Pyetjes së ditës.
+  const { id, compose } = useLocalSearchParams<{ id: string; compose?: string }>();
   const { state } = useAppState();
   const myId = useCurrentUserId();
   const [loading, setLoading] = useState(true);
@@ -89,6 +91,8 @@ export default function PostDetailScreen() {
   const [replyTo, setReplyTo] = useState<CommunityComment | null>(null);
   const [sending, setSending] = useState(false);
   const [commentMenu, setCommentMenu] = useState<ModerationTarget | null>(null);
+  // Pyetja e ditës: ndryshimi i përgjigjes sime (një për prind).
+  const [editing, setEditing] = useState(false);
 
   const load = useCallback(async (quiet = false) => {
     if (!id) return;
@@ -115,12 +119,43 @@ export default function PostDetailScreen() {
 
   const topLevel = comments.filter((c) => c.parentId === null);
   const repliesOf = (commentId: string) => comments.filter((c) => c.parentId === commentId);
-  const canSend = draft.trim().length > 0 && !sending;
+  // Pyetja e ditës: komentet e para janë përgjigjet (1–280, një për prind); përgjigjet ndaj tyre si zakonisht.
+  const isDaily = post?.isDailyQuestion === true;
+  const mine = isDaily ? myAnswer(comments, myId) : null;
+  const dailyTop = isDaily && !replyTo;
+  const maxLength = dailyTop ? DAILY_ANSWER_MAX : MAX_COMMENT;
+  const showComposer = !(dailyTop && mine && !editing);
+  const canSend = draft.trim().length > 0 && draft.trim().length <= maxLength && !sending;
+
+  // Përgjigja ndaj një komenti e mbyll ndryshimin e përgjigjes sime (dy hyrje s'përzihen).
+  function replyToComment(c: CommunityComment) {
+    if (editing) {
+      setEditing(false);
+      setDraft("");
+    }
+    setReplyTo(c);
+  }
+
+  function startEditing() {
+    if (!mine) return;
+    haptics.tap();
+    setReplyTo(null);
+    setDraft(mine.text);
+    setEditing(true);
+  }
 
   async function handleSend() {
     if (!canSend || !id) return;
     setSending(true);
     try {
+      if (editing && mine && !replyTo) {
+        await editDailyAnswer(mine.id, draft);
+        haptics.tap();
+        setDraft("");
+        setEditing(false);
+        setComments(await fetchComments(id));
+        return;
+      }
       await addComment({
         postId: id,
         text: draft.trim(),
@@ -132,7 +167,7 @@ export default function PostDetailScreen() {
       setReplyTo(null);
       setComments(await fetchComments(id));
     } catch (err) {
-      Alert.alert(t("mod_error_title"), friendlyError(err, t, "cpost_comment_failed"));
+      Alert.alert(t("mod_error_title"), isDaily && !replyTo ? t(answerErrorKey(err)) : friendlyError(err, t, "cpost_comment_failed"));
     } finally {
       setSending(false);
     }
@@ -166,7 +201,7 @@ export default function PostDetailScreen() {
     <SafeAreaView className="flex-1 bg-cream" edges={["top"]}>
       <View className="flex-row items-center px-5 pt-2 mb-2">
         <BackButton fallback="/(main)/community" className="mr-3" />
-        <Text className="font-display text-xl text-ink">{t("cpost_title")}</Text>
+        <Text className="font-display text-xl text-ink">{isDaily ? t("dq_label") : t("cpost_title")}</Text>
       </View>
 
       <KeyboardAvoidingView className="flex-1" behavior={Platform.OS === "ios" ? "padding" : undefined} keyboardVerticalOffset={90}>
@@ -195,9 +230,9 @@ export default function PostDetailScreen() {
             ) : (
               topLevel.map((c) => (
                 <View key={c.id}>
-                  <CommentRow comment={c} onReply={setReplyTo} onMore={openCommentMenu} t={t} />
+                  <CommentRow comment={c} onReply={replyToComment} onMore={openCommentMenu} t={t} />
                   {repliesOf(c.id).map((r) => (
-                    <CommentRow key={r.id} comment={r} isReply onReply={setReplyTo} onMore={openCommentMenu} t={t} />
+                    <CommentRow key={r.id} comment={r} isReply onReply={replyToComment} onMore={openCommentMenu} t={t} />
                   ))}
                 </View>
               ))
@@ -206,6 +241,33 @@ export default function PostDetailScreen() {
         </ScrollView>
 
         <View className="px-5 pt-2 pb-3 border-t border-cream-line bg-cream">
+          {dailyTop && !mine ? <Text className="font-body text-[11px] text-ink-faint mb-2 px-1">{t("dq_one_answer_hint")}</Text> : null}
+          {dailyTop && mine && !editing ? (
+            <Pressable
+              onPress={startEditing}
+              accessibilityRole="button"
+              className="flex-row items-center justify-center rounded-full bg-olive px-4"
+              style={{ minHeight: 48 }}
+            >
+              <Text className="font-bodySemibold text-sm text-on-accent">{t("dq_edit_answer")}</Text>
+            </Pressable>
+          ) : null}
+          {editing && !replyTo ? (
+            <View className="flex-row items-center justify-between mb-2 px-1">
+              <Text className="font-body text-[11px] text-ink-faint">{t("dq_editing")}</Text>
+              <Pressable
+                onPress={() => {
+                  setEditing(false);
+                  setDraft("");
+                }}
+                hitSlop={10}
+                accessibilityRole="button"
+                accessibilityLabel={t("cancel")}
+              >
+                <Icon name="close" size={14} color="#7A7062" />
+              </Pressable>
+            </View>
+          ) : null}
           {replyTo && (
             <View className="flex-row items-center justify-between mb-2 px-1">
               <Text className="font-body text-[11px] text-ink-faint">{t("cpost_reply_to", { name: replyTo.authorName })}</Text>
@@ -214,14 +276,16 @@ export default function PostDetailScreen() {
               </Pressable>
             </View>
           )}
+          {showComposer ? (
           <View style={shadows.soft} className="flex-row items-end bg-surface rounded-xl2 px-3 py-2">
             <TextInput
               value={draft}
               onChangeText={setDraft}
-              placeholder={replyTo ? t("cpost_ph_reply") : t("cpost_ph_comment")}
+              placeholder={replyTo ? t("cpost_ph_reply") : isDaily ? t("dq_placeholder") : t("cpost_ph_comment")}
               placeholderClassName="text-ink-faint"
               multiline
-              maxLength={MAX_COMMENT}
+              autoFocus={compose === "1" && isDaily && !mine}
+              maxLength={maxLength}
               className="flex-1 font-body text-sm text-ink max-h-24 py-1.5"
             />
             <Pressable
@@ -238,6 +302,12 @@ export default function PostDetailScreen() {
               )}
             </Pressable>
           </View>
+          ) : null}
+          {showComposer && dailyTop ? (
+            <Text className="font-body text-[10px] text-ink-faint mt-1 text-right">
+              {draft.trim().length}/{DAILY_ANSWER_MAX}
+            </Text>
+          ) : null}
         </View>
       </KeyboardAvoidingView>
 

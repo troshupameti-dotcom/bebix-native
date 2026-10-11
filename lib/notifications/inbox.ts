@@ -161,3 +161,23 @@ export function buildInbox({ baby, prefs, t, lang, now = new Date() }: Input): I
 
   return items.sort((a, b) => (a.at < b.at ? 1 : -1));
 }
+
+export type UnreadAnswer = { id: string; answeredAt: string; expertName: string | null };
+
+/**
+ * Përgjigjet e palexuara të "Pyet ekspertin" si njoftime brenda app-it: push-i
+ * është i pauzuar, ndaj pa këtë prindi s'do ta mësonte përgjigjen. Zhduken sapo
+ * hapet "Pyetjet e mia" (përgjigja shënohet e lexuar në server).
+ */
+export function expertAnswerItems(answers: UnreadAnswer[], prefs: NotificationPrefs, t: T): InboxItem[] {
+  if (!isNotificationEnabled(prefs, "community_expert_answer")) return [];
+  return answers.map((a) => ({
+    id: `expert:${a.id}`,
+    icon: "shield" as IconName,
+    accent: "olive" as const,
+    title: t("inbox_expert_answer_title"),
+    body: a.expertName ? t("inbox_expert_answer_body", { name: a.expertName }) : t("inbox_expert_answer_body_plain"),
+    at: a.answeredAt,
+    route: "/(main)/community/my-questions" as Href,
+  }));
+}

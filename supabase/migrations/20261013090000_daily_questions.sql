@@ -1,139 +1,235 @@
 -- =====================================================================
--- Pyetja e ditës te Komuniteti.
+-- "Pyetja e ditës" te Komuniteti: një pyetje e redaksisë në ditë; prindërit
+-- përgjigjen me 1–2 fjali.
 --
--- Një pyetje në ditë (sipas `active_date`), përgjigje të shkurtra (≤ 280
--- shkronja), një përgjigje për prind për pyetje — e ndryshueshme.
+-- Modeli: çdo pyetje ka një "postim bazë" (community_posts) nga llogaria
+-- editoriale e Bebix-it, dhe përgjigjet janë KOMENTET e atij postimi. Kështu
+-- ripërdoren raportimi, bllokimi, numëruesit dhe njoftimet e komenteve.
 --
--- Pse tabelë e re dhe jo `community_comments`: komentet kërkojnë një
--- postim (`post_id` → community_posts). Një postim për çdo pyetje do të
--- dilte në rrjedhë dhe do të niste njoftimet "koment i ri".
+--  - community_daily_questions: pyetjet sipas datës (Europe/Belgrade). Lexim
+--    publik për ditët që kanë ardhur; shkrim vetëm nga admini.
+--  - community_daily_editorial: cila llogari e publikon postimin bazë.
+--    E cakton admini një herë:  select public.set_daily_editorial('<uuid>');
+--  - today_daily_question(): pyetja e sotme; postimin bazë e krijon herën e
+--    parë që dikush e hap (jo kur futen pyetjet, që 30 pyetjet fillestare të
+--    mos bëhen 30 postime njëherësh).
+--  - Një përgjigje (koment i parë) për prind për pyetje, 1–280 shkronja, e
+--    kontrolluar në bazë. Përgjigjet ndaj përgjigjeve mbeten si komentet e
+--    zakonshme (1–1000). Ndryshimi: edit_daily_answer() (komentet s'kanë UPDATE).
+--  - community_feed merr kolonën is_daily_question: app-i e fsheh postimin
+--    bazë nga rrjedha (karta është hyrja), por thread-i hapet normalisht.
 --
--- RLS si te komentet: leximi publik, shkrimi vetëm nga autori, admini
--- gjithçka. Emri i autorit e vendos serveri (si te komentet:
--- `community_author_name` — eksperti me emrin e vet, ndryshe emri i
--- profilit ose "Prind").
---
+-- Pyetjet fillestare janë te skedari tjetër: 20261013090100_daily_questions_seed.sql.
 -- PA EKZEKUTUAR: ekzekutoje te Supabase → SQL Editor.
 -- =====================================================================
 
-create table if not exists public.daily_questions (
+begin;
+
+-- --- Dita e Komunitetit ---------------------------------------------------
+create or replace function public.daily_question_today()
+returns date
+language sql
+stable
+set search_path = public
+as $$
+  select (now() at time zone 'Europe/Belgrade')::date;
+$$;
+
+grant execute on function public.daily_question_today() to anon, authenticated;
+
+-- --- Pyetjet ----------------------------------------------------------------
+create table if not exists public.community_daily_questions (
   id          uuid primary key default gen_random_uuid(),
-  text_sq     text not null check (char_length(btrim(text_sq)) between 5 and 200),
+  text        text not null check (char_length(btrim(text)) between 5 and 200),
   text_en     text check (text_en is null or char_length(btrim(text_en)) between 5 and 200),
   active_date date not null unique,
+  post_id     uuid unique references public.community_posts(id) on delete set null,
   created_at  timestamptz not null default now()
 );
 
-alter table public.daily_questions enable row level security;
+alter table public.community_daily_questions enable row level security;
 
--- Pyetjet e ardhshme s'shihen para kohe (vetëm admini i sheh).
-drop policy if exists "daily_questions_public_read" on public.daily_questions;
-create policy "daily_questions_public_read"
-  on public.daily_questions for select
-  using (active_date <= current_date + 1 or (select public.is_admin()));
+drop policy if exists "community_daily_questions_read" on public.community_daily_questions;
+create policy "community_daily_questions_read"
+  on public.community_daily_questions for select to anon, authenticated
+  using (active_date <= public.daily_question_today() or (select public.is_admin()));
 
-drop policy if exists "daily_questions_admin_all" on public.daily_questions;
-create policy "daily_questions_admin_all"
-  on public.daily_questions for all to authenticated
+drop policy if exists "community_daily_questions_admin" on public.community_daily_questions;
+create policy "community_daily_questions_admin"
+  on public.community_daily_questions for all to authenticated
   using ((select public.is_admin()))
   with check ((select public.is_admin()));
 
-create table if not exists public.daily_question_answers (
-  id          uuid primary key default gen_random_uuid(),
-  question_id uuid not null references public.daily_questions(id) on delete cascade,
-  author_id   uuid not null references auth.users(id) on delete cascade,
-  author_name text,
-  text        text not null,
-  created_at  timestamptz not null default now(),
-  updated_at  timestamptz not null default now(),
-  constraint daily_question_answers_text_len check (char_length(btrim(text)) between 1 and 280),
-  constraint daily_question_answers_one_per_user unique (question_id, author_id)
+-- --- Llogaria editoriale ----------------------------------------------------
+create table if not exists public.community_daily_editorial (
+  singleton  boolean primary key default true check (singleton),
+  user_id    uuid not null references auth.users(id) on delete cascade,
+  updated_at timestamptz not null default now()
 );
 
-create index if not exists daily_question_answers_question_idx
-  on public.daily_question_answers (question_id, created_at);
+alter table public.community_daily_editorial enable row level security;
 
-alter table public.daily_question_answers enable row level security;
-
-drop policy if exists "daily_answers_public_read" on public.daily_question_answers;
-create policy "daily_answers_public_read"
-  on public.daily_question_answers for select
-  using (true);
-
-drop policy if exists "daily_answers_self_insert" on public.daily_question_answers;
-create policy "daily_answers_self_insert"
-  on public.daily_question_answers for insert
-  with check ((select auth.uid()) = author_id);
-
-drop policy if exists "daily_answers_self_update" on public.daily_question_answers;
-create policy "daily_answers_self_update"
-  on public.daily_question_answers for update
-  using ((select auth.uid()) = author_id)
-  with check ((select auth.uid()) = author_id);
-
-drop policy if exists "daily_answers_self_delete" on public.daily_question_answers;
-create policy "daily_answers_self_delete"
-  on public.daily_question_answers for delete
-  using ((select auth.uid()) = author_id);
-
-drop policy if exists "daily_answers_admin_all" on public.daily_question_answers;
-create policy "daily_answers_admin_all"
-  on public.daily_question_answers for all to authenticated
+drop policy if exists "community_daily_editorial_admin" on public.community_daily_editorial;
+create policy "community_daily_editorial_admin"
+  on public.community_daily_editorial for all to authenticated
   using ((select public.is_admin()))
   with check ((select public.is_admin()));
 
--- Serveri vendos emrin dhe orët; përgjigjet pranohen vetëm për pyetjen e
--- sotme (±1 ditë për zonat kohore); ndryshimi prek vetëm tekstin.
-create or replace function public.daily_answers_guard()
-returns trigger
+-- Cakto llogarinë editoriale (vetëm admini, ose nga SQL Editor). Fik njoftimet
+-- "Koment i ri" për të: përndryshe çdo përgjigje do t'i dërgonte një njoftim.
+create or replace function public.set_daily_editorial(p_user uuid)
+returns void
+language plpgsql
+security definer
+set search_path = public
+as $$
+begin
+  if (select auth.uid()) is not null and not public.is_admin() then
+    raise exception 'not_admin';
+  end if;
+  if not exists (select 1 from auth.users where id = p_user) then
+    raise exception 'unknown_user';
+  end if;
+  insert into public.community_daily_editorial (singleton, user_id, updated_at) values (true, p_user, now())
+  on conflict (singleton) do update set user_id = excluded.user_id, updated_at = now();
+  insert into public.notification_settings (user_id, prefs) values (p_user, '{"community_comment": false}'::jsonb)
+  on conflict (user_id) do update set prefs = public.notification_settings.prefs || '{"community_comment": false}'::jsonb, updated_at = now();
+end;
+$$;
+
+revoke execute on function public.set_daily_editorial(uuid) from public, anon;
+grant execute on function public.set_daily_editorial(uuid) to authenticated;
+
+-- --- Pyetja e sotme ---------------------------------------------------------
+-- Kthen pyetjen e sotme me postimin bazë (e krijon herën e parë) dhe numrin e
+-- përgjigjeve (komentet e para). Pa pyetje për sot ose pa llogari editoriale:
+-- asnjë rresht (karta s'shfaqet).
+create or replace function public.today_daily_question()
+returns table (id uuid, text text, text_en text, active_date date, post_id uuid, answer_count integer)
 language plpgsql
 security definer
 set search_path = public
 as $$
 declare
-  v_date date;
+  v_q public.community_daily_questions;
+  v_editor uuid;
+  v_post uuid;
 begin
-  if tg_op = 'INSERT' then
-    select active_date into v_date from public.daily_questions where id = new.question_id;
-    if v_date is null or v_date < current_date - 1 or v_date > current_date + 1 then
-      raise exception 'Kjo pyetje s''pranon më përgjigje.';
-    end if;
-    new.author_name := public.community_author_name(new.author_id, new.author_name);
-    new.created_at := now();
-    new.updated_at := now();
-  else
-    new.question_id := old.question_id;
-    new.author_id := old.author_id;
-    new.author_name := old.author_name;
-    new.created_at := old.created_at;
-    new.updated_at := now();
+  select * into v_q from public.community_daily_questions q where q.active_date = public.daily_question_today();
+  if v_q.id is null then
+    return;
   end if;
-  new.text := btrim(new.text);
+
+  if v_q.post_id is null then
+    select e.user_id into v_editor from public.community_daily_editorial e where e.singleton;
+    if v_editor is null then
+      return;
+    end if;
+    -- Një postim i vetëm edhe kur dy prindër e hapin njëkohësisht.
+    select * into v_q from public.community_daily_questions q where q.id = v_q.id for update;
+    if v_q.post_id is null then
+      insert into public.community_posts (author_id, author_name, author_initial, kind, text, tag)
+      values (v_editor, 'Bebix', 'B', 'question', btrim(v_q.text), 'Pyetja e ditës')
+      returning community_posts.id into v_post;
+      update public.community_daily_questions set post_id = v_post where community_daily_questions.id = v_q.id;
+      v_q.post_id := v_post;
+    end if;
+  end if;
+
+  return query
+    select v_q.id, v_q.text, v_q.text_en, v_q.active_date, v_q.post_id,
+           (select count(*)::int from public.community_comments c where c.post_id = v_q.post_id and c.parent_id is null);
+end;
+$$;
+
+revoke execute on function public.today_daily_question() from public, anon;
+grant execute on function public.today_daily_question() to authenticated;
+
+-- --- Përgjigjet: një për prind, 1–280 ----------------------------------------
+create or replace function public.daily_answer_guard()
+returns trigger
+language plpgsql
+security definer
+set search_path = public
+as $$
+begin
+  if new.parent_id is not null then
+    return new;
+  end if;
+  if not exists (select 1 from public.community_daily_questions d where d.post_id = new.post_id) then
+    return new;
+  end if;
+  if char_length(btrim(new.text)) < 1 or char_length(btrim(new.text)) > 280 then
+    raise exception 'daily_answer_length';
+  end if;
+  -- Kyçi i prindit për këtë pyetje: dy dërgime njëkohësisht s'bëjnë dy përgjigje.
+  perform pg_advisory_xact_lock(hashtext('daily_answer:' || new.post_id::text || ':' || new.author_id::text));
+  if exists (select 1 from public.community_comments c where c.post_id = new.post_id and c.author_id = new.author_id and c.parent_id is null) then
+    raise exception 'daily_answer_exists';
+  end if;
   return new;
 end;
 $$;
 
-revoke execute on function public.daily_answers_guard() from public, anon, authenticated;
+revoke execute on function public.daily_answer_guard() from public, anon, authenticated;
 
-drop trigger if exists daily_answers_guard on public.daily_question_answers;
-create trigger daily_answers_guard before insert or update on public.daily_question_answers
-  for each row execute function public.daily_answers_guard();
+drop trigger if exists community_comments_daily_answer on public.community_comments;
+create trigger community_comments_daily_answer before insert on public.community_comments
+  for each row execute function public.daily_answer_guard();
 
--- 14 pyetjet e para: nga sot, një në ditë. `on conflict do nothing`: datat
--- që ke caktuar vetë s'mbishkruhen kur ky skedar ekzekutohet sërish.
-insert into public.daily_questions (text_sq, text_en, active_date) values
-  ($$Cili është rituali juaj i vogël para gjumit që e qetëson bebin?$$, $$What's your little bedtime ritual that calms your baby?$$, current_date),
-  ($$Çfarë ju ndihmon më shumë kur bebi zgjohet shpesh natën?$$, $$What helps you most when your baby wakes often at night?$$, current_date + 1),
-  ($$Cila ishte shija e parë që i pëlqeu bebit me ushqimet e forta?$$, $$What was the first solid food your baby loved?$$, current_date + 2),
-  ($$Si e keni lehtësuar daljen e dhëmbëve? Çfarë funksionoi te ju?$$, $$How have you eased teething? What worked for you?$$, current_date + 3),
-  ($$Kur ndiheni të lodhur, çfarë ju jep pak forcë gjatë ditës?$$, $$When you're exhausted, what gives you a little strength during the day?$$, current_date + 4),
-  ($$Cila është këshilla më e mirë që keni marrë si prindër të rinj?$$, $$What's the best advice you got as new parents?$$, current_date + 5),
-  ($$Si e organizoni ushqyerjen kur jeni jashtë shtëpisë?$$, $$How do you handle feeding when you're out of the house?$$, current_date + 6),
-  ($$Çfarë do t'i thoshit vetes në javën e parë me bebin?$$, $$What would you tell yourself in the first week with your baby?$$, current_date + 7),
-  ($$Si i ndani netët me partnerin, apo kush ju ndihmon?$$, $$How do you share nights with your partner, or who helps you?$$, current_date + 8),
-  ($$Cili ushqim i fortë ishte më i vështirë për t'u pranuar, dhe si ia dolët?$$, $$Which solid food was hardest to accept, and how did you manage?$$, current_date + 9),
-  ($$Cili është momenti i ditës që e prisni më shumë me bebin?$$, $$What's the moment of the day you look forward to most with your baby?$$, current_date + 10),
-  ($$Një gjë e vogël që e bëni vetëm për veten, edhe 10 minuta?$$, $$One small thing you do just for yourself, even 10 minutes?$$, current_date + 11),
-  ($$Si e kuptoni që bebi është i uritur apo thjesht kërkon afërsi?$$, $$How do you tell if your baby is hungry or just wants closeness?$$, current_date + 12),
-  ($$Cila lodër apo lojë e bën bebin të qeshë më shumë?$$, $$Which toy or game makes your baby laugh the most?$$, current_date + 13)
-on conflict (active_date) do nothing;
+-- Ndrysho përgjigjen time (vetëm komenti i parë te një pyetje e ditës).
+create or replace function public.edit_daily_answer(p_comment uuid, p_text text)
+returns void
+language plpgsql
+security definer
+set search_path = public
+as $$
+declare
+  v_text text := btrim(regexp_replace(coalesce(p_text, ''), '\s+', ' ', 'g'));
+begin
+  if char_length(v_text) < 1 or char_length(v_text) > 280 then
+    raise exception 'daily_answer_length';
+  end if;
+  update public.community_comments c
+  set text = v_text
+  where c.id = p_comment
+    and c.author_id = (select auth.uid())
+    and c.parent_id is null
+    and exists (select 1 from public.community_daily_questions d where d.post_id = c.post_id);
+  if not found then
+    raise exception 'not_found';
+  end if;
+end;
+$$;
+
+revoke execute on function public.edit_daily_answer(uuid, text) from public, anon;
+grant execute on function public.edit_daily_answer(uuid, text) to authenticated;
+
+-- --- Rrjedha: kolona is_daily_question (e njëjta pamje + një kolonë në fund) ---
+create or replace view public.community_feed with (security_invoker = true) as
+ select p.id,
+    p.author_id,
+    p.author_name,
+    p.author_initial,
+    p.author_is_expert,
+    p.accent,
+    p.kind,
+    p.text,
+    p.tag,
+    p.icon,
+    p.group_id,
+    g.name as group_name,
+    p.created_at,
+    p.updated_at,
+    p.like_count::bigint as like_count,
+    p.comment_count::bigint as comment_count,
+    p.media,
+    (select e.specialty_key from public.community_experts e where e.user_id = p.author_id) as author_specialty,
+    exists (select 1 from public.community_daily_questions d where d.post_id = p.id) as is_daily_question
+   from public.community_posts p
+     left join public.community_groups g on g.id = p.group_id
+  where not (exists (select 1 from public.community_blocks b
+          where b.blocker_id = (select auth.uid()) and b.blocked_id = p.author_id))
+    and (p.author_id = (select auth.uid()) or p.open_report_count < 3);
+
+commit;

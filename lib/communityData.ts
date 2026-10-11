@@ -113,6 +113,8 @@ export type CommunityPost = {
   liked: boolean;
   saved: boolean;
   media: PostMedia[];
+  /** Postimi bazë i "Pyetjes së ditës": s'del në rrjedhë, komentet janë përgjigjet. */
+  isDailyQuestion: boolean;
 };
 
 export type CommentExpert = { kind: string; specialty: string | null };
@@ -298,7 +300,23 @@ function mapFeedRow(p: any, likedIds: Set<string>, savedIds: Set<string>): Commu
     liked: likedIds.has(p.id),
     saved: savedIds.has(p.id),
     media: withUrls(p.media as StoredMedia[] | null),
+    isDailyQuestion: p.is_daily_question === true,
   };
+}
+
+/**
+ * Kolona `is_daily_question` vjen me migrimin e "Pyetjes së ditës". Para tij,
+ * filtri do të kthente gabimin 42703: atëherë pyetet sërish pa të (dhe s'pyetet
+ * më me të deri në hapjen tjetër të app-it).
+ */
+let dailyColumn = true;
+async function withoutDailyPosts<T>(build: (filter: boolean) => PromiseLike<{ data: T | null; error: { code?: string } | null }>) {
+  if (dailyColumn) {
+    const res = await build(true);
+    if (res.error?.code !== "42703") return res;
+    dailyColumn = false;
+  }
+  return build(false);
 }
 
 /** Sa postime lexohen njëherësh; të tjerat vijnë kur prindi zbret poshtë. */
@@ -343,14 +361,9 @@ async function followScope(uid: string): Promise<{ authorIds: string[]; groupIds
 
 export async function fetchFeed(options: FeedOptions = {}): Promise<CommunityPost[]> {
   const uid = await getCurrentUserId();
-  let query = supabase.from("community_feed").select("*");
-  if (options.before) query = query.lt("created_at", options.before);
-
   const tab = options.tab ?? "all";
-  if (tab === "experts") {
-    query = query.eq("author_is_expert", true);
-    if (options.specialty) query = query.eq("author_specialty", options.specialty);
-  } else if (tab === "following") {
+  let followFilter: string | null = null;
+  if (tab === "following") {
     if (!uid) return [];
     const { authorIds, groupIds } = await followScope(uid);
     const parts = [
@@ -358,15 +371,25 @@ export async function fetchFeed(options: FeedOptions = {}): Promise<CommunityPos
       groupIds.length ? `group_id.in.(${groupIds.join(",")})` : "",
     ].filter(Boolean);
     if (parts.length === 0) return [];
-    query = query.or(parts.join(","));
+    followFilter = parts.join(",");
   }
-  if (options.topic) query = query.eq("tag", options.topic);
   const q = sanitizeSearch(options.query ?? "");
-  if (q) query = query.or(`text.ilike.*${q}*,tag.ilike.*${q}*,author_name.ilike.*${q}*`);
 
-  const { data, error } = await query
-    .order("created_at", { ascending: false })
-    .limit(options.limit ?? FEED_PAGE_SIZE);
+  // Postimi bazë i "Pyetjes së ditës" s'del në rrjedhë: hyrja është karta.
+  const { data, error } = await withoutDailyPosts((hideDaily) => {
+    let query = supabase.from("community_feed").select("*");
+    if (hideDaily) query = query.eq("is_daily_question", false);
+    if (options.before) query = query.lt("created_at", options.before);
+    if (tab === "experts") {
+      query = query.eq("author_is_expert", true);
+      if (options.specialty) query = query.eq("author_specialty", options.specialty);
+    } else if (followFilter) {
+      query = query.or(followFilter);
+    }
+    if (options.topic) query = query.eq("tag", options.topic);
+    if (q) query = query.or(`text.ilike.*${q}*,tag.ilike.*${q}*,author_name.ilike.*${q}*`);
+    return query.order("created_at", { ascending: false }).limit(options.limit ?? FEED_PAGE_SIZE);
+  });
   if (error) throw error;
 
   let likedIds = new Set<string>();
@@ -590,13 +613,12 @@ export async function fetchComments(postId: string): Promise<CommunityComment[]>
 
 /** Koha e postimit më të ri në rrjedhë: pas saj kontrollohet nëse ka postime të reja ("Postime të reja ↑"). */
 export async function fetchNewestPostAt(): Promise<string | null> {
-  const { data } = await supabase
-    .from("community_feed")
-    .select("created_at")
-    .order("created_at", { ascending: false })
-    .limit(1)
-    .maybeSingle();
-  return (data?.created_at as string | undefined) ?? null;
+  const { data } = await withoutDailyPosts((hideDaily) => {
+    let query = supabase.from("community_feed").select("created_at");
+    if (hideDaily) query = query.eq("is_daily_question", false);
+    return query.order("created_at", { ascending: false }).limit(1).maybeSingle();
+  });
+  return ((data as { created_at?: string } | null)?.created_at as string | undefined) ?? null;
 }
 
 export async function addComment(input: { postId: string; text: string; parentId?: string | null; authorName: string }) {

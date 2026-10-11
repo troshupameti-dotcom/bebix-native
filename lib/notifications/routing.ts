@@ -21,6 +21,7 @@ const BY_TYPE: Record<string, string> = {
   team: "/(main)/baby",
   shift: "/(main)/baby",
   care: "/(main)/baby/parent-care",
+  expert_answer: "/(main)/community/my-questions",
   offer: "/(main)/shop",
 };
 

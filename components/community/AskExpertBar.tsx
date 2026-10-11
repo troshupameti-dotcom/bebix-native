@@ -6,11 +6,13 @@ import { shadows } from "@/lib/shadows";
 import { haptics } from "@/lib/haptics";
 import { useThemeColors } from "@/lib/theme/useThemeColors";
 import { useTranslation } from "@/lib/i18n/LanguageContext";
-import { fetchExpertQuestionsStatus, fetchQueue, isVerifiedExpert } from "@/lib/community/expertQuestions";
+import { fetchExpertQuestionsStatus, fetchInbox, isVerifiedExpert } from "@/lib/community/expertQuestions";
+import { ASK_EXPERT_ENABLED } from "@/lib/community/askExpertEnabled";
 
 /**
  * "Pyet ekspertin" + "Pyetjet e mia" (me pikë të kuqe kur ka përgjigje të
- * palexuar). Ekspertëve të verifikuar u del edhe "Pyetje për përgjigje (N)".
+ * palexuar). Ekspertëve të verifikuar u del edhe "Pyetje për ty (N)" për repartin e tyre.
+ * Fshihet krejt pa ASK_EXPERT_ENABLED ose pa migrimin në server.
  * `refreshKey` ndryshon me tërheqjen poshtë dhe kthimin te skeda.
  */
 export function AskExpertBar({ refreshKey }: { refreshKey: number }) {
@@ -23,6 +25,7 @@ export function AskExpertBar({ refreshKey }: { refreshKey: number }) {
   const [available, setAvailable] = useState(false);
 
   useEffect(() => {
+    if (!ASK_EXPERT_ENABLED) return;
     let alive = true;
     void fetchExpertQuestionsStatus().then((s) => {
       if (!alive) return;
@@ -33,7 +36,7 @@ export function AskExpertBar({ refreshKey }: { refreshKey: number }) {
       if (!alive) return;
       if (!expert) return setQueueCount(null);
       try {
-        const q = await fetchQueue();
+        const q = await fetchInbox();
         if (alive) setQueueCount(q.length);
       } catch {
         if (alive) setQueueCount(0);
@@ -44,18 +47,18 @@ export function AskExpertBar({ refreshKey }: { refreshKey: number }) {
     };
   }, [refreshKey]);
 
-  const go = (path: "/community/ask" | "/community/my-questions" | "/community/expert-inbox") => {
+  const go = (path: "/community/ask-expert" | "/community/my-questions" | "/community/expert-inbox") => {
     haptics.tap();
     router.push(path);
   };
 
-  if (!available) return null;
+  if (!ASK_EXPERT_ENABLED || !available) return null;
 
   return (
     <View className="mx-5 mt-3">
       <View className="flex-row" style={{ gap: 8 }}>
         <Pressable
-          onPress={() => go("/community/ask")}
+          onPress={() => go("/community/ask-expert")}
           accessibilityRole="button"
           style={shadows.soft}
           className="flex-1 flex-row items-center justify-center rounded-xl2 bg-surface px-3"

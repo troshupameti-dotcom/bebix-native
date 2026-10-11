@@ -8,32 +8,63 @@ import { shadows } from "@/lib/shadows";
 import { haptics } from "@/lib/haptics";
 import { useThemeColors } from "@/lib/theme/useThemeColors";
 import { useTranslation } from "@/lib/i18n/LanguageContext";
+import { useAppState } from "@/lib/state/AppStateContext";
+import { useSpecialties } from "@/lib/community/useSpecialties";
+import { specialtyEmoji, specialtyLabel } from "@/lib/community/specialties";
 import {
-  askExpert, BODY_MAX, BODY_MIN, CATEGORIES, categoryKey, cleanBody, errorKey, fetchMyQuestions, remainingThisWeek, type QuestionCategory,
+  ageInMonths, askExpertQuestion, BODY_MAX, BODY_MIN, cleanBody, DEFAULT_SPECIALTY, errorKey, fetchRemaining,
 } from "@/lib/community/expertQuestions";
 
+/** Kutia e zgjedhjes (✓), e njëjtë për "E kuptoj" dhe "Trego moshën". */
+function Check({ checked, label, hint, onPress }: { checked: boolean; label: string; hint?: string; onPress: () => void }) {
+  const theme = useThemeColors();
+  return (
+    <Pressable
+      onPress={() => {
+        haptics.select();
+        onPress();
+      }}
+      accessibilityRole="checkbox"
+      accessibilityState={{ checked }}
+      className="flex-row items-start rounded-xl2 bg-surface p-3.5"
+      style={[shadows.soft, { minHeight: 48 }]}
+    >
+      <View className={`mr-3 mt-0.5 h-6 w-6 items-center justify-center rounded-md border-2 ${checked ? "border-olive bg-olive" : "border-cream-line"}`}>
+        {checked ? <Icon name="check" size={14} color={theme.onAccent} /> : null}
+      </View>
+      <View className="flex-1">
+        <Text className="font-bodyMedium text-sm text-ink">{label}</Text>
+        {hint ? <Text className="mt-0.5 font-body text-xs leading-5 text-ink-soft">{hint}</Text> : null}
+      </View>
+    </Pressable>
+  );
+}
+
 /**
- * "Pyet ekspertin": pyetje private (20–600 shkronja), kategoria, dhe
- * zgjedhja "Publiko pa emër pas përgjigjes" (e fikur si parazgjedhje).
- * Pas dërgimit: mesazhi "Pyetja u dërgua…".
+ * "Pyet ekspertin": reparti (parazgjedhja pediatri), pyetja 20–600 shkronja dhe,
+ * nëse prindi do, mosha e bebit në muaj (kurrë emri apo data). Paralajmërimi
+ * mjekësor është mbi formë dhe duhet konfirmuar para dërgimit.
  */
 export default function AskExpertScreen() {
   const router = useRouter();
-  const { t } = useTranslation();
+  const { t, language } = useTranslation();
   const theme = useThemeColors();
+  const { state } = useAppState();
+  const specialties = useSpecialties();
+  const [specialty, setSpecialty] = useState(DEFAULT_SPECIALTY);
   const [body, setBody] = useState("");
-  const [category, setCategory] = useState<QuestionCategory | null>(null);
-  const [publish, setPublish] = useState(false);
+  const [ack, setAck] = useState(false);
+  const [shareAge, setShareAge] = useState(false);
   const [sending, setSending] = useState(false);
   const [sent, setSent] = useState(false);
   const [remaining, setRemaining] = useState<number | null>(null);
 
+  const months = ageInMonths(state.profile.babyDob);
+
   useFocusEffect(
     useCallback(() => {
       let alive = true;
-      fetchMyQuestions()
-        .then((list) => alive && setRemaining(remainingThisWeek(list.map((q) => q.createdAt))))
-        .catch(() => {});
+      void fetchRemaining().then((n) => alive && setRemaining(n));
       return () => {
         alive = false;
       };
@@ -41,17 +72,18 @@ export default function AskExpertScreen() {
   );
 
   const length = body.trim().length;
-  const canSend = !!cleanBody(body) && !!category && !sending && remaining !== 0;
+  const canSend = !!cleanBody(body) && ack && !sending && remaining !== 0;
 
   async function send() {
-    if (!canSend || !category) return;
+    if (!canSend) return;
     setSending(true);
     try {
-      await askExpert(category, body, publish);
+      await askExpertQuestion(specialty, body, shareAge ? months : null);
       haptics.success();
       setSent(true);
     } catch (err) {
       Alert.alert(t("mod_error_title"), t(errorKey(err)));
+      void fetchRemaining().then(setRemaining);
     } finally {
       setSending(false);
     }
@@ -66,7 +98,10 @@ export default function AskExpertScreen() {
         <Text className="mt-4 text-center font-display text-xl text-ink">{t("eq_sent_title")}</Text>
         <Text className="mt-2 text-center font-body text-sm leading-6 text-ink-soft">{t("eq_sent_body")}</Text>
         <Pressable
-          onPress={() => router.replace("/community/my-questions")}
+          onPress={() => {
+            haptics.tap();
+            router.replace("/community/my-questions");
+          }}
           accessibilityRole="button"
           className="mt-6 items-center justify-center rounded-full bg-olive px-6"
           style={{ minHeight: 48 }}
@@ -86,25 +121,37 @@ export default function AskExpertScreen() {
 
       <KeyboardAvoidingView className="flex-1" behavior={Platform.OS === "ios" ? "padding" : undefined}>
         <ScrollView className="flex-1 px-5" contentContainerStyle={{ paddingBottom: 24 }} keyboardShouldPersistTaps="handled">
-          <Text className="mb-4 font-body text-sm leading-6 text-ink-soft">{t("eq_intro")}</Text>
+          {/* Paralajmërimi në krye: s'dërgohet pa e konfirmuar. */}
+          <View className="mb-3 rounded-xl2 bg-orange-bg p-3.5">
+            <Text className="font-bodyMedium text-[13px] leading-5 text-orange">{t("eq_disclaimer")}</Text>
+          </View>
+          <Check checked={ack} label={t("eq_disclaimer_ack")} onPress={() => setAck((v) => !v)} />
 
-          <Text className="mb-2 font-bodySemibold text-[13px] text-ink">{t("eq_category")}</Text>
+          <Text className="mb-4 mt-4 font-body text-sm leading-6 text-ink-soft">{t("eq_intro")}</Text>
+
+          <Text className="mb-2 font-bodySemibold text-[13px] text-ink">{t("eq_specialty")}</Text>
           <View className="mb-4 flex-row flex-wrap" style={{ gap: 8 }}>
-            {CATEGORIES.map((c) => (
-              <Pressable
-                key={c}
-                onPress={() => {
-                  haptics.select();
-                  setCategory(c);
-                }}
-                accessibilityRole="button"
-                accessibilityState={{ selected: category === c }}
-                className={`items-center justify-center rounded-full px-4 ${category === c ? "bg-ink" : "bg-cream-soft"}`}
-                style={{ minHeight: 40 }}
-              >
-                <Text className={`font-bodyMedium text-[13px] ${category === c ? "text-on-accent" : "text-ink-soft"}`}>{t(categoryKey(c))}</Text>
-              </Pressable>
-            ))}
+            {specialties.list.map((s) => {
+              const on = specialty === s.key;
+              return (
+                <Pressable
+                  key={s.key}
+                  onPress={() => {
+                    haptics.select();
+                    setSpecialty(s.key);
+                  }}
+                  accessibilityRole="button"
+                  accessibilityState={{ selected: on }}
+                  className={`flex-row items-center justify-center rounded-full px-4 ${on ? "bg-ink" : "bg-cream-soft"}`}
+                  style={{ minHeight: 44 }}
+                >
+                  <Text className="mr-1.5 text-[13px]">{specialtyEmoji(s.key, specialties.list)}</Text>
+                  <Text className={`font-bodyMedium text-[13px] ${on ? "text-on-accent" : "text-ink-soft"}`}>
+                    {specialtyLabel(s.key, language, specialties.list)}
+                  </Text>
+                </Pressable>
+              );
+            })}
           </View>
 
           <Text className="mb-2 font-bodySemibold text-[13px] text-ink">{t("eq_question")}</Text>
@@ -127,33 +174,15 @@ export default function AskExpertScreen() {
             </Text>
           </View>
 
-          <Pressable
-            onPress={() => {
-              haptics.select();
-              setPublish((v) => !v);
-            }}
-            accessibilityRole="checkbox"
-            accessibilityState={{ checked: publish }}
-            className="mt-4 flex-row items-start rounded-xl2 bg-surface p-3.5"
-            style={shadows.soft}
-          >
-            <View
-              className={`mr-3 mt-0.5 h-6 w-6 items-center justify-center rounded-md border-2 ${publish ? "border-olive bg-olive" : "border-cream-line"}`}
-            >
-              {publish ? <Icon name="check" size={14} color={theme.onAccent} /> : null}
+          {/* Mosha: vetëm kur dihet datëlindja; s'ndahet pa e zgjedhur prindi. */}
+          {months !== null ? (
+            <View className="mt-4">
+              <Check checked={shareAge} label={t("eq_share_age", { n: months })} hint={t("eq_share_age_hint")} onPress={() => setShareAge((v) => !v)} />
             </View>
-            <View className="flex-1">
-              <Text className="font-bodyMedium text-sm text-ink">{t("eq_publish")}</Text>
-              <Text className="mt-0.5 font-body text-xs leading-5 text-ink-soft">{t("eq_publish_hint")}</Text>
-            </View>
-          </Pressable>
-
-          <View className="mt-4 rounded-xl2 bg-orange-bg p-3.5">
-            <Text className="font-body text-xs leading-5 text-orange">{t("eq_disclaimer")}</Text>
-          </View>
+          ) : null}
 
           {remaining !== null ? (
-            <Text className="mt-3 text-center font-body text-[11px] text-ink-faint">
+            <Text className="mt-4 text-center font-body text-[11px] text-ink-faint">
               {remaining === 0 ? t("eq_err_limit") : t("eq_remaining", { n: remaining })}
             </Text>
           ) : null}
@@ -164,6 +193,7 @@ export default function AskExpertScreen() {
             onPress={() => void send()}
             disabled={!canSend}
             accessibilityRole="button"
+            accessibilityState={{ disabled: !canSend }}
             className={`items-center justify-center rounded-2xl ${canSend ? "bg-olive" : "bg-cream-line"}`}
             style={{ minHeight: 52 }}
           >

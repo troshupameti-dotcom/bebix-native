@@ -85,6 +85,23 @@ Një **kartë e vetme sugjerimi** te faqja e bebit dhe në krye të Dyqanit, me 
 - **Ku e rihap:** **Më shumë → Çfarë ka të re**.
 - **Herën tjetër:** për një listë të re, ndrysho `WHATS_NEW_VERSION` dhe rreshtat te `lib/whatsNew.ts`; ekrani del sërish një herë.
 
+## Komuniteti: "Pyet ekspertin"
+- **Çfarë bën:** prindi zgjedh repartin (parazgjedhja: pediatri), shkruan pyetjen (20–600) dhe, nëse do, ndan moshën e bebit në muaj. Paralajmërimi mjekësor duhet konfirmuar para dërgimit. Asgjë s'publikohet në feed.
+- **"Pyetjet e mia":** statusi (Në pritje / U përgjigj / E mbyllur), përgjigjja me emrin dhe repartin e ekspertit, pikë e kuqe për përgjigjet e palexuara; mbyllje dhe fshirje.
+- **Eksperti:** te Komuniteti i del "Pyetje për ty (N)" për repartin e vet, më të vjetrat para. Sheh vetëm tekstin, repartin, moshën në muaj dhe kohën. Përgjigje 20–1500; "Kalo" e kthen në radhë; një përgjigje për pyetje (kontroll në bazë).
+- **Kufiri:** 3 pyetje në 7 ditë, në bazë (fshirja s'e rihap).
+- **Njoftimi:** `community_expert_answer` në radhën e serverit (për kur të rikthehet push-i) dhe te Njoftimet në app; prekja hap "Pyetjet e mia".
+- **Ndezja:** `EXPO_PUBLIC_ASK_EXPERT=1` te EAS, pasi të jetë ekzekutuar `20261014090000_expert_questions.sql`.
+
+## Komuniteti: "Pyetja e ditës"
+- **Çfarë bën:** kartë në krye të Komunitetit me pyetjen e redaksisë, numrin e përgjigjeve, 2 përgjigjet më të reja dhe "Përgjigju". Prekja hap thread-in e postimit bazë.
+- **Përgjigjet** janë komentet e postimit bazë: raportimi, bllokimi dhe numëruesit janë ato ekzistuese. Një përgjigje për prind (1–280), e ndryshueshme dhe e fshishme; përgjigjet ndaj saj si komentet e zakonshme.
+- **Postimi bazë** del nga llogaria editoriale me emrin "Bebix", krijohet herën e parë që hapet pyetja e ditës, dhe s'shfaqet në rrjedhë (as në web).
+- **Dita:** Europe/Belgrade. Pa pyetje për sot, karta s'shfaqet.
+- **Hapat e adminit (një herë):** krijo një llogari për redaksinë (p.sh. me `info.bebix@gmail.com`), merr id-në e saj te Supabase → Authentication, dhe ekzekuto te SQL Editor: `select public.set_daily_editorial('<id-ja>');` (fik edhe njoftimet "Koment i ri" për atë llogari).
+- **Pyetje të reja:** Supabase → Table Editor → `community_daily_questions` → Insert: `text` (shqip), `text_en` (opsionale), `active_date` (dita). Një pyetje për ditë.
+- **Ndezja:** `EXPO_PUBLIC_DAILY_QUESTION=1` te EAS, pasi të jenë ekzekutuar `20261013090000_daily_questions.sql` dhe `20261013090100_daily_questions_seed.sql` (30 pyetje nga e nesërmja).
+
 ---
 
 ## Çfarë pret llogarinë Apple

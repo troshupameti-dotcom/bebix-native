@@ -10,31 +10,36 @@ import { useThemeColors } from "@/lib/theme/useThemeColors";
 import { useTranslation } from "@/lib/i18n/LanguageContext";
 import { useToast } from "@/lib/toast/ToastContext";
 import { logWarn } from "@/lib/log";
+import { useSpecialties } from "@/lib/community/useSpecialties";
+import { specialtyLabel } from "@/lib/community/specialties";
 import {
-  ANSWER_MAX, answerQuestion, categoryKey, claimQuestion, errorKey, fetchQueue, isVerifiedExpert, skipQuestion, waitingHours, type QueueItem,
+  ANSWER_MAX, ANSWER_MIN, answerQuestion, claimQuestion, cleanAnswer, errorKey, fetchInbox, isVerifiedExpert, passQuestion, waitingHours, waitingLabel,
+  type InboxQuestion,
 } from "@/lib/community/expertQuestions";
 
 /**
- * "Pyetje për përgjigje" (vetëm ekspertët e verifikuar): pyetjet në pritje,
- * më të vjetrat para, me kategorinë dhe kohën e pritjes. Eksperti sheh vetëm
- * tekstin dhe kategorinë — asnjë emër, asnjë të dhënë bebi.
+ * "Pyetje për ty" (vetëm ekspertët e verifikuar): pyetjet në pritje të
+ * repartit të ekspertit, më të vjetrat para, me kohën e pritjes. Eksperti sheh
+ * vetëm tekstin, repartin dhe moshën e bebit në muaj kur prindi e ka ndarë —
+ * asnjë emër, asnjë foto.
  */
 export default function ExpertInboxScreen() {
-  const { t } = useTranslation();
+  const { t, language } = useTranslation();
   const theme = useThemeColors();
   const { showToast } = useToast();
+  const specialties = useSpecialties();
   const [allowed, setAllowed] = useState<boolean | null>(null);
-  const [queue, setQueue] = useState<QueueItem[] | null>(null);
+  const [queue, setQueue] = useState<InboxQuestion[] | null>(null);
   const [refreshing, setRefreshing] = useState(false);
-  const [open, setOpen] = useState<QueueItem | null>(null);
+  const [open, setOpen] = useState<InboxQuestion | null>(null);
   const [answer, setAnswer] = useState("");
-  const [busy, setBusy] = useState<"send" | "skip" | null>(null);
+  const [busy, setBusy] = useState<"send" | "pass" | null>(null);
 
   const load = useCallback(async () => {
     try {
       const ok = await isVerifiedExpert();
       setAllowed(ok);
-      setQueue(ok ? await fetchQueue() : []);
+      setQueue(ok ? await fetchInbox() : []);
     } catch (err) {
       logWarn("Expert inbox load error:", err);
       setQueue((prev) => prev ?? []);
@@ -47,7 +52,7 @@ export default function ExpertInboxScreen() {
     }, [load])
   );
 
-  async function openQuestion(q: QueueItem) {
+  async function openQuestion(q: InboxQuestion) {
     haptics.select();
     try {
       // E merr pyetjen, që një ekspert tjetër të mos përgjigjet njëkohësisht.
@@ -64,8 +69,11 @@ export default function ExpertInboxScreen() {
     }
   }
 
+  const valid = !!cleanAnswer(answer);
+  const length = answer.trim().length;
+
   async function send() {
-    if (!open || !answer.trim() || busy) return;
+    if (!open || !valid || busy) return;
     setBusy("send");
     try {
       await answerQuestion(open.id, answer);
@@ -80,11 +88,11 @@ export default function ExpertInboxScreen() {
     }
   }
 
-  async function skip() {
+  async function pass() {
     if (!open || busy) return;
-    setBusy("skip");
+    setBusy("pass");
     try {
-      await skipQuestion(open.id);
+      await passQuestion(open.id);
       haptics.select();
       setOpen(null);
       await load();
@@ -95,10 +103,10 @@ export default function ExpertInboxScreen() {
     }
   }
 
-  const waitLabel = (createdAt: string) => {
-    const h = waitingHours(createdAt);
-    return h < 1 ? t("eq_wait_new") : t("eq_wait_hours", { n: h });
-  };
+  const meta = (q: InboxQuestion) =>
+    [specialtyLabel(q.specialty, language, specialties.list) ?? q.specialty, q.babyAgeMonths !== null ? t("eq_baby_age", { n: q.babyAgeMonths }) : null]
+      .filter(Boolean)
+      .join(" · ");
 
   return (
     <SafeAreaView className="flex-1 bg-cream" edges={["top"]}>
@@ -125,7 +133,7 @@ export default function ExpertInboxScreen() {
         }
       >
         <Text className="mb-4 font-body text-xs leading-5 text-ink-soft">{t("eq_inbox_intro")}</Text>
-        {queue === null ? <ActivityIndicator className="mt-10 text-olive" /> : null}
+        {queue === null ? <ActivityIndicator className="mt-10" color={theme.olive} /> : null}
         {allowed === false ? <Text className="mt-6 text-center font-body text-sm text-ink-soft">{t("eq_inbox_only_experts")}</Text> : null}
         {allowed && queue && queue.length === 0 ? <Text className="mt-6 text-center font-body text-sm text-ink-soft">{t("eq_inbox_empty")}</Text> : null}
 
@@ -133,11 +141,11 @@ export default function ExpertInboxScreen() {
           const late = waitingHours(q.createdAt) >= 24;
           return (
             <Pressable key={q.id} onPress={() => void openQuestion(q)} accessibilityRole="button" style={shadows.soft} className="mb-3 rounded-xl2 bg-surface p-4">
-              <View className="mb-2 flex-row items-center" style={{ gap: 8 }}>
+              <View className="mb-2 flex-row flex-wrap items-center" style={{ gap: 8 }}>
                 <View className="rounded-full bg-cream-soft px-2.5 py-1">
-                  <Text className="font-bodySemibold text-[11px] text-ink-soft">{t(categoryKey(q.category))}</Text>
+                  <Text className="font-bodySemibold text-[11px] text-ink-soft">{meta(q)}</Text>
                 </View>
-                <Text className={`font-body text-[11px] ${late ? "text-orange" : "text-ink-faint"}`}>{waitLabel(q.createdAt)}</Text>
+                <Text className={`font-body text-[11px] ${late ? "text-orange" : "text-ink-faint"}`}>{waitingLabel(q.createdAt, t)}</Text>
                 {q.claimedByMine ? <Text className="ml-auto font-bodySemibold text-[11px] text-olive">{t("eq_claimed_by_me")}</Text> : null}
               </View>
               <Text className="font-body text-sm leading-5 text-ink" numberOfLines={4}>
@@ -154,7 +162,7 @@ export default function ExpertInboxScreen() {
             {open ? (
               <>
                 <Text className="font-bodySemibold text-[11px] text-ink-faint">
-                  {t(categoryKey(open.category))} · {waitLabel(open.createdAt)}
+                  {meta(open)} · {waitingLabel(open.createdAt, t)}
                 </Text>
                 <Text className="mt-1 font-body text-[15px] leading-6 text-ink">{open.body}</Text>
                 <View style={shadows.soft} className="mt-4 rounded-xl2 bg-surface px-3 py-2">
@@ -169,31 +177,35 @@ export default function ExpertInboxScreen() {
                     style={{ minHeight: 140, textAlignVertical: "top" }}
                   />
                 </View>
-                <Text className="mt-1.5 text-right font-body text-[11px] text-ink-faint">
-                  {answer.length}/{ANSWER_MAX}
-                </Text>
+                <View className="mt-1.5 flex-row justify-between px-1">
+                  <Text className="font-body text-[11px] text-ink-faint">{length < ANSWER_MIN ? t("eq_min_chars", { n: ANSWER_MIN - length }) : ""}</Text>
+                  <Text className="font-body text-[11px] text-ink-faint">
+                    {length}/{ANSWER_MAX}
+                  </Text>
+                </View>
                 <Text className="mt-1 font-body text-[11px] leading-4 text-ink-faint">{t("eq_expert_note")}</Text>
                 <View className="mt-4 flex-row" style={{ gap: 8 }}>
                   <Pressable
-                    onPress={() => void skip()}
+                    onPress={() => void pass()}
                     disabled={!!busy}
                     accessibilityRole="button"
                     className="items-center justify-center rounded-2xl bg-cream-soft px-5"
                     style={{ minHeight: 52 }}
                   >
-                    {busy === "skip" ? <ActivityIndicator /> : <Text className="font-bodySemibold text-sm text-ink">{t("eq_skip")}</Text>}
+                    {busy === "pass" ? <ActivityIndicator color={theme.ink} /> : <Text className="font-bodySemibold text-sm text-ink">{t("eq_skip")}</Text>}
                   </Pressable>
                   <Pressable
                     onPress={() => void send()}
-                    disabled={!answer.trim() || !!busy}
+                    disabled={!valid || !!busy}
                     accessibilityRole="button"
-                    className={`flex-1 items-center justify-center rounded-2xl ${answer.trim() ? "bg-olive" : "bg-cream-line"}`}
+                    accessibilityState={{ disabled: !valid || !!busy }}
+                    className={`flex-1 items-center justify-center rounded-2xl ${valid ? "bg-olive" : "bg-cream-line"}`}
                     style={{ minHeight: 52 }}
                   >
                     {busy === "send" ? (
                       <ActivityIndicator color={theme.onAccent} />
                     ) : (
-                      <Text className={`font-bodySemibold text-sm ${answer.trim() ? "text-on-accent" : "text-ink-faint"}`}>{t("eq_send_answer")}</Text>
+                      <Text className={`font-bodySemibold text-sm ${valid ? "text-on-accent" : "text-ink-faint"}`}>{t("eq_send_answer")}</Text>
                     )}
                   </Pressable>
                 </View>

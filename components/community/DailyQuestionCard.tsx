@@ -8,13 +8,16 @@ import { haptics } from "@/lib/haptics";
 import { useThemeColors } from "@/lib/theme/useThemeColors";
 import { useTranslation } from "@/lib/i18n/LanguageContext";
 import { logWarn } from "@/lib/log";
-import { CARD_PREVIEW, fetchAnswers, fetchTodayQuestion, type DailyAnswer, type DailyQuestion } from "@/lib/community/dailyQuestion";
+import { fetchComments, getCurrentUserId, type CommunityComment } from "@/lib/communityData";
+import { DAILY_QUESTION_ENABLED } from "@/lib/community/dailyQuestionEnabled";
+import { fetchTodayQuestion, latestAnswers, myAnswer, type DailyQuestion } from "@/lib/community/dailyQuestion";
 
-type Loaded = { question: DailyQuestion; answers: DailyAnswer[]; total: number; mine: DailyAnswer | null };
+type Loaded = { question: DailyQuestion; answers: CommunityComment[]; mine: boolean };
 
 /**
  * "Pyetja e ditës" në krye të Komunitetit: pyetja, sa prindër janë
- * përgjigjur, 3 përgjigjet e para dhe "Përgjigju". Pa pyetje për sot, s'shfaqet.
+ * përgjigjur, 2 përgjigjet më të reja dhe "Përgjigju". Prekja hap thread-in
+ * e postimit bazë. Pa pyetje për sot (ose pa DAILY_QUESTION_ENABLED), s'shfaqet.
  * `refreshKey` ndryshon kur prindi tërheq poshtë ose kthehet te skeda.
  */
 export function DailyQuestionCard({ refreshKey }: { refreshKey: number }) {
@@ -24,6 +27,7 @@ export function DailyQuestionCard({ refreshKey }: { refreshKey: number }) {
   const [data, setData] = useState<Loaded | null>(null);
 
   useEffect(() => {
+    if (!DAILY_QUESTION_ENABLED) return;
     let alive = true;
     (async () => {
       try {
@@ -32,8 +36,8 @@ export function DailyQuestionCard({ refreshKey }: { refreshKey: number }) {
           if (alive) setData(null);
           return;
         }
-        const { answers, total, mine } = await fetchAnswers(question.id, CARD_PREVIEW);
-        if (alive) setData({ question, answers, total, mine });
+        const [comments, uid] = await Promise.all([fetchComments(question.postId), getCurrentUserId()]);
+        if (alive) setData({ question, answers: latestAnswers(comments), mine: !!myAnswer(comments, uid) });
       } catch (err) {
         // Pa internet ose pa migrimin: karta thjesht s'shfaqet; Komuniteti vazhdon.
         logWarn("Daily question load error:", err);
@@ -44,11 +48,12 @@ export function DailyQuestionCard({ refreshKey }: { refreshKey: number }) {
     };
   }, [refreshKey, language]);
 
-  if (!data) return null;
-  const { question, answers, total, mine } = data;
+  if (!DAILY_QUESTION_ENABLED || !data) return null;
+  const { question, answers, mine } = data;
+  const total = question.answerCount;
   const open = (compose: boolean) => {
     haptics.tap();
-    router.push({ pathname: "/community/question/[id]", params: { id: question.id, ...(compose ? { compose: "1" } : {}) } });
+    router.push({ pathname: "/community/post/[id]", params: { id: question.postId, ...(compose ? { compose: "1" } : {}) } });
   };
 
   return (
@@ -56,9 +61,7 @@ export function DailyQuestionCard({ refreshKey }: { refreshKey: number }) {
       <View className="mb-2 flex-row items-center">
         <Icon name="comment" size={14} color={theme.olive} />
         <Text className="ml-1.5 flex-1 font-bodyMedium text-[10px] tracking-wide text-ink-faint">{t("dq_label").toUpperCase()}</Text>
-        <Text className="font-body text-[11px] text-ink-faint">
-          {total === 1 ? t("dq_count_one") : t("dq_count", { n: total })}
-        </Text>
+        <Text className="font-body text-[11px] text-ink-faint">{total === 1 ? t("dq_count_one") : t("dq_count", { n: total })}</Text>
       </View>
 
       <Pressable onPress={() => open(false)} accessibilityRole="button">
@@ -88,7 +91,7 @@ export function DailyQuestionCard({ refreshKey }: { refreshKey: number }) {
           onPress={() => open(true)}
           accessibilityRole="button"
           className="flex-1 flex-row items-center justify-center rounded-full bg-olive px-4"
-          style={{ minHeight: 44 }}
+          style={{ minHeight: 48 }}
         >
           <Text className="font-bodySemibold text-sm text-on-accent">{mine ? t("dq_edit_answer") : t("dq_answer")}</Text>
         </Pressable>
@@ -97,7 +100,7 @@ export function DailyQuestionCard({ refreshKey }: { refreshKey: number }) {
             onPress={() => open(false)}
             accessibilityRole="button"
             className="items-center justify-center rounded-full bg-cream-soft px-4"
-            style={{ minHeight: 44 }}
+            style={{ minHeight: 48 }}
           >
             <Text className="font-bodyMedium text-sm text-ink">{t("dq_see_all")}</Text>
           </Pressable>
