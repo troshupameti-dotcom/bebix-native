@@ -85,14 +85,6 @@ Një **kartë e vetme sugjerimi** te faqja e bebit dhe në krye të Dyqanit, me 
 - **Ku e rihap:** **Më shumë → Çfarë ka të re**.
 - **Herën tjetër:** për një listë të re, ndrysho `WHATS_NEW_VERSION` dhe rreshtat te `lib/whatsNew.ts`; ekrani del sërish një herë.
 
-## Komuniteti: "Pyet ekspertin"
-- **Çfarë bën:** prindi zgjedh repartin (parazgjedhja: pediatri), shkruan pyetjen (20–600) dhe, nëse do, ndan moshën e bebit në muaj. Paralajmërimi mjekësor duhet konfirmuar para dërgimit. Asgjë s'publikohet në feed.
-- **"Pyetjet e mia":** statusi (Në pritje / U përgjigj / E mbyllur), përgjigjja me emrin dhe repartin e ekspertit, pikë e kuqe për përgjigjet e palexuara; mbyllje dhe fshirje.
-- **Eksperti:** te Komuniteti i del "Pyetje për ty (N)" për repartin e vet, më të vjetrat para. Sheh vetëm tekstin, repartin, moshën në muaj dhe kohën. Përgjigje 20–1500; "Kalo" e kthen në radhë; një përgjigje për pyetje (kontroll në bazë).
-- **Kufiri:** 3 pyetje në 7 ditë, në bazë (fshirja s'e rihap).
-- **Njoftimi:** `community_expert_answer` në radhën e serverit (për kur të rikthehet push-i) dhe te Njoftimet në app; prekja hap "Pyetjet e mia".
-- **Ndezja:** `EXPO_PUBLIC_ASK_EXPERT=1` te EAS, pasi të jetë ekzekutuar `20261014090000_expert_questions.sql`.
-
 ---
 
 ## Çfarë pret llogarinë Apple

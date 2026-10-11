@@ -8,7 +8,6 @@ import { Icon } from "@/components/ui/Icon";
 import { useThemeColors } from "@/lib/theme/useThemeColors";
 import { shadows } from "@/lib/shadows";
 import { PostCard } from "@/components/community/PostCard";
-import { AskExpertBar } from "@/components/community/AskExpertBar";
 import { SuggestedGroupsCard } from "@/components/community/SuggestedGroupsCard";
 import { logWarn } from "@/lib/log";
 import { useSpecialties } from "@/lib/community/useSpecialties";
@@ -255,32 +254,10 @@ export default function CommunityScreen() {
       {/* Vetëm te "Për ty", pa filtra. */}
       {tab === "all" && !filtering ? (
         <View className="mb-3">
-          {/* Pyet ekspertin (privat) dhe, për ekspertët, radha e pyetjeve. */}
-          <AskExpertBar refreshKey={questionKey} />
           {/* Grupe për bebin tënd: sugjerim sipas moshës dhe kohës së lindjes. */}
           <SuggestedGroupsCard refreshKey={questionKey} />
         </View>
       ) : null}
-
-      <View className="px-5">
-        <View className="flex-row items-center bg-surface border border-cream-line rounded-xl2 px-3.5 py-2.5">
-          <Icon name="search" size={18} color={theme.inkFaint} />
-          <TextInput
-            value={queryInput}
-            onChangeText={setQueryInput}
-            placeholder={t("community_search_ph")}
-            placeholderTextColor={theme.inkFaint}
-            returnKeyType="search"
-            autoCorrect={false}
-            className="flex-1 ml-2 font-body text-sm text-ink"
-          />
-          {queryInput.length > 0 && (
-            <Pressable onPress={() => { setQueryInput(""); changeFilters({ query: "" }); }} hitSlop={8} accessibilityLabel={t("community_clear_search")}>
-              <Icon name="close" size={16} color={theme.inkFaint} />
-            </Pressable>
-          )}
-        </View>
-      </View>
 
       <View className="flex-row mx-5 mt-3 bg-cream-soft rounded-full p-1" accessibilityRole="tablist">
         {tabs.map((tb) => (
@@ -421,6 +398,29 @@ export default function CommunityScreen() {
               {(state.profile.parentName || "T").trim().charAt(0).toUpperCase()}
             </Text>
           </Pressable>
+        </View>
+      </View>
+
+      {/* Kërkimi lart, nën titull: gjithmonë i dukshëm, edhe kur rrjedha zbret poshtë. */}
+      <View className="pb-3">
+        <View className="px-5">
+          <View className="flex-row items-center bg-surface border border-cream-line rounded-xl2 px-3.5 py-2.5">
+            <Icon name="search" size={18} color={theme.inkFaint} />
+            <TextInput
+              value={queryInput}
+              onChangeText={setQueryInput}
+              placeholder={t("community_search_ph")}
+              placeholderTextColor={theme.inkFaint}
+              returnKeyType="search"
+              autoCorrect={false}
+              className="flex-1 ml-2 font-body text-sm text-ink"
+            />
+            {queryInput.length > 0 && (
+              <Pressable onPress={() => { setQueryInput(""); changeFilters({ query: "" }); }} hitSlop={8} accessibilityLabel={t("community_clear_search")}>
+                <Icon name="close" size={16} color={theme.inkFaint} />
+              </Pressable>
+            )}
+          </View>
         </View>
       </View>
 
