@@ -8,7 +8,6 @@ import { Icon } from "@/components/ui/Icon";
 import { useThemeColors } from "@/lib/theme/useThemeColors";
 import { shadows } from "@/lib/shadows";
 import { PostCard } from "@/components/community/PostCard";
-import { DailyQuestionCard } from "@/components/community/DailyQuestionCard";
 import { AskExpertBar } from "@/components/community/AskExpertBar";
 import { SuggestedGroupsCard } from "@/components/community/SuggestedGroupsCard";
 import { logWarn } from "@/lib/log";
@@ -253,10 +252,9 @@ export default function CommunityScreen() {
 
   const header = (
     <View>
-      {/* Pyetja e ditës: arsye për të hyrë pa shkruar postim të gjatë (vetëm te "Për ty", pa filtra). */}
+      {/* Vetëm te "Për ty", pa filtra. */}
       {tab === "all" && !filtering ? (
-        <View className="-mt-4 mb-3">
-          <DailyQuestionCard refreshKey={questionKey} />
+        <View className="mb-3">
           {/* Pyet ekspertin (privat) dhe, për ekspertët, radha e pyetjeve. */}
           <AskExpertBar refreshKey={questionKey} />
           {/* Grupe për bebin tënd: sugjerim sipas moshës dhe kohës së lindjes. */}

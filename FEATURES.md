@@ -93,15 +93,6 @@ Një **kartë e vetme sugjerimi** te faqja e bebit dhe në krye të Dyqanit, me 
 - **Njoftimi:** `community_expert_answer` në radhën e serverit (për kur të rikthehet push-i) dhe te Njoftimet në app; prekja hap "Pyetjet e mia".
 - **Ndezja:** `EXPO_PUBLIC_ASK_EXPERT=1` te EAS, pasi të jetë ekzekutuar `20261014090000_expert_questions.sql`.
 
-## Komuniteti: "Pyetja e ditës"
-- **Çfarë bën:** kartë në krye të Komunitetit me pyetjen e redaksisë, numrin e përgjigjeve, 2 përgjigjet më të reja dhe "Përgjigju". Prekja hap thread-in e postimit bazë.
-- **Përgjigjet** janë komentet e postimit bazë: raportimi, bllokimi dhe numëruesit janë ato ekzistuese. Një përgjigje për prind (1–280), e ndryshueshme dhe e fshishme; përgjigjet ndaj saj si komentet e zakonshme.
-- **Postimi bazë** del nga llogaria editoriale me emrin "Bebix", krijohet herën e parë që hapet pyetja e ditës, dhe s'shfaqet në rrjedhë (as në web).
-- **Dita:** Europe/Belgrade. Pa pyetje për sot, karta s'shfaqet.
-- **Hapat e adminit (një herë):** krijo një llogari për redaksinë (p.sh. me `info.bebix@gmail.com`), merr id-në e saj te Supabase → Authentication, dhe ekzekuto te SQL Editor: `select public.set_daily_editorial('<id-ja>');` (fik edhe njoftimet "Koment i ri" për atë llogari).
-- **Pyetje të reja:** Supabase → Table Editor → `community_daily_questions` → Insert: `text` (shqip), `text_en` (opsionale), `active_date` (dita). Një pyetje për ditë.
-- **Ndezja:** `EXPO_PUBLIC_DAILY_QUESTION=1` te EAS, pasi të jenë ekzekutuar `20261013090000_daily_questions.sql` dhe `20261013090100_daily_questions_seed.sql` (30 pyetje nga e nesërmja).
-
 ---
 
 ## Çfarë pret llogarinë Apple
