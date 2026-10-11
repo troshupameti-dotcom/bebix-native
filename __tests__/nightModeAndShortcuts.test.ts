@@ -81,3 +81,16 @@ describe("shortcuts e Android-it", () => {
     expect(shortcuts.stringsXml("en")).toContain(">Wet diaper<");
   });
 });
+
+describe("modaliteti i natës: orari i zgjedhur", () => {
+  it("orari që kalon mesnatën dhe ai brenda ditës", () => {
+    expect(isNightTime(new Date(2026, 9, 12, 23, 30), { fromHour: 21, toHour: 5 })).toBe(true);
+    expect(isNightTime(new Date(2026, 9, 12, 6, 0), { fromHour: 21, toHour: 5 })).toBe(false);
+    expect(isNightTime(new Date(2026, 9, 12, 14, 0), { fromHour: 13, toHour: 15 })).toBe(true);
+  });
+
+  it("fillimi = mbarimi: s'ndizet vetë; ora parazgjedhje është digjitale", () => {
+    expect(isNightTime(new Date(2026, 9, 12, 22, 0), { fromHour: 22, toHour: 22 })).toBe(false);
+    expect(DEFAULT_NIGHT_PREFS.clock).toBe("digital");
+  });
+});

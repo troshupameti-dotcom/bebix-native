@@ -10,15 +10,19 @@ import AsyncStorage from "@react-native-async-storage/async-storage";
  * rregulli automatik vazhdon si zakonisht.
  */
 
-export type NightPrefs = { auto: boolean; fromHour: number; toHour: number };
+/** "digital" = ora me shifra; "analog" = ora e murit, e rrumbullakët, vetëm me vija. */
+export type NightClockStyle = "digital" | "analog";
+export type NightPrefs = { auto: boolean; fromHour: number; toHour: number; clock: NightClockStyle };
 export type NightOverride = { mode: "on" | "off"; until: string } | null;
 
-export const DEFAULT_NIGHT_PREFS: NightPrefs = { auto: true, fromHour: 22, toHour: 6 };
+export const DEFAULT_NIGHT_PREFS: NightPrefs = { auto: true, fromHour: 22, toHour: 6, clock: "digital" };
 /** Zgjedhja me dorë skadon në këtë orë të mëngjesit. */
 export const MORNING_HOUR = 7;
 
-export function isNightTime(now: Date, prefs: NightPrefs): boolean {
+export function isNightTime(now: Date, prefs: Pick<NightPrefs, "fromHour" | "toHour">): boolean {
   const h = now.getHours();
+  // E njëjta orë fillimi dhe mbarimi: orari s'ka gjatësi, pra s'ndizet vetë.
+  if (prefs.fromHour === prefs.toHour) return false;
   return prefs.fromHour > prefs.toHour ? h >= prefs.fromHour || h < prefs.toHour : h >= prefs.fromHour && h < prefs.toHour;
 }
 
@@ -61,11 +65,31 @@ function ensureLoaded() {
     .catch(() => set({ loaded: true }));
 }
 
-export function setNightAuto(auto: boolean) {
-  const prefs = { ...store.prefs, auto };
+function savePrefs(patch: Partial<NightPrefs>) {
+  const prefs = { ...store.prefs, ...patch };
   set({ prefs });
   AsyncStorage.setItem(PREFS_KEY, JSON.stringify(prefs)).catch(() => {});
 }
+
+export function setNightAuto(auto: boolean) {
+  savePrefs({ auto });
+}
+
+/** Orari i ndezjes vetë (orë të plota, 0–23). Fillimi dhe mbarimi s'mund të jenë e njëjta orë. */
+export function setNightHours(fromHour: number, toHour: number) {
+  const norm = (h: number) => ((Math.round(h) % 24) + 24) % 24;
+  const from = norm(fromHour);
+  const to = norm(toHour);
+  if (from === to) return;
+  savePrefs({ fromHour: from, toHour: to });
+}
+
+export function setNightClock(clock: NightClockStyle) {
+  savePrefs({ clock });
+}
+
+/** "22:00" */
+export const hourLabel = (h: number) => `${String(h).padStart(2, "0")}:00`;
 
 /** Ndez ose fik me dorë, deri në mëngjes. */
 export function setNightOverride(mode: "on" | "off", now: Date = new Date()) {

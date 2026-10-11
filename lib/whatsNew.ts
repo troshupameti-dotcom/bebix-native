@@ -21,8 +21,7 @@ export type WhatsNewItem = {
 };
 
 export const WHATS_NEW_ITEMS: WhatsNewItem[] = [
-  { key: "today", icon: "sparkle", titleKey: "wn_today_title", bodyKey: "wn_today_body" },
-  { key: "night", icon: "moon", titleKey: "wn_night_title", bodyKey: "wn_night_body", route: "/more/appearance" },
+  { key: "night", icon: "moon", titleKey: "wn_night_title", bodyKey: "wn_night_body", route: "/more/night-mode" },
   { key: "care", icon: "heart", titleKey: "wn_care_title", bodyKey: "wn_care_body", route: "/(main)/baby/parent-care" },
   { key: "team", icon: "family", titleKey: "wn_team_title", bodyKey: "wn_team_body", route: "/more/family" },
   { key: "celebrate", icon: "star", titleKey: "wn_celebrate_title", bodyKey: "wn_celebrate_body", route: "/(main)/baby/moments" },

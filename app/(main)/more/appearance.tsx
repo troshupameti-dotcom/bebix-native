@@ -1,4 +1,5 @@
-import { View, Text } from "react-native";
+import { View, Text, Pressable } from "react-native";
+import { router } from "expo-router";
 import { ThemedSwitch } from "@/components/ui/ThemedSwitch";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { BackButton } from "@/components/ui/BackButton";
@@ -6,7 +7,7 @@ import { useAppState } from "@/lib/state/AppStateContext";
 import { useLanguage } from "@/lib/i18n/LanguageContext";
 import { Icon } from "@/components/ui/Icon";
 import { shadows } from "@/lib/shadows";
-import { setNightAuto, useNightMode } from "@/lib/baby/nightMode";
+import { hourLabel, useNightMode } from "@/lib/baby/nightMode";
 
 export default function AppearanceScreen() {
   const { state, setDarkMode } = useAppState();
@@ -37,18 +38,20 @@ export default function AppearanceScreen() {
           </View>
         </View>
 
-        {/* Modaliteti i natës: ekran i errët me ngjyrë të ngrohtë dhe butona të mëdhenj, 22:00–06:00. */}
+        {/* Modaliteti i natës: cilësimet (ndezja, orari, pamja e orës) kanë ekranin e vet. */}
         <View className="bg-surface rounded-xl2 overflow-hidden mt-4" style={shadows.soft}>
-          <View className="flex-row items-center px-4 py-3.5">
+          <Pressable onPress={() => router.push("/more/night-mode")} accessibilityRole="button" className="flex-row items-center px-4 py-3.5" style={{ minHeight: 56 }}>
             <View className="w-8 h-8 rounded-full bg-cream-soft items-center justify-center mr-3">
               <Icon name="moon" size={16} color="#B23A1C" />
             </View>
             <View className="flex-1 mr-3">
-              <Text className="font-bodyMedium text-sm text-ink">{t("night_auto")}</Text>
-              <Text className="font-body text-xs text-ink-soft mt-0.5">{t("night_auto_hint")}</Text>
+              <Text className="font-bodyMedium text-sm text-ink">{t("night_title")}</Text>
+              <Text className="font-body text-xs text-ink-soft mt-0.5">
+                {night.prefs.auto ? t("night_auto_hint", { from: hourLabel(night.prefs.fromHour), to: hourLabel(night.prefs.toHour) }) : t("night_off_hint")}
+              </Text>
             </View>
-            <ThemedSwitch value={night.prefs.auto} onValueChange={setNightAuto} />
-          </View>
+            <Icon name="chevronRight" size={16} color="#A79D8A" />
+          </Pressable>
         </View>
       </View>
     </SafeAreaView>

@@ -10,6 +10,7 @@ import { supabase } from "@/lib/supabase/client";
 import { useAuthUser } from "@/lib/hooks/useAuthUser";
 import { unregisterPushToken } from "@/lib/notifications";
 import { GIFTS_ENABLED } from "@/lib/gifts/enabled";
+import { useNightMode } from "@/lib/baby/nightMode";
 
 type Row = {
   icon: IconName;
@@ -49,6 +50,7 @@ function Section({ title, rows }: { title: string; rows: Row[] }) {
 export default function MoreScreen() {
   const router = useRouter();
   const { state } = useAppState();
+  const night = useNightMode();
   const { profile } = state;
   const { t, language } = useLanguage();
   const { email, provider } = useAuthUser();
@@ -99,6 +101,12 @@ export default function MoreScreen() {
               label: t("appearance"),
               onPress: () => router.push("/more/appearance"),
               badge: state.darkMode ? t("appearance_dark") : t("appearance_light"),
+            },
+            {
+              icon: "moon",
+              label: t("night_title"),
+              onPress: () => router.push("/more/night-mode"),
+              badge: night.prefs.auto ? t("night_on") : t("night_off"),
             },
             {
               icon: "globe",

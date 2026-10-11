@@ -8,11 +8,9 @@ import { SectionHeader } from "@/components/baby/SectionHeader";
 import { StatCard } from "@/components/baby/StatCard";
 import { GrowthOverview } from "@/components/baby/GrowthOverview";
 import { latestGrowth } from "@/lib/baby/growthLatest";
-import { parseBloodType } from "@/lib/baby/medicalSync";
 import { AddTile } from "@/components/baby/AddTile";
 import { FormField } from "@/components/baby/FormField";
 import { DateTimeField } from "@/components/baby/DateTimeField";
-import { MedicalTile } from "@/components/baby/MedicalTile";
 import { BottomSheet } from "@/components/ui/BottomSheet";
 import { PickerSheetContent, PickerOption } from "@/components/baby/PickerSheetContent";
 import { useAppState, active } from "@/lib/state/AppStateContext";
@@ -23,8 +21,6 @@ import { computeAgeText, formatDate, formatTime } from "@/lib/dateUtils";
 import { shadows } from "@/lib/shadows";
 import { useThemeColors } from "@/lib/theme/useThemeColors";
 import { NowCard } from "@/components/baby/NowCard";
-import { TodayCard } from "@/components/baby/TodayCard";
-import { DaySummaryCard } from "@/components/baby/DaySummaryCard";
 import { WeeklyRecapCard } from "@/components/baby/WeeklyRecapCard";
 import { MemoriesCard } from "@/components/baby/MemoriesCard";
 import { CelebrationModal } from "@/components/baby/CelebrationModal";
@@ -132,7 +128,7 @@ function DayTile({ color, label, value }: { color: string; label: string; value:
 
 export default function BabyProfileScreen() {
   const { t, lang } = useTranslation();
-  const { state, baby, updateProfile, hydrated } = useAppState();
+  const { state, baby, hydrated } = useAppState();
   const { showToast } = useToast();
   const { profile } = state;
   const b = state.baby;
@@ -199,7 +195,6 @@ export default function BabyProfileScreen() {
     return t("greeting_evening");
   }
   const [editGrowth, setEditGrowth] = useState(false);
-  const [editMedical, setEditMedical] = useState(false);
   const [sheet, setSheet] = useState<SheetContext>(null);
   const [timelineSheetPurpose, setTimelineSheetPurpose] = useState<"milestone" | "event">("event");
   const [editingStatKey, setEditingStatKey] = useState<string | null>(null);
@@ -717,9 +712,6 @@ export default function BabyProfileScreen() {
             {/* Gjendja e castit dhe tre veprimet e perditshme — kjo pjese
                 vinte nga faqja e vjeter kryesore, ku rrinte nje tab larg
                 nga bebi dhe e perzier me produkte. */}
-            {/* Sot: ushqimet, pelenat, gjumi — krahasuar me dje në të njëjtën orë. */}
-            <DaySummaryCard feedings={feedings} sleeps={sleeps} diapers={diapers} />
-
             <NowCard status={status} onToggleSleep={toggleSleep} />
 
             {/* Si je sot? (privat, një herë në ditë) dhe, për mamin, javët pas lindjes. */}
@@ -732,17 +724,8 @@ export default function BabyProfileScreen() {
             {/* E hënë–e mërkurë: java e kaluar, vetëm lajmet e mira si trend. */}
             <WeeklyRecapCard feedings={feedings} sleeps={sleeps} diapers={diapers} babyName={profile.babyName} />
 
-            {/* Çfarë vjen më pas, nga ritmi i vetë bebit. */}
-            <TodayCard feedings={feedings} sleeps={sleeps} diapers={diapers} babyDob={profile.babyDob} />
-
-            {/* Këtë javë: çfarë mëson bebi + 3 ide loje (përmbajtja nga paneli). */}
-            <DevelopmentCard babyDob={profile.babyDob} />
-
             {/* Dyqani: një kartë e vetme (pelenat, madhësia, mosha), mbyllet me "Jo tani". */}
             <ShopSuggestionCard />
-
-            {/* Kujtimet: sot para 1 muaji / 1 viti, filmi i muajit, kapsula, libri. */}
-            <MemoriesCard baby={b} profile={profile} babyName={babyName} />
 
             <DayClock
               clock={clock}
@@ -833,43 +816,12 @@ export default function BabyProfileScreen() {
               )}
             </View>
 
-            {/* Info mjekësore — dikur ishte tab "Shëndeti", tash pjesë kompakte e Ditarit */}
-            <SectionHeader title={t("baby_medical_info")} editable editing={editMedical} onToggleEdit={() => toggleEdit(setEditMedical)} />
-            <View className="flex-row flex-wrap gap-3">
-              {b.medicalInfo
-                .filter((m) => b.medicalActiveKeys.includes(m.key))
-                .map((m) => (
-                  <View key={m.key} style={{ width: "47.5%" }}>
-                    <MedicalTile
-                      rowKey={m.key}
-                      label={m.isCustom ? m.label ?? "" : t(m.labelKey as never)}
-                      value={m.value}
-                      isCustom={m.isCustom}
-                      editing={editMedical}
-                      placeholder={t("value_field")}
-                      onChangeValue={(v) => {
-                        baby.updateMedicalRow(m.key, { value: v });
-                        // Drejtimi tjetër: grupi i gjakut, mjeku dhe alergjitë mbeten
-                        // të njëjta edhe te cilësimet e bebit.
-                        if (m.key === "doctor") updateProfile({ pediatrician: v });
-                        else if (m.key === "allergies") updateProfile({ allergies: v });
-                        else if (m.key === "blood") {
-                          const blood = parseBloodType(v);
-                          if (blood !== undefined) updateProfile({ bloodType: blood });
-                        }
-                      }}
-                      onChangeLabel={(v) => baby.updateMedicalRow(m.key, { label: v })}
-                      onRemove={() => baby.removeMedicalRow(m.key)}
-                    />
-                  </View>
-                ))}
-            </View>
-            {editMedical && (
-              <Pressable onPress={() => setSheet("medical")} className="mt-3 flex-row items-center gap-2 py-1">
-                <Icon name="plus" size={14} color="#6E7452" />
-                <Text className="font-bodyMedium text-[13.5px] text-olive">{t("add_action")}</Text>
-              </Pressable>
-            )}
+            {/* Java: çfarë mëson bebi këtë javë + ide loje (rubrika e parafundit). Të dhënat
+                mjekësore (gjaku, alergjitë, mjeku) s'janë më këtu: rrinë te cilësimet e bebit. */}
+            <DevelopmentCard babyDob={profile.babyDob} />
+
+            {/* Kujtimet në fund: sot para 1 muaji / 1 viti, filmi i muajit, kapsula, libri. */}
+            <MemoriesCard baby={b} profile={profile} babyName={babyName} />
           </MotiView>
         )}
 

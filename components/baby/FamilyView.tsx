@@ -1,11 +1,10 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo } from "react";
 import { View, Text, ScrollView, Image } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { MotiView } from "moti";
 import { Icon } from "@/components/ui/Icon";
 import { TONES } from "@/components/baby/LogTiles";
 import { MemoriesCard } from "@/components/baby/MemoriesCard";
-import { TodayCard } from "@/components/baby/TodayCard";
 import { shadows } from "@/lib/shadows";
 import { useTranslation } from "@/lib/i18n/LanguageContext";
 import { useMomentUri } from "@/lib/baby/useMomentUri";
@@ -51,19 +50,14 @@ function Photo({ moment }: { moment: Moment }) {
  */
 export function FamilyView({ profile, baby, babyName, ageText }: { profile: BabyProfile; baby: BabyModuleState; babyName: string; ageText: string }) {
   const { t, lang } = useTranslation();
-  const [shareCare, setShareCare] = useState(false);
+  // Kur prindërit ndajnë kujdesin, të dhënat e tij tërhiqen sërish (përdoren te kujtimet dhe rritja).
   useEffect(() => {
-    let alive = true;
     void resolveDataOwnerId()
       .then((owner) => (owner ? fetchShareCare(owner) : false))
       .then((v) => {
-        if (alive) setShareCare(v);
         void pullAgainIfShareTurnedOn(v);
       })
       .catch(() => {});
-    return () => {
-      alive = false;
-    };
   }, []);
 
   const photos = useMemo(
@@ -126,9 +120,6 @@ export function FamilyView({ profile, baby, babyName, ageText }: { profile: Baby
           </View>
         ) : null}
 
-        {shareCare ? (
-          <TodayCard feedings={visible(baby.feedingLog)} sleeps={visible(baby.sleepLog)} diapers={visible(baby.diaperLog)} babyDob={profile.babyDob} />
-        ) : null}
 
         <MemoriesCard baby={baby} profile={profile} babyName={babyName} viewer />
 
