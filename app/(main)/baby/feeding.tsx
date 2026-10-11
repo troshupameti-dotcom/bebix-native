@@ -2,6 +2,7 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import { View, Text, ScrollView, Pressable, TextInput } from "react-native";
 import { shadows } from "@/lib/shadows";
 import { JustSaved } from "@/components/baby/JustSaved";
+import { trackRecordLogged, trackRecordUndone } from "@/lib/analytics/babyEvents";
 import {
   elapsedSeconds, finishTimer, formatElapsed, loadTimer, saveTimer, startTimer, suggestedSide, switchSide, type BreastTimer,
 } from "@/lib/baby/breastTimer";
@@ -173,6 +174,7 @@ export default function FeedingScreen() {
 
   function quickLog(entry: Partial<FeedingEntry>) {
     const id = baby.addFeedingEntry(entry);
+    trackRecordLogged({ kind: "feeding", source: "quick_button", at: entry.at });
     haptics.success();
     setOtherMl("");
     setPickedMl(null);
@@ -248,7 +250,11 @@ export default function FeedingScreen() {
 
   function save() {
     if (editingId) baby.updateFeedingEntry(editingId, computePatch());
-    else baby.addFeedingEntry(computePatch());
+    else {
+      const patch = computePatch();
+      baby.addFeedingEntry(patch);
+      trackRecordLogged({ kind: "feeding", source: "app", at: patch.at });
+    }
     haptics.success();
     setSheetOpen(false);
   }
@@ -433,11 +439,13 @@ export default function FeedingScreen() {
             onEdit={() => {
               const entry = log.find((e) => e.id === justSaved.id);
               setJustSaved(null);
+              trackRecordUndone("feeding", "edit");
               if (entry) openEdit(entry);
             }}
             onDelete={() => {
               const id = justSaved.id;
               setJustSaved(null);
+              trackRecordUndone("feeding", "delete");
               baby.deleteFeedingEntry(id);
               showToast(t("deleted_toast"), () => baby.restoreFeedingEntry(id));
             }}

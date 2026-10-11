@@ -8,6 +8,7 @@ import { formatTime } from "@/lib/dateUtils";
 import { durationLabel } from "@/lib/baby/dayStats";
 import { isNapAt } from "@/lib/baby/sleepKind";
 import { setNightOverride } from "@/lib/baby/nightMode";
+import { trackRecordLogged, trackRecordUndone } from "@/lib/analytics/babyEvents";
 import {
   elapsedSeconds, finishTimer, formatElapsed, loadTimer, saveTimer, startTimer, suggestedSide, type BreastTimer,
 } from "@/lib/baby/breastTimer";
@@ -111,6 +112,7 @@ export function NightMode() {
       setTimer(null);
       void saveTimer(null);
       const id = baby.addFeedingEntry({ type: "breast", side: done.side, at: done.at, durationMin: done.durationMin });
+      trackRecordLogged({ kind: "feeding", source: "quick_button", at: done.at });
       setSaved({ kind: "feeding", id, text: t("quick_saved_what", { what: t("feeding_type_breast") }) });
       return;
     }
@@ -123,12 +125,14 @@ export function NightMode() {
     }
     const type = lastType === "formula" ? "formula" : lastType === "bottle" ? "bottle" : (lastType ?? "bottle");
     const id = baby.addFeedingEntry({ type, amountMl: type === "bottle" || type === "formula" ? (lastFeeding?.amountMl ?? null) : null });
+    trackRecordLogged({ kind: "feeding", source: "quick_button" });
     setSaved({ kind: "feeding", id, text: t("quick_saved_what", { what: feedLabel }) });
   }
 
   function diaper(type: DiaperType) {
     haptics.success();
     const id = baby.addDiaperEntry({ type });
+    trackRecordLogged({ kind: "diaper", source: "quick_button" });
     setSaved({ kind: "diaper", id, text: t("quick_saved_what", { what: t(`diaper_type_${type}` as never) }) });
   }
 
@@ -139,6 +143,7 @@ export function NightMode() {
       setSaved({ kind: "sleep", id: null, text: t("night_woke_saved") });
     } else {
       baby.startSleep(isNapAt(new Date()));
+      trackRecordLogged({ kind: "sleep", source: "quick_button" });
       setSaved({ kind: "sleep", id: null, text: t("night_sleep_saved") });
     }
   }
@@ -146,6 +151,7 @@ export function NightMode() {
   function undo() {
     if (!saved?.id) return;
     haptics.warning();
+    if (saved.kind !== "sleep") trackRecordUndone(saved.kind, "delete");
     if (saved.kind === "feeding") baby.deleteFeedingEntry(saved.id);
     if (saved.kind === "diaper") baby.deleteDiaperEntry(saved.id);
     setSaved(null);

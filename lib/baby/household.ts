@@ -1,5 +1,6 @@
 import { supabase } from "@/lib/supabase/client";
 import type { HouseholdPerson, HouseholdRole, MemberRelation, SummaryRow } from "@/lib/baby/team";
+import { trackHouseholdInvite, trackHouseholdJoined } from "@/lib/analytics/babyEvents";
 
 /**
  * Familja: bebi i përbashkët me prindin tjetër.
@@ -133,6 +134,7 @@ export async function createInviteCode(role: HouseholdRole = "parent"): Promise<
   // Ftesa e prindit thirret pa argument: punon edhe para migrimit të roleve.
   const { data, error } = role === "parent" ? await supabase.rpc("create_household_invite") : await supabase.rpc("create_household_invite", { p_role: role });
   if (error) throw new Error(error.message);
+  trackHouseholdInvite(role);
   return data as string;
 }
 
@@ -140,6 +142,7 @@ export async function createInviteCode(role: HouseholdRole = "parent"): Promise<
 export async function joinHousehold(code: string): Promise<void> {
   const { error } = await supabase.rpc("join_household", { p_code: code.trim().toUpperCase() });
   if (error) throw new Error(error.message);
+  trackHouseholdJoined();
   clearHouseholdCache();
 }
 

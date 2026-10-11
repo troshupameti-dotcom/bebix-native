@@ -17,7 +17,7 @@ export function DeepLinkAction({ action, to }: { action: WidgetActionInput | nul
   useEffect(() => {
     if (!key) return;
     let alive = true;
-    void pushAction(JSON.parse(key) as WidgetActionInput)
+    void pushAction(JSON.parse(key) as WidgetActionInput, new Date(), "deep_link")
       .then((saved) => saved && haptics.success())
       .finally(() => alive && setDone(true));
     return () => {

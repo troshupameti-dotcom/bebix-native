@@ -18,7 +18,8 @@ import { BrandSplash } from "@/components/ui/BrandSplash";
 import { MAX_CONTENT_WIDTH } from "@/lib/layout";
 import { OfflineBanner } from "@/components/ui/OfflineBanner";
 import { WidgetBridge } from "@/components/widgets/WidgetBridge";
-import { View } from "react-native";
+import { AppState, View } from "react-native";
+import { markAppBackground, trackAppOpened } from "@/lib/analytics/babyEvents";
 
 // Kur një ekran rrëzohet, shfaqet ky në vend të ekranit të bardhë.
 export { AppErrorBoundary as ErrorBoundary } from "@/components/ui/AppErrorBoundary";
@@ -54,6 +55,16 @@ function RootLayout() {
   useEffect(() => {
     if (fontsLoaded) void SplashScreen.hideAsync();
   }, [fontsLoaded]);
+
+  // Analitika: "app_opened" një herë për seancë (hapja, ose kthimi pas 30+ min).
+  useEffect(() => {
+    trackAppOpened();
+    const sub = AppState.addEventListener("change", (next) => {
+      if (next === "active") trackAppOpened();
+      else markAppBackground();
+    });
+    return () => sub.remove();
+  }, []);
 
   if (!fontsLoaded) return null;
 

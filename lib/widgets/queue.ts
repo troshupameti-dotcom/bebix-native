@@ -10,10 +10,14 @@ import type { WidgetSnapshot } from "@/lib/widgets/snapshot";
  *  - `id` e veprimit bëhet id e shënimit: nëse shënimi ekziston, s'shtohet sërish;
  *  - dy prekje të njëjta brenda DEBOUNCE_MS llogariten si një.
  */
-export type WidgetAction =
+export type WidgetAction = (
   | { id: string; at: string; kind: "diaper"; type: DiaperType }
   | { id: string; at: string; kind: "sleep_start" }
-  | { id: string; at: string; kind: "sleep_end"; sleepId: string };
+  | { id: string; at: string; kind: "sleep_end"; sleepId: string }
+) & {
+  /** Nga erdhi prekja (vetëm për analitikën); veprimet e vjetra s'e kanë = widget. */
+  source?: "widget" | "deep_link";
+};
 
 export type WidgetActionInput = { kind: "diaper"; type: DiaperType } | { kind: "sleep_toggle" };
 

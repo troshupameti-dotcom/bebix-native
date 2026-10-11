@@ -43,6 +43,7 @@ import { SyncBadge } from "@/components/baby/SyncBadge";
 import { DayClock } from "@/components/baby/DayClock";
 import { liveStatus, durationLabel } from "@/lib/baby/dayStats";
 import { isNapAt } from "@/lib/baby/sleepKind";
+import { trackRecordLogged } from "@/lib/analytics/babyEvents";
 import {
   buildDayClock,
   clockTotals,
@@ -184,7 +185,10 @@ export default function BabyProfileScreen() {
     const ongoing = sleeps.find((entry) => !entry.endAt);
     haptics.success();
     if (ongoing) baby.endSleep(ongoing.id);
-    else baby.startSleep(isNapAt(new Date()));
+    else {
+      baby.startSleep(isNapAt(new Date()));
+      trackRecordLogged({ kind: "sleep", source: "quick_button" });
+    }
     showToast(t(ongoing ? "sleep_saved_end" : "sleep_saved_start"));
   }
 

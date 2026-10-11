@@ -1,5 +1,6 @@
 import { useCallback, useMemo, useState } from "react";
 import { JustSaved } from "@/components/baby/JustSaved";
+import { trackRecordLogged, trackRecordUndone } from "@/lib/analytics/babyEvents";
 import { View, Text, ScrollView, Pressable } from "react-native";
 import { MotiView } from "moti";
 import { SafeAreaView } from "react-native-safe-area-context";
@@ -45,6 +46,7 @@ export default function DiaperScreen() {
   // kane rendesi vetem kur dicka shkon keq — atehere hapet formulari.
   function quickLog(type: DiaperType) {
     const id = baby.addDiaperEntry({ type });
+    trackRecordLogged({ kind: "diaper", source: "quick_button" });
     haptics.success();
     setJustSaved({ id, text: t("quick_saved_what", { what: t(`diaper_type_${type}` as never) }) });
   }
@@ -131,11 +133,13 @@ export default function DiaperScreen() {
             onEdit={() => {
               const entry = log.find((e) => e.id === justSaved.id);
               setJustSaved(null);
+              trackRecordUndone("diaper", "edit");
               if (entry) openEdit(entry);
             }}
             onDelete={() => {
               const id = justSaved.id;
               setJustSaved(null);
+              trackRecordUndone("diaper", "delete");
               baby.deleteDiaperEntry(id);
               showToast(t("deleted_toast"), () => baby.restoreDiaperEntry(id));
             }}

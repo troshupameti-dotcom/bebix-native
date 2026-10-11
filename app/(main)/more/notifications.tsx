@@ -11,6 +11,7 @@ import {
   NOTIFICATION_CATALOG, NOTIFICATION_GROUPS, REMINDER_GAP_MAX, REMINDER_GAP_MIN, isNotificationEnabled,
   type NotificationEntry, type NotificationKey,
 } from "@/lib/notifications/catalog";
+import { trackNotificationPrefs } from "@/lib/analytics/babyEvents";
 
 function hourLabel(hour: number): string {
   return `${String(hour).padStart(2, "0")}:00`;
@@ -118,7 +119,12 @@ function HourStepper({ label, value, onChange }: { label: string; value: number;
 }
 
 export default function NotificationsScreen() {
-  const { state, setNotificationPref, setQuietHours, setReminderGap } = useAppState();
+  const { state, setNotificationPref: savePref, setQuietHours, setReminderGap } = useAppState();
+  // Ruaj, dhe analitikës i shkon vetëm sa lloje janë fikur (jo cilat).
+  const setNotificationPref = (key: NotificationKey, value: boolean) => {
+    savePref(key, value);
+    trackNotificationPrefs({ ...state.notificationPrefs, keys: { ...state.notificationPrefs.keys, [key]: value } });
+  };
   const { t } = useTranslation();
   const prefs = state.notificationPrefs;
 

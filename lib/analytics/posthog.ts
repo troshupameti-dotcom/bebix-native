@@ -28,7 +28,15 @@ export type AnalyticsEvent =
   | "order_placed"
   | "order_failed"
   // Jo pjese e gypit: gabimet e app-it, qe te mos mesohen nga recensionet.
-  | "app_error";
+  | "app_error"
+  // Faqja e bebit: mbajtja dhe përdorimi i regjistrimit (lib/analytics/babyEvents.ts).
+  // Vetëm llojet dhe numrat — asnjë emër, datëlindje, shënim apo sasi.
+  | "app_opened"
+  | "record_logged"
+  | "record_undone"
+  | "household_invite_created"
+  | "household_joined"
+  | "notification_prefs_changed";
 
 type Props = Record<string, string | number | boolean | null>;
 

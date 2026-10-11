@@ -47,11 +47,12 @@ export async function loadQueue(): Promise<WidgetAction[]> {
 }
 
 /** Prekja nga widget-i ose nga lidhja: ruhet në radhë. Kthen veprimin, ose `null` kur ishte prekje e dyfishtë. */
-export function pushAction(input: WidgetActionInput, now = new Date()): Promise<WidgetAction | null> {
+export function pushAction(input: WidgetActionInput, now = new Date(), source: "widget" | "deep_link" = "widget"): Promise<WidgetAction | null> {
   return withLock(async () => {
     const [queue, snapshot] = await Promise.all([loadQueue(), loadSnapshot()]);
-    const action = resolveAction(input, snapshot, queue, now);
-    if (!action) return null;
+    const resolved = resolveAction(input, snapshot, queue, now);
+    if (!resolved) return null;
+    const action: WidgetAction = { ...resolved, source };
     await AsyncStorage.setItem(QUEUE_KEY, JSON.stringify(enqueue(queue, action)));
     DeviceEventEmitter.emit(QUEUE_EVENT);
     return action;

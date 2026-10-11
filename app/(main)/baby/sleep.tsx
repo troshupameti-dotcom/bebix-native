@@ -1,5 +1,6 @@
 import { useCallback, useMemo, useState } from "react";
 import { JustSaved } from "@/components/baby/JustSaved";
+import { trackRecordLogged, trackRecordUndone } from "@/lib/analytics/babyEvents";
 import { View, Text, ScrollView, Pressable } from "react-native";
 import { MotiView } from "moti";
 import { SafeAreaView } from "react-native-safe-area-context";
@@ -100,6 +101,7 @@ export default function SleepScreen() {
     haptics.success();
     const id = `s${Date.now().toString(36)}${Math.random().toString(36).slice(2, 6)}`;
     baby.startSleep(isNap, { id, at: new Date().toISOString() });
+    trackRecordLogged({ kind: "sleep", source: "quick_button" });
     setJustSaved({ id, key: `${id}:start`, text: t("sleep_saved_start") });
   }
   function stop(id: string) {
@@ -191,11 +193,13 @@ export default function SleepScreen() {
             onEdit={() => {
               const entry = log.find((e) => e.id === justSaved.id);
               setJustSaved(null);
+              trackRecordUndone("sleep", "edit");
               if (entry) openEdit(entry);
             }}
             onDelete={() => {
               const id = justSaved.id;
               setJustSaved(null);
+              trackRecordUndone("sleep", "delete");
               baby.deleteSleepEntry(id);
               showToast(t("deleted_toast"), () => baby.restoreSleepEntry(id));
             }}

@@ -4,6 +4,7 @@ import { useAppState } from "@/lib/state/AppStateContext";
 import { useTranslation } from "@/lib/i18n/LanguageContext";
 import { BREAST_TIMER_EVENT, loadTimer } from "@/lib/baby/breastTimer";
 import { isNapAt } from "@/lib/baby/sleepKind";
+import { queueSource, trackRecordLogged } from "@/lib/analytics/babyEvents";
 import { applyPending, planDrain, type WidgetAction } from "@/lib/widgets/queue";
 import { buildSnapshot, sameSnapshot } from "@/lib/widgets/snapshot";
 import { drainQueue, loadSnapshot, QUEUE_EVENT, saveSnapshot } from "@/lib/widgets/store";
@@ -51,6 +52,8 @@ export function WidgetBridge() {
         if (a.kind === "diaper") actions.addDiaperEntry({ id: a.id, type: a.type, at: a.at });
         else if (a.kind === "sleep_start") actions.startSleep(isNapAt(a.at), { id: a.id, at: a.at });
         else actions.endSleep(a.sleepId, a.at);
+        // Shënimi hyn tani në ditar: ora e prekjes dhe sa vonë hyri.
+        if (a.kind !== "sleep_end") trackRecordLogged({ kind: a.kind === "diaper" ? "diaper" : "sleep", source: queueSource(a.source), at: a.at, queuedAt: a.at });
       }
     }).then(async (count) => {
       if (!count) return;
