@@ -42,9 +42,11 @@ type PostCardProps = {
   onRemoved?: (postId: string, reason: PostRemovedReason) => void;
   /** Te detajet e postimit: videoja luhet në vend. */
   interactiveMedia?: boolean;
+  /** false te faqja e vetë autorit (profili, eksperti): emri s'hap sërish të njëjtën faqe. */
+  linkAuthor?: boolean;
 };
 
-export function PostCard({ post, onOpen, onRemoved, interactiveMedia = false }: PostCardProps) {
+export function PostCard({ post, onOpen, onRemoved, interactiveMedia = false, linkAuthor = true }: PostCardProps) {
   const myId = useCurrentUserId();
   const router = useRouter();
   const { t } = useTranslation();
@@ -107,7 +109,8 @@ export function PostCard({ post, onOpen, onRemoved, interactiveMedia = false }: 
             haptics.tap();
             router.push(`/community/user/${post.authorId}`);
           }}
-          accessibilityRole="button"
+          disabled={!linkAuthor}
+          accessibilityRole={linkAuthor ? "button" : undefined}
           accessibilityLabel={post.authorName}
           className="flex-1 flex-row items-center"
         >

@@ -8,9 +8,9 @@ import { haptics } from "@/lib/haptics";
 import { useTranslation } from "@/lib/i18n/LanguageContext";
 import { useThemeColors } from "@/lib/theme/useThemeColors";
 import { logWarn } from "@/lib/log";
-import { fetchPostsByAuthor, getCurrentUserId, type CommunityPost } from "@/lib/communityData";
+import { fetchExpertByUserId, fetchPostsByAuthor, getCurrentUserId, type CommunityPost } from "@/lib/communityData";
 import {
-  fetchPublicProfile, followUser, messageErrorKey, startConversation, unfollowUser, type PublicProfile,
+  fetchPublicProfile, followUser, isMissing, messageErrorKey, startConversation, unfollowUser, type PublicProfile,
 } from "@/lib/community/messages";
 
 /**
@@ -35,13 +35,26 @@ export default function UserProfileScreen() {
         router.replace("/community/profile");
         return;
       }
-      const p = await fetchPublicProfile(id);
-      if (p?.expertId) {
-        router.replace(`/community/expert/${p.expertId}`);
+      let p: PublicProfile | null = null;
+      try {
+        p = await fetchPublicProfile(id);
+      } catch (err) {
+        // Pa migrimin e mesazheve funksioni s'ekziston: profili del sërish, pa ndjekje dhe mesazhe.
+        if (!isMissing(err as { code?: string })) throw err;
+      }
+      const expertId = p ? p.expertId : ((await fetchExpertByUserId(id))?.id ?? null);
+      if (expertId) {
+        router.replace(`/community/expert/${expertId}`);
         return;
       }
-      setProfile(p);
-      setPosts(await fetchPostsByAuthor(id));
+      const list = await fetchPostsByAuthor(id);
+      setPosts(list);
+      setProfile(
+        p ?? {
+          userId: id, name: list[0]?.authorName ?? "Prind", expertId: null, followers: 0, following: 0,
+          iFollow: false, followsMe: false, canMessage: false, blocked: false, limited: true,
+        }
+      );
     } catch (err) {
       logWarn("User profile load error:", err);
       setProfile((prev) => prev ?? null);
@@ -87,12 +100,14 @@ export default function UserProfileScreen() {
     <View className="items-center px-5 pb-4 pt-2">
       <Avatar initial={profile.name.trim().charAt(0).toUpperCase() || "?"} accent="olive" size={72} />
       <Text className="mt-3 font-display text-xl text-ink">{profile.name}</Text>
-      <Text className="mt-1 font-body text-xs text-ink-soft">
-        {t("dm_followers", { n: profile.followers })} · {t("dm_following", { n: profile.following })}
-      </Text>
+      {!profile.limited ? (
+        <Text className="mt-1 font-body text-xs text-ink-soft">
+          {t("dm_followers", { n: profile.followers })} · {t("dm_following", { n: profile.following })}
+        </Text>
+      ) : null}
       {profile.followsMe ? <Text className="mt-1 font-bodyMedium text-[11px] text-olive">{t("dm_follows_you")}</Text> : null}
 
-      {!profile.blocked ? (
+      {!profile.blocked && !profile.limited ? (
         <View className="mt-4 w-full flex-row" style={{ gap: 10 }}>
           <Pressable
             onPress={() => void toggleFollow()}
@@ -125,7 +140,7 @@ export default function UserProfileScreen() {
           </Pressable>
         </View>
       ) : null}
-      {!profile.canMessage && !profile.blocked ? <Text className="mt-2 text-center font-body text-[11px] text-ink-faint">{t("dm_follow_to_message")}</Text> : null}
+      {!profile.canMessage && !profile.blocked && !profile.limited ? <Text className="mt-2 text-center font-body text-[11px] text-ink-faint">{t("dm_follow_to_message")}</Text> : null}
 
       <Text className="mt-6 self-start font-bodySemibold text-sm text-ink">{t("dm_posts")}</Text>
     </View>
@@ -143,7 +158,7 @@ export default function UserProfileScreen() {
           data={posts}
           keyExtractor={(p) => p.id}
           ListHeaderComponent={header}
-          renderItem={({ item }) => <PostCard post={item} onOpen={() => router.push(`/community/post/${item.id}`)} />}
+          renderItem={({ item }) => <PostCard post={item} linkAuthor={false} onOpen={() => router.push(`/community/post/${item.id}`)} />}
           ListEmptyComponent={<Text className="px-5 font-body text-xs text-ink-faint">{t("dm_no_posts")}</Text>}
           contentContainerStyle={{ paddingBottom: 32 }}
         />

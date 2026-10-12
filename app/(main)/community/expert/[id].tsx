@@ -165,7 +165,7 @@ export default function ExpertProfileScreen() {
         {posts.length === 0 ? (
           <Text className="font-body text-xs text-ink-faint px-5">{t("cexp_no_posts")}</Text>
         ) : (
-          posts.map((p) => <PostCard key={p.id} post={p} onOpen={() => router.push(`/community/post/${p.id}`)} onRemoved={(id, reason) => (reason === "blocked" ? load() : setPosts((prev) => prev.filter((x) => x.id !== id)))} />)
+          posts.map((p) => <PostCard key={p.id} post={p} linkAuthor={false} onOpen={() => router.push(`/community/post/${p.id}`)} onRemoved={(id, reason) => (reason === "blocked" ? load() : setPosts((prev) => prev.filter((x) => x.id !== id)))} />)
         )}
       </ScrollView>
     </SafeAreaView>

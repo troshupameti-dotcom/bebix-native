@@ -36,6 +36,8 @@ export type PublicProfile = {
   followsMe: boolean;
   canMessage: boolean;
   blocked: boolean;
+  /** Pa migrimin e mesazheve në server: vetëm emri dhe postimet, pa Ndiq/Shkruaj. */
+  limited?: boolean;
 };
 
 /** Mesazhi i vlefshëm (1–2000 pas pastrimit), ose null. */
