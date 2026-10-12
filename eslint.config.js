@@ -5,6 +5,7 @@ const expoConfig = require("eslint-config-expo/flat");
 module.exports = defineConfig([
   expoConfig,
   {
-    ignores: ["dist/*", "supabase/functions/**"],
+    // supabase/tests: testet SQL ekzekutohen veçmas me PGlite (i përkohshëm), jo me jest/lint.
+    ignores: ["dist/*", "supabase/functions/**", "supabase/tests/**"],
   }
 ]);

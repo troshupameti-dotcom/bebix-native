@@ -13,7 +13,9 @@
     "build:ios": "eas build --platform ios",
     "build:android": "eas build --platform android",
     "lint": "expo lint",
-    "test": "jest"
+    "test": "jest",
+    "preflight": "tsc --noEmit && eslint . --ext .ts,.tsx && jest --ci",
+    "eas-build-post-install": "tsc --noEmit && jest --ci"
   },
   "dependencies": {
     "@expo-google-fonts/inter": "^0.4.0",
