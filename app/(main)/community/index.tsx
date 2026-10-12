@@ -12,6 +12,7 @@ import { SuggestedGroupsCard } from "@/components/community/SuggestedGroupsCard"
 import { logWarn } from "@/lib/log";
 import { useSpecialties } from "@/lib/community/useSpecialties";
 import { specialtyLabel } from "@/lib/community/specialties";
+import { fetchInbox, setMyCommunityName } from "@/lib/community/messages";
 import {
   fetchGroups, fetchExperts, fetchTopics, fetchTips, fetchFeed, fetchNewestPostAt, FEED_PAGE_SIZE,
   CommunityGroup, CommunityExpert, CommunityTopic, CommunityTip, CommunityPost, FeedTab,
@@ -77,6 +78,22 @@ export default function CommunityScreen() {
   const [newPosts, setNewPosts] = useState(false);
   // Rifreskon "Pyetjen e ditës" bashkë me rrjedhën (tërhiqje poshtë, kthim te skeda).
   const [questionKey, setQuestionKey] = useState(0);
+  // Inbox-i: shfaqet vetëm kur migrimi është në server; pika kur ka të palexuara.
+  const [inbox, setInbox] = useState<{ available: boolean; unread: boolean }>({ available: false, unread: false });
+  useEffect(() => {
+    let alive = true;
+    void fetchInbox()
+      .then((r) => alive && setInbox({ available: r.available, unread: r.rows.some((x) => x.unread) }))
+      .catch(() => {});
+    return () => {
+      alive = false;
+    };
+  }, [questionKey]);
+  // Emri im publik (për profilin dhe bisedat), sipas emrit te profili.
+  const parentName = state.profile.parentName ?? "";
+  useEffect(() => {
+    if (inbox.available && parentName.trim()) void setMyCommunityName(parentName).catch(() => {});
+  }, [inbox.available, parentName]);
 
   // Filtrat aktualë, të lexueshëm nga funksionet e qëndrueshme (pa i rikrijuar sa herë shkruan një shkronjë).
   // Ndryshohen vetëm nga `changeFilters`, ndaj ky ref është gjithmonë i njëjtë me gjendjen `filters`.
@@ -379,6 +396,18 @@ export default function CommunityScreen() {
       <View className="flex-row items-center justify-between px-5 pt-2 pb-3">
         <Text className="font-display text-2xl text-ink">{t("community_title")}</Text>
         <View className="flex-row items-center">
+          {inbox.available ? (
+            <Pressable
+              onPress={() => router.push("/community/inbox")}
+              hitSlop={6}
+              accessibilityRole="button"
+              accessibilityLabel={inbox.unread ? t("dm_inbox_unread_a11y") : t("dm_inbox")}
+              className="w-10 h-10 items-center justify-center"
+            >
+              <Icon name="send" size={20} color={theme.inkSoft} />
+              {inbox.unread ? <View className="absolute right-1.5 top-1.5 h-2.5 w-2.5 rounded-full bg-orange" /> : null}
+            </Pressable>
+          ) : null}
           <Pressable
             onPress={() => router.push("/community/saved")}
             hitSlop={6}

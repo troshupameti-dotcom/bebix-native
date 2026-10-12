@@ -37,7 +37,8 @@ export type NotificationKey =
   | "community_reply"
   | "community_like"
   | "community_expert_post"
-  | "community_group_post";
+  | "community_group_post"
+  | "community_message";
 
 export type NotificationGroup = "baby" | "shop" | "community";
 
@@ -76,6 +77,7 @@ export const NOTIFICATION_CATALOG: NotificationEntry[] = [
   { key: "community_reply",       group: "community", icon: "repeat",   labelKey: "notif_community_reply",   hintKey: "notif_community_reply_hint",   default: true },
   { key: "community_like",        group: "community", icon: "heart",    labelKey: "notif_community_like",    hintKey: "notif_community_like_hint",    default: true },
   { key: "community_expert_post", group: "community", icon: "shield",   labelKey: "notif_community_expert",  hintKey: "notif_community_expert_hint",  default: true },
+  { key: "community_message",     group: "community", icon: "send",     labelKey: "notif_community_message", hintKey: "notif_community_message_hint", default: true },
   { key: "community_group_post",  group: "community", icon: "family",   labelKey: "notif_community_group",   hintKey: "notif_community_group_hint",   default: true },
 ];
 
@@ -144,6 +146,7 @@ const LEGACY_MAP: Record<string, NotificationKey[]> = {
     "community_like",
     "community_expert_post",
     "community_group_post",
+    "community_message",
   ],
 };
 

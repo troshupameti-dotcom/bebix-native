@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { View, Text, Pressable } from "react-native";
+import { useRouter } from "expo-router";
 import { Icon } from "@/components/ui/Icon";
 import { shadows } from "@/lib/shadows";
 import { haptics } from "@/lib/haptics";
@@ -45,6 +46,7 @@ type PostCardProps = {
 
 export function PostCard({ post, onOpen, onRemoved, interactiveMedia = false }: PostCardProps) {
   const myId = useCurrentUserId();
+  const router = useRouter();
   const { t } = useTranslation();
   const [liked, setLiked] = useState(post.liked);
   const [saved, setSaved] = useState(post.saved);
@@ -99,13 +101,24 @@ export function PostCard({ post, onOpen, onRemoved, interactiveMedia = false }: 
       {post.authorIsExpert && <ExpertBadge specialty={post.authorSpecialty} />}
 
       <View className="flex-row items-center mb-3">
-        <Avatar initial={post.authorInitial} accent={post.accent} />
-        <View className="flex-1 ml-2.5">
-          <Text className="font-bodySemibold text-sm text-ink" numberOfLines={1}>{post.authorName}</Text>
-          <Text className="font-body text-[11px] text-ink-faint" numberOfLines={1}>
-            {timeAgoLabel(post.at, t)} {post.groupName ? `· ${post.groupName}` : ""}
-          </Text>
-        </View>
+        {/* Emri dhe fotoja hapin profilin e autorit (aty: Ndiq, Shkruaj). */}
+        <Pressable
+          onPress={() => {
+            haptics.tap();
+            router.push(`/community/user/${post.authorId}`);
+          }}
+          accessibilityRole="button"
+          accessibilityLabel={post.authorName}
+          className="flex-1 flex-row items-center"
+        >
+          <Avatar initial={post.authorInitial} accent={post.accent} />
+          <View className="flex-1 ml-2.5">
+            <Text className="font-bodySemibold text-sm text-ink" numberOfLines={1}>{post.authorName}</Text>
+            <Text className="font-body text-[11px] text-ink-faint" numberOfLines={1}>
+              {timeAgoLabel(post.at, t)} {post.groupName ? `· ${post.groupName}` : ""}
+            </Text>
+          </View>
+        </Pressable>
         <Pressable
           onPress={openMenu}
           hitSlop={10}

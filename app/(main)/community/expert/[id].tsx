@@ -1,10 +1,11 @@
 import { useCallback, useState } from "react";
-import { View, Text, ScrollView, Pressable, ActivityIndicator, RefreshControl, Image } from "react-native";
+import { View, Text, ScrollView, Pressable, ActivityIndicator, RefreshControl, Image, Alert } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useLocalSearchParams, useRouter, useFocusEffect } from "expo-router";
 import { Icon } from "@/components/ui/Icon";
 import { PostCard } from "@/components/community/PostCard";
-import { fetchExpertById, fetchPostsByAuthor, toggleFollowExpert, CommunityExpert, CommunityPost } from "@/lib/communityData";
+import { fetchExpertById, fetchPostsByAuthor, getCurrentUserId, toggleFollowExpert, CommunityExpert, CommunityPost } from "@/lib/communityData";
+import { fetchInbox, messageErrorKey, startConversation } from "@/lib/community/messages";
 import { BackButton, goBackOr } from "@/components/ui/BackButton";
 import { useTranslation } from "@/lib/i18n/LanguageContext";
 import { useThemeColors } from "@/lib/theme/useThemeColors";
@@ -22,13 +23,16 @@ export default function ExpertProfileScreen() {
   const [refreshing, setRefreshing] = useState(false);
   const [expert, setExpert] = useState<CommunityExpert | null>(null);
   const [posts, setPosts] = useState<CommunityPost[]>([]);
+  // Inbox-i ekziston në server (migrimi) dhe s'jam vetë ky ekspert.
+  const [inboxReady, setInboxReady] = useState(false);
 
   const load = useCallback(async (quiet = false) => {
     if (!id) return;
     if (!quiet) setLoading(true);
     try {
-      const e = await fetchExpertById(id);
+      const [e, me, inbox] = await Promise.all([fetchExpertById(id), getCurrentUserId(), fetchInbox().catch(() => ({ available: false }))]);
       setExpert(e);
+      setInboxReady(inbox.available && !!e?.userId && e.userId !== me);
       setPosts(e?.userId ? await fetchPostsByAuthor(e.userId) : []);
     } catch (err) {
       logWarn("Expert profile load error:", err);
@@ -53,6 +57,16 @@ export default function ExpertProfileScreen() {
       await toggleFollowExpert(expert.id, prevFollowed);
     } catch {
       setExpert({ ...expert, followed: prevFollowed });
+    }
+  }
+
+  async function openChat() {
+    if (!expert?.userId) return;
+    try {
+      const conversationId = await startConversation(expert.userId);
+      router.push(`/community/chat/${conversationId}`);
+    } catch (err) {
+      Alert.alert(t("mod_error_title"), t(messageErrorKey(err)));
     }
   }
 
@@ -122,11 +136,27 @@ export default function ExpertProfileScreen() {
           {!!expert.bio && (
             <Text className="font-body text-sm text-ink-soft text-center leading-5 mb-4 px-4">{expert.bio}</Text>
           )}
-          <Pressable onPress={handleFollow} className={`px-6 py-2.5 rounded-full ${expert.followed ? "bg-cream-soft" : "bg-olive"}`}>
-            <Text className={`font-bodySemibold text-xs ${expert.followed ? "text-ink-soft" : "text-on-accent"}`}>
-              {expert.followed ? `${t("cexp_following")} ✓` : t("cexp_follow")}
-            </Text>
-          </Pressable>
+          <View className="flex-row" style={{ gap: 10 }}>
+            <Pressable onPress={handleFollow} className={`px-6 py-2.5 rounded-full ${expert.followed ? "bg-cream-soft" : "bg-olive"}`} style={{ minHeight: 44, justifyContent: "center" }}>
+              <Text className={`font-bodySemibold text-xs ${expert.followed ? "text-ink-soft" : "text-on-accent"}`}>
+                {expert.followed ? `${t("cexp_following")} ✓` : t("cexp_follow")}
+              </Text>
+            </Pressable>
+            {/* "Shkruaj": kur e ndjek ekspertin (mjafton njëra palë), inbox-i hapet. */}
+            {expert.userId && inboxReady ? (
+              <Pressable
+                onPress={() => void openChat()}
+                disabled={!expert.followed}
+                accessibilityRole="button"
+                accessibilityState={{ disabled: !expert.followed }}
+                className={`px-6 py-2.5 rounded-full ${expert.followed ? "bg-ink" : "bg-cream-line"}`}
+                style={{ minHeight: 44, justifyContent: "center" }}
+              >
+                <Text className={`font-bodySemibold text-xs ${expert.followed ? "text-on-accent" : "text-ink-faint"}`}>{t("dm_message")}</Text>
+              </Pressable>
+            ) : null}
+          </View>
+          {expert.userId && inboxReady && !expert.followed ? <Text className="mt-2 font-body text-[11px] text-ink-faint">{t("dm_follow_to_message")}</Text> : null}
         </View>
 
         <View className="px-5 mb-3">

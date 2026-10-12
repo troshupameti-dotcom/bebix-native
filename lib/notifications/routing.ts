@@ -29,6 +29,7 @@ export function routeForNotification(data: unknown): string | null {
   const d = data as Record<string, unknown>;
 
   if (typeof d.postId === "string" && UUID.test(d.postId)) return `/(main)/community/post/${d.postId}`;
+  if (d.type === "message" && typeof d.conversationId === "string" && UUID.test(d.conversationId)) return `/(main)/community/chat/${d.conversationId}`;
   if (typeof d.orderId === "string" && UUID.test(d.orderId)) return "/(main)/shop/orders";
   if (typeof d.type === "string" && BY_TYPE[d.type]) return BY_TYPE[d.type];
   if (typeof d.key === "string" && d.key.startsWith("shop_")) return "/(main)/shop";
