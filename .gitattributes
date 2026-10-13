@@ -1,0 +1,2 @@
+# Skriptet shell ekzekutohen në Linux (CI): me CRLF bash-i s'i lexon.
+*.sh text eol=lf
