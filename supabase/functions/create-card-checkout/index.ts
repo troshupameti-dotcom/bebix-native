@@ -37,7 +37,25 @@ type OrderRow = {
   status: string;
   client_ref: string | null;
   email?: string | null;
+  created_at?: string | null;
 };
+
+/** Sesioni i Stripe vlen 31 minuta (minimumi i Stripe është 30). */
+export const SESSION_MINUTES = 31;
+/** Porositë me kartë të papaguara anulohen vetë pas kaq minutash (cancel_unpaid_card_orders, 2 orë). */
+export const AUTO_CANCEL_MINUTES = 120;
+/**
+ * Sesion i ri lejohet vetëm kur mbaron para anulimit vetë, me 4 minuta rezervë (cron-i ecën çdo 15 minuta,
+ * por mund të ekzekutohet edhe pak më herët se ora e saktë). Përndryshe klienti mund të paguante pasi porosia
+ * ishte anuluar dhe stoku kthyer.
+ */
+export const LATEST_START_MINUTES = AUTO_CANCEL_MINUTES - SESSION_MINUTES - 4;
+
+export function tooLateToPay(createdAt: string | null | undefined, nowMs = Date.now()): boolean {
+  const t = createdAt ? new Date(createdAt).getTime() : NaN;
+  if (!Number.isFinite(t)) return true; // pa datë s'dihet: më mirë porosi e re se pagesë për një porosi të anuluar
+  return nowMs - t > LATEST_START_MINUTES * 60_000;
+}
 
 const cents = (n: unknown) => Math.round(Number(n) * 100);
 
@@ -75,7 +93,7 @@ export function buildCheckoutParams(order: OrderRow, lang: Lang, nowSec = Math.f
   p.set("success_url", `${SITE}/${lang}/shop/payment/success?order=${order.id}`);
   p.set("cancel_url", `${SITE}/${lang}/shop/payment/cancelled`);
   p.set("locale", lang === "en" ? "en" : "auto");
-  p.set("expires_at", String(nowSec + 31 * 60)); // Stripe kërkon të paktën 30 minuta; porosia anulohet vetë pas 2 orësh
+  p.set("expires_at", String(nowSec + SESSION_MINUTES * 60)); // Stripe kërkon të paktën 30 minuta; porosia anulohet vetë pas 2 orësh
   p.set("metadata[order_id]", order.id);
   p.set("payment_intent_data[metadata][order_id]", order.id);
   p.set("payment_intent_data[description]", `Bebix #${order.id.slice(0, 8).toUpperCase()}`);
@@ -110,7 +128,7 @@ serve(async (req) => {
 
   const { data: order, error } = await supabase
     .from("orders")
-    .select("id, total_price, shipping_fee, items, payment_method, payment_status, status, client_ref, email")
+    .select("id, total_price, shipping_fee, items, payment_method, payment_status, status, client_ref, email, created_at")
     .eq("id", orderId)
     .maybeSingle();
   // Referenca e gabuar përgjigjet njësoj si porosia që s'ekziston: s'zbulohet kush ekziston.
@@ -118,6 +136,7 @@ serve(async (req) => {
   if (order.payment_method !== "card") return json(409, { error: "not_card" });
   if (order.payment_status === "paid") return json(409, { error: "already_paid" });
   if (order.status === "cancelled") return json(409, { error: "cancelled" });
+  if (tooLateToPay(order.created_at)) return json(409, { error: "too_late" });
 
   const res = await fetch("https://api.stripe.com/v1/checkout/sessions", {
     method: "POST",

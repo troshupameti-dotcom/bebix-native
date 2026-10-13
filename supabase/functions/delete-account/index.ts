@@ -102,9 +102,11 @@ serve(async (req) => {
 
   const report: Record<string, number | string> = {};
 
-  // --- 1. Skedarët: fotot e momenteve (private) dhe media e komunitetit.
+  // --- 1. Skedarët: fotot e momenteve (private), media e komunitetit dhe fotot e licencave të ekspertëve
+  //        (dokumente identiteti/profesioni, `<userId>/license-…`, nga aplikimi si ekspert).
   report.baby_moment_files = await removeUserFiles("baby-moments", userId);
   report.community_files = await removeUserFiles("community-media", userId);
+  report.expert_license_files = await removeUserFiles("expert-licenses", userId);
 
   // --- 2. Të dhënat e bebit — pjesa më e ndjeshme.
   const tables: { table: string; column: string }[] = [

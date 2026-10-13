@@ -57,8 +57,39 @@ export async function verifyStripeSignature(
 // deno-lint-ignore no-explicit-any
 type Db = any;
 type StripeEvent = { id?: string; type: string; data: { object: Record<string, unknown> } };
+/** Rimburson plotësisht një pagesë te Stripe; hedh gabim kur s'ia del (Stripe e riprovon webhook-un). */
+type Refund = (paymentIntent: string, orderId: string) => Promise<void>;
 
-async function markPaid(db: Db, orderId: string, paymentIntent: string | null, amountTotal: number, currency: string): Promise<string> {
+/**
+ * Rimbursimi i plotë me API-në e Stripe. Çelësi i idempotencës (një për payment_intent) e bën të sigurt
+ * riprovimin: Stripe s'rimburson dy herë të njëjtën pagesë.
+ */
+export async function refundViaStripe(paymentIntent: string, orderId: string): Promise<void> {
+  const key = Deno.env.get("STRIPE_SECRET_KEY");
+  if (!key) throw new Error("refund_not_configured");
+  const body = new URLSearchParams({ payment_intent: paymentIntent, reason: "requested_by_customer" });
+  body.set("metadata[order_id]", orderId);
+  body.set("metadata[reason]", "order_cancelled_before_payment");
+  const res = await fetch("https://api.stripe.com/v1/refunds", {
+    method: "POST",
+    headers: {
+      Authorization: `Bearer ${key}`,
+      "Content-Type": "application/x-www-form-urlencoded",
+      "Idempotency-Key": `bebix-refund-${paymentIntent}`,
+    },
+    body,
+  });
+  if (!res.ok) throw new Error(`refund_failed_${res.status}`);
+}
+
+async function markPaid(
+  db: Db,
+  orderId: string,
+  paymentIntent: string | null,
+  amountTotal: number,
+  currency: string,
+  refund: Refund,
+): Promise<string> {
   const { data: order } = await db
     .from("orders")
     .select("id, total_price, payment_method, payment_status, status")
@@ -66,11 +97,31 @@ async function markPaid(db: Db, orderId: string, paymentIntent: string | null, a
     .maybeSingle();
   if (!order) return "order_not_found";
   if (order.payment_method !== "card") return "not_card";
-  if (order.payment_status === "paid") return "already_paid";
+  if (order.payment_status === "paid" || order.payment_status === "refunded") return "already_" + order.payment_status;
   // Shuma e paguar duhet të jetë saktësisht totali i porosisë, në euro; përndryshe nuk shënohet "paguar".
   if (currency !== "eur" || Math.round(Number(order.total_price) * 100) !== amountTotal) {
     console.error("amount_mismatch", orderId, amountTotal, currency, order.total_price);
     return "amount_mismatch";
+  }
+  // Porosia u anulua para se të vinte pagesa (p.sh. anulimi vetë pas 2 orësh): s'ka mall për të dërguar,
+  // prandaj paraja i kthehet klientit vetë. Pa payment_intent s'ka çfarë të rimbursohet: e sheh admini.
+  if (order.status === "cancelled") {
+    if (!paymentIntent) {
+      console.error("paid_but_cancelled_no_intent", orderId);
+      return "cancelled_no_intent";
+    }
+    await refund(paymentIntent, orderId); // gabim → 500 → Stripe riprovon; porosia s'preket ende
+    const { error } = await db
+      .from("orders")
+      .update({ payment_status: "refunded", payment_reference: paymentIntent })
+      .eq("id", orderId)
+      .neq("payment_status", "refunded");
+    if (error) {
+      console.error("update_failed", orderId, error.message);
+      return "update_failed";
+    }
+    console.warn("refunded_cancelled_order", orderId);
+    return "refunded_cancelled";
   }
   const { error } = await db
     .from("orders")
@@ -81,12 +132,11 @@ async function markPaid(db: Db, orderId: string, paymentIntent: string | null, a
     console.error("update_failed", orderId, error.message);
     return "update_failed";
   }
-  if (order.status === "cancelled") console.warn("paid_but_cancelled", orderId); // admini e sheh (e anuluar + e paguar) dhe rimburson
   return "paid";
 }
 
 /** Zbaton një ngjarje të Stripe te porosia përkatëse; kthen çfarë u bë (për regjistrat dhe testet). */
-export async function handleStripeEvent(event: StripeEvent, db: Db): Promise<string> {
+export async function handleStripeEvent(event: StripeEvent, db: Db, refund: Refund = refundViaStripe): Promise<string> {
   const obj = event.data.object;
   switch (event.type) {
     case "checkout.session.completed":
@@ -95,7 +145,7 @@ export async function handleStripeEvent(event: StripeEvent, db: Db): Promise<str
       if (obj.payment_status !== "paid") return "not_paid_yet";
       const orderId = String(obj.client_reference_id ?? (obj.metadata as Record<string, string> | undefined)?.order_id ?? "");
       if (!orderId) return "no_order";
-      return await markPaid(db, orderId, typeof obj.payment_intent === "string" ? obj.payment_intent : null, Number(obj.amount_total), String(obj.currency ?? ""));
+      return await markPaid(db, orderId, typeof obj.payment_intent === "string" ? obj.payment_intent : null, Number(obj.amount_total), String(obj.currency ?? ""), refund);
     }
     case "checkout.session.async_payment_failed": {
       const orderId = String(obj.client_reference_id ?? "");

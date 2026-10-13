@@ -30,7 +30,7 @@ async function load(name) {
   return mod;
 }
 
-const { buildLines, buildCheckoutParams } = await load("create-card-checkout");
+const { buildLines, buildCheckoutParams, tooLateToPay, LATEST_START_MINUTES } = await load("create-card-checkout");
 const { verifyStripeSignature, handleStripeEvent } = await load("stripe-webhook");
 
 let pass = 0, fail = 0;
@@ -126,8 +126,30 @@ db = fakeDb(order()); r = await handleStripeEvent(completed({ client_reference_i
 check("referenca nga metadata kur mungon client_reference_id", r === "paid", r);
 db = fakeDb(order()); r = await handleStripeEvent(completed({ client_reference_id: undefined }), db);
 check("pa referencë porosie: s'bën asgjë", r === "no_order" && db.calls.length === 0, r);
-db = fakeDb(order({ status: "cancelled" })); r = await handleStripeEvent(completed(), db);
-check("e anuluar por e paguar: shënohet 'paguar' (admini e sheh dhe rimburson)", r === "paid", r);
+// Porosia u anulua para pagesës: rimbursim vetë, jo "paguar" (klienti s'paguhet për mall që s'vjen).
+let refunds = [];
+const okRefund = async (pi, id) => { refunds.push([pi, id]); };
+db = fakeDb(order({ status: "cancelled", payment_status: "failed" })); r = await handleStripeEvent(completed(), db, okRefund);
+check("e anuluar por e paguar: rimbursohet vetë dhe shënohet 'refunded'", r === "refunded_cancelled" && refunds.length === 1 && refunds[0][0] === "pi_123" && refunds[0][1] === ID && db.calls[0].update.payment_status === "refunded", r);
+check("…dhe kurrë s'shënohet 'paid'", !db.calls.some((c) => c.update.payment_status === "paid"));
+refunds = [];
+db = fakeDb(order({ status: "cancelled" }));
+let threw = null;
+try { await handleStripeEvent(completed(), db, async () => { throw new Error("refund_failed_500"); }); } catch (e) { threw = e.message; }
+check("rimbursimi dështon: gabim (Stripe e riprovon) dhe porosia s'preket", threw === "refund_failed_500" && db.calls.length === 0, String(threw));
+db = fakeDb(order({ status: "cancelled" })); r = await handleStripeEvent(completed({ payment_intent: null }), db, okRefund);
+check("e anuluar pa payment_intent: s'preket, e sheh admini", r === "cancelled_no_intent" && db.calls.length === 0 && refunds.length === 0, r);
+db = fakeDb(order({ payment_status: "refunded" })); r = await handleStripeEvent(completed(), db, okRefund);
+check("ngjarje e përsëritur pas rimbursimit: s'bën asgjë", r === "already_refunded" && db.calls.length === 0, r);
+
+// Sesion i ri vetëm kur mbaron para anulimit vetë (2 orë).
+const NOW_MS = Date.parse("2026-10-13T12:00:00Z");
+const ago = (min) => new Date(NOW_MS - min * 60_000).toISOString();
+check("sesioni mbaron para anulimit: kufiri është 85 min", LATEST_START_MINUTES === 85 && LATEST_START_MINUTES + 31 < 120, String(LATEST_START_MINUTES));
+check("porosi e re: pagesa lejohet", !tooLateToPay(ago(1), NOW_MS));
+check("85 min: ende lejohet", !tooLateToPay(ago(85), NOW_MS));
+check("86 min: refuzohet (sesioni do ta kalonte anulimin)", tooLateToPay(ago(86), NOW_MS));
+check("pa datë: refuzohet", tooLateToPay(null, NOW_MS) && tooLateToPay("jo-datë", NOW_MS));
 
 db = fakeDb(order()); r = await handleStripeEvent({ type: "checkout.session.async_payment_failed", data: { object: { client_reference_id: ID } } }, db);
 check("pagesa asinkrone e dështuar: 'failed' vetëm nga 'pending'", r === "failed" && db.calls[0].update.payment_status === "failed" && db.calls[0].eq.some(([k, v]) => k === "payment_status" && v === "pending"));
