@@ -1,0 +1,61 @@
+name: Android
+
+# Build-i Android dhe hapja e app-it në emulator Android 14, para se të bëhet build-i EAS.
+# Kap atë që testet JS s'e shohin: klasat e dyfishta në Gradle (WorkManager) dhe rrëzimin në hapje
+# (leja DETECT_SCREEN_CAPTURE e bllokuar). Repo-ja është publike, ndaj minutat s'kushtojnë.
+# Vlerat e Supabase-it janë të rreme: app-i duhet të hapet edhe pa rrjet; flag-et si te EAS.
+on:
+  push:
+  pull_request:
+  workflow_dispatch:
+
+concurrency:
+  group: android-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  build-and-launch:
+    runs-on: ubuntu-latest
+    timeout-minutes: 90
+    env:
+      EXPO_PUBLIC_SUPABASE_URL: https://ci-placeholder.supabase.co
+      EXPO_PUBLIC_SUPABASE_ANON_KEY: ci-placeholder
+      EXPO_PUBLIC_GIFTS: "1"
+      EXPO_PUBLIC_CARD_PAYMENTS: "1"
+      EXPO_PUBLIC_AUTO_GROUPS: "1"
+      SENTRY_DISABLE_AUTO_UPLOAD: "true"
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: 17
+      - uses: gradle/actions/setup-gradle@v4
+      - run: npm ci
+      - run: npx expo prebuild --platform android --no-install --clean
+      - name: Build-i release (vetëm x86_64, për emulatorin)
+        working-directory: android
+        run: ./gradlew assembleRelease -PreactNativeArchitectures=x86_64 --no-daemon
+      - name: KVM për emulatorin
+        run: |
+          echo 'KERNEL=="kvm", GROUP="kvm", MODE="0666", OPTIONS+="static_node=kvm"' | sudo tee /etc/udev/rules.d/99-kvm4all.rules
+          sudo udevadm control --reload-rules
+          sudo udevadm trigger --name-match=kvm
+      - name: Hapja në Android 14
+        uses: reactivecircus/android-emulator-runner@v2
+        with:
+          api-level: 34
+          target: google_apis
+          arch: x86_64
+          disable-animations: true
+          script: bash scripts/android-smoke.sh android/app/build/outputs/apk/release/app-release.apk
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: hapja-android
+          path: smoke/
+          if-no-files-found: ignore
