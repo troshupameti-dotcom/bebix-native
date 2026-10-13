@@ -7,6 +7,7 @@ import { PGlite } from "@electric-sql/pglite";
 import fs from "node:fs";
 
 const MIGRATION = new URL("../migrations/20261019090000_direct_messages.sql", import.meta.url);
+const FOLLOW_FIX = new URL("../migrations/20261020090000_follow_block_fix.sql", import.meta.url);
 const db = new PGlite();
 process.on("uncaughtException", (e) => { console.log("GABIM i papritur:", String(e.message).slice(0, 300)); process.exit(1); });
 
@@ -40,7 +41,7 @@ returns void language plpgsql security definer set search_path = public as $$
 begin insert into public.notification_outbox values (p_user, p_key, p_title, p_body, p_data, p_dedupe, p_send_after, p_expires_at); end $$;
 `);
 for (const i of [1, 2]) {
-  try { await db.exec(fs.readFileSync(MIGRATION, "utf8")); console.log(`OK  migrimi u ekzekutua (${i})`); }
+  try { await db.exec(fs.readFileSync(MIGRATION, "utf8")); await db.exec(fs.readFileSync(FOLLOW_FIX, "utf8")); console.log(`OK  migrimet u ekzekutuan (${i})`); }
   catch (e) { console.log("GABIM te migrimi:", e.message); process.exit(1); }
 }
 
