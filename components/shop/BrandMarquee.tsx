@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from "react";
-import { AccessibilityInfo, Image, Pressable, ScrollView, Text, View, type NativeScrollEvent, type NativeSyntheticEvent } from "react-native";
+import { AccessibilityInfo, AppState, Image, Pressable, ScrollView, Text, View, type NativeScrollEvent, type NativeSyntheticEvent } from "react-native";
+import { useIsFocused } from "expo-router";
 import { Icon } from "@/components/ui/Icon";
 import type { Brand } from "@/lib/homeContent";
 
@@ -38,6 +39,15 @@ function Tile({ brand, color, onPress }: { brand: Brand; color: string; onPress:
 export function BrandMarquee({ brands, color, onOpen }: { brands: Brand[]; color: string; onOpen: (b: Brand) => void }) {
   const [reduceMotion, setReduceMotion] = useState(false);
   const moving = brands.length >= 6 && !reduceMotion;
+  // Lëvizja vetë punon vetëm kur shihet: Dyqani është skeda aktive dhe app-i në plan të parë. Skedat mbeten
+  // të montuara, ndaj pa këtë cikli 60 herë në sekondë vazhdonte edhe te Bebi/Komuniteti dhe në sfond.
+  const focused = useIsFocused();
+  const [appActive, setAppActive] = useState(AppState.currentState === "active");
+  useEffect(() => {
+    const sub = AppState.addEventListener("change", (state) => setAppActive(state === "active"));
+    return () => sub.remove();
+  }, []);
+  const running = moving && focused && appActive;
   const scrollRef = useRef<ScrollView>(null);
   const offset = useRef(0);
   const touching = useRef(false);
@@ -70,9 +80,9 @@ export function BrandMarquee({ brands, color, onOpen }: { brands: Brand[]; color
     requestAnimationFrame(() => scrollRef.current?.scrollTo({ x: rowWidth, animated: false }));
   }, [moving, rowWidth]);
 
-  // Lëvizja vetë, kornizë pas kornize, kur s'e prek askush.
+  // Lëvizja vetë, kornizë pas kornize, kur s'e prek askush (dhe vetëm kur shihet).
   useEffect(() => {
-    if (!moving) return;
+    if (!running) return;
     let frame = 0;
     let last = Date.now();
     const tick = () => {
@@ -88,7 +98,7 @@ export function BrandMarquee({ brands, color, onOpen }: { brands: Brand[]; color
     };
     frame = requestAnimationFrame(tick);
     return () => cancelAnimationFrame(frame);
-  }, [moving, wrap]);
+  }, [running, wrap]);
 
   const onScroll = (e: NativeSyntheticEvent<NativeScrollEvent>) => {
     if (!touching.current && Date.now() < resumeAt.current) {
