@@ -19,3 +19,25 @@ jobs:
       - run: npx tsc --noEmit
       - run: npx eslint . --ext .ts,.tsx
       - run: npx jest --ci
+
+  # Testet e bazës (RLS, funksionet) dhe të pagesave, në Postgres lokal (PGlite). Migrimet ekzekutohen në
+  # prodhim me dorë: këtu provohen para se të arrijnë atje. PGlite s'është varësi e projektit, vetëm e këtij hapi.
+  sql:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+      - run: npm ci
+      - run: npm i --no-save @electric-sql/pglite
+      - name: Testet SQL dhe të pagesave
+        run: |
+          status=0
+          for f in supabase/tests/*.test.mjs; do
+            echo "::group::$f"
+            if ! node "$f"; then echo "::error file=$f::$f dështoi"; status=1; fi
+            echo "::endgroup::"
+          done
+          exit $status
