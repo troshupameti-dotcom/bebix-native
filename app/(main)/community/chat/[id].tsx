@@ -3,7 +3,7 @@ import { View, Text, FlatList, Pressable, TextInput, KeyboardAvoidingView, Platf
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useFocusEffect, useLocalSearchParams, useRouter } from "expo-router";
 import * as ScreenCapture from "expo-screen-capture";
-import { BackButton } from "@/components/ui/BackButton";
+import { BackButton, goBackOr } from "@/components/ui/BackButton";
 import { Icon } from "@/components/ui/Icon";
 import { shadows } from "@/lib/shadows";
 import { haptics } from "@/lib/haptics";
@@ -148,7 +148,7 @@ export default function ChatScreen() {
               onPress: async () => {
                 try {
                   await blockUser(other.otherId);
-                  router.back();
+                  goBackOr("/(main)/community/inbox");
                 } catch (err) {
                   Alert.alert(t("mod_error_title"), t(messageErrorKey(err)));
                 }

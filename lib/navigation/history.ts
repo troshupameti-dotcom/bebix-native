@@ -15,14 +15,56 @@ const MAX_ENTRIES = 25;
 
 let history: string[] = [];
 
+/**
+ * Prej nga erdhi VËRTET përdoruesi te një ekran, kur hyri aty nga një pjesë tjetër e app-it
+ * (p.sh. "/shop/orders" → "/more"). Ekrani i mëparshëm në histori s'mjafton: pas një ndërrimi tab-i
+ * ai është tab-i tjetër. Gabimi (14 tetor): Më shumë → Modaliteti i natës → tab-i Home → tab-i Më shumë
+ * (rihapet te nata) → "mbrapa" të çonte te Home, sepse Home ishte "i mëparshmi".
+ */
+const origins = new Map<string, string>();
+
+/** Si u arrit rruga e radhës: me prekje tab-i, me kthim, apo me lëvizje përpara (parazgjedhja). */
+type MoveKind = "tab" | "back";
+let pending: { kind: MoveKind; at: number } | null = null;
+/** Shënimi vlen vetëm për lëvizjen që pason menjëherë. */
+const PENDING_MS = 1500;
+
+/** Thirret para ndërrimit të tab-it nga shiriti poshtë: ekrani që hapet s'ka "prej nga erdhi" të ri. */
+export function noteTabSwitch(): void {
+  pending = { kind: "tab", at: Date.now() };
+}
+
+/** Thirret para çdo kthimi (butoni mbrapa, butoni fizik): kthimi s'është hyrje e re. */
+export function noteBackMove(): void {
+  pending = { kind: "back", at: Date.now() };
+}
+
 /** Thirret nga rrënja e app-it sa herë ndryshon rruga. */
 export function recordPath(path: string | null | undefined): void {
   if (!path) return;
   // E njëjta rrugë dy herë radhazi nuk është lëvizje.
   if (history[history.length - 1] === path) return;
 
+  const previous = history[history.length - 1] ?? null;
+  const note = pending && Date.now() - pending.at <= PENDING_MS ? pending.kind : null;
+  pending = null;
+  // Kthim pa shënim (rrëshqitja mbrapa në iPhone, "mbrapa" native): rruga është ajo para së fundit.
+  const isBack = note === "back" || (note === null && history.length >= 2 && history[history.length - 2] === path);
+
+  if (note === null && !isBack && previous) {
+    // Lëvizje përpara: nga një pjesë tjetër mbahet mend prej nga erdhi; brenda së njëjtës pjesë kthimi
+    // është thjesht ekrani poshtë në stivë, ndaj harrohet një "prej nga" i vjetër.
+    if (sectionOf(previous) !== sectionOf(path)) origins.set(path, previous);
+    else origins.delete(path);
+  }
+
   history.push(path);
   if (history.length > MAX_ENTRIES) history.shift();
+}
+
+/** Prej nga erdhi përdoruesi te kjo rrugë nga një pjesë tjetër, ose null (kthimi bëhet brenda stivës). */
+export function originOf(path: string | null | undefined): string | null {
+  return path ? origins.get(path) ?? null : null;
 }
 
 export function currentPath(): string | null {
@@ -110,7 +152,10 @@ export function rewindTo(path: string): void {
   }
 }
 
-/** Vetëm për teste. */
+/** Vetëm për teste: historiku si të ishte lëvizur përpara nëpër këto rrugë. */
 export function resetHistory(paths: string[] = []): void {
-  history = [...paths];
+  history = [];
+  origins.clear();
+  pending = null;
+  paths.forEach(recordPath);
 }

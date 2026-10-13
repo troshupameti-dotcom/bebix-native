@@ -1,6 +1,6 @@
 import { Pressable } from "react-native";
 import { router, type Href } from "expo-router";
-import { previousPath, currentPath, decideBack, lastPathInOtherSection, rewindTo } from "@/lib/navigation/history";
+import { currentPath, decideBack, hardwareBackTarget, lastPathInOtherSection, noteBackMove, originOf, rewindTo } from "@/lib/navigation/history";
 import { Icon } from "@/components/ui/Icon";
 import { haptics } from "@/lib/haptics";
 import { shadows } from "@/lib/shadows";
@@ -14,7 +14,8 @@ import { useTranslation } from "@/lib/i18n/LanguageContext";
  * 1. Erdhi nga nje pjese tjeter e app-it (p.sh. "Me shume" -> "Porosite e
  *    mia", qe rri te Dyqani). `router.back()` do ta kthente brenda
  *    Dyqanit, sepse aty u shtua ekrani — jo te "Me shume". Prandaj
- *    kthehemi shprehimisht te rruga e meparshme.
+ *    kthehemi shprehimisht aty prej nga erdhi (`originOf`, jo thjesht
+ *    ekrani i meparshem: pas nderrimit te tab-it ai eshte tab-i tjeter).
  * 2. Levizje brenda se njejtes pjese: `router.back()` eshte i sakte dhe
  *    ruan animacionin e sistemit.
  * 3. S'ka histori fare (ekrani u hap nga njoftim, deep link ose pas nje
@@ -22,7 +23,8 @@ import { useTranslation } from "@/lib/i18n/LanguageContext";
  */
 export function goBackOr(fallback: Href) {
   const current = currentPath();
-  const decision = decideBack(previousPath(), current);
+  const decision = decideBack(originOf(current), current);
+  noteBackMove();
 
   if (decision.kind === "goto") {
     rewindTo(decision.path);
@@ -41,6 +43,21 @@ export function goBackOr(fallback: Href) {
   const other = lastPathInOtherSection(current);
   if (other) rewindTo(other);
   router.replace((other ?? fallback) as Href);
+}
+
+/**
+ * Butoni fizik "mbrapa" i Android-it, me të njëjtën logjikë si BackButton. true = u trajtua këtu;
+ * false = e bën vetë sistemi (pop në stivë, ose tab-i i parë / dalja te rrënjët e tab-eve).
+ */
+export function hardwareBack(): boolean {
+  const current = currentPath();
+  const target = hardwareBackTarget(originOf(current), current);
+  // Edhe kur kthimin e bën vetë sistemi, s'është hyrje e re në ekranin ku përfundon.
+  noteBackMove();
+  if (!target) return false;
+  rewindTo(target);
+  router.replace(target as Href);
+  return true;
 }
 
 type BackButtonProps = {

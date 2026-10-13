@@ -20,6 +20,17 @@ import { PostpartumCard } from "@/components/parent/PostpartumCard";
 import { NightMode } from "@/components/baby/NightMode";
 
 describe("Home", () => {
+  // Natën (22:00–06:00) Home-i shfaqet si modaliteti i natës: testi s'duhet të varet nga ora kur nis.
+  // Vetëm ora (Date) fiksohet në mesditë; kohëmatësit mbeten të vërtetë.
+  beforeEach(() => {
+    jest.useFakeTimers({
+      now: new Date(2026, 9, 14, 12, 0),
+      doNotFake: ["hrtime", "nextTick", "performance", "queueMicrotask", "requestAnimationFrame", "cancelAnimationFrame",
+        "requestIdleCallback", "cancelIdleCallback", "setImmediate", "clearImmediate", "setInterval", "clearInterval", "setTimeout", "clearTimeout"],
+    });
+  });
+  afterEach(() => jest.useRealTimers());
+
   it("hapet pa rrjet dhe pa të dhëna", async () => {
     const r = await renderScreen(<BabyHome />);
     expect(visibleText(r.root)).toContain("Rritja");

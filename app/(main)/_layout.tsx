@@ -1,6 +1,6 @@
 import { log } from "@/lib/log";
 import { useEffect, useRef, useState } from "react";
-import { Tabs, router, usePathname, type Href } from "expo-router";
+import { Tabs, router, usePathname } from "expo-router";
 import { BackHandler, View } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { Icon, IconName } from "@/components/ui/Icon";
@@ -16,7 +16,8 @@ import { relationFromProfile } from "@/lib/baby/team";
 import { useHouseholdRole } from "@/lib/hooks/useHouseholdRole";
 import { routeForNotification } from "@/lib/notifications/routing";
 import { useBabyRecordsSync } from "@/lib/hooks/useBabyRecordsSync";
-import { currentPath, hardwareBackTarget, previousPath, rewindTo } from "@/lib/navigation/history";
+import { currentPath, noteTabSwitch, sectionOf } from "@/lib/navigation/history";
+import { hardwareBack } from "@/components/ui/BackButton";
 
 // AI-ja rri ne mes: aty ku ishte butoni rrethor, pra duart e mesuara e
 // gjejne ne te njejtin vend, dhe eshte pika me e arritshme me gisht.
@@ -62,13 +63,7 @@ export default function MainLayout() {
   // Butoni fizik "mbrapa" i Android-it ndjek historikun e vërtetë si BackButton-i
   // (p.sh. Më shumë -> Porositë e mia -> mbrapa = Më shumë, jo Dyqani).
   useEffect(() => {
-    const sub = BackHandler.addEventListener("hardwareBackPress", () => {
-      const target = hardwareBackTarget(previousPath(), currentPath());
-      if (!target) return false;
-      rewindTo(target);
-      router.replace(target as Href);
-      return true;
-    });
+    const sub = BackHandler.addEventListener("hardwareBackPress", hardwareBack);
     return () => sub.remove();
   }, []);
 
@@ -150,7 +145,11 @@ export default function MainLayout() {
   const tabBarPaddingBottom = Math.max(insets.bottom, 10);
 
   function guardTabPress(tabName: string, e: { preventDefault: () => void }) {
-    if (isAuthenticated || GUEST_ALLOWED_TABS.has(tabName)) return;
+    if (isAuthenticated || GUEST_ALLOWED_TABS.has(tabName)) {
+      // Ndërrimi i tab-it s'është "erdha nga": "mbrapa" te ekrani ku rihapet tab-i mbetet brenda tij.
+      if (sectionOf(currentPath()) !== tabName) noteTabSwitch();
+      return;
+    }
     e.preventDefault();
     router.push({
       pathname: "/(auth)/require-account",
