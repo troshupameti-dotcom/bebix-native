@@ -43,7 +43,7 @@ function pump(rounds: number): number {
 function mount(): ReactTestRenderer {
   let r!: ReactTestRenderer;
   act(() => {
-    r = create(createElement(BrandMarquee, { brands, color: "#000", onOpen: () => {} }));
+    r = create(createElement(BrandMarquee, { brands, onOpen: () => {} }));
   });
   return r;
 }

@@ -1,7 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { AccessibilityInfo, AppState, Image, Pressable, ScrollView, Text, View, type NativeScrollEvent, type NativeSyntheticEvent } from "react-native";
 import { useIsFocused } from "expo-router";
-import { Icon } from "@/components/ui/Icon";
 import type { Brand } from "@/lib/homeContent";
 
 /**
@@ -13,30 +12,54 @@ import type { Brand } from "@/lib/homeContent";
  * te kopja e mesme — kur del prej saj, kërcen pa u vënë re një gjatësi më tej.
  * Me pak marka (nën 6) ose kur pajisja kërkon pak lëvizje, rri e palëvizshme.
  */
-/** Logot: drejtkëndësha kompaktë, me të njëjtën hapësirë të vogël mes tyre. */
-const LOGO_W = 84;
-const LOGO_H = 52;
+/**
+ * Logot: drejtkëndësha 2:1, gjithmonë të bardhë (edhe në temën e errët, që logot e errëta si Dr. Brown's të mos
+ * humbin). Logot vijnë të njësuara nga bebix-web/scripts/brand-logos.py (pa të bardhën përreth, me të njëjtën
+ * peshë pamore dhe hapësirë), ndaj logoja mbush krejt pllakën pa u prerë.
+ */
+const LOGO_W = 112;
+const LOGO_H = 56;
 const COLUMN = LOGO_W;
-const GAP = 8;
+const GAP = 10;
 /** Pikselë në sekondë: i ngadaltë, që logot të lexohen. */
 const SPEED = 26;
 /** Pas sa kohësh nga lëshimi i gishtit rifillon lëvizja vetë. */
 const RESUME_MS = 1200;
 
-function Tile({ brand, color, onPress }: { brand: Brand; color: string; onPress: () => void }) {
+function Tile({ brand, onPress }: { brand: Brand; onPress: () => void }) {
   return (
-    <Pressable onPress={onPress} accessibilityRole="button" accessibilityLabel={brand.name} style={{ width: COLUMN, marginRight: GAP }} className="items-center">
-      <View style={{ width: LOGO_W, height: LOGO_H }} className="items-center justify-center overflow-hidden rounded-xl border border-cream-line bg-surface">
-        {brand.logoUrl ? <Image source={{ uri: brand.logoUrl }} style={{ width: LOGO_W - 12, height: LOGO_H - 12 }} resizeMode="contain" /> : <Icon name={brand.icon} size={22} color={color} />}
-      </View>
-      <Text className="mt-1 text-center font-bodyMedium text-[10.5px] text-ink-soft" numberOfLines={1}>
-        {brand.name}
-      </Text>
+    <Pressable
+      onPress={onPress}
+      accessibilityRole="button"
+      accessibilityLabel={brand.name}
+      style={({ pressed }) => ({
+        width: LOGO_W,
+        height: LOGO_H,
+        marginRight: GAP,
+        borderRadius: 16,
+        backgroundColor: "#FFFFFF",
+        borderWidth: 1,
+        borderColor: "rgba(0,0,0,0.07)",
+        overflow: "hidden",
+        alignItems: "center",
+        justifyContent: "center",
+        opacity: pressed ? 0.85 : 1,
+        transform: [{ scale: pressed ? 0.97 : 1 }],
+      })}
+    >
+      {brand.logoUrl ? (
+        <Image source={{ uri: brand.logoUrl }} style={{ width: LOGO_W, height: LOGO_H }} resizeMode="contain" />
+      ) : (
+        // Pa logo: emri si shenjë e thjeshtë, me të njëjtën peshë si logot (ngjyrë e errët mbi të bardhë fikse).
+        <Text style={{ color: "#2B2B2B", fontSize: 13, fontFamily: "Inter_600SemiBold", textAlign: "center", paddingHorizontal: 10 }} numberOfLines={2}>
+          {brand.name}
+        </Text>
+      )}
     </Pressable>
   );
 }
 
-export function BrandMarquee({ brands, color, onOpen }: { brands: Brand[]; color: string; onOpen: (b: Brand) => void }) {
+export function BrandMarquee({ brands, onOpen }: { brands: Brand[]; onOpen: (b: Brand) => void }) {
   const [reduceMotion, setReduceMotion] = useState(false);
   const moving = brands.length >= 6 && !reduceMotion;
   // Lëvizja vetë punon vetëm kur shihet: Dyqani është skeda aktive dhe app-i në plan të parë. Skedat mbeten
@@ -124,7 +147,7 @@ export function BrandMarquee({ brands, color, onOpen }: { brands: Brand[]; color
       importantForAccessibility={hidden ? "no-hide-descendants" : "auto"}
     >
       {brands.map((b) => (
-        <Tile key={`${prefix}-${b.id}`} brand={b} color={color} onPress={() => onOpen(b)} />
+        <Tile key={`${prefix}-${b.id}`} brand={b} onPress={() => onOpen(b)} />
       ))}
     </View>
   );

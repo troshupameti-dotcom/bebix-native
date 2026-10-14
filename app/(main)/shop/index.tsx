@@ -258,7 +258,7 @@ export default function ShopScreen() {
       {!isFiltering && brands.length > 0 && (
         <>
           <Text className="font-bodySemibold text-base text-ink px-5 mt-2 mb-2">{t("shop_brands")}</Text>
-          <BrandMarquee brands={brands} color={theme.inkFaint} onOpen={(b) => router.push(`/shop/brand/${b.id}`)} />
+          <BrandMarquee brands={brands} onOpen={(b) => router.push(`/shop/brand/${b.id}`)} />
         </>
       )}
 
