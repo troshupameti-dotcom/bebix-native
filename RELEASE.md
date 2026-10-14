@@ -7,7 +7,7 @@ përditësuar (p.sh. app-i pret një funksion që baza s'e ka ende). Prandaj rad
 |---|---|---|---|
 | 1 | **SQL** (`supabase/migrations`) | Supabase → SQL Editor | Testi i migrimit kalon në CI (job `sql`) |
 | 2 | **Edge Functions** (`supabase/functions`) | `npx supabase functions deploy <emri> --project-ref mkpayczhqmbpqwwxjtjf` | `stripe.test.mjs` kalon; `stripe-webhook` me `--no-verify-jwt` |
-| 3 | **Web** (`bebix-web`) | push te `master` → Vercel | `npm run preflight` dhe CI e gjelbër |
+| 3 | **Web** (`bebix-web`) | push te `master`, pastaj `npx vercel deploy --prod` nga folderi `bebix-web` (Vercel s'publikon vetë nga GitHub; 9–14 tetor mbeti pa u publikuar) | `npm run preflight`, CI e gjelbër, pas publikimit `npm run check:screens` |
 | 4 | **Flag-et** (`EXPO_PUBLIC_*`) | EAS → Environment variables | Vlera të njëjta për preview dhe production |
 | 5 | **App-i** | `eas build` | CI dhe **Android** të gjelbra për këtë commit |
 
