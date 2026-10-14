@@ -12,10 +12,21 @@ import AsyncStorage from "@react-native-async-storage/async-storage";
 
 /** "digital" = ora me shifra; "analog" = ora e murit, e rrumbullakët, vetëm me vija. */
 export type NightClockStyle = "digital" | "analog";
-export type NightPrefs = { auto: boolean; fromHour: number; toHour: number; clock: NightClockStyle };
+export type NightPrefs = {
+  auto: boolean;
+  fromHour: number;
+  toHour: number;
+  clock: NightClockStyle;
+  /** Ndriçimi i ekranit gjatë pamjes së natës (0–1); null = s'preket, mbetet ai i telefonit. */
+  dimLevel: number | null;
+  /** Fuqia e dritës së kuqe (0–1), e mbajtur mend nga hera e fundit. */
+  lightLevel: number;
+};
 export type NightOverride = { mode: "on" | "off"; until: string } | null;
 
-export const DEFAULT_NIGHT_PREFS: NightPrefs = { auto: true, fromHour: 22, toHour: 6, clock: "digital" };
+export const DEFAULT_NIGHT_PREFS: NightPrefs = { auto: true, fromHour: 22, toHour: 6, clock: "digital", dimLevel: 0.1, lightLevel: 0.4 };
+/** Zgjedhjet e ndriçimit te cilësimet: shumë i ulët, i ulët, ose siç e ka telefoni. */
+export const DIM_LEVELS = [0.04, 0.1, null] as const;
 /** Zgjedhja me dorë skadon në këtë orë të mëngjesit. */
 export const MORNING_HOUR = 7;
 
@@ -58,11 +69,23 @@ function ensureLoaded() {
   loading = true;
   void Promise.all([AsyncStorage.getItem(PREFS_KEY), AsyncStorage.getItem(OVERRIDE_KEY)])
     .then(([p, o]) => {
-      const prefs = p ? { ...DEFAULT_NIGHT_PREFS, ...(JSON.parse(p) as Partial<NightPrefs>) } : DEFAULT_NIGHT_PREFS;
+      const prefs = p ? cleanPrefs(JSON.parse(p) as Partial<NightPrefs>) : DEFAULT_NIGHT_PREFS;
       const override = o ? (JSON.parse(o) as NightOverride) : null;
       set({ prefs, override, loaded: true });
     })
     .catch(() => set({ loaded: true }));
+}
+
+const unit = (v: unknown): v is number => typeof v === "number" && Number.isFinite(v) && v >= 0 && v <= 1;
+
+/** Cilësimet e ruajtura, me parazgjedhjet për çdo fushë të re ose të dëmtuar. */
+export function cleanPrefs(raw: Partial<NightPrefs> | null | undefined): NightPrefs {
+  const r = { ...DEFAULT_NIGHT_PREFS, ...(raw ?? {}) };
+  return {
+    ...r,
+    dimLevel: r.dimLevel === null || unit(r.dimLevel) ? r.dimLevel : DEFAULT_NIGHT_PREFS.dimLevel,
+    lightLevel: unit(r.lightLevel) ? r.lightLevel : DEFAULT_NIGHT_PREFS.lightLevel,
+  };
 }
 
 function savePrefs(patch: Partial<NightPrefs>) {
@@ -86,6 +109,14 @@ export function setNightHours(fromHour: number, toHour: number) {
 
 export function setNightClock(clock: NightClockStyle) {
   savePrefs({ clock });
+}
+
+export function setNightDim(dimLevel: number | null) {
+  savePrefs({ dimLevel });
+}
+
+export function setNightLightLevel(lightLevel: number) {
+  savePrefs({ lightLevel: Math.max(0, Math.min(1, lightLevel)) });
 }
 
 /** "22:00" */

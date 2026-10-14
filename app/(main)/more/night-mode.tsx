@@ -12,8 +12,11 @@ import { useTranslation } from "@/lib/i18n/LanguageContext";
 import { useThemeColors } from "@/lib/theme/useThemeColors";
 import { formatTime } from "@/lib/dateUtils";
 import {
-  hourLabel, setNightAuto, setNightClock, setNightHours, setNightOverride, useNightMode, type NightClockStyle,
+  DIM_LEVELS, hourLabel, setNightAuto, setNightClock, setNightDim, setNightHours, setNightOverride, useNightMode, type NightClockStyle,
 } from "@/lib/baby/nightMode";
+import type { TranslationKey } from "@/lib/i18n/translations";
+
+const DIM_LABELS: Record<string, TranslationKey> = { "0.04": "night_dim_low", "0.1": "night_dim_mid", null: "night_dim_off" };
 
 /** Zgjedhës ore me – / + (pa varësi të re), i njëjtë si te Njoftimet. */
 function HourStepper({ label, value, onChange }: { label: string; value: number; onChange: (h: number) => void }) {
@@ -68,12 +71,12 @@ function ClockOption({ style, selected, label, now }: { style: NightClockStyle; 
 /**
  * Modaliteti i natës: së pari çelësi "Ndize vetë natën" (si te Apple), pastaj,
  * kur është i ndezur, orari. Poshtë: pamja e orës (digjitale ose analoge, pa
- * numra) dhe "Provoje tani".
+ * numra), ndriçimi i ekranit natën, drita e kuqe dhe "Provoje tani".
  */
 export default function NightModeSettings() {
   const { t } = useTranslation();
   const night = useNightMode();
-  const { auto, fromHour, toHour, clock } = night.prefs;
+  const { auto, fromHour, toHour, clock, dimLevel } = night.prefs;
   const [now, setNow] = useState(() => new Date());
   useEffect(() => {
     const id = setInterval(() => setNow(new Date()), 1000);
@@ -126,6 +129,43 @@ export default function NightModeSettings() {
         <View style={shadows.soft} className="flex-row rounded-xl2 bg-surface p-2" accessibilityRole="radiogroup">
           <ClockOption style="digital" selected={clock === "digital"} label={t("night_clock_digital")} now={now} />
           <ClockOption style="analog" selected={clock === "analog"} label={t("night_clock_analog")} now={now} />
+        </View>
+
+        {/* 4) Ndriçimi i ekranit natën */}
+        <Text className="mb-2 mt-6 px-1 font-bodyMedium text-xs uppercase text-ink-faint">{t("night_dim_title")}</Text>
+        <View style={shadows.soft} className="rounded-xl2 bg-surface p-2">
+          <View className="flex-row" style={{ gap: 6 }} accessibilityRole="radiogroup">
+            {DIM_LEVELS.map((level) => {
+              const selected = dimLevel === level;
+              return (
+                <Pressable
+                  key={String(level)}
+                  onPress={() => {
+                    haptics.select();
+                    setNightDim(level);
+                  }}
+                  accessibilityRole="radio"
+                  accessibilityState={{ selected }}
+                  className={`flex-1 items-center justify-center rounded-xl px-2 ${selected ? "bg-olive" : "bg-cream-soft"}`}
+                  style={{ minHeight: 44 }}
+                >
+                  <Text className={`font-bodySemibold text-[13px] ${selected ? "text-on-accent" : "text-ink-soft"}`}>{t(DIM_LABELS[String(level)])}</Text>
+                </Pressable>
+              );
+            })}
+          </View>
+          <Text className="mt-2 px-2 pb-1 font-body text-xs leading-5 text-ink-soft">{t("night_dim_hint")}</Text>
+        </View>
+
+        {/* 5) Drita e kuqe */}
+        <View style={shadows.soft} className="mt-4 flex-row rounded-xl2 bg-surface px-4 py-3.5">
+          <View className="mr-3 h-9 w-9 items-center justify-center rounded-full" style={{ backgroundColor: NIGHT_COLORS.bg }}>
+            <Icon name="flash" size={16} color={NIGHT_COLORS.text} />
+          </View>
+          <View className="flex-1">
+            <Text className="font-bodySemibold text-sm text-ink">{t("night_light")}</Text>
+            <Text className="mt-0.5 font-body text-xs leading-5 text-ink-soft">{t("night_light_settings_hint")}</Text>
+          </View>
         </View>
 
         <Pressable

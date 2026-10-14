@@ -1,15 +1,21 @@
 import Svg, { Circle, Defs, Line, RadialGradient, Stop } from "react-native-svg";
 
-/** Ngjyrat e natës: të ngrohta dhe të errëta, si te modaliteti. */
+/**
+ * Ngjyrat e natës: e kuqe mbi të zezë të plotë. Drita e kuqe e ndal më pak melatoninën se e bardha dhe e kaltra
+ * (pra prindi dhe bebi rikthehen më lehtë në gjumë), dhe në ekranet OLED e zeza e plotë do të thotë piksel i fikur.
+ * Ngjyrat s'kanë pothuajse fare të kaltër: as teksti më i ndritshëm s'kalon 11% të kaltër (#F5361B).
+ */
 export const NIGHT_COLORS = {
-  bg: "#0B0605",
-  text: "#FFB199",
-  soft: "#B9715F",
-  faint: "#7A4A3E",
-  panel: "#160A08",
-  button: "#2A0F0B",
-  buttonOn: "#5A1E14",
-  line: "#3A1610",
+  bg: "#000000",
+  text: "#F5361B",
+  soft: "#A82614",
+  faint: "#5E1409",
+  panel: "#070100",
+  button: "#150301",
+  buttonOn: "#3F0A03",
+  line: "#2B0602",
+  /** Drita e kuqe: ngjyra e plotë, fuqia vjen nga ndriçimi dhe tejdukshmëria. */
+  glow: "#FF1A00",
 };
 
 const C = NIGHT_COLORS;
@@ -69,8 +75,8 @@ export function AnalogNightClock({ now, size = 240 }: { now: Date; size?: number
     <Svg width={size} height={size} viewBox={`0 0 ${size} ${size}`} accessibilityRole="image">
       <Defs>
         <RadialGradient id="face" cx="50%" cy="42%" r="60%">
-          <Stop offset="0%" stopColor="#24100C" />
-          <Stop offset="70%" stopColor="#120806" />
+          <Stop offset="0%" stopColor="#1A0402" />
+          <Stop offset="70%" stopColor="#0A0100" />
           <Stop offset="100%" stopColor={C.bg} />
         </RadialGradient>
       </Defs>
