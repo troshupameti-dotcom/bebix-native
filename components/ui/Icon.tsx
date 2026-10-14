@@ -47,7 +47,8 @@ export type IconName =
   | "eye"
   | "eyeOff"
   | "star"
-  | "starFilled";
+  | "starFilled"
+  | "logout";
 
 type IconProps = {
   name: IconName;
@@ -211,6 +212,13 @@ const GLYPHS: Record<IconName, (p: CommonProps) => React.ReactNode> = {
     <>
       <Rect x="5" y="10.5" width="14" height="9" rx="2" {...p} />
       <Path d="M8 10.5V8a4 4 0 0 1 8 0v2.5" {...p} />
+    </>
+  ),
+  // Dalja: dera me shigjetën që del jashtë.
+  logout: (p) => (
+    <>
+      <Path d="M14 4.5H6.5a2 2 0 0 0-2 2v11a2 2 0 0 0 2 2H14" {...p} />
+      <Path d="M10 12h10M16.5 8.5 20 12l-3.5 3.5" {...p} />
     </>
   ),
   download: (p) => (

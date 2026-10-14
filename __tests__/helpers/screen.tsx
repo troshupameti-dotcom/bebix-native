@@ -20,7 +20,7 @@ jest.mock("@/lib/supabase/client", () => {
     rpc: {} as Record<string, (args: Record<string, unknown>) => unknown>,
     tables: {} as Record<string, unknown>,
     calls: [] as { kind: "rpc" | "from"; name: string; args?: Record<string, unknown> }[],
-    session: null as null | { user: { id: string; email?: string } },
+    session: null as null | { user: { id: string; email?: string; app_metadata?: Record<string, unknown> } },
   };
   const answer = (v: unknown) => (v === undefined ? OFFLINE : { data: v, error: null, count: Array.isArray(v) ? v.length : null });
   // Zinxhir: from().select().eq()... dhe në fund `await` kthen përgjigjen.
@@ -60,7 +60,7 @@ type FakeSupabase = {
   tables: Record<string, unknown>;
   calls: { kind: "rpc" | "from"; name: string; args?: Record<string, unknown> }[];
   /** null = pa llogari. */
-  session: null | { user: { id: string; email?: string } };
+  session: null | { user: { id: string; email?: string; app_metadata?: Record<string, unknown> } };
 };
 /** Përgjigjet e Supabase-it për testin aktual; pastrohen pas çdo testi. */
 export const fakeSupabase = (): FakeSupabase => require("@/lib/supabase/client").__fake;
