@@ -1,4 +1,5 @@
 import { supabase } from "@/lib/supabase/client";
+import { realtimeTopic } from "@/lib/supabase/realtimeTopic";
 import type { TranslationKey } from "@/lib/i18n/translations";
 
 /**
@@ -198,7 +199,7 @@ export async function markConversationRead(id: string): Promise<void> {
 /** Mesazhet e reja menjëherë (Realtime, me RLS). Kthen funksionin që e mbyll lidhjen. */
 export function subscribeToConversation(conversationId: string, onInsert: (m: Message) => void, onDelete: (id: string) => void): () => void {
   const channel = supabase
-    .channel(`dm:${conversationId}`)
+    .channel(realtimeTopic(`dm:${conversationId}`))
     .on("postgres_changes", { event: "INSERT", schema: "public", table: "dm_messages", filter: `conversation_id=eq.${conversationId}` }, (p) =>
       onInsert(toMessage(p.new))
     )

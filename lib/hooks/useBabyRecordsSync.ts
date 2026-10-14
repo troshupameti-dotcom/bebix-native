@@ -7,6 +7,7 @@ import { claimDataOwner, claimLocalData } from "@/lib/auth/localDataOwner";
 import { resolveDataOwnerId, resolveDataOwnerIdStrict } from "@/lib/baby/household";
 import { registerSyncRequest, resetSyncStatus, setSyncPhase } from "@/lib/baby/syncStatus";
 import { supabase } from "@/lib/supabase/client";
+import { realtimeTopic } from "@/lib/supabase/realtimeTopic";
 
 /**
  * Kontrolli periodik mbetet vetëm si rrjet sigurie: ndryshimet nga webi
@@ -169,7 +170,7 @@ export function useBabyRecordsSync(isAuthenticated: boolean) {
       const ownerId = await resolveDataOwnerId();
       if (!ownerId || cancelled) return;
       channel = supabase
-        .channel(`baby_records:${ownerId}`)
+        .channel(realtimeTopic(`baby_records:${ownerId}`))
         .on(
           "postgres_changes",
           { event: "*", schema: "public", table: "baby_records", filter: `user_id=eq.${ownerId}` },
