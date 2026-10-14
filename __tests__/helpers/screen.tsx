@@ -68,7 +68,11 @@ export const fakeSupabase = (): FakeSupabase => require("@/lib/supabase/client")
 jest.mock("@react-native-async-storage/async-storage", () => require("@react-native-async-storage/async-storage/jest/async-storage-mock"));
 jest.mock("@react-native-community/netinfo", () => require("@react-native-community/netinfo/jest/netinfo-mock.js"));
 jest.mock("react-native-worklets", () => require("react-native-worklets/src/mock"));
-jest.mock("react-native-reanimated", () => require("react-native-reanimated/mock"));
+// Mock-u zyrtar s'e ka useFrameCallback (shiriti i markave): një cikël që s'nis kurrë.
+jest.mock("react-native-reanimated", () => ({
+  ...require("react-native-reanimated/mock"),
+  useFrameCallback: () => ({ setActive: () => {}, isActive: false, callbackId: 0 }),
+}));
 // NativeWind s'e lexon tailwind.config në jest (darkMode: "class"), ndaj tema vendoset pa të.
 jest.mock("nativewind", () => ({
   ...jest.requireActual("nativewind"),

@@ -1,5 +1,6 @@
-import { useCallback, useEffect, useRef, useState } from "react";
-import { AccessibilityInfo, AppState, Image, Pressable, ScrollView, Text, View, type NativeScrollEvent, type NativeSyntheticEvent } from "react-native";
+import { useEffect, useState } from "react";
+import { AccessibilityInfo, AppState, Image, Pressable, ScrollView, Text, View } from "react-native";
+import Animated, { scrollTo, useAnimatedRef, useAnimatedScrollHandler, useFrameCallback, useSharedValue } from "react-native-reanimated";
 import { useIsFocused } from "expo-router";
 import type { Brand } from "@/lib/homeContent";
 
@@ -11,6 +12,9 @@ import type { Brand } from "@/lib/homeContent";
  * Pa fund në të dy drejtimet: lista vihet tri herë radhazi dhe pozicioni mbahet
  * te kopja e mesme — kur del prej saj, kërcen pa u vënë re një gjatësi më tej.
  * Me pak marka (nën 6) ose kur pajisja kërkon pak lëvizje, rri e palëvizshme.
+ *
+ * Lëvizja ecën te thread-i i ndërfaqes (Reanimated: useFrameCallback + scrollTo), jo te JavaScript-i: më parë
+ * requestAnimationFrame + scrollTo nga JS-i ngecte sapo JS-i kishte punë tjetër ose kur prindi e zvarriste.
  */
 /**
  * Logot: drejtkëndësha 2:1, gjithmonë të bardhë (edhe në temën e errët, që logot e errëta si Dr. Brown's të mos
@@ -71,12 +75,18 @@ export function BrandMarquee({ brands, onOpen }: { brands: Brand[]; onOpen: (b: 
     return () => sub.remove();
   }, []);
   const running = moving && focused && appActive;
-  const scrollRef = useRef<ScrollView>(null);
-  const offset = useRef(0);
-  const touching = useRef(false);
-  const resumeAt = useRef(0);
   // Gjerësia e një kopjeje të listës.
   const rowWidth = brands.length * (COLUMN + GAP);
+
+  const scrollRef = useAnimatedRef<Animated.ScrollView>();
+  // Të gjitha këto lexohen dhe shkruhen te thread-i i ndërfaqes.
+  const offset = useSharedValue(rowWidth);
+  const touching = useSharedValue(false);
+  // Prindi e lëvizi: pozicionin e ndjek shiriti nga lëvizja e tij, derisa të rifillojë vetë.
+  const userMoved = useSharedValue(false);
+  // -1 = "rifillo pas RESUME_MS nga korniza e radhës"; përndryshe koha e kornizës kur rifillon.
+  const resumeAt = useSharedValue(0);
+  const width = useSharedValue(rowWidth);
 
   useEffect(() => {
     let alive = true;
@@ -86,58 +96,61 @@ export function BrandMarquee({ brands, onOpen }: { brands: Brand[]; onOpen: (b: 
     };
   }, []);
 
-  // Mbaje pozicionin te kopja e mesme: pa fund majtas dhe djathtas.
-  const wrap = useCallback(
-    (x: number) => {
-      if (x < rowWidth * 0.5) return x + rowWidth;
-      if (x > rowWidth * 1.5) return x - rowWidth;
-      return x;
+  useEffect(() => {
+    width.set(rowWidth);
+    offset.set(rowWidth);
+  }, [rowWidth, width, offset]);
+
+  const frame = useFrameCallback((info) => {
+    "worklet";
+    if (touching.get()) return;
+    if (resumeAt.get() === -1) resumeAt.set(info.timestamp + RESUME_MS);
+    if (info.timestamp < resumeAt.get()) return;
+    userMoved.set(false);
+    const dt = Math.min(0.05, (info.timeSincePreviousFrame ?? 16) / 1000);
+    // Mbaje pozicionin te kopja e mesme: pa fund majtas dhe djathtas.
+    let next = offset.get() + SPEED * dt;
+    if (next > width.get() * 1.5) next -= width.get();
+    if (next < width.get() * 0.5) next += width.get();
+    offset.set(next);
+    scrollTo(scrollRef, next, 0, false);
+  }, false);
+
+  useEffect(() => {
+    frame.setActive(running);
+    return () => frame.setActive(false);
+    // `frame` është i qëndrueshëm për gjithë jetën e komponentit.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [running]);
+
+  const onScroll = useAnimatedScrollHandler({
+    onBeginDrag: () => {
+      touching.set(true);
+      userMoved.set(true);
     },
-    [rowWidth]
-  );
-
-  // Nis te kopja e mesme.
-  useEffect(() => {
-    if (!moving) return;
-    offset.current = rowWidth;
-    requestAnimationFrame(() => scrollRef.current?.scrollTo({ x: rowWidth, animated: false }));
-  }, [moving, rowWidth]);
-
-  // Lëvizja vetë, kornizë pas kornize, kur s'e prek askush (dhe vetëm kur shihet).
-  useEffect(() => {
-    if (!running) return;
-    let frame = 0;
-    let last = Date.now();
-    const tick = () => {
-      const now = Date.now();
-      const dt = Math.min(0.05, (now - last) / 1000);
-      last = now;
-      if (!touching.current && now >= resumeAt.current) {
-        const next = wrap(offset.current + SPEED * dt);
-        offset.current = next;
-        scrollRef.current?.scrollTo({ x: next, animated: false });
-      }
-      frame = requestAnimationFrame(tick);
-    };
-    frame = requestAnimationFrame(tick);
-    return () => cancelAnimationFrame(frame);
-  }, [running, wrap]);
-
-  const onScroll = (e: NativeSyntheticEvent<NativeScrollEvent>) => {
-    if (!touching.current && Date.now() < resumeAt.current) {
-      // Rrëshqitja pas lëshimit (momentum): ndiq pozicionin, pa kërcime.
-      offset.current = e.nativeEvent.contentOffset.x;
-      return;
-    }
-    if (touching.current) offset.current = e.nativeEvent.contentOffset.x;
-  };
-
-  const release = (e: NativeSyntheticEvent<NativeScrollEvent>) => {
-    const x = e.nativeEvent.contentOffset.x;
-    const wrapped = wrap(x);
-    offset.current = wrapped;
-    if (wrapped !== x) scrollRef.current?.scrollTo({ x: wrapped, animated: false });
-  };
+    onScroll: (e) => {
+      // Vetëm kur e lëviz prindi (ose rrëshqitja pas tij): lëvizja vetë e di vetë pozicionin.
+      if (userMoved.get()) offset.set(e.contentOffset.x);
+    },
+    onEndDrag: (e) => {
+      touching.set(false);
+      offset.set(e.contentOffset.x);
+      resumeAt.set(-1);
+    },
+    // Rrëshqitja pas lëshimit (momentum) i përket ende prindit: lëvizja vetë pret derisa të ndalet.
+    onMomentumBegin: () => {
+      touching.set(true);
+    },
+    onMomentumEnd: (e) => {
+      touching.set(false);
+      let x = e.contentOffset.x;
+      if (x > width.get() * 1.5) x -= width.get();
+      if (x < width.get() * 0.5) x += width.get();
+      offset.set(x);
+      if (x !== e.contentOffset.x) scrollTo(scrollRef, x, 0, false);
+      resumeAt.set(-1);
+    },
+  });
 
   const row = (prefix: string, hidden: boolean) => (
     <View
@@ -161,37 +174,19 @@ export function BrandMarquee({ brands, onOpen }: { brands: Brand[]; onOpen: (b: 
   }
 
   return (
-    <ScrollView
+    <Animated.ScrollView
       ref={scrollRef}
       horizontal
       showsHorizontalScrollIndicator={false}
       scrollEventThrottle={16}
       decelerationRate="normal"
-      onTouchStart={() => {
-        touching.current = true;
-      }}
-      onTouchEnd={() => {
-        touching.current = false;
-        resumeAt.current = Date.now() + RESUME_MS;
-      }}
-      onScrollBeginDrag={() => {
-        touching.current = true;
-      }}
-      onScrollEndDrag={(e) => {
-        touching.current = false;
-        resumeAt.current = Date.now() + RESUME_MS;
-        release(e);
-      }}
-      onMomentumScrollEnd={(e) => {
-        resumeAt.current = Date.now() + RESUME_MS;
-        release(e);
-      }}
+      contentOffset={{ x: rowWidth, y: 0 }}
       onScroll={onScroll}
     >
       {/* Tri kopje: e mesmja është ajo që shihet; dy anësoret e bëjnë shiritin pa fund. */}
       {row("a", true)}
       {row("b", false)}
       {row("c", true)}
-    </ScrollView>
+    </Animated.ScrollView>
   );
 }

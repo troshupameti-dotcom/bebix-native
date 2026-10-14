@@ -31,8 +31,6 @@ import { FamilyView } from "@/components/baby/FamilyView";
 import { useHouseholdRole } from "@/lib/hooks/useHouseholdRole";
 import { NightMode } from "@/components/baby/NightMode";
 import { WhatsNewModal } from "@/components/WhatsNew";
-import { CheckInCard } from "@/components/parent/CheckInCard";
-import { DevelopmentCard } from "@/components/parent/DevelopmentCard";
 import { PostpartumCard } from "@/components/parent/PostpartumCard";
 import { setNightOverride, useNightMode } from "@/lib/baby/nightMode";
 import { SyncBadge } from "@/components/baby/SyncBadge";
@@ -714,8 +712,7 @@ export default function BabyProfileScreen() {
                 nga bebi dhe e perzier me produkte. */}
             <NowCard status={status} onToggleSleep={toggleSleep} />
 
-            {/* Si je sot? (privat, një herë në ditë) dhe, për mamin, javët pas lindjes. */}
-            <CheckInCard parentName={profile.parentName} />
+            {/* Për mamin: javët pas lindjes. ("Si je sot?" u hoq nga kreu më 15 tetor; mbetet te "Kujdesi për ty".) */}
             <PostpartumCard babyDob={profile.babyDob} relation={profile.relation} />
 
             {/* Dy prindër: kush bëri çfarë sot, faleminderit, turni i natës. */}
@@ -816,9 +813,7 @@ export default function BabyProfileScreen() {
               )}
             </View>
 
-            {/* Java: çfarë mëson bebi këtë javë + ide loje (rubrika e parafundit). Të dhënat
-                mjekësore (gjaku, alergjitë, mjeku) s'janë më këtu: rrinë te cilësimet e bebit. */}
-            <DevelopmentCard babyDob={profile.babyDob} />
+            {/* "Këtë javë" (zhvillimi i bebit) u hoq më 15 tetor. Të dhënat mjekësore rrinë te cilësimet e bebit. */}
 
             {/* Kujtimet në fund: sot para 1 muaji / 1 viti, filmi i muajit, kapsula, libri. */}
             <MemoriesCard baby={b} profile={profile} babyName={babyName} />

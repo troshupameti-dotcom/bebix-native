@@ -9,13 +9,11 @@ import BabyHome from "@/app/(main)/baby/index";
 import Shop from "@/app/(main)/shop/index";
 import Checkout from "@/app/(main)/shop/checkout";
 import Community from "@/app/(main)/community/index";
-import { DevelopmentCard } from "@/components/parent/DevelopmentCard";
 import { MemoriesCard } from "@/components/baby/MemoriesCard";
 import { NowCard } from "@/components/baby/NowCard";
 import { WeeklyRecapCard } from "@/components/baby/WeeklyRecapCard";
 import { TeamCard } from "@/components/baby/TeamCard";
 import { ShopSuggestionCard } from "@/components/shop/ShopSuggestionCard";
-import { CheckInCard } from "@/components/parent/CheckInCard";
 import { PostpartumCard } from "@/components/parent/PostpartumCard";
 import { NightMode } from "@/components/baby/NightMode";
 
@@ -36,11 +34,13 @@ describe("Home", () => {
     expect(visibleText(r.root)).toContain("Rritja");
   });
 
-  it("Java është rubrika e parafundit dhe Kujtimet e fundit (kërkesa e 12 tetorit)", async () => {
+  it("pa “Si je sot?” dhe pa “Këtë javë”; Kujtimet mbeten në fund (kërkesat e 12 dhe 15 tetorit)", async () => {
     const r = await renderScreen(<BabyHome />);
-    const cards = [NowCard, WeeklyRecapCard, TeamCard, ShopSuggestionCard, CheckInCard, PostpartumCard, DevelopmentCard, MemoriesCard];
+    const text = visibleText(r.root);
+    expect(text.filter((s) => /Si je sot|Këtë javë:/.test(s))).toEqual([]);
+    const cards = [NowCard, WeeklyRecapCard, TeamCard, ShopSuggestionCard, PostpartumCard, MemoriesCard];
     const order = r.root.findAll((n) => cards.includes(n.type as never)).map((n) => (n.type as { name: string }).name);
-    expect(order.slice(-2)).toEqual(["DevelopmentCard", "MemoriesCard"]);
+    expect(order[order.length - 1]).toBe("MemoriesCard");
   });
 
   it("modaliteti i natës: pa emoji (kërkesa e 12 tetorit)", async () => {

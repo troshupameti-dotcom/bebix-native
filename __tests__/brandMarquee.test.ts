@@ -1,6 +1,8 @@
+/* eslint-disable @typescript-eslint/no-require-imports -- fabrika e jest.mock ekzekutohet para importeve */
 /**
- * Shiriti i markave lëviz vetë (requestAnimationFrame + scrollTo) VETËM kur shihet: Dyqani në fokus dhe
- * app-i në plan të parë. Më parë cikli vazhdonte 60 herë në sekondë edhe te skedat e tjera dhe në sfond.
+ * Shiriti i markave lëviz vetë te thread-i i ndërfaqes (Reanimated useFrameCallback + scrollTo), VETËM kur
+ * shihet: Dyqani në fokus dhe app-i në plan të parë. Më parë lëvizja ecte nga JavaScript-i (requestAnimationFrame)
+ * dhe ngecte kur prindi e zvarriste; edhe më parë vazhdonte edhe te skedat e tjera dhe në sfond.
  */
 import { createElement } from "react";
 import { act, create, type ReactTestRenderer } from "react-test-renderer";
@@ -11,36 +13,28 @@ import type { Brand } from "@/lib/homeContent";
 let mockFocused = true;
 jest.mock("expo-router", () => ({ useIsFocused: () => mockFocused }));
 jest.mock("@/components/ui/Icon", () => ({ Icon: () => null }));
+jest.mock("react-native-worklets", () => require("react-native-worklets/src/mock"));
 
-const brands = Array.from({ length: 6 }, (_, i) => ({ id: `b${i}`, name: `Marka ${i}`, logoUrl: null, icon: "shop" }) as unknown as Brand);
+/** Gjendja e ciklit të kornizave të Reanimated-it (mock-u zyrtar s'e ka useFrameCallback). */
+const mockFrame = { active: false, created: 0 };
+jest.mock("react-native-reanimated", () => {
+  const mock = require("react-native-reanimated/mock");
+  return {
+    ...mock,
+    useFrameCallback: (_cb: unknown, autostart = true) => {
+      mockFrame.created += 1;
+      mockFrame.active = autostart;
+      return { setActive: (v: boolean) => (mockFrame.active = v), isActive: autostart, callbackId: 1 };
+    },
+  };
+});
+
+const many = Array.from({ length: 6 }, (_, i) => ({ id: `b${i}`, name: `Marka ${i}`, logoUrl: null, icon: "shop" }) as unknown as Brand);
 
 /** Te mock-u i jest-expo, currentState është getter: e zëvendësojmë drejtpërdrejt. */
 const setAppState = (v: string) => Object.defineProperty(AppState, "currentState", { value: v, configurable: true, writable: true });
 
-let frames: FrameRequestCallback[] = [];
-beforeEach(() => {
-  frames = [];
-  jest.spyOn(globalThis, "requestAnimationFrame").mockImplementation((cb: FrameRequestCallback) => {
-    frames.push(cb);
-    return frames.length;
-  });
-  jest.spyOn(globalThis, "cancelAnimationFrame").mockImplementation(() => {});
-});
-afterEach(() => jest.restoreAllMocks());
-
-/** Ekzekuton kornizat në pritje disa herë dhe kthen sa korniza të reja u kërkuan. */
-function pump(rounds: number): number {
-  let scheduled = 0;
-  for (let i = 0; i < rounds; i++) {
-    const batch = frames;
-    frames = [];
-    act(() => batch.forEach((cb) => cb(0)));
-    scheduled += frames.length;
-  }
-  return scheduled;
-}
-
-function mount(): ReactTestRenderer {
+function mount(brands = many): ReactTestRenderer {
   let r!: ReactTestRenderer;
   act(() => {
     r = create(createElement(BrandMarquee, { brands, onOpen: () => {} }));
@@ -48,20 +42,27 @@ function mount(): ReactTestRenderer {
   return r;
 }
 
+beforeEach(() => {
+  mockFrame.active = false;
+  mockFrame.created = 0;
+});
+
 describe("shiriti i markave", () => {
-  it("lëviz kur Dyqani shihet", () => {
+  it("lëviz kur Dyqani shihet, te thread-i i ndërfaqes", () => {
     mockFocused = true;
     setAppState("active");
     const r = mount();
-    expect(pump(5)).toBeGreaterThanOrEqual(5); // cikli vazhdon kornizë pas kornize
+    expect(mockFrame.created).toBeGreaterThan(0);
+    expect(mockFrame.active).toBe(true);
     act(() => r.unmount());
+    expect(mockFrame.active).toBe(false); // ndalet kur ekrani mbyllet
   });
 
   it("s'lëviz kur skeda tjetër është në fokus", () => {
     mockFocused = false;
     setAppState("active");
     const r = mount();
-    expect(pump(5)).toBe(0); // vetëm pozicionimi fillestar, asnjë cikël
+    expect(mockFrame.active).toBe(false);
     act(() => r.unmount());
   });
 
@@ -69,7 +70,15 @@ describe("shiriti i markave", () => {
     mockFocused = true;
     setAppState("background");
     const r = mount();
-    expect(pump(5)).toBe(0);
+    expect(mockFrame.active).toBe(false);
+    act(() => r.unmount());
+  });
+
+  it("me pak marka (nën 6) rri e palëvizshme", () => {
+    mockFocused = true;
+    setAppState("active");
+    const r = mount(many.slice(0, 3));
+    expect(mockFrame.active).toBe(false);
     act(() => r.unmount());
   });
 });

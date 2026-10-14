@@ -138,17 +138,21 @@ export function ProductCard({ product, onPress, cardWidth }: Props) {
           </Pressable>
         </View>
 
-        {/* B. Brand / Title / Price — JASHTË kornizës, direkt mbi background, pa shadow/card */}
+        {/* B. Brand / Title / Price — JASHTË kornizës, direkt mbi background, pa shadow/card.
+            Marka (1 rresht), emri (gjithmonë 2 rreshta, me "…" kur vazhdon) dhe mosha (1 rresht) e zënë
+            gjithmonë të njëjtën hapësirë, edhe kur mungojnë: kështu çmimi del në të njëjtin nivel te çdo kartë. */}
         <View className="pt-2.5 px-0.5">
-          <Text className="font-body text-xs text-ink-faint mb-1" numberOfLines={1}>
+          <Text className="font-body text-xs text-ink-faint mb-1" style={{ lineHeight: 16, minHeight: 16 }} numberOfLines={1}>
             {product.brand}
             {product.merchant && product.merchant !== product.brand ? ` · ${product.merchant}` : ""}
           </Text>
-          {/* Emri me shkronja të mëdha dhe të trasha (bold). */}
-          <Text className="font-display text-[15px] text-ink leading-5" numberOfLines={2}>
+          {/* Emri me shkronja të mëdha dhe të trasha (bold), maksimum 2 rreshta. */}
+          <Text className="font-display text-[15px] text-ink" style={{ lineHeight: 20, minHeight: 40 }} numberOfLines={2} ellipsizeMode="tail">
             {product.name}
           </Text>
-          {ageLabel ? <Text className="font-bodyMedium text-[11px] text-olive mt-0.5" numberOfLines={1}>{ageLabel}</Text> : null}
+          <Text className="font-bodyMedium text-[11px] text-olive mt-0.5" style={{ lineHeight: 15, minHeight: 15 }} numberOfLines={1}>
+            {ageLabel ?? ""}
+          </Text>
           <View className="h-2" />
           <Price price={product.price} compareAt={product.compareAtPrice} size="md" />
           {savings != null && (

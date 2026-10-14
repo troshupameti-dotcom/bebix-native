@@ -46,8 +46,10 @@
  */
 
 const light = {
-  // Tokë e ngrohtë, jo krem i verdhë: taupe shumë i hapur.
-  cream: "#F8F6F2",
+  // Faqja: e bardhë e pastër (15 tetor 2026). Teksti i errët mbi sfond të çelët lexohet më mirë, dhe përparësia
+  // rritet me ndriçimin e sfondit (Ergonomics 2009, 2013); dyqanet e mëdha përdorin të bardhën, dhe fotot e
+  // produkteve janë mbi të bardhë. Kartelat ndahen me hije dhe vija; ngrohtësia mbetet te creamSoft dhe vijat.
+  cream: "#FFFFFF",
   creamSoft: "#EFE9E1",
   creamLine: "#D0C6B8",
   surface: "#FFFFFF",
