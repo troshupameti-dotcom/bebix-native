@@ -3,7 +3,7 @@ import { View, Text, Pressable } from "react-native";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { MotiView } from "moti";
 import { Icon } from "@/components/ui/Icon";
-import { TONES } from "@/components/baby/LogTiles";
+import { useTones } from "@/lib/theme/tone";
 import { shadows } from "@/lib/shadows";
 import { haptics } from "@/lib/haptics";
 import { useTranslation } from "@/lib/i18n/LanguageContext";
@@ -28,6 +28,7 @@ export function WeeklyRecapCard({
   diapers: DiaperEntry[];
   babyName: string | null;
 }) {
+  const tones = useTones();
   const { t } = useTranslation();
   // undefined = ende po lexohet (karta s'shfaqet derisa të dihet).
   const [dismissed, setDismissed] = useState<string | null | undefined>(undefined);
@@ -63,33 +64,33 @@ export function WeeklyRecapCard({
       from={{ opacity: 0, translateY: 8 }}
       animate={{ opacity: 1, translateY: 0 }}
       transition={{ type: "timing", duration: 260 }}
-      style={[shadows.soft, { backgroundColor: TONES.amber.tintBg }]}
+      style={[shadows.soft, { backgroundColor: tones.amber.tintBg }]}
       className="mt-5 rounded-xl3 p-4"
     >
       <View className="flex-row items-center gap-2">
-        <Icon name="star" size={16} color={TONES.amber.tint} />
-        <Text className="flex-1 font-bodySemibold text-base" style={{ color: TONES.amber.tint }}>
+        <Icon name="star" size={16} color={tones.amber.tint} />
+        <Text className="flex-1 font-bodySemibold text-base" style={{ color: tones.amber.tint }}>
           {name ? t("recap_title_named", { name }) : t("recap_title")}
         </Text>
         <Pressable onPress={dismiss} hitSlop={12} accessibilityRole="button" accessibilityLabel={t("recap_dismiss")}>
-          <Icon name="close" size={16} color={TONES.amber.tint} />
+          <Icon name="close" size={16} color={tones.amber.tint} />
         </Pressable>
       </View>
 
       {recap.highlights.map((h) => (
-        <Text key={h.kind} className="mt-2 font-bodySemibold text-[15px] text-[#17212B]">
+        <Text key={h.kind} className="mt-2 font-bodySemibold text-[15px]" style={{ color: tones.ink }}>
           {highlight(h)}
         </Text>
       ))}
-      <Text className="mt-2 font-body text-[13px] text-[#3B4652]">
+      <Text className="mt-2 font-body text-[13px]" style={{ color: tones.inkSoft }}>
         {t("recap_avg", { f: recap.stats.feedingsPerDay, d: recap.stats.diapersPerDay })}
       </Text>
       {recap.stats.nightSleepMin !== null ? (
-        <Text className="mt-0.5 font-body text-[13px] text-[#3B4652]">
+        <Text className="mt-0.5 font-body text-[13px]" style={{ color: tones.inkSoft }}>
           {t("recap_night_avg", { d: durationLabel(recap.stats.nightSleepMin, t) })}
         </Text>
       ) : null}
-      <Text className="mt-2.5 font-bodyMedium text-[12.5px] text-[#3B4652]">{t("recap_kind")}</Text>
+      <Text className="mt-2.5 font-bodyMedium text-[12.5px]" style={{ color: tones.inkSoft }}>{t("recap_kind")}</Text>
     </MotiView>
   );
 }

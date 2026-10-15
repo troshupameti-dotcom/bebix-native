@@ -2,7 +2,8 @@ import { useMemo, useState } from "react";
 import { View, Text, Pressable, Image, ActivityIndicator } from "react-native";
 import { router } from "expo-router";
 import { Icon, type IconName } from "@/components/ui/Icon";
-import { TONES, type Tone } from "@/components/baby/LogTiles";
+import { type Tone } from "@/components/baby/LogTiles";
+import { useTone, useTones } from "@/lib/theme/tone";
 import { shadows } from "@/lib/shadows";
 import { haptics } from "@/lib/haptics";
 import { useTranslation } from "@/lib/i18n/LanguageContext";
@@ -39,7 +40,8 @@ function Thumb({ moment }: { moment: Moment }) {
   );
 }
 
-function LinkRow({ icon, tone, title, sub, onPress, busy }: { icon: IconName; tone: Tone; title: string; sub: string; onPress: () => void; busy?: boolean }) {
+function LinkRow({ icon, tone: rawTone, title, sub, onPress, busy }: { icon: IconName; tone: Tone; title: string; sub: string; onPress: () => void; busy?: boolean }) {
+  const tone = useTone(rawTone);
   return (
     <Pressable onPress={onPress} disabled={busy} accessibilityRole="button" className="flex-row items-center gap-3 py-2.5" style={{ minHeight: 52 }}>
       <View className="h-9 w-9 items-center justify-center rounded-full" style={{ backgroundColor: tone.tintBg }}>
@@ -59,6 +61,7 @@ function LinkRow({ icon, tone, title, sub, onPress, busy }: { icon: IconName; to
  * i muajit të kaluar (1–7 të muajit), kapsula e kohës dhe libri i vitit të parë.
  */
 export function MemoriesCard({ baby, profile, babyName, viewer = false }: { baby: BabyModuleState; profile: BabyProfile; babyName: string; viewer?: boolean }) {
+  const tones = useTones();
   const { t, lang } = useTranslation();
   const { showToast } = useToast();
   const [bookBusy, setBookBusy] = useState(false);
@@ -84,7 +87,7 @@ export function MemoriesCard({ baby, profile, babyName, viewer = false }: { baby
   return (
     <View style={shadows.soft} className="mt-5 rounded-xl3 bg-surface p-4">
       <View className="mb-1 flex-row items-center gap-2">
-        <Icon name="heart" size={15} color={TONES.pink.tint} />
+        <Icon name="heart" size={15} color={tones.pink.tint} />
         <Text className="font-bodySemibold text-base text-ink">{t("memories_title")}</Text>
       </View>
 
@@ -108,7 +111,7 @@ export function MemoriesCard({ baby, profile, babyName, viewer = false }: { baby
       {recap ? (
         <LinkRow
           icon="play"
-          tone={TONES.purple}
+          tone={tones.purple}
           title={t("month_recap_title", { month: monthName })}
           sub={t("month_recap_sub")}
           onPress={() => router.push({ pathname: "/(main)/baby/month-recap", params: { month: recap.month } })}
@@ -118,13 +121,13 @@ export function MemoriesCard({ baby, profile, babyName, viewer = false }: { baby
       {viewer ? null : (
         <LinkRow
           icon="lock"
-          tone={TONES.amber}
+          tone={tones.amber}
           title={t("capsule_title")}
           sub={t("capsule_sub")}
           onPress={() => router.push("/(main)/baby/time-capsule")}
         />
       )}
-      <LinkRow icon="download" tone={TONES.blue} title={t("book_title")} sub={t("book_sub")} onPress={makeBook} busy={bookBusy} />
+      <LinkRow icon="download" tone={tones.blue} title={t("book_title")} sub={t("book_sub")} onPress={makeBook} busy={bookBusy} />
     </View>
   );
 }

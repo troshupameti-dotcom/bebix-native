@@ -3,6 +3,7 @@ import { View, Text, Pressable, TextInput } from "react-native";
 import { useRouter } from "expo-router";
 import { Icon } from "@/components/ui/Icon";
 import { shadows } from "@/lib/shadows";
+import { useTones } from "@/lib/theme/tone";
 import { haptics } from "@/lib/haptics";
 import { useAppState } from "@/lib/state/AppStateContext";
 import { useToast } from "@/lib/toast/ToastContext";
@@ -17,6 +18,8 @@ import type { OrderItem } from "@/lib/shop/orders";
  * që ka blerë herën e fundit, ose kërkimin e pelenave kur s'ka blerë ende).
  */
 export function DiaperStockCard({ entries }: { entries: { at: string }[] }) {
+  // Paralajmërimi "po mbarojnë" me tonin qelibar sipas temës (më parë ngjyra të çelëta fikse).
+  const tones = useTones();
   const { t } = useTranslation();
   const router = useRouter();
   const { addToCart } = useAppState();
@@ -108,18 +111,18 @@ export function DiaperStockCard({ entries }: { entries: { at: string }[] }) {
   const low = estimate!.low;
 
   return (
-    <View style={[shadows.soft, low ? { borderWidth: 1, borderColor: "#E9B97A" } : null]} className={`mb-5 rounded-xl2 p-4 ${low ? "bg-[#FBEFDD]" : "bg-surface"}`}>
+    <View style={[shadows.soft, low ? { borderWidth: 1, borderColor: tones.amber.tint, backgroundColor: tones.amber.tintBg } : null]} className={`mb-5 rounded-xl2 p-4 ${low ? "" : "bg-surface"}`}>
       <View className="flex-row items-center justify-between">
         <View className="flex-row items-center gap-2">
           <Icon name="diaper" size={16} color={low ? "#B8641A" : "#6E7452"} />
-          <Text className={`font-bodySemibold text-sm ${low ? "text-[#8A4A12]" : "text-ink"}`}>{low ? t("diaper_stock_low") : t("diaper_stock_title")}</Text>
+          <Text className={`font-bodySemibold text-sm ${low ? "" : "text-ink"}`} style={low ? { color: tones.amber.tint } : undefined}>{low ? t("diaper_stock_low") : t("diaper_stock_title")}</Text>
         </View>
         <Pressable onPress={() => { setValue(String(left)); setEditing(true); }} hitSlop={8} accessibilityRole="button">
           <Text className="font-bodyMedium text-xs text-olive">{t("diaper_stock_edit")}</Text>
         </Pressable>
       </View>
 
-      <Text className={`mt-1.5 font-display text-2xl ${low ? "text-[#8A4A12]" : "text-ink"}`}>{t("diaper_stock_left", { n: left })}</Text>
+      <Text className={`mt-1.5 font-display text-2xl ${low ? "" : "text-ink"}`} style={low ? { color: tones.amber.tint } : undefined}>{t("diaper_stock_left", { n: left })}</Text>
       {days !== null ? (
         <Text className="font-body text-xs text-ink-soft">{t("diaper_stock_days", { d: days < 1 ? "<1" : Math.round(days) })}</Text>
       ) : null}

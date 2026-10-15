@@ -5,7 +5,8 @@ import { router } from "expo-router";
 import { MotiView } from "moti";
 import { Icon } from "@/components/ui/Icon";
 import { Price } from "@/components/ui/Price";
-import { TONES, type Tone } from "@/components/baby/LogTiles";
+import { TONES } from "@/components/baby/LogTiles";
+import { useToneTheme } from "@/lib/theme/tone";
 import { shadows } from "@/lib/shadows";
 import { haptics } from "@/lib/haptics";
 import { useAppState, active } from "@/lib/state/AppStateContext";
@@ -39,6 +40,8 @@ async function loadDismissals(): Promise<Record<string, string>> {
  * mbarojnë → madhësia tjetër → diçka për moshën. Mbyllet me "Jo tani".
  */
 export function ShopSuggestionCard({ placement = "home" }: { placement?: "home" | "shop" }) {
+  // Tonet sipas temës: në temën e errët karta s'del më si njollë e çelët.
+  const themed = useToneTheme();
   const { t } = useTranslation();
   const { showToast } = useToast();
   const { state, addToCart, baby } = useAppState();
@@ -121,7 +124,7 @@ export function ShopSuggestionCard({ placement = "home" }: { placement?: "home" 
     router.push("/shop/checkout", { withAnchor: true });
   }
 
-  const tone: Tone = suggestion.kind === "diaper" ? TONES.amber : suggestion.kind === "size" ? TONES.blue : TONES.green;
+  const tone = themed(suggestion.kind === "diaper" ? TONES.amber : suggestion.kind === "size" ? TONES.blue : TONES.green);
 
   return (
     <MotiView
@@ -132,25 +135,25 @@ export function ShopSuggestionCard({ placement = "home" }: { placement?: "home" 
       className={`${placement === "home" ? "mt-5" : "mb-4"} rounded-xl3 p-4`}
     >
       <View className="flex-row items-start gap-3">
-        <View className="h-9 w-9 items-center justify-center rounded-full bg-white/70">
+        <View className="h-9 w-9 items-center justify-center rounded-full" style={{ backgroundColor: tone.chip }}>
           <Icon name={suggestion.kind === "product" ? "sparkle" : "diaper"} size={16} color={tone.tint} />
         </View>
         <View className="flex-1">
           {suggestion.kind === "diaper" ? (
             <>
-              <Text className="font-bodySemibold text-[15px]" style={{ color: "#17212B" }}>
+              <Text className="font-bodySemibold text-[15px]" style={{ color: tone.ink }}>
                 {suggestion.prompt.daysLeft > 0 ? t("shop_sugg_diaper_days", { n: suggestion.prompt.daysLeft }) : t("shop_sugg_diaper_now")}
               </Text>
-              <Text className="mt-0.5 font-body text-[13px]" style={{ color: "#3B4652" }}>
+              <Text className="mt-0.5 font-body text-[13px]" style={{ color: tone.inkSoft }}>
                 {lastItem ? t("shop_sugg_diaper_same", { name: lastItem.name, qty: lastItem.qty }) : t("diaper_stock_left", { n: suggestion.prompt.left })}
               </Text>
             </>
           ) : suggestion.kind === "size" ? (
             <>
-              <Text className="font-bodySemibold text-[15px]" style={{ color: "#17212B" }}>
+              <Text className="font-bodySemibold text-[15px]" style={{ color: tone.ink }}>
                 {t(suggestion.hint.urgent ? "shop_sugg_size_now" : "shop_sugg_size_soon", { n: suggestion.hint.next.size })}
               </Text>
-              <Text className="mt-0.5 font-body text-[13px]" style={{ color: "#3B4652" }}>
+              <Text className="mt-0.5 font-body text-[13px]" style={{ color: tone.inkSoft }}>
                 {t("shop_sugg_size_body", {
                   name: babyName,
                   w: suggestion.hint.weightKg,
@@ -167,10 +170,10 @@ export function ShopSuggestionCard({ placement = "home" }: { placement?: "home" 
                 <Image source={{ uri: suggestion.product.imageUrl }} style={{ width: 56, height: 56, borderRadius: 14, backgroundColor: "#fff" }} />
               ) : null}
               <View className="flex-1">
-                <Text className="font-bodyMedium text-[12.5px]" style={{ color: "#3B4652" }}>
+                <Text className="font-bodyMedium text-[12.5px]" style={{ color: tone.inkSoft }}>
                   {t("shop_sugg_age", { name: babyName, n: months ?? 0 })}
                 </Text>
-                <Text className="font-bodySemibold text-[15px]" style={{ color: "#17212B" }} numberOfLines={2}>
+                <Text className="font-bodySemibold text-[15px]" style={{ color: tone.ink }} numberOfLines={2}>
                   {suggestion.product.name}
                 </Text>
                 <Price price={suggestion.product.price} compareAt={suggestion.product.compareAtPrice} size="sm" />
@@ -219,7 +222,7 @@ export function ShopSuggestionCard({ placement = "home" }: { placement?: "home" 
           className={`${suggestion.kind === "product" ? "flex-1" : ""} items-center justify-center rounded-full px-4`}
           style={{ minHeight: 48 }}
         >
-          <Text className="font-bodyMedium text-[13px]" style={{ color: "#5C6670" }}>
+          <Text className="font-bodyMedium text-[13px]" style={{ color: tone.inkSoft }}>
             {t("shop_sugg_not_now")}
           </Text>
         </Pressable>

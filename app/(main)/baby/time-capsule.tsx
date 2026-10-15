@@ -7,7 +7,7 @@ import { Icon } from "@/components/ui/Icon";
 import { FormField } from "@/components/baby/FormField";
 import { DateTimeField } from "@/components/baby/DateTimeField";
 import { BottomSheet } from "@/components/ui/BottomSheet";
-import { TONES } from "@/components/baby/LogTiles";
+import { useTones } from "@/lib/theme/tone";
 import { shadows } from "@/lib/shadows";
 import { haptics } from "@/lib/haptics";
 import { useAppState } from "@/lib/state/AppStateContext";
@@ -27,6 +27,7 @@ const MAX_BODY = 20000;
  * — e mban serveri, jo vetëm ky ekran.
  */
 export default function TimeCapsuleScreen() {
+  const tones = useTones();
   const { t, lang } = useTranslation();
   const { state } = useAppState();
   const { showToast } = useToast();
@@ -158,16 +159,16 @@ export default function TimeCapsuleScreen() {
         contentContainerStyle={{ paddingBottom: 32 }}
         refreshControl={<RefreshControl refreshing={refreshing} onRefresh={async () => { setRefreshing(true); await load(); setRefreshing(false); }} />}
       >
-        <View style={[shadows.soft, { backgroundColor: TONES.amber.tintBg }]} className="rounded-xl3 p-5">
+        <View style={[shadows.soft, { backgroundColor: tones.amber.tintBg }]} className="rounded-xl3 p-5">
           <Text style={{ fontSize: 36 }}>💌</Text>
-          <Text className="mt-2 font-display text-[22px] leading-7" style={{ color: "#17212B" }}>
+          <Text className="mt-2 font-display text-[22px] leading-7" style={{ color: tones.ink }}>
             {t("capsule_hero", { name: babyName })}
           </Text>
-          <Text className="mt-2 font-body text-[14px] leading-5" style={{ color: "#3B4652" }}>
+          <Text className="mt-2 font-body text-[14px] leading-5" style={{ color: tones.inkSoft }}>
             {t("capsule_hero_body")}
           </Text>
-          <Pressable onPress={startCompose} accessibilityRole="button" className="mt-4 items-center rounded-2xl py-4" style={{ backgroundColor: "#17212B", minHeight: 56 }}>
-            <Text className="font-bodySemibold text-[15px]" style={{ color: "#FFF8EF" }}>
+          <Pressable onPress={startCompose} accessibilityRole="button" className="mt-4 items-center rounded-2xl py-4" style={{ backgroundColor: tones.ink, minHeight: 56 }}>
+            <Text className="font-bodySemibold text-[15px]" style={{ color: tones.pink.chip }}>
               {t("capsule_write")}
             </Text>
           </Pressable>
@@ -193,8 +194,8 @@ export default function TimeCapsuleScreen() {
                 style={shadows.soft}
                 className="mt-3 flex-row items-center gap-3 rounded-2xl bg-surface p-4"
               >
-                <View className="h-11 w-11 items-center justify-center rounded-full" style={{ backgroundColor: unlocked ? TONES.green.tintBg : TONES.amber.tintBg }}>
-                  <Icon name={unlocked ? "heart" : "lock"} size={18} color={unlocked ? TONES.green.tint : TONES.amber.tint} />
+                <View className="h-11 w-11 items-center justify-center rounded-full" style={{ backgroundColor: unlocked ? tones.green.tintBg : tones.amber.tintBg }}>
+                  <Icon name={unlocked ? "heart" : "lock"} size={18} color={unlocked ? tones.green.tint : tones.amber.tint} />
                 </View>
                 <View className="flex-1">
                   <Text className="font-bodySemibold text-[15px] text-ink" numberOfLines={1}>

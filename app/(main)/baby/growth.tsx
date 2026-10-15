@@ -8,6 +8,7 @@ import { RecordSheet } from "@/components/baby/RecordSheet";
 import { FormField } from "@/components/baby/FormField";
 import { DateTimeField } from "@/components/baby/DateTimeField";
 import { TONES, type Tone } from "@/components/baby/LogTiles";
+import { useToneTheme } from "@/lib/theme/tone";
 import { useAppState, active } from "@/lib/state/AppStateContext";
 import { useToast } from "@/lib/toast/ToastContext";
 import { useTranslation } from "@/lib/i18n/LanguageContext";
@@ -57,7 +58,9 @@ export default function GrowthScreen() {
   const [form, setForm] = useState<FormShape>(emptyForm());
 
   const allHistory = useMemo(() => active(state.baby.growthHistory), [state.baby.growthHistory]);
-  const cfg = METRIC[metric];
+  // Tonet sipas temës: në temën e errët kartat dhe grafiku s'dalin më si njolla të çelëta.
+  const themed = useToneTheme();
+  const cfg = { ...METRIC[metric], tone: themed(METRIC[metric].tone) };
   const series = useMemo(() => buildSeries(allHistory, metric, CHART_WIDTH, CHART_HEIGHT), [allHistory, metric, CHART_WIDTH]);
   const items = useMemo(() => metricHistory(allHistory, metric), [allHistory, metric]);
   const last = items[items.length - 1] ?? null;
@@ -124,7 +127,8 @@ export default function GrowthScreen() {
       <View className="mx-5 mb-4 flex-row" style={{ gap: 10 }}>
         {(["weight", "height"] as GrowthMetric[]).map((m) => {
           const on = metric === m;
-          const { tone, icon, labelKey } = METRIC[m];
+          const { icon, labelKey } = METRIC[m];
+          const tone = themed(METRIC[m].tone);
           return (
             <Pressable
               key={m}
@@ -193,7 +197,7 @@ export default function GrowthScreen() {
                         cx={p.x}
                         cy={p.y}
                         r={isLast ? 6 : 4}
-                        fill={isLast ? cfg.tone.tint : "#FFFFFF"}
+                        fill={isLast ? cfg.tone.tint : cfg.tone.chip}
                         stroke={cfg.tone.tint}
                         strokeWidth={2.5}
                       />

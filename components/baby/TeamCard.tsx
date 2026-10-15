@@ -2,7 +2,7 @@ import { useCallback, useEffect, useState } from "react";
 import { View, Text, Pressable, ActivityIndicator } from "react-native";
 import { useFocusEffect } from "expo-router";
 import { Icon } from "@/components/ui/Icon";
-import { TONES } from "@/components/baby/LogTiles";
+import { useTones } from "@/lib/theme/tone";
 import { shadows } from "@/lib/shadows";
 import { haptics } from "@/lib/haptics";
 import { useTranslation } from "@/lib/i18n/LanguageContext";
@@ -20,6 +20,7 @@ type Data = { people: HouseholdPerson[]; days: MemberDay[]; ownerId: string; nig
  * sonte. Del vetëm kur familja ka të paktën dy prindër.
  */
 export function TeamCard() {
+  const tones = useTones();
   const { t } = useTranslation();
   const { showToast } = useToast();
   const [data, setData] = useState<Data | null>(null);
@@ -100,13 +101,13 @@ export function TeamCard() {
   return (
     <View style={shadows.soft} className="mt-5 rounded-xl3 bg-surface p-4">
       <View className="mb-2 flex-row items-center gap-2">
-        <Icon name="family" size={15} color={TONES.green.tint} />
+        <Icon name="family" size={15} color={tones.green.tint} />
         <Text className="font-bodySemibold text-base text-ink">{t("team_title")}</Text>
       </View>
 
       {praiseText ? (
-        <View className="mb-3 rounded-2xl px-3 py-2.5" style={{ backgroundColor: TONES.green.tintBg }}>
-          <Text className="font-bodySemibold text-[14px]" style={{ color: "#17212B" }}>
+        <View className="mb-3 rounded-2xl px-3 py-2.5" style={{ backgroundColor: tones.green.tintBg }}>
+          <Text className="font-bodySemibold text-[14px]" style={{ color: tones.ink }}>
             {praiseText}
           </Text>
         </View>
@@ -129,12 +130,12 @@ export function TeamCard() {
                 accessibilityRole="button"
                 accessibilityLabel={t("team_thanks_label", { name: label(p) })}
                 className="h-11 flex-row items-center rounded-full px-4"
-                style={{ backgroundColor: TONES.pink.tintBg }}
+                style={{ backgroundColor: tones.pink.tintBg }}
               >
                 {busy === `thanks:${p.userId}` ? (
-                  <ActivityIndicator size="small" color={TONES.pink.tint} />
+                  <ActivityIndicator size="small" color={tones.pink.tint} />
                 ) : (
-                  <Text className="font-bodySemibold text-[13px]" style={{ color: TONES.pink.tint }}>
+                  <Text className="font-bodySemibold text-[13px]" style={{ color: tones.pink.tint }}>
                     {t("team_thanks")}
                   </Text>
                 )}
@@ -159,10 +160,10 @@ export function TeamCard() {
               accessibilityRole="button"
               accessibilityState={{ selected: active }}
               className="h-11 flex-row items-center gap-1.5 rounded-full px-4"
-              style={{ backgroundColor: active ? TONES.purple.tint : TONES.purple.tintBg }}
+              style={{ backgroundColor: active ? tones.purple.tint : tones.purple.tintBg }}
             >
-              <Icon name="moon" size={13} color={active ? "#FFFFFF" : TONES.purple.tint} />
-              <Text className="font-bodySemibold text-[13px]" style={{ color: active ? "#FFFFFF" : TONES.purple.tint }}>
+              <Icon name="moon" size={13} color={active ? "#FFFFFF" : tones.purple.tint} />
+              <Text className="font-bodySemibold text-[13px]" style={{ color: active ? "#FFFFFF" : tones.purple.tint }}>
                 {label(p)}
               </Text>
             </Pressable>

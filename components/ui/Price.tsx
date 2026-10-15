@@ -1,8 +1,9 @@
 import { View, Text } from "react-native";
+import { useThemeColors } from "@/lib/theme/useThemeColors";
 
 /**
  * Çmimi, me të njëjtat ngjyra kudo:
- *  - normal: #17212B (blu e errët)
+ *  - normal: ngjyra e tekstit të temës (më parë #17212B fiks, që në temën e errët s'shihej)
  *  - në ofertë: #D94A4A (e kuqe e kontrolluar)
  *  - i vjetri: #8A929A (gri) me vijë në mes
  * Monedha (€) ka ngjyrën e çmimit, por është pak më e vogël.
@@ -27,9 +28,10 @@ export function Price({
   /** Fonti i madh i titujve (faqja e produktit). */
   display?: boolean;
 }) {
+  const theme = useThemeColors();
   const s = SIZES[size];
   const onSale = compareAt != null && compareAt > price;
-  const color = onSale ? PRICE_COLORS.sale : PRICE_COLORS.normal;
+  const color = onSale ? PRICE_COLORS.sale : theme.isDark ? theme.ink : PRICE_COLORS.normal;
   const family = display ? "font-display" : "font-bodySemibold";
 
   return (

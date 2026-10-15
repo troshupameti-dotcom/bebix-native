@@ -8,19 +8,11 @@ import { shadows } from "@/lib/shadows";
 import { haptics } from "@/lib/haptics";
 import { sinceLabel } from "@/lib/baby/dayStats";
 import { useTranslation } from "@/lib/i18n/LanguageContext";
+import { useTone, type Tone } from "@/lib/theme/tone";
 
-/** Ngjyra e një lloji shënimi: e ngopura për ikonën/tekstin, e buta për sfondin. */
-export type Tone = { tint: string; tintBg: string };
-
-/** E njëjta familje ngjyrash si kartat e rritjes, që ekranet të duken një sistem. */
-export const TONES = {
-  pink: { tint: "#B8336A", tintBg: "#F6DCE7" },
-  blue: { tint: "#2E6FA8", tintBg: "#D9E7F2" },
-  green: { tint: "#4E7A2E", tintBg: "#E1EBD5" },
-  amber: { tint: "#9A6415", tintBg: "#F3E4C8" },
-  purple: { tint: "#7A3596", tintBg: "#E7DAEF" },
-  orange: { tint: "#B23A1C", tintBg: "#F3DCCF" },
-} satisfies Record<string, Tone>;
+// Tonet (ngjyra e një lloji shënimi: e ngopura për ikonën/tekstin, e buta për sfondin) jetojnë te
+// lib/theme/tone.ts, bashkë me versionin për temën e errët; këtu ri-eksportohen.
+export { TONES, type Tone } from "@/lib/theme/tone";
 
 /**
  * Karta lart: vetëm pyetja që prindi bën vërtet ("sa kohë ka kaluar?"), me
@@ -32,7 +24,7 @@ export function SinceHero({
   emptyText,
   detail,
   icon,
-  tone,
+  tone: rawTone,
 }: {
   title: string;
   lastAt: string | null;
@@ -41,6 +33,7 @@ export function SinceHero({
   icon: IconName;
   tone: Tone;
 }) {
+  const tone = useTone(rawTone);
   const { t } = useTranslation();
   const [now, setNow] = useState(() => new Date());
   useEffect(() => {
@@ -74,7 +67,7 @@ export function LogTile({
   label,
   sub,
   icon,
-  tone,
+  tone: rawTone,
   onPress,
   selected,
 }: {
@@ -85,6 +78,7 @@ export function LogTile({
   onPress: () => void;
   selected?: boolean;
 }) {
+  const tone = useTone(rawTone);
   return (
     <Pressable
       onPress={() => {
@@ -98,12 +92,12 @@ export function LogTile({
     >
       <View
         className="h-11 w-11 items-center justify-center rounded-full"
-        style={{ backgroundColor: selected ? "rgba(255,255,255,0.22)" : "#FFFFFF" }}
+        style={{ backgroundColor: selected ? "rgba(255,255,255,0.22)" : tone.chip }}
       >
         <Icon name={icon} size={20} color={selected ? "#FFFFFF" : tone.tint} />
       </View>
       <View className="mt-3">
-        <Text className="font-bodySemibold text-[15px]" style={{ color: selected ? "#FFFFFF" : "#2C271F" }} numberOfLines={1}>
+        <Text className="font-bodySemibold text-[15px]" style={{ color: selected ? "#FFFFFF" : tone.ink }} numberOfLines={1}>
           {label}
         </Text>
         {sub ? (
@@ -120,7 +114,7 @@ export function LogTile({
 export function AmountRow({
   amounts,
   lastUsed,
-  tone,
+  tone: rawTone,
   onPick,
 }: {
   amounts: number[];
@@ -128,6 +122,7 @@ export function AmountRow({
   tone: Tone;
   onPick: (ml: number) => void;
 }) {
+  const tone = useTone(rawTone);
   const ordered = lastUsed != null ? [lastUsed, ...amounts.filter((a) => a !== lastUsed)] : amounts;
   return (
     <MotiView
@@ -249,7 +244,7 @@ function LogRowBody({
   title,
   detail,
   icon,
-  tone,
+  tone: rawTone,
   onPress,
 }: {
   title: string;
@@ -258,6 +253,7 @@ function LogRowBody({
   tone: Tone;
   onPress: () => void;
 }) {
+  const tone = useTone(rawTone);
   return (
     <Pressable
       onPress={onPress}

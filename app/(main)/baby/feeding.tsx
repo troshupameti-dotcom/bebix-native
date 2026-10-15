@@ -22,6 +22,7 @@ import { formatTime } from "@/lib/dateUtils";
 import { FeedingEntry, FeedingType, BreastSide } from "@/lib/state/types";
 import { BackButton } from "@/components/ui/BackButton";
 import { SinceHero, LogRow, TONES, type Tone } from "@/components/baby/LogTiles";
+import { useToneTheme } from "@/lib/theme/tone";
 
 /** Ngjyra e çdo lloji: gjiri rozë, shishja kaltër, ushqimi jeshil. */
 const TYPE_TONE: Record<FeedingType, Tone> = {
@@ -216,7 +217,9 @@ export default function FeedingScreen() {
     }
   }
 
-  const tone = QUICK_TONE[quickType];
+  // Tonet sipas temës: në temën e errët kartat s'dalin më si njolla të çelëta.
+  const themed = useToneTheme();
+  const tone = themed(QUICK_TONE[quickType]);
   const elapsed = timer ? formatElapsed(elapsedSeconds(timer, tick)) : null;
 
   function openNew() {
@@ -320,11 +323,11 @@ export default function FeedingScreen() {
                 }}
                 accessibilityRole="tab"
                 accessibilityState={{ selected: on }}
-                style={{ minHeight: 48, backgroundColor: on ? QUICK_TONE[qt].tint : "transparent" }}
+                style={{ minHeight: 48, backgroundColor: on ? themed(QUICK_TONE[qt]).tint : "transparent" }}
                 className="flex-1 flex-row items-center justify-center gap-1.5 rounded-xl"
               >
-                <Icon name={TYPE_ICON[qt]} size={15} color={on ? "#FFFFFF" : QUICK_TONE[qt].tint} />
-                <Text className="font-bodySemibold text-[13.5px]" style={{ color: on ? "#FFFFFF" : QUICK_TONE[qt].tint }} numberOfLines={1}>
+                <Icon name={TYPE_ICON[qt]} size={15} color={on ? "#FFFFFF" : themed(QUICK_TONE[qt]).tint} />
+                <Text className="font-bodySemibold text-[13.5px]" style={{ color: on ? "#FFFFFF" : themed(QUICK_TONE[qt]).tint }} numberOfLines={1}>
                   {t(`feeding_type_${qt}` as never)}
                 </Text>
               </Pressable>
@@ -343,7 +346,7 @@ export default function FeedingScreen() {
                     onPress={() => changeTimerSide(s)}
                     accessibilityRole="radio"
                     accessibilityState={{ selected: on }}
-                    style={{ minHeight: 48, backgroundColor: on ? tone.tint : "#FFFFFF" }}
+                    style={{ minHeight: 48, backgroundColor: on ? tone.tint : tone.chip }}
                     className="flex-1 items-center justify-center rounded-2xl"
                   >
                     <Text className="font-bodySemibold text-[14px]" style={{ color: on ? "#FFFFFF" : tone.tint }}>
@@ -392,7 +395,7 @@ export default function FeedingScreen() {
                     }}
                     accessibilityRole="radio"
                     accessibilityState={{ selected: on }}
-                    style={{ minHeight: 48, backgroundColor: on ? tone.tint : "#FFFFFF" }}
+                    style={{ minHeight: 48, backgroundColor: on ? tone.tint : tone.chip }}
                     className="items-center justify-center rounded-full px-5"
                   >
                     <Text className="font-bodySemibold text-[15px]" style={{ color: on ? "#FFFFFF" : tone.tint }}>{ml} ml</Text>

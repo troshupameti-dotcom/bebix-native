@@ -5,6 +5,7 @@ import AsyncStorage from "@react-native-async-storage/async-storage";
 import { router } from "expo-router";
 import { Icon } from "@/components/ui/Icon";
 import { TONES, type Tone } from "@/components/baby/LogTiles";
+import { useToneTheme } from "@/lib/theme/tone";
 import { shadows } from "@/lib/shadows";
 import { haptics } from "@/lib/haptics";
 import { useTranslation } from "@/lib/i18n/LanguageContext";
@@ -14,11 +15,12 @@ const TONE_CYCLE: Tone[] = [TONES.purple, TONES.amber, TONES.pink, TONES.green, 
 
 /** Lista e veçorive të reja; prekja e një rreshti çon te veçoria. */
 export function WhatsNewList({ onOpen }: { onOpen?: (item: WhatsNewItem) => void }) {
+  const themed = useToneTheme();
   const { t } = useTranslation();
   return (
     <View style={{ gap: 10 }}>
       {itemsFor(Platform.OS).map((item, i) => {
-        const tone = TONE_CYCLE[i % TONE_CYCLE.length];
+        const tone = themed(TONE_CYCLE[i % TONE_CYCLE.length]);
         return (
           <Pressable
             key={item.key}

@@ -5,6 +5,8 @@ import { router } from "expo-router";
 import { haptics } from "@/lib/haptics";
 import { useTranslation } from "@/lib/i18n/LanguageContext";
 import type { Celebration } from "@/lib/baby/celebrations";
+import { useTones } from "@/lib/theme/tone";
+import { useThemeColors } from "@/lib/theme/useThemeColors";
 
 /** Festimi → parametrat e ekranit "Krijo kartë". */
 function cardParamsFor(c: Celebration): Record<string, string> {
@@ -71,6 +73,10 @@ export function CelebrationModal({
   /** Gjyshërit (vetëm shikim) s'shtojnë foto. */
   canAddPhoto?: boolean;
 }) {
+  // Ngjyrat sipas temës: në temën e errët dritarja s'del më si njollë krem e çelët.
+  const tones = useTones();
+  const { isDark, surface } = useThemeColors();
+  const card = isDark ? surface : "#FFF8EF";
   const { t } = useTranslation();
   useEffect(() => {
     if (celebration) haptics.success();
@@ -108,7 +114,7 @@ export function CelebrationModal({
           animate={{ opacity: 1, scale: 1 }}
           transition={{ type: "spring", damping: 14 }}
           className="w-full items-center rounded-[32px] px-6 pb-6 pt-8"
-          style={{ backgroundColor: "#FFF8EF", maxWidth: 420 }}
+          style={{ backgroundColor: card, maxWidth: 420 }}
         >
           <MotiView
             from={{ scale: 0.6, rotate: "-12deg" }}
@@ -117,15 +123,15 @@ export function CelebrationModal({
           >
             <Text style={{ fontSize: 64 }}>{emoji}</Text>
           </MotiView>
-          <Text className="mt-3 text-center font-display text-[26px] leading-8" style={{ color: "#17212B" }}>
+          <Text className="mt-3 text-center font-display text-[26px] leading-8" style={{ color: tones.ink }}>
             {title}
           </Text>
           {highlight ? (
-            <Text className="mt-2 text-center font-bodySemibold text-[17px]" style={{ color: "#B8336A" }}>
+            <Text className="mt-2 text-center font-bodySemibold text-[17px]" style={{ color: tones.pink.tint }}>
               {highlight}
             </Text>
           ) : null}
-          <Text className="mt-2 text-center font-body text-[14.5px] leading-5" style={{ color: "#3B4652" }}>
+          <Text className="mt-2 text-center font-body text-[14.5px] leading-5" style={{ color: tones.inkSoft }}>
             {body}
           </Text>
 
@@ -138,9 +144,9 @@ export function CelebrationModal({
               }}
               accessibilityRole="button"
               className="mt-6 w-full items-center rounded-2xl py-4"
-              style={{ backgroundColor: "#17212B", minHeight: 56 }}
+              style={{ backgroundColor: tones.ink, minHeight: 56 }}
             >
-              <Text className="font-bodySemibold text-[15px]" style={{ color: "#FFF8EF" }}>
+              <Text className="font-bodySemibold text-[15px]" style={{ color: card }}>
                 {t("celebrate_add_photo")}
               </Text>
             </Pressable>
@@ -154,14 +160,14 @@ export function CelebrationModal({
             }}
             accessibilityRole="button"
             className="mt-2 w-full flex-row items-center justify-center rounded-2xl py-3.5"
-            style={{ minHeight: 52, borderWidth: 1.5, borderColor: "#17212B" }}
+            style={{ minHeight: 52, borderWidth: 1.5, borderColor: tones.ink }}
           >
-            <Text className="font-bodySemibold text-[15px]" style={{ color: "#17212B" }}>
+            <Text className="font-bodySemibold text-[15px]" style={{ color: tones.ink }}>
               {t("card_share_celebration")}
             </Text>
           </Pressable>
           <Pressable onPress={onClose} accessibilityRole="button" className="mt-2 w-full items-center py-3.5" style={{ minHeight: 48 }}>
-            <Text className="font-bodyMedium text-[15px]" style={{ color: "#5C6670" }}>
+            <Text className="font-bodyMedium text-[15px]" style={{ color: tones.inkSoft }}>
               {t("celebrate_thanks")}
             </Text>
           </Pressable>

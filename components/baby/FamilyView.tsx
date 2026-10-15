@@ -3,7 +3,7 @@ import { View, Text, ScrollView, Image } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { MotiView } from "moti";
 import { Icon } from "@/components/ui/Icon";
-import { TONES } from "@/components/baby/LogTiles";
+import { useTones } from "@/lib/theme/tone";
 import { MemoriesCard } from "@/components/baby/MemoriesCard";
 import { shadows } from "@/lib/shadows";
 import { useTranslation } from "@/lib/i18n/LanguageContext";
@@ -49,6 +49,7 @@ function Photo({ moment }: { moment: Moment }) {
  * shënimi. Ushqimi/gjumi/pelenat dalin vetëm kur prindërit i kanë ndarë.
  */
 export function FamilyView({ profile, baby, babyName, ageText }: { profile: BabyProfile; baby: BabyModuleState; babyName: string; ageText: string }) {
+  const tones = useTones();
   const { t, lang } = useTranslation();
   // Kur prindërit ndajnë kujdesin, të dhënat e tij tërhiqen sërish (përdoren te kujtimet dhe rritja).
   useEffect(() => {
@@ -94,8 +95,8 @@ export function FamilyView({ profile, baby, babyName, ageText }: { profile: Baby
           )}
           <Text className="mt-4 font-display text-[26px] text-ink">{babyName}</Text>
           {ageText ? <Text className="mt-0.5 font-body text-[14px] text-ink-soft">{ageText}</Text> : null}
-          <View className="mt-3 rounded-full px-3 py-1.5" style={{ backgroundColor: TONES.green.tintBg }}>
-            <Text className="font-bodyMedium text-[12px]" style={{ color: TONES.green.tint }}>
+          <View className="mt-3 rounded-full px-3 py-1.5" style={{ backgroundColor: tones.green.tintBg }}>
+            <Text className="font-bodyMedium text-[12px]" style={{ color: tones.green.tint }}>
               {t("viewer_badge")}
             </Text>
           </View>

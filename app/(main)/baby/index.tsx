@@ -20,6 +20,7 @@ import { haptics } from "@/lib/haptics";
 import { computeAgeText, formatDate, formatTime } from "@/lib/dateUtils";
 import { shadows } from "@/lib/shadows";
 import { useThemeColors } from "@/lib/theme/useThemeColors";
+import { themedTone } from "@/lib/theme/tone";
 import { NowCard } from "@/components/baby/NowCard";
 import { WeeklyRecapCard } from "@/components/baby/WeeklyRecapCard";
 import { MemoriesCard } from "@/components/baby/MemoriesCard";
@@ -89,7 +90,14 @@ function filterLabelKey(kind: DiaryKind | "all"): TranslationKey {
 /** Ikona dhe ngjyra e cdo lloj matjeje ne "Permbledhja e rritjes" — pesha,
  *  gjatesia dhe rrethi i kokes duhet te dallohen me nje veshtrim, jo vetem
  *  nga teksti. */
-function growthAccent(key: string): { icon: IconName; tint: string; tintBg: string } {
+/** Ngjyra e pllakës së rritjes, sipas temës (në temën e errët: sfond i errët me frymë ngjyre, theks i çelët). */
+function growthAccent(key: string, dark: boolean): { icon: IconName; tint: string; tintBg: string } {
+  const a = growthAccentLight(key);
+  const t = themedTone(a, dark);
+  return { icon: a.icon, tint: t.tint, tintBg: t.tintBg };
+}
+
+function growthAccentLight(key: string): { icon: IconName; tint: string; tintBg: string } {
   switch (key) {
     case "weight":
       return { icon: "cube", tint: "#B23A1C", tintBg: "#F3DCCF" };
@@ -802,7 +810,7 @@ export default function BabyProfileScreen() {
                     onChangeValue={(v) => baby.updateGrowthStat(g.key, { value: v })}
                     onChangeLabel={(v) => baby.updateGrowthStat(g.key, { label: v })}
                     onRemove={() => baby.removeGrowthStat(g.key)}
-                    {...growthAccent(g.key)}
+                    {...growthAccent(g.key, theme.isDark)}
                   />
                 </Pressable>
               ))}
