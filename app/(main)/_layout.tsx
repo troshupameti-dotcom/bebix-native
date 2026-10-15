@@ -60,16 +60,10 @@ export default function MainLayout() {
     }
   }, [loading, canBrowse]);
 
-  // Butoni fizik "mbrapa" i Android-it ndjek historikun e vërtetë si BackButton-i
-  // (p.sh. Më shumë -> Porositë e mia -> mbrapa = Më shumë, jo Dyqani).
-  useEffect(() => {
-    const sub = BackHandler.addEventListener("hardwareBackPress", hardwareBack);
-    return () => sub.remove();
-  }, []);
+  const pathname = usePathname();
 
   // Mysafiri në faqen kryesore të Dyqanit: "prapa" e çon te hyrja (ku mund të
   // hyjë ose të regjistrohet), jo te Bebi dhe as jashtë app-it.
-  const pathname = usePathname();
   useEffect(() => {
     if (isAuthenticated || !isGuest || pathname !== "/shop") return;
     const sub = BackHandler.addEventListener("hardwareBackPress", () => {
@@ -78,6 +72,22 @@ export default function MainLayout() {
     });
     return () => sub.remove();
   }, [isAuthenticated, isGuest, pathname]);
+
+  // Butoni fizik "mbrapa" i Android-it ndjek historikun e vërtetë si BackButton-i
+  // (p.sh. Më shumë -> Porositë e mia -> mbrapa = Më shumë, jo Dyqani).
+  // Android-i thërret i pari "mbrapa"-n e regjistruar e fundit. Kontejneri i navigimit (expo-router) e
+  // regjistron të vetin në efektin e tij, PAS fëmijëve: pa këtë, ai e hiqte ekranin nga stiva dhe kjo logjikë
+  // s'thirrej kurrë. Prandaj regjistrohet një çast më vonë dhe rishtas pas çdo lëvizjeje, që të jetë e fundit.
+  useEffect(() => {
+    let sub: { remove: () => void } | undefined;
+    const id = setTimeout(() => {
+      sub = BackHandler.addEventListener("hardwareBackPress", hardwareBack);
+    }, 0);
+    return () => {
+      clearTimeout(id);
+      sub?.remove();
+    };
+  }, [pathname]);
 
   // Historiku i baby-t sinkronizohet me Supabase (offline-first: AsyncStorage
   // mbetet burimi per UI-n, sync-u punon ne sfond).

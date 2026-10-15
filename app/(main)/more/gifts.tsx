@@ -162,7 +162,7 @@ export default function GiftListScreen() {
                   <View className="w-14 h-14 rounded-xl bg-olive-bg items-center justify-center mr-3 overflow-hidden">
                     {p.image_url ? <Image source={{ uri: p.image_url }} className="w-14 h-14" resizeMode="contain" /> : <Icon name="cube" size={20} color="#6E7452" />}
                   </View>
-                  <Pressable onPress={() => router.push(`/shop/${p.id}`)} className="flex-1">
+                  <Pressable onPress={() => router.push(`/shop/${p.id}`, { withAnchor: true })} className="flex-1">
                     <Text className="font-bodyMedium text-sm text-ink" numberOfLines={2}>{p.name}</Text>
                     <Text className="font-body text-xs text-ink-soft mt-0.5">
                       €{Number(p.price).toFixed(2)} · {t("gift_reserved_of", { a: item.reserved_qty, b: item.qty })}

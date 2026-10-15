@@ -69,6 +69,42 @@ export async function fetchBabyProfileBasics(): Promise<{ babyName: string | nul
   if (error || !data) return null;
   return { babyName: data.baby_name ?? null, babyDob: data.baby_dob ?? null };
 }
+const PARENT_NAME_PENDING_KEY = "bebix_parent_name_pending";
+
+/**
+ * Emri i prindit te serveri, në rreshtin e VET (si fotoja e prindit): emri i takon llogarisë, jo bebit, ndaj
+ * prindi i dytë i familjes s'e mbishkruan emrin e të parit. Më parë emri i ndryshuar te Cilësimet rrinte vetëm
+ * në telefon: humbte në telefon të ri, pas ri-instalimit, ose pas hyrjes me një llogari tjetër ndërmjet.
+ * Pa rrjet shënohet "në pritje" dhe dërgohet në hapjen tjetër, pa u mbishkruar nga versioni i vjetër i serverit.
+ */
+export async function saveParentNameRemote(name: string | null): Promise<boolean> {
+  const userId = await currentUserId();
+  let ok = false;
+  if (userId) {
+    const { error } = await supabase
+      .from("baby_profiles")
+      .upsert({ user_id: userId, parent_name: name, updated_at: new Date().toISOString() }, { onConflict: "user_id" });
+    ok = !error;
+    if (error) log("Emri i prindit s'u ruajt te serveri:", error.message);
+  }
+  if (ok) await AsyncStorage.removeItem(PARENT_NAME_PENDING_KEY).catch(() => {});
+  else await AsyncStorage.setItem(PARENT_NAME_PENDING_KEY, "1").catch(() => {});
+  return ok;
+}
+
+export async function isParentNamePending(): Promise<boolean> {
+  return (await AsyncStorage.getItem(PARENT_NAME_PENDING_KEY)) === "1";
+}
+
+/** Emri i prindit nga serveri; `undefined` kur s'u lexua (pa rrjet, pa sesion), `null` kur s'është vendosur. */
+export async function fetchParentName(): Promise<string | null | undefined> {
+  const userId = await currentUserId();
+  if (!userId) return undefined;
+  const { data, error } = await supabase.from("baby_profiles").select("parent_name").eq("user_id", userId).maybeSingle();
+  if (error) return undefined;
+  return (data as { parent_name?: string | null } | null)?.parent_name ?? null;
+}
+
 /**
  * Ngarkon rrugën e një fotoje (bebi ose prind) te Supabase, që fotoja të
  * mos jetojë vetëm në AsyncStorage të kësaj pajisjeje.

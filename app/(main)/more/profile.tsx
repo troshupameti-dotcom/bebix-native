@@ -10,7 +10,7 @@ import { useAuthUser } from "@/lib/hooks/useAuthUser";
 import { supabase } from "@/lib/supabase/client";
 import { BackButton, goBackOr } from "@/components/ui/BackButton";
 import { uploadProfilePhoto } from "@/lib/baby/profilePhotos";
-import { syncProfilePhotoToSupabase } from "@/lib/babySync";
+import { saveParentNameRemote, syncProfilePhotoToSupabase } from "@/lib/babySync";
 import { useCurrentUserId } from "@/lib/hooks/useCurrentUserId";
 import { useTranslation } from "@/lib/i18n/LanguageContext";
 import type { TranslationKey } from "@/lib/i18n/translations";
@@ -62,7 +62,10 @@ export default function ProfileScreen() {
   };
 
   const save = () => {
-    updateProfile({ parentName: name.trim() || null, relation, parentPhoto: photo, parentPhotoPath: photoPath });
+    const parentName = name.trim() || null;
+    // Në telefon menjëherë (punon edhe pa rrjet); te serveri në sfond, që të mos humbasë pas daljes ose në telefon tjetër.
+    updateProfile({ parentName, relation, parentPhoto: photo, parentPhotoPath: photoPath });
+    if (parentName !== (state.profile.parentName ?? null)) void saveParentNameRemote(parentName);
     goBackOr("/(main)/more");
   };
 

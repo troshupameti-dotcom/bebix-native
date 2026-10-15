@@ -42,12 +42,15 @@ export function noteBackMove(): void {
 /** Thirret nga rrënja e app-it sa herë ndryshon rruga. */
 export function recordPath(path: string | null | undefined): void {
   if (!path) return;
+  // Shënimi i lëvizjes i përket kësaj thirrjeje, edhe kur rruga s'ndryshon: pas `rewindTo` historiku mbaron
+  // tashmë te rruga ku kthehet përdoruesi, dhe pa këtë shënimi "kthim" mbetej i varur e ngjitej te lëvizja
+  // e RADHËS (Cilësimet → Porositë → mbrapa → Produktet e ruajtura humbiste prej nga erdhi, 15 tetor).
+  const note = pending && Date.now() - pending.at <= PENDING_MS ? pending.kind : null;
+  pending = null;
   // E njëjta rrugë dy herë radhazi nuk është lëvizje.
   if (history[history.length - 1] === path) return;
 
   const previous = history[history.length - 1] ?? null;
-  const note = pending && Date.now() - pending.at <= PENDING_MS ? pending.kind : null;
-  pending = null;
   // Kthim pa shënim (rrëshqitja mbrapa në iPhone, "mbrapa" native): rruga është ajo para së fundit.
   const isBack = note === "back" || (note === null && history.length >= 2 && history[history.length - 2] === path);
 

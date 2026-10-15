@@ -118,7 +118,7 @@ export function ShopSuggestionCard({ placement = "home" }: { placement?: "home" 
     // Një prekje: të njëjtat pelena, e njëjta sasi, drejt te përfundimi i porosisë.
     addToCart({ id: lastItem.id, name: lastItem.name, price: lastItem.price, imageUrl: lastItem.imageUrl ?? null, icon: lastItem.icon ?? "cube" }, lastItem.qty);
     showToast(t("diaper_stock_added"));
-    router.push("/shop/checkout");
+    router.push("/shop/checkout", { withAnchor: true });
   }
 
   const tone: Tone = suggestion.kind === "diaper" ? TONES.amber : suggestion.kind === "size" ? TONES.blue : TONES.green;
@@ -162,7 +162,7 @@ export function ShopSuggestionCard({ placement = "home" }: { placement?: "home" 
               </Text>
             </>
           ) : (
-            <Pressable onPress={() => router.push(`/shop/${suggestion.product.id}`)} accessibilityRole="button" className="flex-row items-center gap-3">
+            <Pressable onPress={() => router.push(`/shop/${suggestion.product.id}`, { withAnchor: true })} accessibilityRole="button" className="flex-row items-center gap-3">
               {suggestion.product.imageUrl ? (
                 <Image source={{ uri: suggestion.product.imageUrl }} style={{ width: 56, height: 56, borderRadius: 14, backgroundColor: "#fff" }} />
               ) : null}

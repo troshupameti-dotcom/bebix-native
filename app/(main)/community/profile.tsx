@@ -106,7 +106,7 @@ export default function MyProfileScreen() {
               </Text>
             </View>
           ) : (
-            <Pressable onPress={() => router.push("/more/doctor-registration")}>
+            <Pressable onPress={() => router.push("/more/doctor-registration", { withAnchor: true })}>
               <Text className="font-bodyMedium text-xs text-olive mb-2">{t("cprof_become_expert")}</Text>
             </Pressable>
           )}

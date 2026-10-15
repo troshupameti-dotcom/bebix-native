@@ -92,7 +92,7 @@ jest.mock("moti", () => {
 /** Navigimi: router-i regjistron ku u tentua të shkohej; params-at i vendos testi me setParams(). */
 jest.mock("expo-router", () => {
   const React = require("react");
-  const mockRouter = { push: jest.fn(), replace: jest.fn(), back: jest.fn(), navigate: jest.fn(), dismiss: jest.fn(), setParams: jest.fn(), canGoBack: () => true };
+  const mockRouter = { push: jest.fn(), replace: jest.fn(), back: jest.fn(), navigate: jest.fn(), dismiss: jest.fn(), setParams: jest.fn(), canGoBack: () => true, canDismiss: () => false };
   const mockParams = { current: {} as Record<string, string> };
   const mockPath = { current: "/" };
   const Stub = Object.assign(({ children }: { children?: unknown }) => children ?? null, { Screen: () => null });

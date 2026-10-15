@@ -21,14 +21,23 @@ import { useTranslation } from "@/lib/i18n/LanguageContext";
  * 3. S'ka histori fare (ekrani u hap nga njoftim, deep link ose pas nje
  *    `replace`): shkohet te `fallback`.
  */
+/**
+ * Kthim i shprehur te një pjesë tjetër (p.sh. Porositë → Cilësimet). Ekrani aktual hiqet më parë nga stiva e vet:
+ * pa këtë "Porositë" mbetej e hapur në stivën e Dyqanit, dhe tab-i Dyqani apo "mbrapa" e radhës të çonin aty.
+ */
+function returnTo(path: string) {
+  rewindTo(path);
+  if (router.canDismiss()) router.dismiss();
+  router.replace(path as Href);
+}
+
 export function goBackOr(fallback: Href) {
   const current = currentPath();
   const decision = decideBack(originOf(current), current);
   noteBackMove();
 
   if (decision.kind === "goto") {
-    rewindTo(decision.path);
-    router.replace(decision.path as Href);
+    returnTo(decision.path);
     return;
   }
 
@@ -55,8 +64,7 @@ export function hardwareBack(): boolean {
   // Edhe kur kthimin e bën vetë sistemi, s'është hyrje e re në ekranin ku përfundon.
   noteBackMove();
   if (!target) return false;
-  rewindTo(target);
-  router.replace(target as Href);
+  returnTo(target);
   return true;
 }
 

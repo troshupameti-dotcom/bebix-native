@@ -20,7 +20,8 @@ const BY_TYPE: Record<string, string> = {
   weekly: "/(main)/baby",
   team: "/(main)/baby",
   shift: "/(main)/baby",
-  care: "/(main)/baby/parent-care",
+  // "Kujdesi për ty" u hoq (15 tetor): njoftimet e vjetra të tij hapin kreun.
+  care: "/(main)/baby",
   offer: "/(main)/shop",
 };
 

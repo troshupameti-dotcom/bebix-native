@@ -3,7 +3,9 @@ import { AppState as RNAppState } from "react-native";
 import { useColorScheme as useNativeWindColorScheme } from "nativewind";
 import { syncNotificationSettings } from "@/lib/notifications/settingsSync";
 import { signedUrlForProfilePhoto } from "@/lib/baby/profilePhotos";
-import { fetchBabyProfileBasics, fetchProfilePhotoPaths, isBabyProfilePending, saveBabyProfileRemote } from "@/lib/babySync";
+import {
+  fetchBabyProfileBasics, fetchParentName, fetchProfilePhotoPaths, isBabyProfilePending, isParentNamePending, saveBabyProfileRemote, saveParentNameRemote,
+} from "@/lib/babySync";
 import { localDateKey } from "@/lib/babyProfile";
 import { mergeRecordsPatch, resetBabyRecordsSyncState } from "@/lib/baby/babyRecordsSync";
 import { loadAppState, saveAppState } from "@/lib/state/persistence";
@@ -381,6 +383,26 @@ export function AppStateProvider({ children }: { children: ReactNode }) {
         if (!same && y && m && d) patch.babyDob = new Date(y, m - 1, d).toISOString();
       }
       if (Object.keys(patch).length) dispatch({ type: "UPDATE_PROFILE", value: patch });
+    })();
+    return () => {
+      alive = false;
+    };
+  }, [hydrated, profileRefresh]);
+
+  // Emri i prindit nga serveri (telefoni i ri, ri-instalimi, hyrja pas një llogarie tjetër). Nëse ndryshimi
+  // lokal s'ka arritur ende në server (u bë pa rrjet), dërgohet ai dhe s'mbishkruhet me versionin e vjetër.
+  useEffect(() => {
+    if (!hydrated) return;
+    let alive = true;
+    void (async () => {
+      const local = latestState.current.profile.parentName;
+      if (await isParentNamePending()) {
+        await saveParentNameRemote(local);
+        return;
+      }
+      const remote = await fetchParentName().catch(() => undefined);
+      if (!alive || !remote || remote === local) return;
+      dispatch({ type: "UPDATE_PROFILE", value: { parentName: remote } });
     })();
     return () => {
       alive = false;

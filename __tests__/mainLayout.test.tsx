@@ -4,7 +4,9 @@
  * navigationHistory.test.ts, këtu provohet që layout-i e lidh saktë me router-in.
  */
 import { fakeSupabase, renderScreen, router, setPathname } from "./helpers/screen";
+import { useEffect } from "react";
 import { BackHandler } from "react-native";
+import { act } from "react-test-renderer";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import MainLayout from "@/app/(main)/_layout";
 import { recordPath, resetHistory } from "@/lib/navigation/history";
@@ -59,5 +61,33 @@ describe("layout-i kryesor", () => {
     recordPath("/baby");
     expect(pressBack()).toBe(false);
     expect(router().replace).not.toHaveBeenCalled();
+  });
+});
+
+describe("butoni fizik i Android-it para atij të navigimit", () => {
+  // Kontejneri i navigimit (expo-router useBackButton) regjistron "mbrapa" në efektin e vet, PAS fëmijëve: pa
+  // rregullim, ai thirrej i pari, hiqte ekranin nga stiva e Dyqanit dhe logjika jonë s'thirrej kurrë
+  // (Cilësimet → Porositë → mbrapa → Produktet e ruajtura → mbrapa të çonte te Porositë, 15 tetor).
+  it("“mbrapa” i yni thirret para atij të kontejnerit", async () => {
+    fakeSupabase().session = { user: { id: "u1" } };
+    setPathname("/shop/wishlist");
+    // Si te expo-router: kontejneri është prind i layout-it, ndaj efekti i tij (regjistrimi) vjen pas fëmijës.
+    const container = jest.fn(() => true);
+    function NavigationContainer() {
+      useEffect(() => {
+        const sub = BackHandler.addEventListener("hardwareBackPress", container);
+        return () => sub.remove();
+      }, []);
+      return <MainLayout />;
+    }
+    await renderScreen(<NavigationContainer />);
+    await act(async () => {
+      await new Promise((r) => setTimeout(r, 20));
+    });
+    recordPath("/more");
+    recordPath("/shop/wishlist");
+    expect(pressBack()).toBe(true);
+    expect(container).not.toHaveBeenCalled();
+    expect(router().replace).toHaveBeenCalledWith("/more");
   });
 });

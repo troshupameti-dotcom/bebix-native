@@ -62,7 +62,7 @@ export default function NotificationsInboxScreen() {
         renderItem={({ item }) => <InboxRow entry={item} onPress={() => open(item)} />}
         ListFooterComponent={
           <Pressable
-            onPress={() => router.push("/(main)/more/notifications")}
+            onPress={() => router.push("/(main)/more/notifications", { withAnchor: true })}
             accessibilityRole="button"
             className="mt-6 flex-row items-center justify-center gap-1.5 py-2"
           >

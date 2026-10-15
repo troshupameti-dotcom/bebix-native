@@ -168,12 +168,12 @@ export default function MoreScreen() {
         title: t("section_saved"),
         tint: "orange",
         rows: [
-          { key: "orders", icon: "cube", label: t("my_orders"), keywords: "porosi blerje dyqan orders shop", onPress: () => router.push("/shop/orders") },
-          { key: "wishlist", icon: "heart", label: t("saved_products"), keywords: "produkte pelqyera wishlist", onPress: () => router.push("/shop/wishlist") },
+          { key: "orders", icon: "cube", label: t("my_orders"), keywords: "porosi blerje dyqan orders shop", onPress: () => router.push("/shop/orders", { withAnchor: true }) },
+          { key: "wishlist", icon: "heart", label: t("saved_products"), keywords: "produkte pelqyera wishlist", onPress: () => router.push("/shop/wishlist", { withAnchor: true }) },
           ...(GIFTS_ENABLED
             ? [{ key: "gifts", icon: "star" as const, label: t("gift_title"), keywords: "dhurata lista gifts registry", onPress: () => router.push("/more/gifts") }]
             : []),
-          { key: "posts", icon: "bookmark", label: t("saved_posts"), keywords: "postime komuniteti posts", onPress: () => router.push("/community/saved") },
+          { key: "posts", icon: "bookmark", label: t("saved_posts"), keywords: "postime komuniteti posts", onPress: () => router.push("/community/saved", { withAnchor: true }) },
         ],
       },
       {
@@ -214,7 +214,6 @@ export default function MoreScreen() {
         tint: "neutral",
         rows: [
           { key: "family", icon: "family", label: t("family_title"), keywords: "partneri gjyshrit ftese anetare family invite", onPress: () => router.push("/more/family") },
-          { key: "care", icon: "shield", label: t("care_title"), keywords: "kujdes shendet nena prindi pas lindjes care", onPress: () => router.push("/(main)/baby/parent-care") },
         ],
       },
       {

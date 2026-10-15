@@ -51,10 +51,11 @@ function Main() {
 }
 const stub = (name: string): ComponentType => function Screen() { return <Text>{name}</Text>; };
 
-const context: Record<string, ComponentType> = { _layout: Root, "(main)/_layout": Main };
-for (const s of ["baby", "shop", "community", "more"]) context[`(main)/${s}/_layout`] = require(`@/app/(main)/${s}/_layout`).default;
+// Layout-et e pjesëve si module të plota: me `unstable_settings` (stiva nis nga faqja kryesore), si në app.
+const context: Record<string, unknown> = { _layout: Root, "(main)/_layout": Main };
+for (const s of ["baby", "shop", "community", "more"]) context[`(main)/${s}/_layout`] = require(`@/app/(main)/${s}/_layout`);
 for (const f of screenFiles) context[`(main)/${f}`] = stub(f);
-const ctx = getMockContext(context);
+const ctx = getMockContext(context as Record<string, ComponentType>);
 
 /** Rruga e ekranit: "more/night-mode" → "/more/night-mode", "shop/[id]" → "/shop/1", "baby/index" → "/baby". */
 const routeOf = (f: string) => "/" + f.replace(/\/index$/, "").replace(/\[[^\]]+\]/g, "1");
@@ -176,5 +177,24 @@ describe("disa hapa brenda së njëjtës pjesë", () => {
     expect(where()).toBe("/shop/orders");
     back();
     expect(where()).toBe("/more");
+  });
+});
+
+/** Si te Cilësimet: faqja e një pjese tjetër hapet me faqen kryesore të saj poshtë (withAnchor). */
+const pushAnchored = (p: string) => step(() => router.push(p as never, { withAnchor: true }));
+
+describe("Cilësimet → Porositë → mbrapa → Produktet e ruajtura → mbrapa (gabimi i 15 tetorit)", () => {
+  it.each([["butoni mbrapa", back], ["butoni i Android-it", androidBack]] as const)("%s: kthehet te Cilësimet, jo te Porositë", (_n, goBack) => {
+    open();
+    tapTab("more");
+    pushAnchored("/shop/orders");
+    goBack();
+    expect(where()).toBe("/more");
+    pushAnchored("/shop/wishlist");
+    goBack();
+    expect(where()).toBe("/more");
+    // Faqet e hapura nga Cilësimet s'mbeten në stivën e Dyqanit: tab-i Dyqani hapet te fillimi i tij.
+    tapTab("shop");
+    expect(where()).toBe("/shop");
   });
 });
