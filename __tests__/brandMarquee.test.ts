@@ -82,3 +82,12 @@ describe("shiriti i markave", () => {
     act(() => r.unmount());
   });
 });
+
+describe("logot në temën e errët", () => {
+  const { logoForTheme } = require("@/components/shop/BrandMarquee") as typeof import("@/components/shop/BrandMarquee");
+  it("logot e Bebix-it marrin versionin e errët; të tjerat mbeten si janë", () => {
+    expect(logoForTheme("https://www.bebix.store/brands/wide/dr-browns.png", true)).toBe("https://www.bebix.store/brands/wide-dark/dr-browns.png");
+    expect(logoForTheme("https://www.bebix.store/brands/wide/dr-browns.png", false)).toBe("https://www.bebix.store/brands/wide/dr-browns.png");
+    expect(logoForTheme("https://cdn.example.com/logo.png", true)).toBe("https://cdn.example.com/logo.png");
+  });
+});

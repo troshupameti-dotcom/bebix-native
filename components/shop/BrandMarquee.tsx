@@ -1,36 +1,41 @@
 import { useEffect, useState } from "react";
 import { AccessibilityInfo, AppState, Image, Pressable, ScrollView, Text, View } from "react-native";
-import Animated, { scrollTo, useAnimatedRef, useAnimatedScrollHandler, useFrameCallback, useSharedValue } from "react-native-reanimated";
 import { useIsFocused } from "expo-router";
+import { Gesture, GestureDetector } from "react-native-gesture-handler";
+import Animated, { cancelAnimation, useAnimatedStyle, useFrameCallback, useSharedValue, withDecay } from "react-native-reanimated";
+import { useThemeColors } from "@/lib/theme/useThemeColors";
 import type { Brand } from "@/lib/homeContent";
 
 /**
- * Markat si shirit logosh që rrëshqet ngadalë vetë. Kur prindi e prek, shiriti
- * ndalet dhe kalon nën kontrollin e tij: e lëviz majtas-djathtas ose prek një
- * markë. Pasi heq gishtin (dhe shiriti ndalet), lëvizja vetë rifillon.
+ * Markat si shirit logosh që rrëshqet ngadalë vetë, pa korniza. Prindi mund ta zvarrisë majtas-djathtas (me
+ * rrëshqitje natyrale pas lëshimit) ose të prekë një markë; pasi ndalet, lëvizja vetë rifillon.
  *
- * Pa fund në të dy drejtimet: lista vihet tri herë radhazi dhe pozicioni mbahet
- * te kopja e mesme — kur del prej saj, kërcen pa u vënë re një gjatësi më tej.
+ * Butësia: rreshti lëviz me një transformim (translateX) te thread-i i ndërfaqes (Reanimated), jo duke lëvizur
+ * një ScrollView. Kështu s'ka rillogaritje të faqes në çdo kornizë dhe JavaScript-i i zënë s'e ndal dot.
+ * Pa fund: lista vihet tri herë radhazi dhe pozicioni mbështillet brenda gjerësisë së një kopjeje.
  * Me pak marka (nën 6) ose kur pajisja kërkon pak lëvizje, rri e palëvizshme.
- *
- * Lëvizja ecën te thread-i i ndërfaqes (Reanimated: useFrameCallback + scrollTo), jo te JavaScript-i: më parë
- * requestAnimationFrame + scrollTo nga JS-i ngecte sapo JS-i kishte punë tjetër ose kur prindi e zvarriste.
  */
+
 /**
- * Logot: drejtkëndësha 2:1, gjithmonë të bardhë (edhe në temën e errët, që logot e errëta si Dr. Brown's të mos
- * humbin). Logot vijnë të njësuara nga bebix-web/scripts/brand-logos.py (pa të bardhën përreth, me të njëjtën
- * peshë pamore dhe hapësirë), ndaj logoja mbush krejt pllakën pa u prerë.
+ * Logot vijnë të njësuara nga bebix-web/scripts/brand-logos.py: pa të bardhën përreth, me të njëjtën peshë pamore
+ * dhe hapësirë brenda kanavacës 2:1, ndaj s'kanë nevojë për kornizë. Për temën e errët ka version më vete
+ * (`/brands/wide-dark/`), ku shkrimet e errëta (Dr. Brown's, Tommee Tippee) janë të çelëta.
  */
-const LOGO_W = 112;
-const LOGO_H = 56;
-const COLUMN = LOGO_W;
-const GAP = 10;
+const LOGO_W = 104;
+const LOGO_H = 52;
+const GAP = 4;
+const COLUMN = LOGO_W + GAP;
 /** Pikselë në sekondë: i ngadaltë, që logot të lexohen. */
-const SPEED = 26;
-/** Pas sa kohësh nga lëshimi i gishtit rifillon lëvizja vetë. */
+const SPEED = 28;
+/** Pas sa kohësh nga ndalimi rifillon lëvizja vetë. */
 const RESUME_MS = 1200;
 
-function Tile({ brand, onPress }: { brand: Brand; onPress: () => void }) {
+/** Logoja për temën: version i errët kur ekziston (logot e Bebix-it), përndryshe e njëjta. */
+export function logoForTheme(url: string, dark: boolean): string {
+  return dark && url.includes("/brands/wide/") ? url.replace("/brands/wide/", "/brands/wide-dark/") : url;
+}
+
+function Tile({ brand, dark, ink, onPress }: { brand: Brand; dark: boolean; ink: string; onPress: () => void }) {
   return (
     <Pressable
       onPress={onPress}
@@ -40,22 +45,16 @@ function Tile({ brand, onPress }: { brand: Brand; onPress: () => void }) {
         width: LOGO_W,
         height: LOGO_H,
         marginRight: GAP,
-        borderRadius: 16,
-        backgroundColor: "#FFFFFF",
-        borderWidth: 1,
-        borderColor: "rgba(0,0,0,0.07)",
-        overflow: "hidden",
         alignItems: "center",
         justifyContent: "center",
-        opacity: pressed ? 0.85 : 1,
-        transform: [{ scale: pressed ? 0.97 : 1 }],
+        opacity: pressed ? 0.6 : 1,
       })}
     >
       {brand.logoUrl ? (
-        <Image source={{ uri: brand.logoUrl }} style={{ width: LOGO_W, height: LOGO_H }} resizeMode="contain" />
+        <Image source={{ uri: logoForTheme(brand.logoUrl, dark) }} style={{ width: LOGO_W, height: LOGO_H }} resizeMode="contain" />
       ) : (
-        // Pa logo: emri si shenjë e thjeshtë, me të njëjtën peshë si logot (ngjyrë e errët mbi të bardhë fikse).
-        <Text style={{ color: "#2B2B2B", fontSize: 13, fontFamily: "Inter_600SemiBold", textAlign: "center", paddingHorizontal: 10 }} numberOfLines={2}>
+        // Pa logo: emri si shenjë e thjeshtë, me të njëjtën peshë si logot.
+        <Text style={{ color: ink, fontSize: 13, fontFamily: "Inter_600SemiBold", textAlign: "center", paddingHorizontal: 6 }} numberOfLines={2}>
           {brand.name}
         </Text>
       )}
@@ -64,6 +63,7 @@ function Tile({ brand, onPress }: { brand: Brand; onPress: () => void }) {
 }
 
 export function BrandMarquee({ brands, onOpen }: { brands: Brand[]; onOpen: (b: Brand) => void }) {
+  const theme = useThemeColors();
   const [reduceMotion, setReduceMotion] = useState(false);
   const moving = brands.length >= 6 && !reduceMotion;
   // Lëvizja vetë punon vetëm kur shihet: Dyqani është skeda aktive dhe app-i në plan të parë. Skedat mbeten
@@ -76,17 +76,16 @@ export function BrandMarquee({ brands, onOpen }: { brands: Brand[]; onOpen: (b: 
   }, []);
   const running = moving && focused && appActive;
   // Gjerësia e një kopjeje të listës.
-  const rowWidth = brands.length * (COLUMN + GAP);
+  const rowWidth = brands.length * COLUMN;
 
-  const scrollRef = useAnimatedRef<Animated.ScrollView>();
   // Të gjitha këto lexohen dhe shkruhen te thread-i i ndërfaqes.
-  const offset = useSharedValue(rowWidth);
-  const touching = useSharedValue(false);
-  // Prindi e lëvizi: pozicionin e ndjek shiriti nga lëvizja e tij, derisa të rifillojë vetë.
-  const userMoved = useSharedValue(false);
+  const offset = useSharedValue(0);
+  const width = useSharedValue(rowWidth);
+  // Prindi e mban ose rrëshqitja pas lëshimit vazhdon: lëvizja vetë pret.
+  const held = useSharedValue(false);
   // -1 = "rifillo pas RESUME_MS nga korniza e radhës"; përndryshe koha e kornizës kur rifillon.
   const resumeAt = useSharedValue(0);
-  const width = useSharedValue(rowWidth);
+  const dragStart = useSharedValue(0);
 
   useEffect(() => {
     let alive = true;
@@ -98,22 +97,15 @@ export function BrandMarquee({ brands, onOpen }: { brands: Brand[]; onOpen: (b: 
 
   useEffect(() => {
     width.set(rowWidth);
-    offset.set(rowWidth);
-  }, [rowWidth, width, offset]);
+  }, [rowWidth, width]);
 
   const frame = useFrameCallback((info) => {
     "worklet";
-    if (touching.get()) return;
+    if (held.get()) return;
     if (resumeAt.get() === -1) resumeAt.set(info.timestamp + RESUME_MS);
     if (info.timestamp < resumeAt.get()) return;
-    userMoved.set(false);
     const dt = Math.min(0.05, (info.timeSincePreviousFrame ?? 16) / 1000);
-    // Mbaje pozicionin te kopja e mesme: pa fund majtas dhe djathtas.
-    let next = offset.get() + SPEED * dt;
-    if (next > width.get() * 1.5) next -= width.get();
-    if (next < width.get() * 0.5) next += width.get();
-    offset.set(next);
-    scrollTo(scrollRef, next, 0, false);
+    offset.set(offset.get() + SPEED * dt);
   }, false);
 
   useEffect(() => {
@@ -123,33 +115,39 @@ export function BrandMarquee({ brands, onOpen }: { brands: Brand[]; onOpen: (b: 
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [running]);
 
-  const onScroll = useAnimatedScrollHandler({
-    onBeginDrag: () => {
-      touching.set(true);
-      userMoved.set(true);
-    },
-    onScroll: (e) => {
-      // Vetëm kur e lëviz prindi (ose rrëshqitja pas tij): lëvizja vetë e di vetë pozicionin.
-      if (userMoved.get()) offset.set(e.contentOffset.x);
-    },
-    onEndDrag: (e) => {
-      touching.set(false);
-      offset.set(e.contentOffset.x);
-      resumeAt.set(-1);
-    },
-    // Rrëshqitja pas lëshimit (momentum) i përket ende prindit: lëvizja vetë pret derisa të ndalet.
-    onMomentumBegin: () => {
-      touching.set(true);
-    },
-    onMomentumEnd: (e) => {
-      touching.set(false);
-      let x = e.contentOffset.x;
-      if (x > width.get() * 1.5) x -= width.get();
-      if (x < width.get() * 0.5) x += width.get();
-      offset.set(x);
-      if (x !== e.contentOffset.x) scrollTo(scrollRef, x, 0, false);
-      resumeAt.set(-1);
-    },
+  // Zvarritja: vetëm horizontale (lëvizja vertikale i lihet faqes), prekja e shkurtër i lihet markës.
+  const pan = Gesture.Pan()
+    .activeOffsetX([-8, 8])
+    .failOffsetY([-12, 12])
+    .onBegin(() => {
+      held.set(true);
+      cancelAnimation(offset);
+      dragStart.set(offset.get());
+    })
+    .onUpdate((e) => {
+      offset.set(dragStart.get() - e.translationX);
+    })
+    .onEnd((e) => {
+      offset.set(
+        withDecay({ velocity: -e.velocityX, deceleration: 0.997 }, () => {
+          held.set(false);
+          resumeAt.set(-1);
+        })
+      );
+    })
+    .onFinalize((_e, success) => {
+      // Prekje pa zvarritje (p.sh. mbi një markë): s'ka rrëshqitje, rifillon pas pak.
+      if (!success) {
+        held.set(false);
+        resumeAt.set(-1);
+      }
+    });
+
+  // Pozicioni mbështillet brenda një kopjeje: kopja e dytë zë vendin e të parës pa u vënë re.
+  const rowStyle = useAnimatedStyle(() => {
+    const w = width.get();
+    const x = w > 0 ? ((offset.get() % w) + w) % w : 0;
+    return { transform: [{ translateX: -x }] };
   });
 
   const row = (prefix: string, hidden: boolean) => (
@@ -160,33 +158,29 @@ export function BrandMarquee({ brands, onOpen }: { brands: Brand[]; onOpen: (b: 
       importantForAccessibility={hidden ? "no-hide-descendants" : "auto"}
     >
       {brands.map((b) => (
-        <Tile key={`${prefix}-${b.id}`} brand={b} onPress={() => onOpen(b)} />
+        <Tile key={`${prefix}-${b.id}`} brand={b} dark={theme.isDark} ink={theme.ink} onPress={() => onOpen(b)} />
       ))}
     </View>
   );
 
   if (!moving) {
     return (
-      <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ paddingHorizontal: 20 }}>
+      <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ paddingHorizontal: 16 }}>
         {row("a", false)}
       </ScrollView>
     );
   }
 
   return (
-    <Animated.ScrollView
-      ref={scrollRef}
-      horizontal
-      showsHorizontalScrollIndicator={false}
-      scrollEventThrottle={16}
-      decelerationRate="normal"
-      contentOffset={{ x: rowWidth, y: 0 }}
-      onScroll={onScroll}
-    >
-      {/* Tri kopje: e mesmja është ajo që shihet; dy anësoret e bëjnë shiritin pa fund. */}
-      {row("a", true)}
-      {row("b", false)}
-      {row("c", true)}
-    </Animated.ScrollView>
+    <GestureDetector gesture={pan}>
+      <View style={{ overflow: "hidden", height: LOGO_H }}>
+        {/* Tri kopje radhazi: gjithmonë mbushin ekranin, edhe kur pozicioni mbështillet. */}
+        <Animated.View style={[{ flexDirection: "row" }, rowStyle]}>
+          {row("a", false)}
+          {row("b", true)}
+          {row("c", true)}
+        </Animated.View>
+      </View>
+    </GestureDetector>
   );
 }
