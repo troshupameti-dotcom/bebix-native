@@ -59,7 +59,7 @@ describe("ekrani i Cilësimeve", () => {
     const r = await renderScreen(<MoreScreen />);
     const text = visibleText(r.root);
     expect(text[0]).toBe(sq.nav_more);
-    for (const s of [sq.settings_quick, sq.section_saved, sq.section_prefs, sq.section_family, sq.section_help, sq.section_account]) {
+    for (const s of [sq.section_saved, sq.section_prefs, sq.section_help, sq.section_account]) {
       expect(text).toContain(s);
     }
     expect(text.indexOf(sq.logout)).toBeGreaterThan(text.indexOf(sq.legal));
@@ -106,17 +106,23 @@ describe("ekrani i Cilësimeve", () => {
     expect(visibleText(r.root).filter((s) => s === sq.appearance_dark).length).toBeGreaterThanOrEqual(2);
   });
 
-  it("me një prekje: modaliteti i natës fiket dhe ndizet", async () => {
+  it("qendra e kontrollit: modaliteti i natës ndizet menjëherë dhe hapet (jo vetëm orari)", async () => {
     const r = await renderScreen(<MoreScreen />);
-    const before = tile(r, sq.settings_quick_night).props.accessibilityState.checked;
+    expect(tile(r, sq.night_title).props.accessibilityState).toEqual({ checked: false });
     await act(async () => {
-      tile(r, sq.settings_quick_night).props.onPress();
+      tile(r, sq.night_title).props.onPress();
     });
-    expect(tile(r, sq.settings_quick_night).props.accessibilityState.checked).toBe(!before);
+    expect(tile(r, sq.night_title).props.accessibilityState).toEqual({ checked: true });
+    expect(router().navigate).toHaveBeenCalledWith("/(main)/baby");
     await act(async () => {
-      tile(r, sq.settings_quick_night).props.onPress();
+      tile(r, sq.night_title).props.onPress();
     });
-    expect(tile(r, sq.settings_quick_night).props.accessibilityState.checked).toBe(before);
+    expect(tile(r, sq.night_title).props.accessibilityState).toEqual({ checked: false });
+  });
+
+  it("pa “Kujdesi për ty” (u hoq më 15 tetor)", async () => {
+    const r = await renderScreen(<MoreScreen />);
+    expect(visibleText(r.root)).not.toContain(sq.care_title);
   });
 
   it("me një prekje: gjuha kalon në anglisht dhe kthehet", async () => {

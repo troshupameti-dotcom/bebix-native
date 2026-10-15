@@ -52,6 +52,7 @@
     "expo-video": "~57.0.5",
     "expo-web-browser": "~57.0.3",
     "expo-widgets": "~57.0.23",
+    "lucide-react-native": "1.57.0",
     "moti": "^0.30.0",
     "nativewind": "^4.2.6",
     "react": "19.2.3",
@@ -88,7 +89,13 @@
       "**/__tests__/**/*.test.tsx"
     ],
     "moduleNameMapper": {
+      "^lucide-react-native$": "<rootDir>/node_modules/lucide-react-native/dist/cjs/lucide-react-native.js",
       "^@/(.*)$": "<rootDir>/$1"
-    }
+    },
+    "transformIgnorePatterns": [
+      "/node_modules/(?!(.pnpm|react-native|@react-native|@react-native-community|expo|@expo|@expo-google-fonts|react-navigation|@react-navigation|@sentry/react-native|native-base|standard-navigation))",
+      "/node_modules/react-native-reanimated/plugin/",
+      "/node_modules/@react-native/babel-preset/"
+    ]
   }
 }
