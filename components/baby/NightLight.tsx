@@ -8,8 +8,6 @@ import { haptics } from "@/lib/haptics";
 
 /** Drita fiket vetë pas kaq minutash, që të mos mbetet ndezur gjithë natën nëse prindi fle. */
 export const LIGHT_MINUTES = 10;
-/** Udhëzimi shfaqet vetëm sa për t'u lexuar, pastaj mbetet vetëm drita. */
-const HINT_MS = 5000;
 const STEP = 0.1;
 
 const clamp = (v: number) => Math.max(0, Math.min(1, v));
@@ -30,8 +28,6 @@ const glowOpacity = (level: number) => 0.3 + 0.7 * clamp(level);
 export function NightLight({ level, onLevel, onClose }: { level: number; onLevel: (v: number) => void; onClose: () => void }) {
   const { t } = useTranslation();
   const { height } = useWindowDimensions();
-  const [hint, setHint] = useState(true);
-  const [left, setLeft] = useState(LIGHT_MINUTES);
   useKeepScreenOn(true);
 
   // Prekja: ku nisi gishti dhe fuqia në atë çast. onClose lexohet nga ref-i te kohëmatësi.
@@ -50,18 +46,10 @@ export function NightLight({ level, onLevel, onClose }: { level: number; onLevel
     return () => sub.remove();
   }, []);
 
+  // Fiket vetë pas LIGHT_MINUTES, pa e shkruar në ekran.
   useEffect(() => {
-    const hideHint = setTimeout(() => setHint(false), HINT_MS);
-    const startedAt = Date.now();
-    const tick = setInterval(() => {
-      const remaining = LIGHT_MINUTES - Math.floor((Date.now() - startedAt) / 60_000);
-      if (remaining <= 0) closeRef.current();
-      else setLeft(remaining);
-    }, 15_000);
-    return () => {
-      clearTimeout(hideHint);
-      clearInterval(tick);
-    };
+    const off = setTimeout(() => closeRef.current(), LIGHT_MINUTES * 60_000);
+    return () => clearTimeout(off);
   }, []);
 
   const onGrant = (e: GestureResponderEvent) => {
@@ -107,20 +95,10 @@ export function NightLight({ level, onLevel, onClose }: { level: number; onLevel
       style={{ flex: 1, backgroundColor: C.bg }}
     >
       <View style={{ position: "absolute", top: 0, right: 0, bottom: 0, left: 0, backgroundColor: C.glow, opacity: glowOpacity(level) }} />
-      <SafeAreaView style={{ flex: 1, justifyContent: "space-between", paddingHorizontal: 28, paddingVertical: 16 }} edges={["top", "bottom"]}>
-        <Text style={{ color: ink, fontSize: 13, fontFamily: "Inter_600SemiBold", letterSpacing: 1.2 }}>{t("night_light").toUpperCase()}</Text>
-        <View style={{ alignItems: "center" }}>
-          {hint ? (
-            <Text style={{ color: ink, fontSize: 17, fontFamily: "Inter_500Medium", textAlign: "center", lineHeight: 25 }}>{t("night_light_hint")}</Text>
-          ) : null}
-        </View>
-        <View style={{ flexDirection: "row", alignItems: "center", justifyContent: "space-between" }}>
-          <Text style={{ color: ink, fontSize: 13, fontFamily: "Inter_500Medium" }}>{t("night_light_auto_off", { m: left })}</Text>
-          {/* Fuqia e dritës: shirit i hollë që mbushet. */}
-          <View style={{ width: 90, height: 6, borderRadius: 3, backgroundColor: "rgba(0,0,0,0.25)" }}>
-            <View style={{ width: `${Math.round(level * 100)}%`, height: 6, borderRadius: 3, backgroundColor: ink }} />
-          </View>
-        </View>
+      {/* Vetëm dy rreshta: lart = më shumë dritë, poshtë = më pak. Prekja kthen te pamja e natës. */}
+      <SafeAreaView style={{ flex: 1, alignItems: "center", justifyContent: "center", gap: 28 }} edges={["top", "bottom"]}>
+        <Text style={{ color: ink, fontSize: 20, fontFamily: "Inter_600SemiBold" }}>{`↑  ${t("night_swipe_up")}`}</Text>
+        <Text style={{ color: ink, fontSize: 20, fontFamily: "Inter_600SemiBold" }}>{`↓  ${t("night_swipe_down")}`}</Text>
       </SafeAreaView>
     </View>
   );

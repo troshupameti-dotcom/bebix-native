@@ -9,7 +9,6 @@ import AsyncStorage from "@react-native-async-storage/async-storage";
 import { NightMode } from "@/components/baby/NightMode";
 import { NIGHT_COLORS } from "@/components/baby/NightClock";
 import { cleanPrefs, DEFAULT_NIGHT_PREFS } from "@/lib/baby/nightMode";
-import { nightRange, nightSummary } from "@/lib/baby/nightSummary";
 import { brightnessController } from "@/lib/baby/nightScreen";
 import { BREAST_TIMER_KEY } from "@/lib/baby/breastTimer";
 import { translations } from "@/lib/i18n/translations";
@@ -30,40 +29,6 @@ describe("ngjyrat e natës", () => {
       expect({ name, blue: parseInt(hex.slice(5, 7), 16) <= 0x1b }).toEqual({ name, blue: true });
     }
     expect(NIGHT_COLORS.bg).toBe("#000000");
-  });
-});
-
-describe("Nata deri tani", () => {
-  it("brenda orarit: nga 22:00 e mbrëmjes deri në 06:00", () => {
-    expect(nightRange(at(14, 2), DEFAULT_NIGHT_PREFS)).toEqual({ start: at(13, 22).getTime(), end: at(14, 6).getTime() });
-    expect(nightRange(at(13, 23), DEFAULT_NIGHT_PREFS).start).toBe(at(13, 22).getTime());
-  });
-
-  it("e ndezur me dorë ditën: katër orët e fundit", () => {
-    const r = nightRange(at(14, 14, 30), DEFAULT_NIGHT_PREFS);
-    expect(r.start).toBe(at(14, 10).getTime());
-    expect(r.end).toBeGreaterThan(at(14, 14, 30).getTime());
-  });
-
-  it("gjumi pritet te fillimi i natës dhe te tani; ilaçet, të fshirat dhe e ardhmja s'numërohen", () => {
-    const s = nightSummary(
-      {
-        sleepLog: [sleep(at(13, 21), at(13, 23, 30)), sleep(at(14, 1), null)],
-        feedingLog: [
-          feeding(at(13, 23, 40)),
-          feeding(at(14, 0, 50), { type: "medicine" }),
-          feeding(at(14, 0, 55), { deletedAt: "x" }),
-          feeding(at(13, 20)),
-        ],
-        diaperLog: [diaper(at(14, 0, 10)), diaper(at(14, 3))],
-      },
-      at(14, 2),
-      DEFAULT_NIGHT_PREFS
-    );
-    expect(s.sleptMin).toBe(90 + 60);
-    expect(s.sleeps.map((x) => x.ongoing)).toEqual([false, true]);
-    expect(s.feedings).toEqual([at(13, 23, 40).getTime()]);
-    expect(s.diapers).toEqual([at(14, 0, 10).getTime()]);
   });
 });
 
@@ -133,24 +98,34 @@ const a11y = (node: ReactTestInstance, actionName: string) =>
     node.props.onAccessibilityAction({ nativeEvent: { actionName } });
   });
 
+/** Butoni sipas etiketës për lexuesit e ekranit (drita është vetëm ikonë, pa tekst). */
+const byLabel = (root: ReactTestInstance, label: string): ReactTestInstance =>
+  root.findAll((n) => n.props.accessibilityLabel === label && typeof n.props.onPress === "function")[0];
+
 describe("pamja e natës", () => {
-  it("“Nata deri tani” numëron pelenën e sapo shënuar", async () => {
+  it("e thjeshtë: ora, sa fle bebi, dhe vetëm Ushqim / Pelenë / Gjumë (pa “Nata deri tani”)", async () => {
     const r = await renderScreen(<NightMode />);
-    expect(visibleText(r.root)).toContain("Ushqime 0 · Pelena 0 · Gjumë 0 min");
+    const text = visibleText(r.root);
+    for (const label of [sq.night_btn_feed, sq.night_btn_diaper, sq.night_btn_sleep]) expect(text).toContain(label);
+    expect(text.filter((x) => /Nata deri tani|NATA DERI TANI|Ushqime \d/.test(x))).toEqual([]);
     await act(async () => {
-      button(r.root, sq.night_wet).props.onPress();
+      button(r.root, sq.night_btn_diaper).props.onPress();
     });
-    expect(visibleText(r.root)).toContain("Ushqime 0 · Pelena 1 · Gjumë 0 min");
-    expect(visibleText(r.root)).toContain("U ruajt: E lagur");
+    expect(visibleText(r.root)).toContain(`U ruajt: ${sq.night_btn_diaper}`);
+    await act(async () => {
+      button(r.root, sq.night_btn_sleep).props.onPress();
+    });
+    expect(visibleText(r.root)).toContain(sq.night_btn_wake);
   });
 
   it("“Drita”: krejt ekrani dritë e kuqe; fuqia ndryshon; prekja kthen dhe fuqia mbahet mend", async () => {
     const r = await renderScreen(<NightMode />);
     await act(async () => {
-      button(r.root, sq.night_light).props.onPress();
+      byLabel(r.root, sq.night_light).props.onPress();
     });
     expect(lightView(r.root)).toBeDefined();
-    expect(visibleText(r.root)).toContain(sq.night_light_hint);
+    expect(visibleText(r.root)).toContain(`↑  ${sq.night_swipe_up}`);
+    expect(visibleText(r.root)).toContain(`↓  ${sq.night_swipe_down}`);
     expect(lightView(r.root)!.props.accessibilityValue.now).toBe(40);
 
     await a11y(lightView(r.root)!, "increment");
@@ -158,7 +133,7 @@ describe("pamja e natës", () => {
 
     await a11y(lightView(r.root)!, "activate");
     expect(lightView(r.root)).toBeUndefined();
-    expect(visibleText(r.root)).toContain(sq.night_section_diaper.toUpperCase());
+    expect(visibleText(r.root)).toContain(sq.night_btn_diaper);
     expect(JSON.parse((await AsyncStorage.getItem("bebix_night_prefs_v1"))!).lightLevel).toBeCloseTo(0.5);
   });
 
@@ -170,7 +145,7 @@ describe("pamja e natës", () => {
     });
     const r = await renderScreen(<NightMode />);
     await act(async () => {
-      button(r.root, sq.night_light).props.onPress();
+      byLabel(r.root, sq.night_light).props.onPress();
     });
     expect(lightView(r.root)).toBeDefined();
     let handled: boolean | null | undefined = false;
@@ -180,17 +155,5 @@ describe("pamja e natës", () => {
     expect(handled).toBe(true);
     expect(lightView(r.root)).toBeUndefined();
     jest.restoreAllMocks();
-  });
-
-  it("gjidhënia: “Ndërro anën” kalon te gjiri tjetër pa e ndalur timerin", async () => {
-    const startedAt = new Date(Date.now() - 5 * 60_000).toISOString();
-    await AsyncStorage.setItem(BREAST_TIMER_KEY, JSON.stringify({ startedAt, side: "left", sides: ["left"] }));
-    const r = await renderScreen(<NightMode />);
-    const label = sq.night_switch_side.replace("{side}", sq.feeding_side_right);
-    await act(async () => {
-      button(r.root, label).props.onPress();
-    });
-    expect(visibleText(r.root)).toContain(sq.night_side_now.replace("{side}", sq.feeding_side_right));
-    expect(JSON.parse((await AsyncStorage.getItem(BREAST_TIMER_KEY))!)).toMatchObject({ side: "right", sides: ["left", "right"] });
   });
 });
