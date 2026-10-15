@@ -8,20 +8,11 @@ import { BackHandler, Platform } from "react-native";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { NightMode } from "@/components/baby/NightMode";
 import { NIGHT_COLORS } from "@/components/baby/NightClock";
-import { cleanPrefs, DEFAULT_NIGHT_PREFS } from "@/lib/baby/nightMode";
+import { cleanPrefs } from "@/lib/baby/nightMode";
 import { brightnessController } from "@/lib/baby/nightScreen";
-import { BREAST_TIMER_KEY } from "@/lib/baby/breastTimer";
 import { translations } from "@/lib/i18n/translations";
-import type { DiaperEntry, FeedingEntry, SleepEntry } from "@/lib/state/babyTypes";
 
 const sq = translations.sq;
-const at = (d: number, h: number, m = 0) => new Date(2026, 9, d, h, m);
-const life = { createdAt: "", updatedAt: "", editCount: 0, deletedAt: null, archivedAt: null };
-const feeding = (t: Date, extra: Partial<FeedingEntry> = {}) =>
-  ({ ...life, id: String(t.getTime()), type: "bottle", at: t.toISOString(), ...extra }) as FeedingEntry;
-const sleep = (from: Date, to: Date | null) =>
-  ({ ...life, id: String(from.getTime()), startAt: from.toISOString(), endAt: to ? to.toISOString() : null }) as SleepEntry;
-const diaper = (t: Date) => ({ ...life, id: String(t.getTime()), type: "wet", at: t.toISOString() }) as DiaperEntry;
 
 describe("ngjyrat e natës", () => {
   it("pothuajse pa të kaltër: asnjë ngjyrë s'kalon #1B në kanalin blu (drita e kaltër e prish gjumin më shumë)", () => {

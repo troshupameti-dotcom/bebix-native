@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef } from "react";
 import { BackHandler, Text, View, useWindowDimensions, type AccessibilityActionEvent, type GestureResponderEvent } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { NIGHT_COLORS as C } from "@/components/baby/NightClock";
