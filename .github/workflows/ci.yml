@@ -19,6 +19,14 @@ jobs:
       - run: npx tsc --noEmit
       - run: npx eslint . --ext .ts,.tsx
       - run: npx jest --ci
+      # E njëjta gjë në orën 02:00: modaliteti i natës ndizet vetë 22:00–06:00, dhe një test që varej nga ora
+      # kaloi këtu (ditën) por rrëzoi build-in EAS në 00:02. Zona kohore zgjidhet që ora lokale të jetë 02:xx.
+      - name: Testet natën (ora lokale 02:xx)
+        run: |
+          H=$(date -u +%H); OFF=$(( (2 - 10#$H + 24) % 24 )); [ $OFF -gt 12 ] && OFF=$((OFF-24))
+          if [ $OFF -ge 0 ]; then Z="Etc/GMT-$OFF"; else Z="Etc/GMT+$((-OFF))"; fi
+          echo "TZ=$Z, ora lokale: $(TZ=$Z date +%H:%M)"
+          TZ=$Z npx jest --ci --silent
 
   # Testet e bazës (RLS, funksionet) dhe të pagesave, në Postgres lokal (PGlite). Migrimet ekzekutohen në
   # prodhim me dorë: këtu provohen para se të arrijnë atje. PGlite s'është varësi e projektit, vetëm e këtij hapi.

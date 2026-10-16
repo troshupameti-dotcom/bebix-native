@@ -55,6 +55,17 @@ const tile = (r: ReactTestRenderer, label: string): ReactTestInstance =>
   r.root.findAll((n) => typeof n.props.onPress === "function" && typeof n.props.accessibilityLabel === "string" && n.props.accessibilityLabel.startsWith(`${label}: `))[0];
 
 describe("ekrani i Cilësimeve", () => {
+  // Modaliteti i natës ndizet vetë 22:00–06:00: pa këtë, testi i pllakës së natës dështonte kur nisej natën
+  // (build-i EAS në 00:02). Fiksohet vetëm ora (Date); kohëmatësit mbeten të vërtetë.
+  beforeEach(() => {
+    jest.useFakeTimers({
+      now: new Date(2026, 9, 16, 12, 0),
+      doNotFake: ["hrtime", "nextTick", "performance", "queueMicrotask", "requestAnimationFrame", "cancelAnimationFrame",
+        "requestIdleCallback", "cancelIdleCallback", "setImmediate", "clearImmediate", "setInterval", "clearInterval", "setTimeout", "clearTimeout"],
+    });
+  });
+  afterEach(() => jest.useRealTimers());
+
   it("titulli, rubrikat dhe llogaria në fund; pa llogari s'ka “Fshi llogarinë”", async () => {
     const r = await renderScreen(<MoreScreen />);
     const text = visibleText(r.root);
