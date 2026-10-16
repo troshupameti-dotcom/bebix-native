@@ -1,8 +1,8 @@
 import { useCallback, useEffect, useRef, useState } from "react";
-import { View, Text, FlatList, ScrollView, Pressable, TextInput, Image, ActivityIndicator } from "react-native";
+import { View, Text, FlatList, ScrollView, Pressable, TextInput, Image, ActivityIndicator, BackHandler } from "react-native";
 import { useContentWidth, gridColumns } from "@/lib/layout";
 import { SafeAreaView } from "react-native-safe-area-context";
-import { useRouter, useLocalSearchParams } from "expo-router";
+import { useRouter, useLocalSearchParams, useFocusEffect } from "expo-router";
 import { useAppState } from "@/lib/state/AppStateContext";
 import { useTranslation } from "@/lib/i18n/LanguageContext";
 import { Icon } from "@/components/ui/Icon";
@@ -103,6 +103,32 @@ export default function ShopScreen() {
 
   const filterKey = `${search}|${category}|${sort}|${ageKey ?? ""}|${reloadNonce}`;
   const loading = loadedKey !== filterKey && error === null;
+  // Vetëm hapja e parë tregon skeletin në vend të listës. Ndërrimi i kategorisë/filtrit e mban listën (dhe shiritin
+  // e kategorive) në vend: më parë lista rindërtohej nga e para, kategoritë ktheheshin në fillim dhe faqja lart.
+  const firstLoad = loading && loadedKey === null;
+  // Pozicioni i shiritit të kategorive, që të mbetet aty ku preku prindi.
+  const [catScrollX, setCatScrollX] = useState(0);
+
+  // "Mbrapa" i Android-it me një kategori/kërkim/moshë aktive: pastron filtrin (kthehet te "Të gjitha"), jo të dalë
+  // nga Dyqani te kreu. Regjistrohet një çast më vonë, që të thirret para kontejnerit të navigimit.
+  useFocusEffect(
+    useCallback(() => {
+      if (!isFiltering) return;
+      let sub: { remove: () => void } | undefined;
+      const id = setTimeout(() => {
+        sub = BackHandler.addEventListener("hardwareBackPress", () => {
+          setQuery("");
+          setCategory("all");
+          setAgeKey(null);
+          return true;
+        });
+      }, 0);
+      return () => {
+        clearTimeout(id);
+        sub?.remove();
+      };
+    }, [isFiltering])
+  );
 
   // Te gjitha shkrimet e state-it rrine brenda .then/.catch: sinkronisht
   // brenda efektit do te shkaktonin render te dyte pa nevoje.
@@ -176,6 +202,9 @@ export default function ShopScreen() {
           horizontal
           showsHorizontalScrollIndicator={false}
           contentContainerStyle={{ paddingHorizontal: 20, gap: 10 }}
+          contentOffset={{ x: catScrollX, y: 0 }}
+          onMomentumScrollEnd={(e) => setCatScrollX(e.nativeEvent.contentOffset.x)}
+          onScrollEndDrag={(e) => setCatScrollX(e.nativeEvent.contentOffset.x)}
         >
           {[
             { id: "all", key: "all", label: t("shop_all_chip"), icon: "shop" as const, emoji: "🛍️" },
@@ -304,7 +333,7 @@ export default function ShopScreen() {
         </ScrollView>
       )}
     </View>
-  ), [brands, onSale, categories, category, isFiltering, showSort, sort, total, router, t, theme, ageKey, babyBand, babyFirstName, language]);
+  ), [brands, onSale, categories, category, isFiltering, showSort, sort, total, router, t, theme, ageKey, babyBand, babyFirstName, language, catScrollX]);
 
   const renderFooter = useCallback(() => {
     if (loadingMore) {
@@ -401,7 +430,7 @@ export default function ShopScreen() {
             <Text className="font-bodyMedium text-xs text-on-accent">{t("shop_retry")}</Text>
           </Pressable>
         </View>
-      ) : loading ? (
+      ) : firstLoad ? (
         <ScrollView showsVerticalScrollIndicator={false}>
           <View className="flex-row flex-wrap" style={{ columnGap: GRID_GAP, rowGap: GRID_GAP, paddingHorizontal: PADDING_X, paddingTop: 16 }}>
             {Array.from({ length: columns * 3 }).map((_, i) => (
@@ -413,7 +442,7 @@ export default function ShopScreen() {
         <FlatList
           // Ndryshimi i numrit të kolonave kërkon montim të ri të listës.
           key={columns}
-          data={items}
+          data={loading ? [] : items}
           keyExtractor={(item) => item.id}
           numColumns={columns}
           renderItem={({ item }) => (
@@ -421,9 +450,18 @@ export default function ShopScreen() {
           )}
           columnWrapperStyle={columns > 1 ? { gap: GRID_GAP, paddingHorizontal: PADDING_X } : undefined}
           contentContainerStyle={{ paddingBottom: 120 }}
-          ListHeaderComponent={renderHeader}
+          // Element, jo komponent: kështu koka (me shiritin e kategorive) s'rimontohet në çdo ndryshim filtri.
+          ListHeaderComponent={renderHeader()}
           ListFooterComponent={renderFooter}
           ListEmptyComponent={
+            loading ? (
+              // Filtri i ri po ngarkohet: skeleti poshtë kokës, që faqja të mos kërcejë lart.
+              <View className="flex-row flex-wrap" style={{ columnGap: GRID_GAP, rowGap: GRID_GAP, paddingHorizontal: PADDING_X, paddingTop: 16 }}>
+                {Array.from({ length: columns * 2 }).map((_, i) => (
+                  <ProductCardSkeleton key={i} cardWidth={cardWidth} />
+                ))}
+              </View>
+            ) : (
             <View className="items-center px-10 py-12">
               <Icon name="search" size={24} color={theme.inkFaint} />
               <Text className="font-bodyMedium text-sm text-ink mt-3 text-center">
@@ -438,6 +476,7 @@ export default function ShopScreen() {
                 </Pressable>
               )}
             </View>
+            )
           }
           onEndReached={loadMore}
           onEndReachedThreshold={0.6}
