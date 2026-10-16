@@ -4,8 +4,10 @@ import { Image } from "expo-image";
 
 /**
  * Logoja e plotë (me moton) mbi gjithçka, sa hapet app-i. Splash-i i sistemit te
- * Android 12+ e pret ikonën në rreth, prandaj atje shfaqet vetëm shenja "b";
- * logoja e plotë del këtu, e mprehtë, dhe zbehet butë në çastin `until`
+ * Android 12+ e pret ikonën në rreth: aty tregonte shenjën "b" dhe pastaj vinte kjo
+ * logo, dy logo radhazi. Tani te Android splash-i i sistemit ka vetëm ngjyrën e
+ * sfondit (figurë e tejdukshme, app.json), dhe logoja del vetëm këtu: e mprehtë,
+ * dhe zbehet butë në çastin `until`
  * (ose pas 600 ms, nëse app-i u ngarkua më vonë se aq).
  * Te iOS ka të njëjtën figurë, madhësi dhe sfond si splash-i: kalimi s'duket.
  */

@@ -53,7 +53,7 @@
           "resizeMode": "contain",
           "backgroundColor": "#F3F3F1",
           "android": {
-            "image": "./assets/splash-android.png",
+            "image": "./assets/splash-android-blank.png",
             "imageWidth": 288,
             "resizeMode": "contain",
             "backgroundColor": "#F3F3F1"

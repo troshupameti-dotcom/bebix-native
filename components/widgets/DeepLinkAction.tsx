@@ -25,5 +25,7 @@ export function DeepLinkAction({ action, to }: { action: WidgetActionInput | nul
     };
   }, [key]);
 
-  return done ? <Redirect href={to} /> : <View className="flex-1 bg-cream" />;
+  // withAnchor: ekrani hapet me faqen kryesore të pjesës poshtë (p.sh. kreu nën Ushqyerjen), që "mbrapa" të ketë
+  // ku të kthehet. Më parë ekrani hapej i vetëm në stivë.
+  return done ? <Redirect href={to} withAnchor /> : <View className="flex-1 bg-cream" />;
 }

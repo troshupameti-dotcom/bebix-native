@@ -55,6 +55,10 @@ const stub = (name: string): ComponentType => function Screen() { return <Text>{
 const context: Record<string, unknown> = { _layout: Root, "(main)/_layout": Main };
 for (const s of ["baby", "shop", "community", "more"]) context[`(main)/${s}/_layout`] = require(`@/app/(main)/${s}/_layout`);
 for (const f of screenFiles) context[`(main)/${f}`] = stub(f);
+// Lidhjet e widget-it (bebix://log/feeding, …): ekranet e vërteta, që ridrejtojnë te ekrani përkatës.
+context["log/feeding"] = require("@/app/log/feeding");
+context["log/diaper"] = require("@/app/log/diaper");
+context["sleep/index"] = require("@/app/sleep/index");
 const ctx = getMockContext(context as Record<string, ComponentType>);
 
 /** Rruga e ekranit: "more/night-mode" → "/more/night-mode", "shop/[id]" → "/shop/1", "baby/index" → "/baby". */
@@ -196,5 +200,23 @@ describe("Cilësimet → Porositë → mbrapa → Produktet e ruajtura → mbrap
     // Faqet e hapura nga Cilësimet s'mbeten në stivën e Dyqanit: tab-i Dyqani hapet te fillimi i tij.
     tapTab("shop");
     expect(where()).toBe("/shop");
+  });
+});
+
+describe("hapur nga widget-i (bebix://…): “mbrapa” të çon te kreu, s'mbetet në vend (16 tetor)", () => {
+  it.each([
+    ["/log/feeding", "/baby/feeding"],
+    ["/log/diaper", "/baby/diaper"],
+    ["/sleep", "/baby/sleep"],
+  ])("%s → %s → mbrapa (butoni dhe Android-i) = kreu", (link, screen) => {
+    for (const goBack of [back, androidBack]) {
+      open(link);
+      step(() => {});
+      expect(where()).toBe(screen);
+      goBack();
+      expect(where()).toBe("/baby");
+      act(() => root?.unmount());
+      root = null;
+    }
   });
 });

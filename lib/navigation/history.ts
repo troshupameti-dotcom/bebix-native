@@ -39,9 +39,17 @@ export function noteBackMove(): void {
   pending = { kind: "back", at: Date.now() };
 }
 
+/**
+ * Lidhjet e widget-it / Shortcuts / NFC (`bebix://log/feeding`, `bebix://sleep`…): ekrane kalimtare që ridrejtojnë
+ * menjëherë te ekrani i vërtetë. S'janë vend ku kthehet përdoruesi: kur hynin në histori, "mbrapa" kthehej te lidhja,
+ * ajo ridrejtonte sërish te i njëjti ekran, dhe butoni dukej sikur s'bënte asgjë (16 tetor).
+ */
+const PASS_THROUGH = new Set(["log", "sleep"]);
+
 /** Thirret nga rrënja e app-it sa herë ndryshon rruga. */
 export function recordPath(path: string | null | undefined): void {
   if (!path) return;
+  if (PASS_THROUGH.has(sectionOf(path) ?? "")) return;
   // Shënimi i lëvizjes i përket kësaj thirrjeje, edhe kur rruga s'ndryshon: pas `rewindTo` historiku mbaron
   // tashmë te rruga ku kthehet përdoruesi, dhe pa këtë shënimi "kthim" mbetej i varur e ngjitej te lëvizja
   // e RADHËS (Cilësimet → Porositë → mbrapa → Produktet e ruajtura humbiste prej nga erdhi, 15 tetor).
