@@ -3,6 +3,8 @@
  * pa kufij është i përshtatshëm për të gjitha moshat. Filtri punon me grupmosha: produkti
  * shfaqet kur intervali i tij mbivendoset me grupin.
  */
+import { ageInMonths } from "@/lib/age/engine";
+
 export type AgeBand = { key: string; from: number; to: number };
 
 export const AGE_BANDS: AgeBand[] = [
@@ -25,14 +27,13 @@ export function bandForMonths(months: number | null): AgeBand | null {
   return AGE_BANDS.find((b) => months >= b.from && months < b.to) ?? null;
 }
 
-/** Muaj të plotë nga data e lindjes deri tani; null kur data mungon, është e pavlefshme ose në të ardhmen. */
+/**
+ * Muaj të plotë nga data e lindjes deri tani; null kur data mungon, është e pavlefshme ose në të ardhmen.
+ * Llogaritet te motori i moshës: "2026-06-04" lexohet si datë lokale (më parë si UTC, dhe në zonat në perëndim
+ * të UTC-së mosha dilte një muaj më shumë).
+ */
 export function monthsSince(dob: string | null | undefined, now: Date = new Date()): number | null {
-  if (!dob) return null;
-  const d = new Date(dob);
-  if (Number.isNaN(d.getTime()) || d.getTime() > now.getTime()) return null;
-  let months = (now.getFullYear() - d.getFullYear()) * 12 + (now.getMonth() - d.getMonth());
-  if (now.getDate() < d.getDate()) months -= 1;
-  return Math.max(0, months);
+  return ageInMonths(dob, now);
 }
 
 const UNIT: Record<Lang, { m: string; y: string }> = {

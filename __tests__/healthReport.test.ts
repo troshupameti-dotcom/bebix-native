@@ -2,15 +2,17 @@ import { ageText, buildHealthReportHtml } from "@/lib/healthReport";
 import { initialBabyState, type BabyModuleState } from "@/lib/state/babyTypes";
 import { emptyProfile } from "@/lib/state/types";
 
-const NOW = new Date("2026-10-06T10:00:00Z");
-const life = { createdAt: "2026-09-01T00:00:00Z", updatedAt: "2026-09-20T00:00:00Z", editCount: 0, deletedAt: null, archivedAt: null };
+// Datat si në app: mesnatë LOKALE (profili ruan datën e lindjes kështu), që testi të vlejë në çdo zonë kohore.
+const local = (y: number, m: number, d: number, h = 0) => new Date(y, m - 1, d, h).toISOString();
+const NOW = new Date(2026, 9, 6, 10);
+const life = { createdAt: "2026-09-01T00:00:00Z", updatedAt: "2026-09-20T12:00:00Z", editCount: 0, deletedAt: null, archivedAt: null };
 
 function baby(extra: Partial<BabyModuleState> = {}): BabyModuleState {
   return { ...initialBabyState, ...extra };
 }
 
 describe("raporti shëndetësor", () => {
-  const profile = { ...emptyProfile, babyName: "Arbi", babyGender: "boy" as const, babyDob: "2025-07-06T00:00:00Z", bloodType: "A+" as const, allergies: "Qumësht lope", pediatrician: "Dr. Elezi", medicalNotes: "Asnjë" };
+  const profile = { ...emptyProfile, babyName: "Arbi", babyGender: "boy" as const, babyDob: local(2025, 7, 6), bloodType: "A+" as const, allergies: "Qumësht lope", pediatrician: "Dr. Elezi", medicalNotes: "Asnjë" };
 
   it("ka profilin, alergjitë, gjininë, moshën e llogaritur dhe datën e gjenerimit", () => {
     const html = buildHealthReportHtml(profile, baby(), "sq", NOW);
@@ -20,12 +22,12 @@ describe("raporti shëndetësor", () => {
   });
 
   it("mosha ndjek datën e gjenerimit (nesër del e re)", () => {
-    expect(ageText("2025-07-06T00:00:00Z", new Date("2026-10-05T10:00:00Z"), "sq")).toBe("14 muajsh");
-    expect(ageText("2025-07-06T00:00:00Z", new Date("2026-10-06T10:00:00Z"), "sq")).toBe("15 muajsh");
-    expect(ageText("2026-10-01T00:00:00Z", NOW, "sq")).toBe("5 ditësh");
-    expect(ageText("2026-06-06T00:00:00Z", NOW, "en")).toBe("4 months old");
-    expect(ageText("2024-04-06T00:00:00Z", NOW, "sq")).toBe("2 vjeç dhe 6 muajsh");
-    expect(ageText("2024-10-06T00:00:00Z", NOW, "en")).toBe("2 years old");
+    expect(ageText(local(2025, 7, 6), new Date(2026, 9, 5, 10), "sq")).toBe("14 muajsh");
+    expect(ageText(local(2025, 7, 6), new Date(2026, 9, 6, 10), "sq")).toBe("15 muajsh");
+    expect(ageText(local(2026, 10, 1), NOW, "sq")).toBe("5 ditësh");
+    expect(ageText(local(2026, 6, 6), NOW, "en")).toBe("4 months old");
+    expect(ageText(local(2024, 4, 6), NOW, "sq")).toBe("2 vjeç dhe 6 muajsh");
+    expect(ageText(local(2024, 10, 6), NOW, "en")).toBe("2 years old");
     expect(ageText(null, NOW, "sq")).toBeNull();
     expect(ageText("2030-01-01T00:00:00Z", NOW, "sq")).toBeNull();
   });
