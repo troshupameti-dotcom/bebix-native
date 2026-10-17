@@ -75,3 +75,18 @@ export function getAgeGroupKey(child: ChildAgeInput | null | undefined, now: Dat
   const group = AGE_GROUPS.find(([from, to]) => months >= from && months < to);
   return group ? `age:${group[0]}-${group[1]}` : null;
 }
+
+/**
+ * Shtatzënia nga data e pritur e lindjes (280 ditë): java aktuale (1–42) dhe ditët deri në lindje (0 kur data kaloi).
+ * null pa datë.
+ */
+export function pregnancyProgress(dueDate: string | null | undefined, now: Date = new Date()): { week: number; daysLeft: number } | null {
+  const due = parseDate(dueDate);
+  if (!due) return null;
+  const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+  const target = new Date(due.getFullYear(), due.getMonth(), due.getDate());
+  const daysLeft = Math.round((target.getTime() - today.getTime()) / 86_400_000);
+  // Dita e shtatzënisë 1–7 = java 1, … dita 280 (data e pritur) = java 40; pas datës deri në 42.
+  const week = Math.min(42, Math.max(1, Math.floor((280 - daysLeft - 1) / 7) + 1));
+  return { week, daysLeft: Math.max(0, daysLeft) };
+}

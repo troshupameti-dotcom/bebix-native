@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { View, Text, KeyboardAvoidingView, Platform } from "react-native";
+import { View, Text, KeyboardAvoidingView, Platform, Pressable } from "react-native";
 import { router, useLocalSearchParams } from "expo-router";
 import { MotiView } from "moti";
 import { SafeAreaView } from "react-native-safe-area-context";
@@ -7,7 +7,7 @@ import { AuthInput } from "@/components/auth/AuthInput";
 import { PrimaryButton } from "@/components/auth/PrimaryButton";
 import { Icon } from "@/components/ui/Icon";
 import { useAppState } from "@/lib/state/AppStateContext";
-import { savePendingProfile, parseDobInput, formatDobInput } from "@/lib/babyProfile";
+import { savePendingProfile, parseDobInput, parseDueInput, formatDobInput } from "@/lib/babyProfile";
 import { useTranslation } from "@/lib/i18n/LanguageContext";
 import { BackButton, goBackOr } from "@/components/ui/BackButton";
 
@@ -23,6 +23,8 @@ export default function CreateProfileScreen() {
   const [parentName, setParentName] = useState("");
   const [dobInput, setDobInput] = useState("");
   const [error, setError] = useState<string | null>(null);
+  // "Pres bebe": në vend të datëlindjes pyetet data e pritur e lindjes (shtatzënia).
+  const [expecting, setExpecting] = useState(false);
 
   function goBack() {
     if (step === 0) {
@@ -55,7 +57,7 @@ export default function CreateProfileScreen() {
     }
 
     if (step === 2) {
-      if (dobInput.trim() && !parseDobInput(dobInput)) {
+      if (expecting ? !parseDueInput(dobInput) : dobInput.trim() && !parseDobInput(dobInput)) {
         setError(t("create_profile_error_dob"));
         return;
       }
@@ -64,13 +66,15 @@ export default function CreateProfileScreen() {
   }
 
   async function handleFinish() {
-    const babyDob = dobInput.trim() ? parseDobInput(dobInput) : null;
+    const babyDob = !expecting && dobInput.trim() ? parseDobInput(dobInput) : null;
+    const babyDueDate = expecting ? parseDueInput(dobInput) : null;
 
     updateProfile({ parentName: parentName.trim() });
     await savePendingProfile({
       parentName: parentName.trim(),
       babyName: babyName.trim(),
       babyDob,
+      babyDueDate,
     });
 
     router.push({
@@ -82,7 +86,7 @@ export default function CreateProfileScreen() {
   const stepTitles = [
     t("create_profile_step_baby_title"),
     t("create_profile_step_parent_title"),
-    t("create_profile_step_dob_title"),
+    expecting ? t("onb_due_title") : t("create_profile_step_dob_title"),
   ];
 
   return (
@@ -137,8 +141,29 @@ export default function CreateProfileScreen() {
                   />
                 )}
                 {step === 2 && (
+                  <View className="mb-5 flex-row rounded-2xl bg-cream-soft p-1" accessibilityRole="tablist">
+                    {[false, true].map((exp) => (
+                      <Pressable
+                        key={String(exp)}
+                        onPress={() => {
+                          setExpecting(exp);
+                          setDobInput("");
+                          setError(null);
+                        }}
+                        accessibilityRole="tab"
+                        accessibilityState={{ selected: expecting === exp }}
+                        className={`flex-1 items-center rounded-xl py-2.5 ${expecting === exp ? "bg-surface" : ""}`}
+                      >
+                        <Text className={`font-bodyMedium text-[13px] ${expecting === exp ? "text-ink" : "text-ink-faint"}`}>
+                          {t(exp ? "onb_kind_expecting" : "onb_kind_born")}
+                        </Text>
+                      </Pressable>
+                    ))}
+                  </View>
+                )}
+                {step === 2 && (
                   <AuthInput
-                    label={t("create_profile_dob_label")}
+                    label={t(expecting ? "onb_due_label" : "create_profile_dob_label")}
                     placeholder={t("create_profile_dob_ph")}
                     keyboardType="number-pad"
                     maxLength={10}

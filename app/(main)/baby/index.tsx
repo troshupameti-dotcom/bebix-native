@@ -36,6 +36,7 @@ import { PostpartumCard } from "@/components/parent/PostpartumCard";
 import { AgeGuideCard } from "@/components/baby/AgeGuideCard";
 import { ChildSwitcher } from "@/components/children/ChildSwitcher";
 import { ChildHome } from "@/components/home/ChildHome";
+import { PregnancyHome } from "@/components/home/PregnancyHome";
 import { useActiveChild } from "@/lib/age/useActiveChild";
 import { hasFeature, type Feature } from "@/lib/age/stageConfig";
 import { setNightOverride, useNightMode } from "@/lib/baby/nightMode";
@@ -742,6 +743,9 @@ export default function BabyProfileScreen() {
                 <Text className="font-body text-[14px] leading-5 text-ink-soft">{t("archive_banner", { name: babyName })}</Text>
               </View>
             ) : null}
+
+            {/* Shtatzënia: java dhe ditët deri në lindje; "Bebi lindi" e kalon te foshnja. */}
+            {ageInfo.stage === "pregnancy" ? <PregnancyHome dueDate={ageInfo.child.dueDate ?? null} babyName={profile.babyName} /> : null}
 
             {/* 3–12 vjeç: produkte për moshën, postime nga grupi i moshës, eksperti i ditës, vaksinat/kontrollet. */}
             {ageInfo.stage === "child" ? (

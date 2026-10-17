@@ -1,6 +1,6 @@
-import { useMemo } from "react";
+import { useEffect, useMemo } from "react";
 import { useAppState } from "@/lib/state/AppStateContext";
-import { useChildren } from "@/lib/children/store";
+import { loadChildrenStore, useChildren } from "@/lib/children/store";
 import { ageInMonths, getAgeGroupKey, getStage, type ChildAgeInput, type Stage } from "@/lib/age/engine";
 
 export type ActiveChildAge = {
@@ -17,6 +17,10 @@ export type ActiveChildAge = {
 export function useActiveChild(now?: Date): ActiveChildAge {
   const { state } = useAppState();
   const { mode, children, activeChildId } = useChildren();
+  // Fëmija aktiv i ruajtur në telefon dihet që në hapje (pa pritur sync-un), p.sh. shtatzënia pa rrjet.
+  useEffect(() => {
+    void loadChildrenStore();
+  }, []);
   const babyDob = state.profile.babyDob;
   const time = now?.getTime();
   return useMemo(() => {

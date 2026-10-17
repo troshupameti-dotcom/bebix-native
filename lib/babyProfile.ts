@@ -7,6 +7,8 @@ export type PendingProfile = {
   parentName: string;
   babyName: string;
   babyDob: string | null; // ISO date "YYYY-MM-DD", ose null nëse s'u dha
+  /** "Pres bebe": data e pritur e lindjes "YYYY-MM-DD" (pa datëlindje). */
+  babyDueDate?: string | null;
 };
 
 /**
@@ -55,6 +57,12 @@ export async function syncPendingProfileToSupabase(userId: string): Promise<void
     .maybeSingle();
   if (readError) return; // riprovohet në hyrjen tjetër
 
+  // Shtatzënia: fëmija i parë krijohet me datën e pritur (falas). Pa migrimin e fëmijëve, ose kur llogaria ka
+  // tashmë bebe, vazhdohet si më parë (vetëm emri).
+  if (pending.babyDueDate && !existing?.baby_dob && !existing?.baby_name) {
+    await supabase.rpc("add_child", { p_name: pending.babyName || null, p_birth_date: null, p_due_date: pending.babyDueDate });
+  }
+
   const { error } = await supabase.from("baby_profiles").upsert({
     user_id: userId,
     parent_name: existing?.parent_name || pending.parentName || null,
@@ -96,6 +104,23 @@ export function parseDobInput(value: string, now: Date = new Date()): string | n
   if (iso > localDateKey(now)) return null;
   if (year < now.getFullYear() - 18) return null;
   return iso;
+}
+
+/**
+ * Data e pritur e lindjes "DD.MM.VVVV" → "VVVV-MM-DD": nga 2 javë më parë (lindja vonohet) deri 10 muaj përpara.
+ * null kur s'është e vlefshme.
+ */
+export function parseDueInput(value: string, now: Date = new Date()): string | null {
+  const match = value.trim().match(/^(\d{1,2})\.(\d{1,2})\.(\d{4})$/);
+  if (!match) return null;
+  const [, dd, mm, yyyy] = match;
+  const d = new Date(Number(yyyy), Number(mm) - 1, Number(dd));
+  if (Number.isNaN(d.getTime()) || d.getDate() !== Number(dd) || d.getMonth() !== Number(mm) - 1) return null;
+  const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+  const min = new Date(today.getTime() - 14 * 86_400_000);
+  const max = new Date(today.getFullYear(), today.getMonth() + 10, today.getDate());
+  if (d < min || d > max) return null;
+  return localDateKey(d);
 }
 
 /** "YYYY-MM-DD" e datës LOKALE (jo UTC): 15 mars në orën 00:30 mbetet 15 mars. */
