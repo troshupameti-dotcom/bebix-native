@@ -23,7 +23,9 @@ import type { Brand } from "@/lib/homeContent";
  */
 const LOGO_W = 104;
 const LOGO_H = 52;
-const GAP = 4;
+// Negativ: logot kanë hapësirë të zbrazët brenda kanavacës 2:1, ndaj mbivendoset pak ajo pjesë transparente dhe
+// markat dalin më afër njëra-tjetrës pa u zvogëluar.
+const GAP = -16;
 const COLUMN = LOGO_W + GAP;
 /** Pikselë në sekondë: i ngadaltë, që logot të lexohen. */
 const SPEED = 28;

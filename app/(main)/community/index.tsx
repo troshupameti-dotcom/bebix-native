@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { View, Text, FlatList, RefreshControl, Pressable, TextInput, ActivityIndicator } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
-import { useRouter, useFocusEffect } from "expo-router";
+import { useRouter, useFocusEffect, useScrollToTop } from "expo-router";
 import { useAppState } from "@/lib/state/AppStateContext";
 import { useTranslation } from "@/lib/i18n/LanguageContext";
 import { Icon } from "@/components/ui/Icon";
@@ -62,6 +62,8 @@ export default function CommunityScreen() {
   const theme = useThemeColors();
   const specialties = useSpecialties();
   const listRef = useRef<FlatList<CommunityPost>>(null);
+  // Shtypja e tab-it kur je tashmë në të të çon në krye të faqes (si te Instagrami).
+  useScrollToTop(listRef);
 
   const [filters, setFiltersState] = useState<Filters>(NO_FILTERS);
   const { tab, topic, specialty, query } = filters;
@@ -158,12 +160,11 @@ export default function CommunityScreen() {
     [reload]
   );
 
-  // Feed-i sipas moshës: grupi i moshës së fëmijës aktiv. Hapet i pari derisa prindi të zgjedhë vetë një skedë;
-  // kur ndërrohet fëmija, kalon te grupi i tij. Pa grup (13+ vjeç, ose grupi s'ekziston në server): "Të gjitha".
+  // Feed-i sipas moshës: skeda e dytë, pas "Të gjitha" (që hapet e para). Kur ndërrohet fëmija, kalon te grupi i tij.
+  // Pa grup (13+ vjeç, ose grupi s'ekziston në server): skeda s'shfaqet.
   const { stage, ageGroupKey } = useActiveChild();
   const ageFeedKey = hasFeature(stage, "communityAgeFeed") ? ageGroupKey : null;
   const [ageGroup, setAgeGroup] = useState<CommunityGroup | null>(null);
-  const tabTouched = useRef(false);
   useEffect(() => {
     let alive = true;
     void (ageFeedKey ? fetchAgeGroup(ageFeedKey) : Promise.resolve(null))
@@ -173,7 +174,6 @@ export default function CommunityScreen() {
         setAgeGroup(g);
         const f = filtersRef.current;
         if (g && f.tab === "age" && f.ageGroupId !== g.id) changeFilters({ ageGroupId: g.id });
-        else if (g && f.tab === "all" && !tabTouched.current && !f.topic && !f.query) changeFilters({ tab: "age", ageGroupId: g.id });
         else if (!g && f.tab === "age") changeFilters({ tab: "all", ageGroupId: null });
       });
     return () => {
@@ -254,7 +254,6 @@ export default function CommunityScreen() {
   }, [reload]);
 
   function pickTab(next: FeedTab) {
-    tabTouched.current = true;
     if (next === tab) {
       listRef.current?.scrollToOffset({ offset: 0, animated: true });
       return;
@@ -290,8 +289,8 @@ export default function CommunityScreen() {
   }, [experts, specialties]);
 
   const tabs: { key: FeedTab; label: string }[] = [
-    ...(ageGroup ? [{ key: "age" as FeedTab, label: t("community_tab_age") }] : []),
     { key: "all", label: ageGroup ? t("community_tab_all") : t("community_tab_foryou") },
+    ...(ageGroup ? [{ key: "age" as FeedTab, label: t("community_tab_age") }] : []),
     { key: "following", label: t("community_tab_following") },
     { key: "experts", label: t("community_tab_experts") },
   ];

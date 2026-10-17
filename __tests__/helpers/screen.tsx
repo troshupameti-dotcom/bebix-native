@@ -106,6 +106,7 @@ jest.mock("expo-router", () => {
     useIsFocused: () => true,
     useNavigation: () => ({ setOptions: () => {}, addListener: () => () => {}, isFocused: () => true }),
     useFocusEffect: (cb: () => void | (() => void)) => React.useEffect(cb, [cb]),
+    useScrollToTop: () => {},
     Link: Stub,
     Redirect: () => null,
     Stack: Stub,

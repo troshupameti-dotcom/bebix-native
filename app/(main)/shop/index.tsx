@@ -2,7 +2,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { View, Text, FlatList, ScrollView, Pressable, TextInput, Image, ActivityIndicator, BackHandler } from "react-native";
 import { useContentWidth, gridColumns } from "@/lib/layout";
 import { SafeAreaView } from "react-native-safe-area-context";
-import { useRouter, useLocalSearchParams, useFocusEffect } from "expo-router";
+import { useRouter, useLocalSearchParams, useFocusEffect, useScrollToTop } from "expo-router";
 import { useAppState } from "@/lib/state/AppStateContext";
 import { useTranslation } from "@/lib/i18n/LanguageContext";
 import { Icon } from "@/components/ui/Icon";
@@ -104,6 +104,9 @@ export default function ShopScreen() {
   // Çdo ndryshim filtri nis një kërkesë; përgjigjet e vona nga filtrat e
   // mëparshëm duhen injoruar, përndryshe lista "kërcen" mbrapsht.
   const requestId = useRef(0);
+  // Shtypja e tab-it kur je tashmë në të të çon në krye të faqes (si te Instagrami).
+  const listRef = useRef<FlatList<Product>>(null);
+  useScrollToTop(listRef);
 
   const isFiltering = search.trim().length > 0 || category !== "all" || ageBand !== null;
 
@@ -232,10 +235,12 @@ export default function ShopScreen() {
                 accessibilityState={{ selected: isActive }}
                 className="w-[88px] items-center"
               >
+                {/* Korniza është gjithmonë aty (transparente kur s'është zgjedhur): kur hiqej/shtohej, Android-i e
+                    priste foton brenda kutisë me qoshe dhe fotoja s'dukej më pas zgjedhjes dhe heqjes së kategorisë. */}
                 <View
-                  className={`h-[76px] w-[76px] items-center justify-center overflow-hidden rounded-2xl ${
-                    isActive ? "border-2 border-ink bg-ink" : "bg-cream-soft"
-                  }`}
+                  className={`h-[76px] w-[76px] items-center justify-center overflow-hidden rounded-2xl border-2 ${
+                    isActive ? "border-ink" : "border-transparent"
+                  } ${photo ? "bg-cream-soft" : isActive ? "bg-ink" : "bg-cream-soft"}`}
                 >
                   {/* Foto e vërtetë kur ka; emoji kur s'ka; ikona si rezervë
                       e fundit. Kategoritë e reja nga paneli s'kanë foto në
@@ -246,7 +251,7 @@ export default function ShopScreen() {
                       merr mbushje shtese lart e poshte dhe glifi pritet kur
                       `lineHeight` eshte sa kutia. */}
                   {photo ? (
-                    <Image source={photo} style={{ width: "100%", height: "100%" }} resizeMode="cover" />
+                    <Image source={photo} style={{ width: 72, height: 72 }} resizeMode="cover" fadeDuration={0} />
                   ) : cat.emoji ? (
                     <Text
                       style={{
@@ -452,6 +457,7 @@ export default function ShopScreen() {
         </ScrollView>
       ) : (
         <FlatList
+          ref={listRef}
           // Ndryshimi i numrit të kolonave kërkon montim të ri të listës.
           key={columns}
           data={loading ? [] : items}

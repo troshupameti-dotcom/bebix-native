@@ -67,7 +67,7 @@ function Tile({ item, ratio, onPress }: { item: PostMedia; ratio: number; onPres
       <Image
         source={{ uri: item.url }}
         style={{ width: "100%", aspectRatio: ratio }}
-        className="rounded-xl bg-cream-soft"
+        className="rounded-2xl bg-cream-soft"
         resizeMode="cover"
       />
     </Pressable>

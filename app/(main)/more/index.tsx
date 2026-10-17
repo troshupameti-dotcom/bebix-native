@@ -1,12 +1,11 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { View, Text, ScrollView, Pressable, Image, Alert, TextInput } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
-import { useRouter } from "expo-router";
+import { useRouter, useScrollToTop } from "expo-router";
 import Constants from "expo-constants";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import {
-  Baby, Bell, Bookmark, ChevronRight, FileText, Gift, Globe, Heart, Info, LifeBuoy, LogOut, MoonStar, Package, Search, Sparkles,
-  Stethoscope, SunMoon, Trash, UserRound, Users, X, type LucideIcon,
+  Baby, Bell, Bookmark, ChevronRight, CloudMoon, Contrast, FileText, Gift, Heart, Info, Languages, LifeBuoy, LogOut, Package, Search, Sparkles, Stethoscope, Trash, UserRound, Users, X, type LucideIcon,
 } from "lucide-react-native";
 import { useAppState } from "@/lib/state/AppStateContext";
 import { useLanguage } from "@/lib/i18n/LanguageContext";
@@ -152,6 +151,9 @@ function ControlTile({
  */
 export default function MoreScreen() {
   const router = useRouter();
+  // Shtypja e tab-it kur je tashmë në të të çon në krye të faqes (si te Instagrami).
+  const scrollRef = useRef<ScrollView>(null);
+  useScrollToTop(scrollRef);
   const theme = useThemeColors();
   const { state, setDarkMode } = useAppState();
   const night = useNightMode();
@@ -211,7 +213,7 @@ export default function MoreScreen() {
           { key: "notifications", icon: Bell, color: C.red, label: t("notifications"), keywords: "njoftime kujtesa ore te qeta push reminders quiet", onPress: () => router.push("/more/notifications") },
           {
             key: "appearance",
-            icon: SunMoon,
+            icon: Contrast,
             color: C.blue,
             label: t("appearance"),
             keywords: "tema erret celet dark light theme",
@@ -220,7 +222,7 @@ export default function MoreScreen() {
           },
           {
             key: "night",
-            icon: MoonStar,
+            icon: CloudMoon,
             color: C.indigo,
             label: t("night_title"),
             keywords: "nate hene kuqe drite gjume ndricimi night red light",
@@ -229,7 +231,7 @@ export default function MoreScreen() {
           },
           {
             key: "language",
-            icon: Globe,
+            icon: Languages,
             color: C.gray,
             label: t("language"),
             keywords: "gjuha shqip anglisht language english albanian",
@@ -274,7 +276,7 @@ export default function MoreScreen() {
 
   return (
     <SafeAreaView className="flex-1 bg-cream" edges={["top"]}>
-      <ScrollView showsVerticalScrollIndicator={false} keyboardShouldPersistTaps="handled" contentContainerStyle={{ paddingBottom: 40 }}>
+      <ScrollView ref={scrollRef} showsVerticalScrollIndicator={false} keyboardShouldPersistTaps="handled" contentContainerStyle={{ paddingBottom: 40 }}>
         <Text accessibilityRole="header" className="mb-3 mt-2 px-5 font-display text-3xl text-ink">
           {t("nav_more")}
         </Text>
@@ -348,7 +350,7 @@ export default function MoreScreen() {
             {/* Qendra e kontrollit: tema, modaliteti i natës, gjuha. */}
             <View className="mx-4 mb-6 flex-row" style={{ gap: 12 }}>
               <ControlTile
-                icon={SunMoon}
+                icon={Contrast}
                 label={t("appearance")}
                 value={state.darkMode ? t("appearance_dark") : t("appearance_light")}
                 on={state.darkMode}
@@ -359,7 +361,7 @@ export default function MoreScreen() {
               {/* Modaliteti i natës ndizet menjëherë dhe hapet (më parë ndërronte vetëm orarin 22–06, ndaj ditën
                   dukej sikur s'bënte asgjë). */}
               <ControlTile
-                icon={MoonStar}
+                icon={CloudMoon}
                 label={t("night_title")}
                 value={night.active ? t("night_on") : t("night_off")}
                 on={night.active}

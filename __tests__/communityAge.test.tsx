@@ -33,15 +33,17 @@ beforeEach(() => {
 });
 
 describe("feed-i sipas moshës", () => {
-  it("fëmija 4 vjeç: skeda 'Për moshën' hapet e para, pastaj 'Të gjitha'", async () => {
+  it("fëmija 4 vjeç: 'Të gjitha' e para dhe e hapur, pastaj 'Për moshën'", async () => {
     await AsyncStorage.setItem("bebix_app_state_v3", JSON.stringify({ profile: { babyDob: monthsAgo(50) } }));
     const r = await renderScreen(<Community />);
     await settle();
     const texts = visibleText(r.root);
-    expect(texts.indexOf("Për moshën")).toBeLessThan(texts.indexOf("Të gjitha"));
-    expect(tab(r.root, "Për moshën").props.accessibilityState).toEqual({ selected: true });
-    // Pa postime ende: mesazh dhe rruga te të gjitha.
-    expect(texts).toContain("Ende s'ka postime për këtë moshë");
+    expect(texts.indexOf("Të gjitha")).toBeLessThan(texts.indexOf("Për moshën"));
+    expect(tab(r.root, "Të gjitha").props.accessibilityState).toEqual({ selected: true });
+    // Te "Për moshën", pa postime ende: mesazh dhe rruga te të gjitha.
+    await act(async () => { tab(r.root, "Për moshën").props.onPress(); });
+    await settle();
+    expect(visibleText(r.root)).toContain("Ende s'ka postime për këtë moshë");
     await act(async () => {
       r.root.findAll((n) => typeof n.props.onPress === "function" && visibleText(n).includes("Shiko të gjitha"))[0].props.onPress();
     });

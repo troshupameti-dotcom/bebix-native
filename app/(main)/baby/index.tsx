@@ -1,6 +1,6 @@
-import { useMemo, useState } from "react";
+import { useMemo, useRef, useState } from "react";
 import { View, Text, ScrollView, Pressable, Image, TextInput, Alert, Share } from "react-native";
-import { router } from "expo-router";
+import { router, useScrollToTop } from "expo-router";
 import { MotiView } from "moti";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { Icon, IconName } from "@/components/ui/Icon";
@@ -33,7 +33,6 @@ import { useHouseholdRole } from "@/lib/hooks/useHouseholdRole";
 import { NightMode } from "@/components/baby/NightMode";
 import { WhatsNewModal } from "@/components/WhatsNew";
 import { PostpartumCard } from "@/components/parent/PostpartumCard";
-import { AgeGuideCard } from "@/components/baby/AgeGuideCard";
 import { ChildSwitcher } from "@/components/children/ChildSwitcher";
 import { ChildHome } from "@/components/home/ChildHome";
 import { PregnancyHome } from "@/components/home/PregnancyHome";
@@ -148,6 +147,9 @@ export default function BabyProfileScreen() {
   const theme = useThemeColors();
 
   const [activeTab, setActiveTab] = useState<TabKey>("today");
+  // Shtypja e tab-it kur je tashmë në të të çon në krye të faqes (si te Instagrami).
+  const scrollRef = useRef<ScrollView>(null);
+  useScrollToTop(scrollRef);
   // Kreu sipas fazës së fëmijës aktiv (lib/age/stageConfig.ts): çka s'vlen për moshën, fshihet. Pa datë: si më parë.
   const ageInfo = useActiveChild();
   const can = (feature: Feature) => hasFeature(ageInfo.stage, feature);
@@ -707,7 +709,7 @@ export default function BabyProfileScreen() {
       </View>
       ) : null}
 
-      <ScrollView className="flex-1 px-5" contentContainerStyle={{ paddingBottom: 120 }} showsVerticalScrollIndicator={false}>
+      <ScrollView ref={scrollRef} className="flex-1 px-5" contentContainerStyle={{ paddingBottom: 120 }} showsVerticalScrollIndicator={false}>
         {tabNow === "today" && (
           <MotiView from={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ type: "timing", duration: 200 }}>
             {/* Hero — foto e madhe, jo ikonë e vogël. Kjo âsht qendra
@@ -758,8 +760,6 @@ export default function BabyProfileScreen() {
               />
             ) : null}
 
-            {/* Sipas moshës: zhvillimi, ushqimi, gjumi dhe vaksina e radhës; ndryshon vetë me muajt e bebit. */}
-            <AgeGuideCard babyDob={profile.babyDob} vaccines={active(state.baby.vaccines)} />
 
             {/* Për mamin: javët pas lindjes. ("Si je sot?" u hoq nga kreu më 15 tetor; mbetet te "Kujdesi për ty".) */}
             <PostpartumCard babyDob={profile.babyDob} relation={profile.relation} />

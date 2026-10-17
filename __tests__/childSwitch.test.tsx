@@ -7,6 +7,7 @@ import { Text, TextInput } from "react-native";
 import { act, type ReactTestInstance } from "react-test-renderer";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { ChildSwitcher } from "@/components/children/ChildSwitcher";
+import ChildrenScreen from "@/app/(main)/more/children";
 import { useBabyRecordsSync } from "@/lib/hooks/useBabyRecordsSync";
 import { useAppState } from "@/lib/state/AppStateContext";
 import { ChildError, type Child } from "@/lib/children/api";
@@ -140,8 +141,11 @@ describe("ndërrimi i fëmijës", () => {
   it("fëmija i dytë pa Premium: shtimi hap Premium-in", async () => {
     mockFetch.mockResolvedValue({ children: [KIDS[0]], isPremium: false });
     mockAdd.mockRejectedValue(new ChildError("PREMIUM_REQUIRED"));
-    const r = await renderScreen(<Harness />);
+    // Shtimi i fëmijës është te Cilësimet → Fëmijët (jo më te kreu).
+    const r = await renderScreen(<><Harness /><ChildrenScreen /></>);
     await settle();
+    // Me një fëmijë zgjedhësi lart s'shfaqet.
+    expect(r.root.findByType(ChildSwitcher).children).toHaveLength(0);
     await act(async () => { chip(r.root, "Shto fëmijë").props.onPress(); });
     const inputs = r.root.findAllByType(TextInput);
     await act(async () => {
