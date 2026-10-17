@@ -1,5 +1,5 @@
 import type { WidgetSnapshot } from "@/lib/widgets/snapshot";
-import { clockLabel, diaperLabel, feedingLabel, wt } from "@/lib/widgets/texts";
+import { clockLabel, diaperLabel, durationShort, feedingLabel, wt } from "@/lib/widgets/texts";
 
 /**
  * Të dhënat për widget-in dhe Live Activity të iPhone-it (expo-widgets).
@@ -13,7 +13,10 @@ export type IosWidgetProps = {
   feeding: { label: string; value: string; detail: string; since: string | null };
   diaper: { label: string; value: string; detail: string; since: string | null };
   sleep: { label: string; value: string; detail: string; since: string | null; asleep: boolean };
-  actions: { wet: string; dirty: string; sleep: string };
+  /** Butonat: "Ushqim" hap zgjedhjen e shpejtë; "Jashtëqitje" është forma e shkurtër për butonin e ngushtë. */
+  actions: { feed: string; wet: string; dirty: string; dirtyShort: string; sleep: string };
+  /** Pamja e madhe (iPad, widget-i i madh): "Sot" dhe përmbledhja e ditës; null kur s'ka të dhëna. */
+  today: { label: string; summary: string } | null;
 };
 
 export function buildIosWidgetProps(s: WidgetSnapshot, now: Date = new Date()): IosWidgetProps {
@@ -48,10 +51,22 @@ export function buildIosWidgetProps(s: WidgetSnapshot, now: Date = new Date()): 
       asleep: !!s.sleep,
     },
     actions: {
+      feed: wt(lang, "widget_feed_action"),
       wet: diaperLabel(lang, "wet"),
       dirty: diaperLabel(lang, "dirty"),
+      dirtyShort: wt(lang, "widget_dirty_short"),
       sleep: wt(lang, s.sleep ? "widget_sleep_end" : "widget_sleep_start"),
     },
+    today: s.today
+      ? {
+          label: wt(lang, "widget_today"),
+          summary: wt(lang, "widget_today_summary", {
+            f: String(s.today.feedings),
+            d: String(s.today.diapers),
+            s: durationShort(lang, s.today.sleepMin),
+          }),
+        }
+      : null,
   };
 }
 

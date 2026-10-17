@@ -51,7 +51,7 @@ Qëllimi: app-i që prindërit e hapin me qejf çdo ditë. Të ndihen prindër t
   - **Dil** e fik deri në 07:00.
   - Cilësimi: **Më shumë → Pamja → Modaliteti i natës automatikisht**.
 - **"U ruajt · Ndrysho · Fshi"** pas çdo shënimi: ushqyerje, pelenë, gjumë.
-- **Shortcuts në Android:** mbaj gishtin mbi ikonën: E lagët, Bajga, Gjumi, Ushqim.
+- **Shortcuts në Android:** mbaj gishtin mbi ikonën: Ushqim (gji majtas/djathtas, biberon, formulë, ushqim i ngurtë), Pelenë (e lagur, me jashtëqitje, të dyja), Gjumë, Pelenë e lagur.
 - **iPhone** (⏳ pret llogarinë Apple): widget-et (i vogël, i mesëm, ekrani i kyçur), **Live Activity / Dynamic Island** për timerin e gjumit dhe të gjirit, **Siri** ("Hey Siri, Bebix wet diaper"). Hapat janë te [WIDGETS.md](WIDGETS.md).
 
 ## Faza 5: Dyqani që të lexon mendjen

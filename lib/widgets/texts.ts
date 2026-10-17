@@ -34,3 +34,12 @@ export const feedingLabel = (lang: Language, type: FeedingType) => wt(lang, FEED
 
 const DIAPER_KEY: Record<DiaperType, TranslationKey> = { wet: "diaper_type_wet", dirty: "diaper_type_dirty", both: "diaper_type_both" };
 export const diaperLabel = (lang: Language, type: DiaperType) => wt(lang, DIAPER_KEY[type]);
+
+/** Kohëzgjatje e shkurtër pa Intl (headless): "45 min", "3 orë 10 min" / "3h 10m". */
+export function durationShort(lang: Language, minutes: number): string {
+  const m = Math.max(0, Math.round(minutes));
+  const h = Math.floor(m / 60);
+  const r = m % 60;
+  if (lang === "en") return h ? (r ? `${h}h ${r}m` : `${h}h`) : `${r}m`;
+  return h ? (r ? `${h} orë ${r} min` : `${h} orë`) : `${r} min`;
+}

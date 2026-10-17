@@ -1,9 +1,11 @@
 /**
- * Shortcuts të Android-it: mbaj gishtin mbi ikonën e Bebix → "E lagët",
- * "Bajga", "Gjumi", "Ushqim". Secili hap një lidhje bebix:// që e trajton
- * app-i (app/log/*, app/sleep/toggle) me të njëjtën radhë si widget-i — pa
- * dyfishim, edhe pa internet. Google Assistant i gjen me emër ("Hey Google,
- * Bebix E lagët") në pajisjet që e mbështesin.
+ * Shortcuts të Android-it: mbaj gishtin mbi ikonën e Bebix → "Ushqim",
+ * "Pelenë", "Gjumë", "Pelenë e lagur". Ushqimi dhe pelena hapin zgjedhjen e
+ * shpejtë (app/quick/*: gji majtas/djathtas, biberon, formulë, ushqim i ngurtë;
+ * e lagur, me jashtëqitje, të dyja); gjumi dhe pelena e lagur shënohen me një
+ * prekje (app/sleep/toggle, app/log/diaper) me të njëjtën radhë si widget-i —
+ * pa dyfishim, edhe pa internet. Google Assistant i gjen me emër në pajisjet
+ * që e mbështesin.
  *
  * Teksti: shqip si parazgjedhje (values/), anglisht kur telefoni është në
  * anglisht (values-en/). Skedarët kanë emër të vetin, që të mos prekin
@@ -14,10 +16,10 @@ const fs = require("fs");
 const path = require("path");
 
 const SHORTCUTS = [
-  { id: "diaper_wet", uri: "bebix://log/diaper?type=wet", sq: ["E lagët", "Pelenë e lagët"], en: ["Wet", "Wet diaper"] },
-  { id: "diaper_dirty", uri: "bebix://log/diaper?type=dirty", sq: ["Bajga", "Pelenë me bajga"], en: ["Dirty", "Dirty diaper"] },
-  { id: "sleep_toggle", uri: "bebix://sleep/toggle", sq: ["Gjumi", "Fle / U zgjua"], en: ["Sleep", "Sleep / Woke up"] },
-  { id: "feeding", uri: "bebix://log/feeding", sq: ["Ushqim", "Ushqeva"], en: ["Feeding", "Log a feeding"] },
+  { id: "feeding", uri: "bebix://quick/feeding", sq: ["Ushqim", "Shëno ushqimin"], en: ["Feeding", "Log a feeding"] },
+  { id: "diaper", uri: "bebix://quick/diaper", sq: ["Pelenë", "Shëno pelenën"], en: ["Diaper", "Log a diaper"] },
+  { id: "sleep_toggle", uri: "bebix://sleep/toggle", sq: ["Gjumë", "Fli / U zgjua"], en: ["Sleep", "Sleep / Woke up"] },
+  { id: "diaper_wet", uri: "bebix://log/diaper?type=wet", sq: ["E lagur", "Pelenë e lagur"], en: ["Wet", "Wet diaper"] },
 ];
 
 const esc = (s) => s.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/"/g, "&quot;").replace(/'/g, "\\'");

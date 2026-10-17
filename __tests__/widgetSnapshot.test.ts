@@ -82,7 +82,7 @@ describe("tekstet e widget-it", () => {
     expect(wt("en", "widget_sleep")).toBe("Sleep");
     expect(feedingLabel("sq", "breast")).toBe("Gji");
     expect(feedingLabel("en", "medicine")).toBe("Medicine");
-    expect(diaperLabel("sq", "dirty")).toBe("Bajga");
+    expect(diaperLabel("sq", "dirty")).toBe("Me jashtëqitje");
     expect(diaperLabel("en", "both")).toBe("Both");
   });
 

@@ -40,9 +40,9 @@ Hyr në llogari. App-i e shkruan pamjen e parë për widget-in. Pa këtë hap, w
 │ Bebix · Ana                             │
 │ ┌ Ushqimi ┐ ┌ Pelena ┐ ┌ Gjumi ────┐    │
 │ │ 14:05   │ │ 13:40  │ │ 12:10     │    │
-│ │ Biberon │ │ E lagët│ │ U zgjua   │    │
+│ │ Biberon │ │ E lagur│ │ U zgjua   │    │
 │ └─────────┘ └────────┘ └───────────┘    │
-│ [Ushqeva] [E lagët] [Bajga] [Fli]       │
+│ [Ushqeva] [E lagur] [Jashtëqitje] [Fli]       │
 └─────────────────────────────────────────┘
 ```
 
@@ -53,13 +53,13 @@ Hyr në llogari. App-i e shkruan pamjen e parë për widget-in. Pa këtë hap, w
 
 | # | Bëj këtë | Duhet të ndodhë |
 |---|---|---|
-| 1 | Prek **E lagët** | Pelena tregon orën e tanishme dhe "E lagët". App-i s'hapet. |
+| 1 | Prek **E lagur** | Pelena tregon orën e tanishme dhe "E lagur". App-i s'hapet. |
 | 2 | Hape Bebix → Pelenat | Shënimi është aty, me orën e prekjes (jo të hapjes). |
-| 3 | Prek **E lagët** 3 herë shpejt | Shënohet **një** herë. |
+| 3 | Prek **E lagur** 3 herë shpejt | Shënohet **një** herë. |
 | 4 | Prek **Fli** | Gjumi: "Po fle" me orën; butoni bëhet **U zgjua**. |
 | 5 | Prek **U zgjua** | Gjumi mbyllet; te app-i del me orën e saktë. |
-| 6 | Vendos **Airplane mode**, prek **Bajga** dhe **Fli** | Widget-i ndryshon menjëherë; kur hapet app-i, shënimet janë aty. Sync-u shkon kur kthehet interneti. |
-| 7 | Mbylle app-in krejt (hiqe nga të fundit), prek **E lagët** | Ruhet; del te app-i herën tjetër që e hap. |
+| 6 | Vendos **Airplane mode**, prek **Jashtëqitje** dhe **Fli** | Widget-i ndryshon menjëherë; kur hapet app-i, shënimet janë aty. Sync-u shkon kur kthehet interneti. |
+| 7 | Mbylle app-in krejt (hiqe nga të fundit), prek **E lagur** | Ruhet; del te app-i herën tjetër që e hap. |
 | 8 | Prek **Ushqeva** | Hapet Ushqyerja me "Ushqeva tani" gati. |
 | 9 | Nis timerin e gjirit në app | Widget-i: Ushqimi → "Gji · po vazhdon". |
 | 10 | Shto pelenë **brenda** app-it | Widget-i rifreskohet vetë brenda pak sekondash. |
@@ -94,15 +94,15 @@ adb shell am start -a android.intent.action.VIEW -d "bebix://log/diaper?type=wet
 
 ## b) Shortcuts në Android dhe modaliteti i natës (provohen tani)
 
-**Shortcuts:** mbaj gishtin mbi ikonën e Bebix. Dalin **E lagët**, **Bajga**, **Gjumi** dhe **Ushqim**.
+**Shortcuts:** mbaj gishtin mbi ikonën e Bebix. Dalin **Ushqim** dhe **Pelenë** (hapin zgjedhjen e shpejtë), **Gjumë** dhe **Pelenë e lagur** (shënohen me një prekje).
 - Mund t'i tërheqësh edhe si ikona më vete në ekranin kryesor.
 - Shënojnë njësoj si widget-i: me orën e prekjes, pa dyfishim, edhe pa internet.
-- Google Assistant: "Hey Google, hap Bebix" punon kudo. Thirrja e një shortcut-i me emër ("Hey Google, Bebix E lagët") varet nga telefoni dhe gjuha. Shqipja s'mbështetet nga Assistant-i, ndaj në anglisht përdor emrat "Wet", "Dirty", "Sleep".
+- Google Assistant: "Hey Google, hap Bebix" punon kudo. Thirrja e një shortcut-i me emër ("Hey Google, Bebix E lagur") varet nga telefoni dhe gjuha. Shqipja s'mbështetet nga Assistant-i, ndaj në anglisht përdor emrat "Wet", "Dirty", "Sleep".
 
 **Modaliteti i natës:**
 - Ndizet vetë **22:00–06:00**. E fik ose e ndez te Më shumë → Pamja → "Modaliteti i natës automatikisht".
 - E ndez edhe me **🌙** lart te faqja e bebit.
-- Ekrani bëhet shumë i errët, me ngjyrë të ngrohtë, pa animacione, me 4 butona të mëdhenj poshtë: Ushqim, E lagët, Bajga, Fli/U zgjua.
+- Ekrani bëhet shumë i errët, me ngjyrë të ngrohtë, pa animacione, me 4 butona të mëdhenj poshtë: Ushqim, E lagur, Jashtëqitje, Fli/U zgjua.
 - Butoni i ushqimit ndjek llojin e fundit: gjiri nis/ndal timerin, biberoni ruan sasinë e fundit.
 - Pas çdo prekjeje: dridhje + "✓ U ruajt · Anulo".
 - **Dil** e fik deri në mëngjes (07:00).
@@ -116,7 +116,7 @@ adb shell am start -a android.intent.action.VIEW -d "bebix://log/diaper?type=wet
 Kodi i iPhone-it është **i shkruar dhe gati për build**. S'është provuar ende, sepse pa llogari Apple s'bëhet build për iOS.
 
 Çfarë përmban:
-- **Widget-et** (`expo-widgets`, libraria zyrtare e Expo SDK 57): i vogël, i mesëm (me lidhjet E lagët / Bajga / Gjumi) dhe tre për ekranin e kyçur. Ndjekin temën e errët/çelët dhe gjuhën e app-it.
+- **Widget-et** (`expo-widgets`, libraria zyrtare e Expo SDK 57): i vogël, i mesëm (me lidhjet E lagur / Jashtëqitje / Gjumi) dhe tre për ekranin e kyçur. Ndjekin temën e errët/çelët dhe gjuhën e app-it.
 - **Live Activity / Dynamic Island:** kur nis gjumi ose timeri i gjirit, kohëmatësi numëron vetë në ekranin e kyçur dhe në Dynamic Island. Mbyllet vetë kur mbaron.
 - **Siri / Shortcuts:** "Hey Siri, log a wet diaper in Bebix", "Bebix dirty diaper", "Bebix sleep", "Log a feeding in Bebix". Siri s'flet shqip, ndaj frazat janë në anglisht. Në app-in Shortcuts mund t'i riemërtosh si të duash.
 - App Group: `group.com.bebix.app`; identifikuesi i widget-it: `com.bebix.app.widgets`.

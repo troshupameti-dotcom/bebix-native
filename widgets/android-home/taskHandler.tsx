@@ -5,7 +5,7 @@ import { applyPending, DIAPER_TYPES } from "@/lib/widgets/queue";
 import { loadQueue, loadSnapshot, pushAction } from "@/lib/widgets/store";
 import type { WidgetSnapshot } from "@/lib/widgets/snapshot";
 import type { DiaperType } from "@/lib/state/babyTypes";
-import { renderBebixWidget, WIDGET_NAME } from "./BebixWidget";
+import { renderBebixWidget, WIDGET_NAMES } from "./BebixWidget";
 
 const LANGUAGE_KEY = "bebix_language_v1";
 
@@ -39,14 +39,16 @@ export async function widgetTaskHandler(props: WidgetTaskHandlerProps) {
   }
 
   const { snapshot, lang } = await currentView();
-  renderWidget(renderBebixWidget(snapshot, { lang, heightDp: widgetInfo.height }));
+  renderWidget(renderBebixWidget(snapshot, { lang, widthDp: widgetInfo.width, heightDp: widgetInfo.height }));
 }
 
 /** Nga app-i: rivizato çdo widget Bebix në ekranin kryesor me pamjen e re. */
 export async function refreshAndroidWidgets(): Promise<void> {
   const { snapshot, lang } = await currentView();
-  await requestWidgetUpdate({
-    widgetName: WIDGET_NAME,
-    renderWidget: (info) => renderBebixWidget(snapshot, { lang, heightDp: info.height }),
-  });
+  for (const widgetName of WIDGET_NAMES) {
+    await requestWidgetUpdate({
+      widgetName,
+      renderWidget: (info) => renderBebixWidget(snapshot, { lang, widthDp: info.width, heightDp: info.height }),
+    });
+  }
 }

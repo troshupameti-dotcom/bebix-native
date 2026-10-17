@@ -48,7 +48,10 @@ describe("iPhone: widget-i dhe Live Activity", () => {
     expect(p.title).toBe("Bebix · Ana");
     expect(p.feeding).toMatchObject({ label: "Ushqimi", value: "12:00", detail: "Tjetri ~15:00" });
     expect(p.diaper.value).toBe("Ende asgjë");
-    expect(p.actions).toEqual({ wet: "E lagët", dirty: "Bajga", sleep: "Fli" });
+    expect(p.actions).toEqual({ feed: "Ushqim", wet: "E lagur", dirty: "Me jashtëqitje", dirtyShort: "Jashtëqitje", sleep: "Fli" });
+    expect(p.today).toBeNull();
+    const withToday = buildIosWidgetProps(snap({ today: { feedings: 6, diapers: 5, sleepMin: 45 } }), now);
+    expect(withToday.today).toEqual({ label: "Sot", summary: "6 ushqime · 5 pelena · 45 min gjumë" });
     const en = buildIosWidgetProps(snap({ lang: "en", sleep: { id: "s", since: at(13).toISOString() } }), now);
     expect(en.sleep).toMatchObject({ detail: "Asleep", asleep: true });
     expect(en.actions.sleep).toBe("Woke up");
@@ -67,17 +70,19 @@ describe("iPhone: widget-i dhe Live Activity", () => {
 });
 
 describe("shortcuts e Android-it", () => {
-  it("katër shortcuts me lidhjet bebix:// dhe tekste sq/en", () => {
+  it("katër shortcuts: ushqimi dhe pelena hapin zgjedhjen, gjumi dhe pelena e lagur shënohen me një prekje", () => {
     expect(shortcuts.SHORTCUTS.map((s) => s.uri)).toEqual([
-      "bebix://log/diaper?type=wet",
-      "bebix://log/diaper?type=dirty",
+      "bebix://quick/feeding",
+      "bebix://quick/diaper",
       "bebix://sleep/toggle",
-      "bebix://log/feeding",
+      "bebix://log/diaper?type=wet",
     ]);
     const xml = shortcuts.shortcutsXml("com.bebix.app");
     expect(xml).toContain('android:targetClass="com.bebix.app.MainActivity"');
     expect(xml.match(/<shortcut\b/g)).toHaveLength(4);
-    expect(shortcuts.stringsXml("sq")).toContain(">E lagët<");
+    expect(shortcuts.stringsXml("sq")).toContain(">Ushqim<");
+    expect(shortcuts.stringsXml("sq")).toContain(">Pelenë e lagur<");
+    expect(shortcuts.stringsXml("sq")).not.toMatch(/Bajga|E lagët/);
     expect(shortcuts.stringsXml("en")).toContain(">Wet diaper<");
   });
 });

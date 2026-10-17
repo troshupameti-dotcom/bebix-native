@@ -81,9 +81,24 @@
               "minHeight": "110dp",
               "targetCellWidth": 4,
               "targetCellHeight": 2,
-              "maxResizeWidth": "420dp",
+              "maxResizeWidth": "720dp",
+              "maxResizeHeight": "480dp",
+              "resizeMode": "horizontal|vertical",
+              "previewImage": "./assets/widgets/preview-quick.png",
+              "updatePeriodMillis": 1800000
+            },
+            {
+              "name": "BebixMini",
+              "label": "Bebix i vogël",
+              "description": "Orët e ushqimit, pelenës dhe gjumit",
+              "minWidth": "110dp",
+              "minHeight": "110dp",
+              "targetCellWidth": 2,
+              "targetCellHeight": 2,
+              "maxResizeWidth": "220dp",
               "maxResizeHeight": "220dp",
               "resizeMode": "horizontal|vertical",
+              "previewImage": "./assets/widgets/preview-mini.png",
               "updatePeriodMillis": 1800000
             }
           ]
@@ -104,6 +119,8 @@
                 "supportedFamilies": [
                   "systemSmall",
                   "systemMedium",
+                  "systemLarge",
+                  "systemExtraLarge",
                   "accessoryRectangular",
                   "accessoryCircular",
                   "accessoryInline"

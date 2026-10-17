@@ -22,6 +22,8 @@ export type WidgetSnapshot = {
   breastSince: string | null;
   /** Mesi i dritares së ushqimit tjetër (lib/baby/predictions.ts); mungon te pamjet e vjetra. */
   nextFeedingAt?: string | null;
+  /** Sot (nga mesnata lokale): për widget-et e mëdha. Mungon te pamjet e vjetra. */
+  today?: { feedings: number; diapers: number; sleepMin: number };
   updatedAt: string;
 };
 
@@ -42,6 +44,28 @@ function latestBy<T>(list: T[], at: (e: T) => string | null): T | null {
   return best;
 }
 
+/** Ushqimet e vërteta: ilaçet dhe uji s'janë "ushqimi i fundit". */
+const isMeal = (f: FeedingEntry) => f.type !== "medicine" && f.type !== "water";
+
+function todayStats(input: { feedingLog: FeedingEntry[]; diaperLog: DiaperEntry[]; sleepLog: SleepEntry[]; now: Date }) {
+  const start = new Date(input.now.getFullYear(), input.now.getMonth(), input.now.getDate()).getTime();
+  const end = input.now.getTime();
+  const inToday = (iso: string) => {
+    const t = new Date(iso).getTime();
+    return t >= start && t <= end;
+  };
+  const sleepMs = visible(input.sleepLog).reduce((sum, s) => {
+    const a = Math.max(new Date(s.startAt).getTime(), start);
+    const b = Math.min(s.endAt ? new Date(s.endAt).getTime() : end, end);
+    return Number.isFinite(a) && Number.isFinite(b) && b > a ? sum + (b - a) : sum;
+  }, 0);
+  return {
+    feedings: visible(input.feedingLog).filter((f) => isMeal(f) && inToday(f.at)).length,
+    diapers: visible(input.diaperLog).filter((d) => inToday(d.at)).length,
+    sleepMin: Math.round(sleepMs / 60_000),
+  };
+}
+
 export function buildSnapshot(input: {
   lang: Language;
   babyName: string | null;
@@ -51,7 +75,8 @@ export function buildSnapshot(input: {
   breastTimer: BreastTimer | null;
   now: Date;
 }): WidgetSnapshot {
-  const feeding = latestBy(visible(input.feedingLog), (e) => e.at);
+  // Ilaçet dhe uji s'janë "ushqimi i fundit": më parë widget-i tregonte ilaçin si ushqimin e fundit.
+  const feeding = latestBy(visible(input.feedingLog).filter(isMeal), (e) => e.at);
   const diaper = latestBy(visible(input.diaperLog), (e) => e.at);
   const sleeps = visible(input.sleepLog);
   const running = latestBy(sleeps.filter((s) => !s.endAt), (s) => s.startAt);
@@ -66,6 +91,7 @@ export function buildSnapshot(input: {
     lastWakeAt: lastEnded?.endAt ?? null,
     breastSince: input.breastTimer?.startedAt ?? null,
     nextFeedingAt: predictNextFeeding(input.feedingLog, input.now)?.at ?? null,
+    today: todayStats(input),
     updatedAt: input.now.toISOString(),
   };
 }
