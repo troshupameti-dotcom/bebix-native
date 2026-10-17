@@ -47,6 +47,11 @@ type Input = {
   t: T;
   lang: "sq" | "en";
   now?: Date;
+  /**
+   * A ka kuptim kujdesi i përditshëm (ushqyerja, gjumi, pelenat) për moshën e fëmijës aktiv (sistemi i moshës).
+   * 3–12 vjeç dhe shtatzënia: jo. Parazgjedhja: po.
+   */
+  trackers?: boolean;
 };
 
 /**
@@ -56,7 +61,7 @@ type Input = {
  * Respekton cilësimet te Më shumë → Njoftimet (vaksina, ushqyerje, gjumë).
  * Pelenat s'kanë cilësim të vetin dhe dalin gjithmonë.
  */
-export function buildInbox({ baby, prefs, t, lang, now = new Date() }: Input): InboxItem[] {
+export function buildInbox({ baby, prefs, t, lang, now = new Date(), trackers = true }: Input): InboxItem[] {
   const items: InboxItem[] = [];
   const nowMs = now.getTime();
 
@@ -105,7 +110,7 @@ export function buildInbox({ baby, prefs, t, lang, now = new Date() }: Input): I
   }
 
   // ---- Ushqyerja (ilaçet s'numërohen si ushqyerje) ----
-  if (isNotificationEnabled(prefs, "baby_feeding")) {
+  if (trackers && isNotificationEnabled(prefs, "baby_feeding")) {
     const last = active(baby.feedingLog).find((f) => f.type !== "medicine");
     if (last) {
       const hours = Math.floor((nowMs - new Date(last.at).getTime()) / HOUR);
@@ -124,7 +129,7 @@ export function buildInbox({ baby, prefs, t, lang, now = new Date() }: Input): I
   }
 
   // ---- Gjumi: sa kohë zgjuar që nga gjumi i fundit i mbaruar ----
-  if (isNotificationEnabled(prefs, "baby_sleep")) {
+  if (trackers && isNotificationEnabled(prefs, "baby_sleep")) {
     const lastSleep = active(baby.sleepLog)[0];
     if (lastSleep?.endAt) {
       const hours = Math.floor((nowMs - new Date(lastSleep.endAt).getTime()) / HOUR);
@@ -143,7 +148,7 @@ export function buildInbox({ baby, prefs, t, lang, now = new Date() }: Input): I
   }
 
   // ---- Pelenat ----
-  const lastDiaper = active(baby.diaperLog)[0];
+  const lastDiaper = trackers ? active(baby.diaperLog)[0] : undefined;
   if (lastDiaper) {
     const hours = Math.floor((nowMs - new Date(lastDiaper.at).getTime()) / HOUR);
     if (hours >= prefs.diaperGapH) {

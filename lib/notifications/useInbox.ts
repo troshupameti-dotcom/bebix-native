@@ -2,6 +2,8 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import { useAppState } from "@/lib/state/AppStateContext";
 import { useLanguage } from "@/lib/i18n/LanguageContext";
 import { buildInbox, type InboxItem } from "@/lib/notifications/inbox";
+import { useActiveChild } from "@/lib/age/useActiveChild";
+import { hasFeature } from "@/lib/age/stageConfig";
 
 export type InboxEntry = InboxItem & { read: boolean };
 
@@ -24,9 +26,12 @@ export function useInbox() {
     return () => clearInterval(id);
   }, []);
 
+  // Vetëm kujtesat që kanë kuptim për moshën e fëmijës aktiv (p.sh. pa ushqyerje/pelena për 3–12 vjeç).
+  const { stage } = useActiveChild();
+  const trackers = hasFeature(stage, "trackers");
   const items = useMemo(
-    () => buildInbox({ baby: state.baby, prefs: state.notificationPrefs, t, lang: language, now }),
-    [state.baby, state.notificationPrefs, t, language, now]
+    () => buildInbox({ baby: state.baby, prefs: state.notificationPrefs, t, lang: language, now, trackers }),
+    [state.baby, state.notificationPrefs, t, language, now, trackers]
   );
 
   const read = useMemo(() => new Set(state.readNotificationIds), [state.readNotificationIds]);

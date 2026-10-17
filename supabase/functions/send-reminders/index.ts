@@ -82,6 +82,53 @@ async function lastByUser(kind: string, withinHours: number): Promise<Map<string
   return map;
 }
 
+// --- Sistemi i moshes: nje kujtese per cdo FEMIJE, vetem per kush e ka aktiv ---
+
+type ChildRow = Row & { baby_id: string | null };
+
+/**
+ * Shenimi i fundit per cdo femije (migrimi 20261021090300). Pa migrimin: si me pare,
+ * nje per familje (`perChild: false`).
+ */
+async function latestRecords(kind: string, withinHours: number): Promise<{ rows: ChildRow[]; perChild: boolean }> {
+  const { data, error } = await supabase.rpc("latest_baby_record_per_child", {
+    p_kind: kind,
+    p_since: new Date(Date.now() - withinHours * 3600000).toISOString(),
+  });
+  if (!error) return { rows: ((data ?? []) as Omit<ChildRow, "kind">[]).map((r) => ({ ...r, kind })), perChild: true };
+  const legacy = await lastByUser(kind, withinHours);
+  return { rows: [...legacy.values()].map((r) => ({ ...r, baby_id: null })), perChild: false };
+}
+
+/**
+ * Ushqyerja, pelenat dhe gjumi kane kuptim vetem 0-35 muaj (si lib/age/stageConfig.ts: "trackers").
+ * Shtatzenia dhe 3-12 vjec: jo. Pa date fare: po (si me pare).
+ */
+export function careRemindersAllowed(birthDate: string | null, dueDate: string | null, now: Date = new Date()): boolean {
+  if (!birthDate) return !dueDate;
+  const [y, m, d] = birthDate.slice(0, 10).split("-").map(Number);
+  if (!y || !m || !d) return true;
+  let months = (now.getFullYear() - y) * 12 + (now.getMonth() + 1 - m);
+  if (now.getDate() < d) months -= 1;
+  return months < 36;
+}
+
+/** Femija aktiv -> marresit (pronari/anetaret qe e kane aktiv), vetem kur mosha i lejon kujtesat. null = s'ka migrim. */
+async function recipientsByChild(ownerIds: string[]): Promise<Map<string, string[]> | null> {
+  if (ownerIds.length === 0) return new Map();
+  const { data, error } = await supabase.rpc("reminder_recipients", { p_owner_ids: ownerIds });
+  if (error) {
+    console.log("reminder_recipients:", error.message);
+    return null;
+  }
+  const map = new Map<string, string[]>();
+  for (const r of (data ?? []) as { user_id: string; child_id: string | null; birth_date: string | null; due_date: string | null }[]) {
+    if (!r.child_id || !careRemindersAllowed(r.birth_date, r.due_date)) continue;
+    map.set(r.child_id, [...(map.get(r.child_id) ?? []), r.user_id]);
+  }
+  return map;
+}
+
 /** Pas sa oresh i kujtohet secilit prind ushqyerja dhe pelena. */
 async function gapSettings(userIds: string[]): Promise<Map<string, { feeding: number; diaper: number }>> {
   const map = new Map<string, { feeding: number; diaper: number }>();
@@ -150,18 +197,23 @@ serve(async (req) => {
   // =============== BOSHLLEQET ===============
   // Kujtesat dalin vetem brenda 24 oresh (gjumi: nga fillimi i tij, qe
   // zgjimi te bjere ende brenda 12 oreve).
-  const [feedings, diapers, sleeps] = await Promise.all([
-    lastByUser("feeding", 24),
-    lastByUser("diaper", 24),
-    lastByUser("sleep", 36),
+  const [feedingRes, diaperRes, sleepRes] = await Promise.all([
+    latestRecords("feeding", 24),
+    latestRecords("diaper", 24),
+    latestRecords("sleep", 36),
   ]);
-  const household = await householdOf([...new Set([...feedings.keys(), ...diapers.keys(), ...sleeps.keys()])]);
+  const owners = [...new Set([...feedingRes.rows, ...diaperRes.rows, ...sleepRes.rows].map((r) => r.user_id))];
+  const household = await householdOf(owners);
+  // Disa femije: kujtesa e nje femije shkon vetem te kush e ka ate aktiv, dhe vetem kur mosha e lejon.
+  const byChild = feedingRes.perChild && diaperRes.perChild && sleepRes.perChild ? await recipientsByChild(owners) : null;
+  const targets = (row: ChildRow): string[] =>
+    byChild && row.baby_id ? byChild.get(row.baby_id) ?? [] : household.get(row.user_id) ?? [row.user_id];
   const recipients = [...new Set([...household.values()].flat())];
   const gaps = await gapSettings(recipients);
 
-  for (const [ownerId, row] of feedings) {
+  for (const row of feedingRes.rows) {
     const gap = hoursSince(row.occurred_at);
-    for (const userId of household.get(ownerId) ?? [ownerId]) {
+    for (const userId of targets(row)) {
       // Secili prind me pragun e vet (cilesimet jane per llogari).
       if (gap >= (gaps.get(userId)?.feeding ?? DEFAULT_FEEDING_GAP_H) && gap < 24) {
         // Dedupe mbi regjistrimin e fundit: nje kujtese per boshllek, jo nje
@@ -174,9 +226,9 @@ serve(async (req) => {
     }
   }
 
-  for (const [ownerId, row] of diapers) {
+  for (const row of diaperRes.rows) {
     const gap = hoursSince(row.occurred_at);
-    for (const userId of household.get(ownerId) ?? [ownerId]) {
+    for (const userId of targets(row)) {
       if (gap >= (gaps.get(userId)?.diaper ?? DEFAULT_DIAPER_GAP_H) && gap < 24) {
         await enqueue(userId, "baby_diaper", "Pelena",
           `Kane kaluar ${Math.floor(gap)} ore nga pelena e fundit.`,
@@ -186,12 +238,12 @@ serve(async (req) => {
     }
   }
 
-  for (const [ownerId, row] of sleeps) {
+  for (const row of sleepRes.rows) {
     const endAt = row.payload?.endAt;
     if (typeof endAt !== "string") continue; // ende duke fjetur
     const awake = hoursSince(endAt);
     if (awake >= AWAKE_GAP_H && awake < 12) {
-      for (const userId of household.get(ownerId) ?? [ownerId]) {
+      for (const userId of targets(row)) {
         await enqueue(userId, "baby_sleep", "Koha e gjumit?",
           `Bebi eshte zgjuar prej ${Math.floor(awake)} oresh.`,
           { type: "sleep" }, `sleep:${row.id}`, 90);

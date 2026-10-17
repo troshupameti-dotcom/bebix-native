@@ -35,6 +35,9 @@ import { WhatsNewModal } from "@/components/WhatsNew";
 import { PostpartumCard } from "@/components/parent/PostpartumCard";
 import { AgeGuideCard } from "@/components/baby/AgeGuideCard";
 import { ChildSwitcher } from "@/components/children/ChildSwitcher";
+import { ChildHome } from "@/components/home/ChildHome";
+import { useActiveChild } from "@/lib/age/useActiveChild";
+import { hasFeature, type Feature } from "@/lib/age/stageConfig";
 import { setNightOverride, useNightMode } from "@/lib/baby/nightMode";
 import { SyncBadge } from "@/components/baby/SyncBadge";
 import { DayClock } from "@/components/baby/DayClock";
@@ -144,6 +147,12 @@ export default function BabyProfileScreen() {
   const theme = useThemeColors();
 
   const [activeTab, setActiveTab] = useState<TabKey>("today");
+  // Kreu sipas fazës së fëmijës aktiv (lib/age/stageConfig.ts): çka s'vlen për moshën, fshihet. Pa datë: si më parë.
+  const ageInfo = useActiveChild();
+  const can = (feature: Feature) => hasFeature(ageInfo.stage, feature);
+  const trackers = can("trackers");
+  const visibleTabs = trackers ? TABS : (["today"] as const);
+  const tabNow: TabKey = trackers ? activeTab : "today";
 
   // Ritmi i dites llogaritet nje here per render: tre lista te njejta
   // perdoren nga tri pamje.
@@ -663,10 +672,11 @@ export default function BabyProfileScreen() {
       {/* Fëmija aktiv: vendos gjithçka më poshtë (shfaqet vetëm kur serveri ka sistemin e fëmijëve). */}
       <ChildSwitcher />
 
-      {/* Segmented tab control — tash vetëm 2 tabe */}
+      {/* Segmented tab control — tash vetëm 2 tabe ("Ditari" vetëm kur mosha ka trackers) */}
+      {visibleTabs.length > 1 ? (
       <View className="mx-5 mb-2 flex-row rounded-2xl bg-cream-soft p-1">
-        {TABS.map((tab) => {
-          const isActive = activeTab === tab;
+        {visibleTabs.map((tab) => {
+          const isActive = tabNow === tab;
           return (
             <Pressable
               key={tab}
@@ -694,9 +704,10 @@ export default function BabyProfileScreen() {
           );
         })}
       </View>
+      ) : null}
 
       <ScrollView className="flex-1 px-5" contentContainerStyle={{ paddingBottom: 120 }} showsVerticalScrollIndicator={false}>
-        {activeTab === "today" && (
+        {tabNow === "today" && (
           <MotiView from={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ type: "timing", duration: 200 }}>
             {/* Hero — foto e madhe, jo ikonë e vogël. Kjo âsht qendra
                 emocionale e app-it, duhet me u ndje si e tillë. */}
@@ -723,7 +734,25 @@ export default function BabyProfileScreen() {
             {/* Gjendja e castit dhe tre veprimet e perditshme — kjo pjese
                 vinte nga faqja e vjeter kryesore, ku rrinte nje tab larg
                 nga bebi dhe e perzier me produkte. */}
-            <NowCard status={status} onToggleSleep={toggleSleep} />
+            {trackers ? <NowCard status={status} onToggleSleep={toggleSleep} /> : null}
+
+            {/* Arkivi (13+): vetëm rritja, vaksinat dhe fotot. */}
+            {ageInfo.stage === "archive" ? (
+              <View className="mt-5 rounded-xl3 bg-cream-soft p-4">
+                <Text className="font-body text-[14px] leading-5 text-ink-soft">{t("archive_banner", { name: babyName })}</Text>
+              </View>
+            ) : null}
+
+            {/* 3–12 vjeç: produkte për moshën, postime nga grupi i moshës, eksperti i ditës, vaksinat/kontrollet. */}
+            {ageInfo.stage === "child" ? (
+              <ChildHome
+                stage={ageInfo.stage}
+                months={ageInfo.months}
+                ageGroupKey={ageInfo.ageGroupKey}
+                vaccines={active(state.baby.vaccines)}
+                childName={babyName}
+              />
+            ) : null}
 
             {/* Sipas moshës: zhvillimi, ushqimi, gjumi dhe vaksina e radhës; ndryshon vetë me muajt e bebit. */}
             <AgeGuideCard babyDob={profile.babyDob} vaccines={active(state.baby.vaccines)} />
@@ -732,14 +761,15 @@ export default function BabyProfileScreen() {
             <PostpartumCard babyDob={profile.babyDob} relation={profile.relation} />
 
             {/* Dy prindër: kush bëri çfarë sot, faleminderit, turni i natës. */}
-            <TeamCard />
+            {trackers ? <TeamCard /> : null}
 
             {/* E hënë–e mërkurë: java e kaluar, vetëm lajmet e mira si trend. */}
-            <WeeklyRecapCard feedings={feedings} sleeps={sleeps} diapers={diapers} babyName={profile.babyName} />
+            {trackers ? <WeeklyRecapCard feedings={feedings} sleeps={sleeps} diapers={diapers} babyName={profile.babyName} /> : null}
 
             {/* Dyqani: një kartë e vetme (pelenat, madhësia, mosha), mbyllet me "Jo tani". */}
-            <ShopSuggestionCard />
+            {trackers && can("shopRecommendations") ? <ShopSuggestionCard /> : null}
 
+            {trackers ? (
             <DayClock
               clock={clock}
               totals={totals}
@@ -749,9 +779,10 @@ export default function BabyProfileScreen() {
               deletableCount={clockRefs.length}
               itemsLast24h={itemsLast24h}
             />
+            ) : null}
 
             {/* Sugjerim i vetëm, kontekstual — jo 8 butona */}
-            {suggestion && (
+            {trackers && suggestion && (
               <Pressable
                 onPress={() => router.push(suggestion.route)}
                 style={shadows.softLg}
@@ -767,6 +798,7 @@ export default function BabyProfileScreen() {
 
             {/* Lidhje të shpejta minimale — vetëm 2, jo 8 */}
             <View className="mt-5 flex-row gap-3">
+              {can("vaccines") ? (
               <Pressable
                 onPress={() => router.push("/(main)/baby/vaccinations")}
                 style={shadows.soft}
@@ -782,6 +814,8 @@ export default function BabyProfileScreen() {
                   </Text>
                 </View>
               </Pressable>
+              ) : null}
+              {can("medical") ? (
               <Pressable
                 onPress={() => router.push("/(main)/baby/medical")}
                 style={shadows.soft}
@@ -795,9 +829,12 @@ export default function BabyProfileScreen() {
                   <Text className="font-body text-[10.5px] text-ink-soft">{active(b.medicalRecords).length}</Text>
                 </View>
               </Pressable>
+              ) : null}
             </View>
 
             {/* Growth summary */}
+            {can("growth") ? (
+            <>
             <SectionHeader title={t("baby_growth_summary")} editable editing={editGrowth} onToggleEdit={() => toggleEdit(setEditGrowth)} />
             {/* Pesha dhe gjatësia lexohen nga historiku i rritjes (që sinkronizohet),
                 jo nga kartat e ruajtura vetëm në telefon. */}
@@ -828,15 +865,17 @@ export default function BabyProfileScreen() {
                 </View>
               )}
             </View>
+            </>
+            ) : null}
 
             {/* "Këtë javë" (zhvillimi i bebit) u hoq më 15 tetor. Të dhënat mjekësore rrinë te cilësimet e bebit. */}
 
             {/* Kujtimet në fund: sot para 1 muaji / 1 viti, filmi i muajit, kapsula, libri. */}
-            <MemoriesCard baby={b} profile={profile} babyName={babyName} />
+            {can("moments") ? <MemoriesCard baby={b} profile={profile} babyName={babyName} /> : null}
           </MotiView>
         )}
 
-        {activeTab === "diary" && (
+        {tabNow === "diary" && (
           <MotiView from={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ type: "timing", duration: 200 }}>
             {/* Një rresht kontrollesh. Më parë kërkimi, zgjedhja dhe shtatë
                 çipa filtri rrinin gjithmonë në ekran — më shumë vend se vetë
