@@ -33,6 +33,7 @@ import { useHouseholdRole } from "@/lib/hooks/useHouseholdRole";
 import { NightMode } from "@/components/baby/NightMode";
 import { WhatsNewModal } from "@/components/WhatsNew";
 import { PostpartumCard } from "@/components/parent/PostpartumCard";
+import { AgeGuideCard } from "@/components/baby/AgeGuideCard";
 import { setNightOverride, useNightMode } from "@/lib/baby/nightMode";
 import { SyncBadge } from "@/components/baby/SyncBadge";
 import { DayClock } from "@/components/baby/DayClock";
@@ -719,6 +720,9 @@ export default function BabyProfileScreen() {
                 vinte nga faqja e vjeter kryesore, ku rrinte nje tab larg
                 nga bebi dhe e perzier me produkte. */}
             <NowCard status={status} onToggleSleep={toggleSleep} />
+
+            {/* Sipas moshës: zhvillimi, ushqimi, gjumi dhe vaksina e radhës; ndryshon vetë me muajt e bebit. */}
+            <AgeGuideCard babyDob={profile.babyDob} vaccines={active(state.baby.vaccines)} />
 
             {/* Për mamin: javët pas lindjes. ("Si je sot?" u hoq nga kreu më 15 tetor; mbetet te "Kujdesi për ty".) */}
             <PostpartumCard babyDob={profile.babyDob} relation={profile.relation} />
