@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { View, Text, Pressable, TextInput, Image, ScrollView, Alert, ActivityIndicator } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
-import * as ImagePicker from "expo-image-picker";
+import { pickMedia } from "@/lib/media/imagePicker";
 import { useAppState } from "@/lib/state/AppStateContext";
 import { ParentRelation } from "@/lib/state/types";
 import { Icon } from "@/components/ui/Icon";
@@ -44,10 +44,8 @@ export default function ProfileScreen() {
   const [passwordError, setPasswordError] = useState<string | null>(null);
 
   const pickPhoto = async () => {
-    const perm = await ImagePicker.requestMediaLibraryPermissionsAsync();
-    if (!perm.granted) return;
-    const result = await ImagePicker.launchImageLibraryAsync({ mediaTypes: ["images"], quality: 0.8, allowsEditing: true, aspect: [1, 1] });
-    if (result.canceled || !result.assets[0]) return;
+    const result = await pickMedia("library", { mediaTypes: ["images"], quality: 0.8, allowsEditing: true, aspect: [1, 1] }, t);
+    if (!result?.assets[0]) return;
 
     // Shfaqet menjehere nga cache-i, por ngarkohet sakaq: URI-ja e
     // ImagePicker vdes bashke me cache-in e app-it.

@@ -16,6 +16,7 @@ import { resolveDataOwnerId, resolveDataOwnerIdStrict } from "@/lib/baby/househo
 import { registerSyncRequest, resetSyncStatus, setSyncPhase } from "@/lib/baby/syncStatus";
 import { supabase } from "@/lib/supabase/client";
 import { realtimeTopic } from "@/lib/supabase/realtimeTopic";
+import { captureToSentry } from "@/lib/errors/sentry";
 
 /**
  * Kontrolli periodik mbetet vetëm si rrjet sigurie: ndryshimet nga webi
@@ -257,7 +258,11 @@ export function useBabyRecordsSync(isAuthenticated: boolean) {
           if (status === "SUBSCRIBED") runSync.current();
         });
       if (cancelled) void supabase.removeChannel(channel);
-    })();
+    })().catch((e) => {
+      // Realtime është vetëm përshpejtim (sync-u periodik i kap ndryshimet gjithsesi): një dështim këtu s'duhet të
+      // dalë si gabim i pakapur (Sentry REACT-NATIVE-1), por raportohet si i trajtuar.
+      captureToSentry(e, "realtime_baby_records");
+    });
     return () => {
       cancelled = true;
       clearTimeout(remoteTimer);

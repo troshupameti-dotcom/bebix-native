@@ -1,6 +1,7 @@
 import { useCallback, useState } from "react";
 import { View, Text, ScrollView, Pressable, TextInput, ActivityIndicator, KeyboardAvoidingView, Platform, Image } from "react-native";
 import * as ImagePicker from "expo-image-picker";
+import { pickMedia } from "@/lib/media/imagePicker";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useFocusEffect } from "expo-router";
 import { shadows } from "@/lib/shadows";
@@ -65,15 +66,9 @@ export default function DoctorRegistrationScreen() {
 
   async function pickLicense(fromCamera: boolean) {
     const options: ImagePicker.ImagePickerOptions = { mediaTypes: ["images"], quality: 0.8 };
-    if (fromCamera) {
-      const perm = await ImagePicker.requestCameraPermissionsAsync();
-      if (!perm.granted) {
-        setError(t("doc_license_camera_blocked"));
-        return;
-      }
-    }
-    const result = fromCamera ? await ImagePicker.launchCameraAsync(options) : await ImagePicker.launchImageLibraryAsync(options);
-    if (!result.canceled && result.assets[0]) {
+    // Leja, shtypja dy herë dhe gabimet e Android-it trajtohen te pickMedia (mesazh i qartë në vend të heshtjes).
+    const result = await pickMedia(fromCamera ? "camera" : "library", options, t);
+    if (result?.assets[0]) {
       setError(null);
       setLicensePhoto({ uri: result.assets[0].uri, mimeType: result.assets[0].mimeType ?? null });
     }

@@ -3,6 +3,7 @@ import { View, Text, ScrollView, Pressable, TextInput, KeyboardAvoidingView, Pla
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useFocusEffect } from "expo-router";
 import * as ImagePicker from "expo-image-picker";
+import { pickMedia } from "@/lib/media/imagePicker";
 import { useAppState } from "@/lib/state/AppStateContext";
 import { useTranslation } from "@/lib/i18n/LanguageContext";
 import { shadows } from "@/lib/shadows";
@@ -84,29 +85,29 @@ export default function NewPostScreen() {
 
   async function pickFromLibrary() {
     if (slotsLeft <= 0) return;
-    const result = await ImagePicker.launchImageLibraryAsync({
-      mediaTypes: ["images", "videos"],
-      allowsMultipleSelection: true,
-      selectionLimit: slotsLeft,
-      quality: 0.8,
-      videoMaxDuration: MAX_VIDEO_SECONDS,
-    });
-    if (!result.canceled) addAssets(result.assets);
+    const result = await pickMedia(
+      "library",
+      {
+        mediaTypes: ["images", "videos"],
+        allowsMultipleSelection: true,
+        selectionLimit: slotsLeft,
+        quality: 0.8,
+        videoMaxDuration: MAX_VIDEO_SECONDS,
+      },
+      t
+    );
+    if (result) addAssets(result.assets);
   }
 
   async function takeWithCamera() {
     if (slotsLeft <= 0) return;
-    const perm = await ImagePicker.requestCameraPermissionsAsync();
-    if (!perm.granted) {
-      Alert.alert(t("cnew_camera_blocked"), t("cnew_camera_blocked_body"));
-      return;
-    }
-    const result = await ImagePicker.launchCameraAsync({
-      mediaTypes: ["images", "videos"],
-      quality: 0.8,
-      videoMaxDuration: MAX_VIDEO_SECONDS,
-    });
-    if (!result.canceled) addAssets(result.assets);
+    // Leja e kamerës kontrollohet te pickMedia.
+    const result = await pickMedia(
+      "camera",
+      { mediaTypes: ["images", "videos"], quality: 0.8, videoMaxDuration: MAX_VIDEO_SECONDS },
+      t
+    );
+    if (result) addAssets(result.assets);
   }
 
   async function handlePost() {

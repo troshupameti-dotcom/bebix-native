@@ -2,7 +2,7 @@ import { useState } from "react";
 import { View, Text, ScrollView, Pressable, Image, Alert, type ImageStyle } from "react-native";
 import { MotiView } from "moti";
 import { SafeAreaView } from "react-native-safe-area-context";
-import * as ImagePicker from "expo-image-picker";
+import { pickMedia } from "@/lib/media/imagePicker";
 import { Icon, IconName } from "@/components/ui/Icon";
 import { RecordSheet } from "@/components/baby/RecordSheet";
 import { router } from "expo-router";
@@ -53,10 +53,8 @@ export default function MomentsScreen() {
 
   async function pickPhotoAndAdd() {
     haptics.tap();
-    const permission = await ImagePicker.requestMediaLibraryPermissionsAsync();
-    if (!permission.granted) return;
-    const result = await ImagePicker.launchImageLibraryAsync({ mediaTypes: ["images"], quality: 0.8 });
-    if (!result.canceled && result.assets[0]) {
+    const result = await pickMedia("library", { mediaTypes: ["images"], quality: 0.8 }, t);
+    if (result?.assets[0]) {
       baby.addMoment({ type: "photo", uri: result.assets[0].uri, title: "" });
     }
   }
@@ -64,10 +62,8 @@ export default function MomentsScreen() {
   async function addPhotoToViewing() {
     if (!viewingMoment) return;
     haptics.tap();
-    const permission = await ImagePicker.requestMediaLibraryPermissionsAsync();
-    if (!permission.granted) return;
-    const result = await ImagePicker.launchImageLibraryAsync({ mediaTypes: ["images"], quality: 0.8 });
-    if (!result.canceled && result.assets[0]) {
+    const result = await pickMedia("library", { mediaTypes: ["images"], quality: 0.8 }, t);
+    if (result?.assets[0]) {
       baby.updateMoment(viewingMoment.id, { uri: result.assets[0].uri });
     }
   }

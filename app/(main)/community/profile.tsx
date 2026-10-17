@@ -1,6 +1,6 @@
 import { useCallback, useState } from "react";
 import { View, Text, ScrollView, Pressable, ActivityIndicator, Image } from "react-native";
-import * as ImagePicker from "expo-image-picker";
+import { pickMedia } from "@/lib/media/imagePicker";
 import { setMyExpertPhoto } from "@/lib/community/expertPhoto";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useRouter, useFocusEffect } from "expo-router";
@@ -44,8 +44,8 @@ export default function MyProfileScreen() {
 
   async function changePhoto() {
     setPhotoError(null);
-    const result = await ImagePicker.launchImageLibraryAsync({ mediaTypes: ["images"], allowsEditing: true, aspect: [1, 1], quality: 0.8 });
-    if (result.canceled || !result.assets[0]) return;
+    const result = await pickMedia("library", { mediaTypes: ["images"], allowsEditing: true, aspect: [1, 1], quality: 0.8 }, t);
+    if (!result?.assets[0]) return;
     setPhotoBusy(true);
     try {
       await setMyExpertPhoto({ uri: result.assets[0].uri, mimeType: result.assets[0].mimeType ?? null });

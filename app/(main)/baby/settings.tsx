@@ -2,7 +2,7 @@ import { useState } from "react";
 import { View, Text, ScrollView, Pressable, TextInput, Image, Alert, Modal, Platform } from "react-native";
 import { router } from "expo-router";
 import { SafeAreaView } from "react-native-safe-area-context";
-import * as ImagePicker from "expo-image-picker";
+import { pickMedia } from "@/lib/media/imagePicker";
 import DateTimePicker, { DateTimePickerAndroid } from "@react-native-community/datetimepicker";
 import { Icon } from "@/components/ui/Icon";
 import { FormField } from "@/components/baby/FormField";
@@ -69,15 +69,8 @@ export default function BabySettingsScreen() {
 
   async function pickPhoto() {
     haptics.tap();
-    const permission = await ImagePicker.requestMediaLibraryPermissionsAsync();
-    if (!permission.granted) return;
-    const result = await ImagePicker.launchImageLibraryAsync({
-      mediaTypes: ["images"],
-      quality: 0.8,
-      allowsEditing: true,
-      aspect: [1, 1],
-    });
-    if (result.canceled || !result.assets[0]) return;
+    const result = await pickMedia("library", { mediaTypes: ["images"], quality: 0.8, allowsEditing: true, aspect: [1, 1] }, t);
+    if (!result?.assets[0]) return;
 
     // URI-ja e ImagePicker rri në dosjen `cache` të app-it, që sistemi e
     // pastron kur do. Shfaqet menjëherë prej andej, por fotoja ngarkohet
