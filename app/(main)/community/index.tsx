@@ -13,8 +13,10 @@ import { logWarn } from "@/lib/log";
 import { useSpecialties } from "@/lib/community/useSpecialties";
 import { specialtyLabel } from "@/lib/community/specialties";
 import { fetchInbox, setMyCommunityName } from "@/lib/community/messages";
+import { useActiveChild } from "@/lib/age/useActiveChild";
+import { hasFeature } from "@/lib/age/stageConfig";
 import {
-  fetchGroups, fetchExperts, fetchTopics, fetchTips, fetchFeed, fetchNewestPostAt, FEED_PAGE_SIZE,
+  fetchGroups, fetchExperts, fetchTopics, fetchTips, fetchFeed, fetchNewestPostAt, fetchAgeGroup, FEED_PAGE_SIZE,
   CommunityGroup, CommunityExpert, CommunityTopic, CommunityTip, CommunityPost, FeedTab,
 } from "@/lib/communityData";
 
@@ -31,8 +33,8 @@ const NEW_POSTS_POLL_MS = 60_000;
 /** Pritja pas shkrimit të fundit, para se të nisë kërkimi. */
 const SEARCH_DEBOUNCE_MS = 350;
 
-type Filters = { tab: FeedTab; topic: string | null; specialty: string | null; query: string };
-const NO_FILTERS: Filters = { tab: "all", topic: null, specialty: null, query: "" };
+type Filters = { tab: FeedTab; topic: string | null; specialty: string | null; query: string; ageGroupId: string | null };
+const NO_FILTERS: Filters = { tab: "all", topic: null, specialty: null, query: "", ageGroupId: null };
 
 function FilterChip({ label, selected, onPress }: { label: string; selected: boolean; onPress: () => void }) {
   return (
@@ -124,7 +126,7 @@ export default function CommunityScreen() {
     if (spinner) setFeedLoading(true);
     try {
       const f = filtersRef.current;
-      const page = await fetchFeed({ tab: f.tab, topic: f.topic, query: f.query, specialty: f.specialty });
+      const page = await fetchFeed({ tab: f.tab, topic: f.topic, query: f.query, specialty: f.specialty, ageGroupId: f.ageGroupId });
       if (mine !== seq.current) return;
       setFailed(false);
       setNewPosts(false);
@@ -156,6 +158,29 @@ export default function CommunityScreen() {
     [reload]
   );
 
+  // Feed-i sipas moshës: grupi i moshës së fëmijës aktiv. Hapet i pari derisa prindi të zgjedhë vetë një skedë;
+  // kur ndërrohet fëmija, kalon te grupi i tij. Pa grup (13+ vjeç, ose grupi s'ekziston në server): "Të gjitha".
+  const { stage, ageGroupKey } = useActiveChild();
+  const ageFeedKey = hasFeature(stage, "communityAgeFeed") ? ageGroupKey : null;
+  const [ageGroup, setAgeGroup] = useState<CommunityGroup | null>(null);
+  const tabTouched = useRef(false);
+  useEffect(() => {
+    let alive = true;
+    void (ageFeedKey ? fetchAgeGroup(ageFeedKey) : Promise.resolve(null))
+      .catch(() => null)
+      .then((g) => {
+        if (!alive) return;
+        setAgeGroup(g);
+        const f = filtersRef.current;
+        if (g && f.tab === "age" && f.ageGroupId !== g.id) changeFilters({ ageGroupId: g.id });
+        else if (g && f.tab === "all" && !tabTouched.current && !f.topic && !f.query) changeFilters({ tab: "age", ageGroupId: g.id });
+        else if (!g && f.tab === "age") changeFilters({ tab: "all", ageGroupId: null });
+      });
+    return () => {
+      alive = false;
+    };
+  }, [ageFeedKey, changeFilters]);
+
   // Kërkimi nis pak pas shkrimit të fundit.
   useEffect(() => {
     const id = setTimeout(() => {
@@ -171,7 +196,9 @@ export default function CommunityScreen() {
     setLoadingMore(true);
     try {
       const f = filtersRef.current;
-      const next = await fetchFeed({ before: list[list.length - 1].at, tab: f.tab, topic: f.topic, query: f.query, specialty: f.specialty });
+      const next = await fetchFeed({
+        before: list[list.length - 1].at, tab: f.tab, topic: f.topic, query: f.query, specialty: f.specialty, ageGroupId: f.ageGroupId,
+      });
       if (mine !== seq.current) return;
       setPosts((prev) => {
         const seen = new Set(prev.map((x) => x.id));
@@ -227,11 +254,13 @@ export default function CommunityScreen() {
   }, [reload]);
 
   function pickTab(next: FeedTab) {
+    tabTouched.current = true;
     if (next === tab) {
       listRef.current?.scrollToOffset({ offset: 0, animated: true });
       return;
     }
-    changeFilters(next === "experts" ? { tab: next } : { tab: next, specialty: null });
+    const ageGroupId = next === "age" ? ageGroup?.id ?? null : null;
+    changeFilters(next === "experts" ? { tab: next, ageGroupId } : { tab: next, specialty: null, ageGroupId });
   }
 
   const removePost = useCallback(
@@ -261,7 +290,8 @@ export default function CommunityScreen() {
   }, [experts, specialties]);
 
   const tabs: { key: FeedTab; label: string }[] = [
-    { key: "all", label: t("community_tab_foryou") },
+    ...(ageGroup ? [{ key: "age" as FeedTab, label: t("community_tab_age") }] : []),
+    { key: "all", label: ageGroup ? t("community_tab_all") : t("community_tab_foryou") },
     { key: "following", label: t("community_tab_following") },
     { key: "experts", label: t("community_tab_experts") },
   ];
@@ -269,7 +299,7 @@ export default function CommunityScreen() {
   const header = (
     <View>
       {/* Vetëm te "Për ty", pa filtra. */}
-      {tab === "all" && !filtering ? (
+      {(tab === "all" || tab === "age") && !filtering ? (
         <View className="mb-3">
           {/* Grupe për bebin tënd: sugjerim sipas moshës dhe kohës së lindjes. */}
           <SuggestedGroupsCard refreshKey={questionKey} />
@@ -285,7 +315,7 @@ export default function CommunityScreen() {
             accessibilityState={{ selected: tab === tb.key }}
             className={`flex-1 py-2 rounded-full items-center ${tab === tb.key ? "bg-ink" : ""}`}
           >
-            <Text className={`font-bodyMedium text-xs ${tab === tb.key ? "text-on-accent" : "text-ink-soft"}`}>{tb.label}</Text>
+            <Text numberOfLines={1} className={`font-bodyMedium text-xs ${tab === tb.key ? "text-on-accent" : "text-ink-soft"}`}>{tb.label}</Text>
           </Pressable>
         ))}
       </View>
@@ -353,6 +383,14 @@ export default function CommunityScreen() {
         query: query.trim() || topic || specialtyLabel(specialty, language, specialties.list) || "",
       })}
     </Text>
+  ) : tab === "age" ? (
+    <View className="items-center px-10 py-8">
+      <Text className="font-bodySemibold text-sm text-ink mb-1">{t("community_age_empty_title")}</Text>
+      <Text className="font-body text-xs text-ink-soft text-center leading-5 mb-4">{t("community_age_empty_sub")}</Text>
+      <Pressable onPress={() => pickTab("all")} accessibilityRole="button" className="bg-olive px-5 py-2.5 rounded-full">
+        <Text className="font-bodySemibold text-xs text-on-accent">{t("community_see_all")}</Text>
+      </Pressable>
+    </View>
   ) : tab === "following" ? (
     <View className="items-center px-10 py-8">
       <Text className="font-bodySemibold text-sm text-ink mb-1">{t("community_following_empty_title")}</Text>

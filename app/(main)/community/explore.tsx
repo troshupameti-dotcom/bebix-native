@@ -16,6 +16,9 @@ import {
   toggleFollowExpert as apiToggleFollowExpert, toggleJoinGroup as apiToggleJoinGroup,
   CommunityExpert, CommunityGroup,
 } from "@/lib/communityData";
+import { useActiveChild } from "@/lib/age/useActiveChild";
+import { specialtyRank } from "@/lib/age/stageConfig";
+import { rankExperts } from "@/lib/community/expertRank";
 
 type Tab = "experts" | "groups";
 
@@ -151,21 +154,26 @@ export default function ExploreScreen() {
   }, [experts, specialties.list]);
 
   const q = search.trim().toLowerCase();
+  // Ekspertët sipas fazës së fëmijës aktiv: specialitetet e fazës në krye (p.sh. psikologu për 3–12 vjeç). S'fshihet asnjë.
+  const { stage } = useActiveChild();
   const visible = useMemo(
     () =>
-      experts.filter((e) => {
-        if (dept && e.specialty !== dept) return false;
-        if (!q) return true;
-        return e.name.toLowerCase().includes(q) || deptOf(e, language, specialties.list).toLowerCase().includes(q);
-      }),
-    [experts, dept, q, language, specialties.list]
+      rankExperts(
+        experts.filter((e) => {
+          if (dept && e.specialty !== dept) return false;
+          if (!q) return true;
+          return e.name.toLowerCase().includes(q) || deptOf(e, language, specialties.list).toLowerCase().includes(q);
+        }),
+        stage
+      ),
+    [experts, dept, q, language, specialties.list, stage]
   );
 
   // Pa filtër: ekspertët ndahen në seksione sipas repartit (si "reparte" te një spital); me filtër: listë e thjeshtë.
   const sections = useMemo(() => {
     if (dept || q) return null;
     const order = new Map(specialties.list.map((s, i) => [s.key, i]));
-    const map = new Map<string, { title: string; emoji: string | null; items: CommunityExpert[]; rank: number }>();
+    const map = new Map<string, { title: string; emoji: string | null; items: CommunityExpert[]; rank: number; stageRank: number }>();
     for (const e of visible) {
       const id = e.specialty ?? `kind:${e.kind}`;
       const entry = map.get(id) ?? {
@@ -173,12 +181,13 @@ export default function ExploreScreen() {
         emoji: e.specialty ? specialtyEmoji(e.specialty, specialties.list) : null,
         items: [],
         rank: e.specialty ? (order.get(e.specialty) ?? 500) : 1000,
+        stageRank: specialtyRank(stage, e.specialty ?? null),
       };
       entry.items.push(e);
       map.set(id, entry);
     }
-    return [...map.values()].sort((a, b) => a.rank - b.rank || a.title.localeCompare(b.title));
-  }, [visible, dept, q, language, specialties.list]);
+    return [...map.values()].sort((a, b) => a.stageRank - b.stageRank || a.rank - b.rank || a.title.localeCompare(b.title));
+  }, [visible, dept, q, language, specialties.list, stage]);
 
   if (loading) {
     return (

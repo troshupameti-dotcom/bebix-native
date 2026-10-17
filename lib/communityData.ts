@@ -312,7 +312,8 @@ export const FEED_PAGE_SIZE = 20;
  * Më parë lexohej e gjithë rrjedha dhe të gjitha pëlqimet e ruajtjet e
  * përdoruesit — me mijëra postime, ekrani hapej gjithnjë e më ngadalë.
  */
-export type FeedTab = "all" | "experts" | "following";
+/** "age" = postimet e grupit të moshës së fëmijës aktiv (sistemi i moshës). */
+export type FeedTab = "age" | "all" | "experts" | "following";
 
 export type FeedOptions = {
   before?: string;
@@ -324,7 +325,18 @@ export type FeedOptions = {
   query?: string;
   /** Reparti i ekspertit (vetëm me tab "experts", dhe vetëm pas migrimit të repartave). */
   specialty?: string | null;
+  /** Grupi i moshës për tab "age" (id e grupit nga `fetchAgeGroup`). */
+  ageGroupId?: string | null;
 };
+
+/**
+ * Grupi i moshës me këtë çelës ("age:36-72", "pregnancy"), edhe kur prindi s'është anëtar: feed-i "Për moshën"
+ * lexon postimet e tij. null kur grupi s'ekziston (migrimi s'është aplikuar).
+ */
+export async function fetchAgeGroup(autoKey: string): Promise<CommunityGroup | null> {
+  const rows = await selectGroups((q) => q.eq("auto_key", autoKey).limit(1));
+  return rows[0] ? mapGroup(rows[0], false) : null;
+}
 
 /** Autorët (ekspertët) dhe grupet që ndjek përdoruesi: baza e skedës "Të ndjekurit". */
 async function followScope(uid: string): Promise<{ authorIds: string[]; groupIds: string[] }> {
@@ -347,7 +359,10 @@ export async function fetchFeed(options: FeedOptions = {}): Promise<CommunityPos
   if (options.before) query = query.lt("created_at", options.before);
 
   const tab = options.tab ?? "all";
-  if (tab === "experts") {
+  if (tab === "age") {
+    if (!options.ageGroupId) return [];
+    query = query.eq("group_id", options.ageGroupId);
+  } else if (tab === "experts") {
     query = query.eq("author_is_expert", true);
     if (options.specialty) query = query.eq("author_specialty", options.specialty);
   } else if (tab === "following") {

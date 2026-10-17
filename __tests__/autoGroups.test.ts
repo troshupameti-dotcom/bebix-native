@@ -28,7 +28,12 @@ describe("grupet sipas moshës", () => {
     expect(ageKeyForMonths(11)).toBe("age:6-12");
     expect(ageKeyForMonths(12)).toBe("age:12-24");
     expect(ageKeyForMonths(23)).toBe("age:12-24");
-    expect(ageKeyForMonths(24)).toBeNull();
+    // Fëmijët deri 13 vjeç (sistemi i moshës): grupet e reja; nga 156 muaj asnjë.
+    expect(ageKeyForMonths(24)).toBe("age:24-36");
+    expect(ageKeyForMonths(36)).toBe("age:36-72");
+    expect(ageKeyForMonths(72)).toBe("age:72-120");
+    expect(ageKeyForMonths(155)).toBe("age:120-156");
+    expect(ageKeyForMonths(156)).toBeNull();
     expect(ageKeyForMonths(null)).toBeNull();
   });
 
@@ -41,7 +46,8 @@ describe("grupet sipas moshës", () => {
 
   it("çelësat për bebin (si në bazë): moshë + lindje; mbi 24 muaj vetëm lindja", () => {
     expect(autoKeysFor(d(2026, 6, 10), TODAY)).toEqual(["age:3-6", "birth:2026-Q2"]);
-    expect(autoKeysFor(d(2024, 8, 1), TODAY)).toEqual(["birth:2024-Q3"]);
+    expect(autoKeysFor(d(2024, 8, 1), TODAY)).toEqual(["age:24-36", "birth:2024-Q3"]);
+    expect(autoKeysFor(d(2012, 1, 1), TODAY)).toEqual([]);
     expect(autoKeysFor(d(2027, 1, 1), TODAY)).toEqual([]);
     expect(autoKeysFor(null, TODAY)).toEqual([]);
   });
@@ -60,6 +66,9 @@ describe("grupet sipas moshës", () => {
   it("emrat në shqip dhe anglisht; çelësat e panjohur s'pranohen", () => {
     expect(autoGroupLabel("age:3-6", tr("sq"))).toBe("Bebat 3–6 muaj");
     expect(autoGroupLabel("birth:2026-Q4", tr("sq"))).toBe("Lindur në tetor–dhjetor 2026");
+    expect(autoGroupLabel("age:36-72", tr("sq"))).toBe("Fëmijët 3–5 vjeç");
+    expect(autoGroupLabel("age:120-156", tr("en"))).toBe("Kids 10–12 years");
+    expect(autoGroupLabel("pregnancy", tr("sq"))).toBe("Presim bebe");
     expect(autoGroupLabel("birth:2026-Q4", tr("en"))).toBe("Born Oct–Dec 2026");
     expect(parseAutoKey("age:hack")).toBeNull();
     expect(parseAutoKey("birth:2026-Q5")).toBeNull();

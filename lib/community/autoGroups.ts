@@ -28,13 +28,17 @@ export function fullMonths(dob: Date, today: Date): number | null {
   return Math.max(0, months);
 }
 
-/** [0,3) [3,6) [6,12) [12,24); mbi 24 muaj: s'ka grup moshe. */
+/** [0,3) [3,6) [6,12) [12,24) [24,36) [36,72) [72,120) [120,156); nga 13 vjeç: s'ka grup moshe. */
 export function ageKeyForMonths(months: number | null): AutoKey | null {
   if (months == null || months < 0) return null;
   if (months < 3) return "age:0-3";
   if (months < 6) return "age:3-6";
   if (months < 12) return "age:6-12";
   if (months < 24) return "age:12-24";
+  if (months < 36) return "age:24-36";
+  if (months < 72) return "age:36-72";
+  if (months < 120) return "age:72-120";
+  if (months < 156) return "age:120-156";
   return null;
 }
 
@@ -47,19 +51,31 @@ export function autoKeysFor(dob: Date | null, today: Date): AutoKey[] {
   if (!dob) return [];
   const months = fullMonths(dob, today);
   if (months == null) return [];
+  if (months >= 156) return [];
   const age = ageKeyForMonths(months);
   return [...(age ? [age] : []), birthQuarterKey(dob)];
 }
 
-export type ParsedKey = { kind: "age"; from: number; to: number } | { kind: "birth"; year: number; quarter: 1 | 2 | 3 | 4 };
+export type ParsedKey =
+  | { kind: "age"; from: number; to: number }
+  | { kind: "birth"; year: number; quarter: 1 | 2 | 3 | 4 }
+  | { kind: "pregnancy" };
 
 export function parseAutoKey(key: string): ParsedKey | null {
-  const age = /^age:(\d{1,2})-(\d{1,2})$/.exec(key);
+  if (key === "pregnancy") return { kind: "pregnancy" };
+  const age = /^age:(\d{1,3})-(\d{1,3})$/.exec(key);
   if (age) return { kind: "age", from: Number(age[1]), to: Number(age[2]) };
   const birth = /^birth:(\d{4})-Q([1-4])$/.exec(key);
   if (birth) return { kind: "birth", year: Number(birth[1]), quarter: Number(birth[2]) as 1 | 2 | 3 | 4 };
   return null;
 }
+
+const YEAR_LABELS: Record<string, string> = {
+  "age:24-36": "2–3",
+  "age:36-72": "3–5",
+  "age:72-120": "6–9",
+  "age:120-156": "10–12",
+};
 
 type T = (key: TranslationKey, params?: Record<string, string | number>) => string;
 
@@ -67,6 +83,9 @@ type T = (key: TranslationKey, params?: Record<string, string | number>) => stri
 export function autoGroupLabel(key: string, t: T): string {
   const p = parseAutoKey(key);
   if (!p) return key;
+  if (p.kind === "pregnancy") return t("ag_pregnancy_label");
+  // Nga 2 vjeç emrat janë në vite, si grupet te baza ("Fëmijët 3–5 vjeç").
+  if (p.kind === "age" && YEAR_LABELS[key]) return t("ag_age_years_label", { range: YEAR_LABELS[key] });
   if (p.kind === "age") return t("ag_age_label", { from: p.from, to: p.to });
   return t("ag_birth_label", { range: t(`ag_q${p.quarter}` as TranslationKey), year: p.year });
 }
