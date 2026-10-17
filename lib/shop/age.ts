@@ -13,6 +13,10 @@ export const AGE_BANDS: AgeBand[] = [
   { key: "6-12", from: 6, to: 12 },
   { key: "12-24", from: 12, to: 24 },
   { key: "24-48", from: 24, to: 48 },
+  // Fëmijët 4–12 vjeç (sistemi i moshës): çipat renditin, s'fshehin.
+  { key: "48-72", from: 48, to: 72 },
+  { key: "72-120", from: 72, to: 120 },
+  { key: "120-156", from: 120, to: 156 },
 ];
 
 type Lang = "sq" | "en";
@@ -21,7 +25,7 @@ export function parseAgeBand(key: string | null | undefined): AgeBand | null {
   return AGE_BANDS.find((b) => b.key === key) ?? null;
 }
 
-/** Grupmosha që përmban moshën (në muaj), ose null kur është mbi 4 vjeç ose e pavlefshme. */
+/** Grupmosha që përmban moshën (në muaj), ose null kur është mbi 13 vjeç ose e pavlefshme. */
 export function bandForMonths(months: number | null): AgeBand | null {
   if (months == null || !Number.isFinite(months) || months < 0) return null;
   return AGE_BANDS.find((b) => months >= b.from && months < b.to) ?? null;

@@ -7,6 +7,7 @@ import { fakeSupabase, renderScreen, visibleText } from "./helpers/screen";
 import { act, type ReactTestInstance, type ReactTestRenderer } from "react-test-renderer";
 import { BackHandler, FlatList } from "react-native";
 import Shop from "@/app/(main)/shop/index";
+import AsyncStorage from "@react-native-async-storage/async-storage";
 
 jest.mock("@/components/shop/BrandMarquee", () => ({ BrandMarquee: () => null }));
 
@@ -30,6 +31,11 @@ beforeEach(() => {
   ];
   fake.tables.products = [product("p1", "nursery"), product("p2", "feeding")];
   fake.tables.brands = [];
+  // Radha nga serveri (renditja sipas moshës); produktet lexohen pastaj nga tabela.
+  fake.rpc.shop_product_order = () => [
+    { product_id: "p1", pos: 1, total_count: 2 },
+    { product_id: "p2", pos: 2, total_count: 2 },
+  ];
 });
 afterEach(() => jest.restoreAllMocks());
 
@@ -65,5 +71,16 @@ describe("kategoritë te Dyqani", () => {
     expect(handled).toBe(true);
     await flush();
     expect(chip(r.root, "Dhoma e bebit").props.accessibilityState).toEqual({ selected: false });
+  });
+
+  it("renditja ndjek moshën e fëmijës aktiv (8 muaj)", async () => {
+    const dob = new Date();
+    dob.setMonth(dob.getMonth() - 8);
+    dob.setDate(dob.getDate() - 1);
+    await AsyncStorage.setItem("bebix_app_state_v3", JSON.stringify({ profile: { babyDob: dob.toISOString() } }));
+    await renderScreen(<Shop />);
+    await flush();
+    const calls = fakeSupabase().calls.filter((c) => c.kind === "rpc" && c.name === "shop_product_order");
+    expect(calls.at(-1)?.args).toMatchObject({ p_age_from: 8, p_age_to: 8, p_pregnancy: false });
   });
 });

@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { View, Text, FlatList, ScrollView, Pressable, TextInput, Image, ActivityIndicator, BackHandler } from "react-native";
 import { useContentWidth, gridColumns } from "@/lib/layout";
 import { SafeAreaView } from "react-native-safe-area-context";
@@ -12,13 +12,15 @@ import { Product, Brand } from "@/lib/homeContent";
 import { BrandMarquee } from "@/components/shop/BrandMarquee";
 import {
   fetchProductPage, fetchBrands, fetchCategories,
-  type ProductSort, type ShopCategory, PRODUCT_PAGE_SIZE,
+  type ProductSort, type ShopCategory, type ShopRanking, PRODUCT_PAGE_SIZE,
 } from "@/lib/shopData";
 import { ProductCard, ProductCardSkeleton } from "@/components/ProductCard";
 import { track } from "@/lib/analytics/posthog";
 import { friendlyError } from "@/lib/errors/userMessage";
 import { AGE_BANDS, bandForMonths, formatAgeRange, monthsSince, parseAgeBand } from "@/lib/shop/age";
 import { ShopSuggestionCard } from "@/components/shop/ShopSuggestionCard";
+import { useActiveChild } from "@/lib/age/useActiveChild";
+import { hasFeature } from "@/lib/age/stageConfig";
 
 const PADDING_X = 20;
 const GRID_GAP = 12;
@@ -72,6 +74,16 @@ export default function ShopScreen() {
   const ageBand = parseAgeBand(ageKey);
   const babyBand = bandForMonths(monthsSince(state.profile.babyDob));
   const babyFirstName = (state.profile.nickname || state.profile.babyName || "").trim().split(" ")[0];
+  // Renditja sipas moshës: grupmosha e zgjedhur te çipat, përndryshe fëmija aktiv. Asgjë s'fshihet: produktet që
+  // përputhen dalin të parat, ato pa moshë pas tyre, të tjerat në fund.
+  const { stage, months } = useActiveChild();
+  const ranking = useMemo<ShopRanking | null>(() => {
+    if (ageBand) return { ageFrom: ageBand.from, ageTo: ageBand.to, pregnancy: false };
+    if (!hasFeature(stage, "shopRanking")) return null;
+    if (stage === "pregnancy") return { ageFrom: null, ageTo: null, pregnancy: true };
+    return months != null ? { ageFrom: months, ageTo: months, pregnancy: false } : null;
+  }, [ageBand, stage, months]);
+  const rankingKey = ranking ? `${ranking.ageFrom ?? ""}-${ranking.ageTo ?? ""}-${ranking.pregnancy ? "p" : ""}` : "";
 
   const [items, setItems] = useState<Product[]>([]);
   const [total, setTotal] = useState(0);
@@ -101,7 +113,7 @@ export default function ShopScreen() {
     return () => clearTimeout(timer);
   }, [query]);
 
-  const filterKey = `${search}|${category}|${sort}|${ageKey ?? ""}|${reloadNonce}`;
+  const filterKey = `${search}|${category}|${sort}|${ageKey ?? ""}|${rankingKey}|${reloadNonce}`;
   const loading = loadedKey !== filterKey && error === null;
   // Vetëm hapja e parë tregon skeletin në vend të listës. Ndërrimi i kategorisë/filtrit e mban listën (dhe shiritin
   // e kategorive) në vend: më parë lista rindërtohej nga e para, kategoritë ktheheshin në fillim dhe faqja lart.
@@ -135,7 +147,7 @@ export default function ShopScreen() {
   useEffect(() => {
     const id = ++requestId.current;
     let active = true;
-    fetchProductPage({ search, category, sort, page: 0, age: ageBand })
+    fetchProductPage({ search, category, sort, page: 0, age: ageBand, ranking })
       .then((result) => {
         if (!active || id !== requestId.current) return;
         setItems(result.items);
@@ -150,14 +162,14 @@ export default function ShopScreen() {
         setError(friendlyError(e, t, "shop_load_error_title"));
       });
     return () => { active = false; };
-  }, [filterKey, search, category, sort, ageBand, t]);
+  }, [filterKey, search, category, sort, ageBand, ranking, t]);
   const loadMore = useCallback(async () => {
     if (loadingMore || loading || !hasMore) return;
     const id = requestId.current;
     setLoadingMore(true);
     try {
       const next = page + 1;
-      const result = await fetchProductPage({ search, category, sort, page: next, age: ageBand });
+      const result = await fetchProductPage({ search, category, sort, page: next, age: ageBand, ranking });
       if (id !== requestId.current) return;
       setItems((prev) => [...prev, ...result.items]);
       setHasMore(result.hasMore);
@@ -167,7 +179,7 @@ export default function ShopScreen() {
     } finally {
       if (id === requestId.current) setLoadingMore(false);
     }
-  }, [loadingMore, loading, hasMore, page, search, category, sort, ageBand]);
+  }, [loadingMore, loading, hasMore, page, search, category, sort, ageBand, ranking]);
 
 
   // Markat dhe ofertat ngarkohen një herë; nuk varen nga filtrat.

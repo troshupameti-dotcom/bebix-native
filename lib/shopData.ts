@@ -68,7 +68,15 @@ export type ProductQuery = {
   onSaleOnly?: boolean;
   /** Grupmosha: produktet e përshtatshme për këtë interval (ose pa kufi moshe). */
   age?: AgeBand | null;
+  /**
+   * Renditja sipas moshës (sistemi i moshës): produktet që përputhen dalin të parat, ato pa moshë pas tyre,
+   * të tjerat në fund — asgjë s'fshihet. null = renditja e sotme.
+   */
+  ranking?: ShopRanking | null;
 };
+
+/** Mosha për renditjen: e fëmijës aktiv (from = to), një grupmoshë e zgjedhur, ose shtatzënia. */
+export type ShopRanking = { ageFrom: number | null; ageTo: number | null; pregnancy: boolean };
 
 export type ProductPage = {
   items: Product[];
@@ -223,7 +231,53 @@ function sanitize(term: string): string {
 /**
  * Një faqe produktesh. E vetmja rrugë që duhet përdorur nga listat.
  */
+/** Serveri s'e ka ende funksionin e renditjes (migrimi i dyqanit s'është aplikuar): rruga e vjetër. */
+let rankedUnavailable = false;
+
+/**
+ * Faqja e renditur te serveri (`shop_product_order`): radha dhe numri total vijnë prej andej, produktet lexohen
+ * pastaj si gjithmonë (me markën dhe kategorinë) dhe vihen në atë radhë. Kurrë s'filtron sipas moshës.
+ * null = funksioni mungon.
+ */
+async function fetchRankedPage(q: ProductQuery, page: number, pageSize: number): Promise<ProductPage | null> {
+  const ranking = q.ranking ?? (q.age ? { ageFrom: q.age.from, ageTo: q.age.to, pregnancy: false } : null);
+  const { data, error } = await supabase.rpc("shop_product_order", {
+    p_category: q.category && q.category !== "all" ? q.category : null,
+    p_brand: q.brandId ?? null,
+    p_on_sale: !!q.onSaleOnly,
+    p_search: sanitize(q.search ?? "") || null,
+    p_sort: q.sort ?? "newest",
+    p_age_from: ranking?.ageFrom ?? null,
+    p_age_to: ranking?.ageTo ?? null,
+    p_pregnancy: !!ranking?.pregnancy,
+    p_offset: page * pageSize,
+    p_limit: pageSize,
+  });
+  if (error) {
+    if (error.code === "PGRST202" || error.code === "42883") {
+      rankedUnavailable = true;
+      return null;
+    }
+    throw error;
+  }
+  const order = (data ?? []) as { product_id: string; pos: number; total_count: number }[];
+  const total = order.length ? Number(order[0].total_count) : 0;
+  if (order.length === 0) return { items: [], total, hasMore: false };
+  const { data: rows, error: rowsError } = await supabase
+    .from("products")
+    .select(LIST_COLUMNS)
+    .in("id", order.map((o) => o.product_id));
+  if (rowsError) throw rowsError;
+  const byId = new Map(((rows ?? []) as unknown as ProductRow[]).map((r) => [r.id, mapRow(r)]));
+  const items = order.map((o) => byId.get(o.product_id)).filter((p): p is Product => !!p);
+  return { items, total, hasMore: page * pageSize + order.length < total };
+}
+
 export async function fetchProductPage(q: ProductQuery = {}): Promise<ProductPage> {
+  if (!rankedUnavailable) {
+    const ranked = await fetchRankedPage(q, q.page ?? 0, q.pageSize ?? PRODUCT_PAGE_SIZE);
+    if (ranked) return ranked;
+  }
   const page = q.page ?? 0;
   const pageSize = q.pageSize ?? PRODUCT_PAGE_SIZE;
   const from = page * pageSize;

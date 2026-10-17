@@ -15,7 +15,10 @@ describe("mosha në dyqan", () => {
     expect(bandForMonths(3)?.key).toBe("3-6");
     expect(bandForMonths(11)?.key).toBe("6-12");
     expect(bandForMonths(30)?.key).toBe("24-48");
-    expect(bandForMonths(60)).toBeNull();
+    // Fëmijët 4–12 vjeç kanë grupmoshat e tyre (sistemi i moshës); mbi 13 vjeç asnjë.
+    expect(bandForMonths(60)?.key).toBe("48-72");
+    expect(bandForMonths(130)?.key).toBe("120-156");
+    expect(bandForMonths(156)).toBeNull();
     expect(bandForMonths(null)).toBeNull();
     expect(bandForMonths(-1)).toBeNull();
   });
