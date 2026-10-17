@@ -52,7 +52,7 @@ const LIFECYCLE_FIELDS = ["id", "createdAt", "updatedAt", "editCount", "deletedA
 // Adapteri: lokal <-> rresht. I vetmi vend që di për formën e tabelës.
 // ---------------------------------------------------------------------
 
-function toRow(userId: string, item: AnyBabyRecord): BabyRecordRow {
+function toRow(userId: string, item: AnyBabyRecord, childId: string | null = null): BabyRecordRow {
   const { kind, record } = item;
 
   const payload: Record<string, unknown> = {};
@@ -67,7 +67,8 @@ function toRow(userId: string, item: AnyBabyRecord): BabyRecordRow {
   return {
     user_id: userId,
     id: record.id,
-    baby_id: null,
+    // Fëmija aktiv; null = mënyra e vjetër (serveri e plotëson me fëmijën falas).
+    baby_id: childId,
     kind,
     payload,
     occurred_at: toTimestamp(occurredRaw),
@@ -257,13 +258,15 @@ type PullResult = { rows: BabyRecordRow[]; nextCursor: string | null };
  * `server_updated_at` (migrimi s'është aplikuar), bie te mënyra e vjetër me
  * `updated_at`, që app-i të mos ndalet.
  */
-async function pullRows(userId: string, cursor: string | null, lastSync: string | null): Promise<PullResult> {
+async function pullRows(userId: string, cursor: string | null, lastSync: string | null, childId: string | null): Promise<PullResult> {
   const since = cursor ? new Date(new Date(cursor).getTime() - CURSOR_OVERLAP_MS).toISOString() : null;
   const rows: BabyRecordRow[] = [];
   let maxServer: string | null = cursor;
 
   for (let from = 0; ; from += PULL_BATCH) {
     let query = supabase.from(TABLE).select("*").eq("user_id", userId);
+    // Vetëm shënimet e fëmijës aktiv: moshat e fëmijëve të ndryshëm s'përzihen kurrë.
+    if (childId) query = query.eq("baby_id", childId);
     if (since) query = query.gt("server_updated_at", since);
     const { data, error } = await query
       .order("server_updated_at", { ascending: true })
@@ -271,7 +274,7 @@ async function pullRows(userId: string, cursor: string | null, lastSync: string 
       .range(from, from + PULL_BATCH - 1);
 
     if (error) {
-      if (error.code === "42703") return pullRowsLegacy(userId, lastSync);
+      if (error.code === "42703") return pullRowsLegacy(userId, lastSync, childId);
       throw new Error(`Leximi i baby_records dështoi: ${error.message}`);
     }
 
@@ -285,10 +288,11 @@ async function pullRows(userId: string, cursor: string | null, lastSync: string 
   return { rows, nextCursor: maxServer };
 }
 
-async function pullRowsLegacy(userId: string, lastSync: string | null): Promise<PullResult> {
+async function pullRowsLegacy(userId: string, lastSync: string | null, childId: string | null): Promise<PullResult> {
   const rows: BabyRecordRow[] = [];
   for (let from = 0; ; from += PULL_BATCH) {
     let query = supabase.from(TABLE).select("*").eq("user_id", userId);
+    if (childId) query = query.eq("baby_id", childId);
     if (lastSync) query = query.gt("updated_at", lastSync);
     const { data, error } = await query
       .order("updated_at", { ascending: true })
@@ -314,7 +318,7 @@ async function pullRowsLegacy(userId: string, lastSync: string | null): Promise<
  * të menjëhershme, dhe ky funksion thirret në sfond. Pra app-i punon offline
  * dhe sinkronizohet kur ka rrjet.
  */
-export async function syncBabyRecords(baby: BabyModuleState): Promise<Partial<BabyModuleState> | null> {
+export async function syncBabyRecords(baby: BabyModuleState, childId: string | null = null): Promise<Partial<BabyModuleState> | null> {
   // Jo id-ja e llogarise, por e pronarit te te dhenave: nese ky prind
   // eshte ftuar te familja e tjetrit, te dyve u duhet i njejti histori.
   // Pa kete, secili do te shkruante te vetja dhe do te dukej sikur
@@ -347,7 +351,7 @@ export async function syncBabyRecords(baby: BabyModuleState): Promise<Partial<Ba
   // 2) Migrimi një-herësh: historiku që ekziston vetëm në telefon ngarkohet
   //    i plotë. Pas kësaj dërgohen vetëm regjistrimet e ndryshuara.
   if (!migrated) {
-    await pushRows(localRecords.map((item) => toRow(userId, withStoragePath(item))));
+    await pushRows(localRecords.map((item) => toRow(userId, withStoragePath(item), childId)));
     await AsyncStorage.setItem(MIGRATED_KEY, "true");
   }
 
@@ -356,7 +360,7 @@ export async function syncBabyRecords(baby: BabyModuleState): Promise<Partial<Ba
   //    rreshta për kërkesë, dhe sync-u i parë në një telefon të ri do të merrte
   //    vetëm një pjesë të historikut të një prindi me mbi 1000 shënime.
   const cursor = await AsyncStorage.getItem(SERVER_CURSOR_KEY);
-  const pulled = await pullRows(userId, cursor, lastSync);
+  const pulled = await pullRows(userId, cursor, lastSync, childId);
   const rows = pulled.rows;
   // 4) Dërgo regjistrimet lokale të ndryshuara pas sync-ut të fundit, plus ato
   //    që sapo morën `storagePath`.
@@ -364,7 +368,7 @@ export async function syncBabyRecords(baby: BabyModuleState): Promise<Partial<Ba
     const changedLocally = localRecords.filter(
       (item) => !lastSync || item.record.updatedAt > lastSync || uploaded.has(item.record.id)
     );
-    await pushRows(changedLocally.map((item) => toRow(userId, withStoragePath(item))));
+    await pushRows(changedLocally.map((item) => toRow(userId, withStoragePath(item), childId)));
   }
 
   // Dy minuta rezervë për orët e pajisjeve që s'përputhen (telefoni dhe
@@ -417,4 +421,25 @@ export async function syncBabyRecords(baby: BabyModuleState): Promise<Partial<Ba
 /** Për testim/rikthim: e detyron migrimin dhe tërheqjen e plotë herën tjetër. */
 export async function resetBabyRecordsSyncState(): Promise<void> {
   await AsyncStorage.multiRemove([LAST_SYNC_KEY, MIGRATED_KEY, SERVER_CURSOR_KEY]);
+}
+
+/** Kujtesa e sync-ut (kur u sinkronizua, kursori) e fëmijës aktiv; ruhet kur ndërrohet fëmija. */
+export type RecordsSyncState = { lastSync: string | null; migrated: string | null; cursor: string | null };
+
+export async function exportRecordsSyncState(): Promise<RecordsSyncState> {
+  const [[, lastSync], [, migrated], [, cursor]] = await AsyncStorage.multiGet([LAST_SYNC_KEY, MIGRATED_KEY, SERVER_CURSOR_KEY]);
+  return { lastSync, migrated, cursor };
+}
+
+/**
+ * Vendos kujtesën e fëmijës që hapet. null = fëmijë që s'është hapur kurrë këtu: tërheqje e plotë, pa
+ * "migrim" (s'ka asgjë lokale për të dërguar).
+ */
+export async function importRecordsSyncState(sync: RecordsSyncState | null): Promise<void> {
+  await AsyncStorage.multiRemove([LAST_SYNC_KEY, MIGRATED_KEY, SERVER_CURSOR_KEY]);
+  const writes: [string, string][] = [];
+  if (sync?.lastSync) writes.push([LAST_SYNC_KEY, sync.lastSync]);
+  if (sync?.cursor) writes.push([SERVER_CURSOR_KEY, sync.cursor]);
+  writes.push([MIGRATED_KEY, sync?.migrated ?? "true"]);
+  await AsyncStorage.multiSet(writes);
 }

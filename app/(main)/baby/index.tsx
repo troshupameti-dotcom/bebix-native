@@ -34,6 +34,7 @@ import { NightMode } from "@/components/baby/NightMode";
 import { WhatsNewModal } from "@/components/WhatsNew";
 import { PostpartumCard } from "@/components/parent/PostpartumCard";
 import { AgeGuideCard } from "@/components/baby/AgeGuideCard";
+import { ChildSwitcher } from "@/components/children/ChildSwitcher";
 import { setNightOverride, useNightMode } from "@/lib/baby/nightMode";
 import { SyncBadge } from "@/components/baby/SyncBadge";
 import { DayClock } from "@/components/baby/DayClock";
@@ -658,6 +659,9 @@ export default function BabyProfileScreen() {
           </Pressable>
         </View>
       </View>
+
+      {/* Fëmija aktiv: vendos gjithçka më poshtë (shfaqet vetëm kur serveri ka sistemin e fëmijëve). */}
+      <ChildSwitcher />
 
       {/* Segmented tab control — tash vetëm 2 tabe */}
       <View className="mx-5 mb-2 flex-row rounded-2xl bg-cream-soft p-1">

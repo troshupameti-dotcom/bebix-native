@@ -236,6 +236,7 @@ export default function MoreScreen() {
             badge: language === "sq" ? t("language_sq") : t("language_en"),
             onPress: () => router.push("/more/language"),
           },
+          { key: "children", icon: Baby, color: C.pink, label: t("children_title"), keywords: "femijet femije shto premium children kids add", onPress: () => router.push("/more/children") },
           { key: "family", icon: Users, color: C.green, label: t("family_title"), keywords: "partneri gjyshrit ftese anetare family invite", onPress: () => router.push("/more/family") },
         ],
       },

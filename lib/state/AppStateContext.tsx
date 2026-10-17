@@ -1,4 +1,4 @@
-import { createContext, useContext, useEffect, useReducer, useRef, useState, ReactNode } from "react";
+import { createContext, useCallback, useContext, useEffect, useReducer, useRef, useState, ReactNode } from "react";
 import { AppState as RNAppState } from "react-native";
 import { useColorScheme as useNativeWindColorScheme } from "nativewind";
 import { syncNotificationSettings } from "@/lib/notifications/settingsSync";
@@ -9,6 +9,7 @@ import {
 import { localDateKey } from "@/lib/babyProfile";
 import { mergeRecordsPatch, resetBabyRecordsSyncState } from "@/lib/baby/babyRecordsSync";
 import { loadAppState, saveAppState } from "@/lib/state/persistence";
+import { CHILD_PROFILE_KEYS, type ChildProfileFields } from "@/lib/children/stash";
 import {
   detailsFromState,
   fetchProfileDetails,
@@ -190,6 +191,7 @@ type Action =
   | { type: "UPDATE_BABY"; fn: (cur: BabyModuleState) => Partial<BabyModuleState> }
   | { type: "REPLACE_CART"; items: CartItem[] }
   | { type: "MERGE_BABY_RECORDS"; value: Partial<BabyModuleState> }
+  | { type: "REPLACE_CHILD"; baby: Partial<BabyModuleState>; profile: Partial<ChildProfileFields> }
   | { type: "SET_NOTIFICATION_PREF"; key: NotificationKey; value: boolean }
   | { type: "SET_QUIET_HOURS"; from: number; to: number }
   | { type: "SET_REMINDER_GAP"; kind: "feeding" | "diaper"; hours: number }
@@ -244,6 +246,15 @@ function reducer(state: AppState, action: Action): AppState {
     }
     case "REPLACE_CART":
       return { ...state, cartItems: action.items, cartCount: action.items.reduce((s, i) => s + i.qty, 0) };
+    case "REPLACE_CHILD": {
+      // Ndërrimi i fëmijës aktiv: listat dhe fushat e fëmijës zëvendësohen të gjitha; ato të prindit mbeten.
+      const childReset = Object.fromEntries(CHILD_PROFILE_KEYS.map((k) => [k, initialAppState.profile[k]]));
+      return {
+        ...state,
+        baby: { ...initialAppState.baby, ...action.baby },
+        profile: { ...state.profile, ...childReset, ...action.profile },
+      };
+    }
     case "MERGE_BABY_RECORDS":
       return { ...state, baby: { ...state.baby, ...mergeRecordsPatch(state.baby, action.value) } };
     case "SET_NOTIFICATION_PREF":
@@ -291,7 +302,14 @@ function reducer(state: AppState, action: Action): AppState {
 }
 
 /** Vlera e kontekstit: buildValue plus flag-u i ngarkimit nga AsyncStorage. */
-type AppStateValue = ReturnType<typeof buildValue> & { hydrated: boolean; refreshProfileFromServer: () => void };
+type AppStateValue = ReturnType<typeof buildValue> & {
+  hydrated: boolean;
+  refreshProfileFromServer: () => void;
+  /** Ndërrimi i fëmijës: vendos të dhënat e tij dhe rimerr profilin e tij nga serveri. */
+  replaceChildData: (snapshot: { baby: Partial<BabyModuleState>; profile: Partial<ChildProfileFields> }) => void;
+  /** Dërgon emrin/datën/detajet që s'kanë arritur te serveri; false kur s'arritën (pa rrjet). */
+  flushPendingProfile: () => Promise<boolean>;
+};
 
 const AppStateContext = createContext<AppStateValue | null>(null);
 
@@ -529,7 +547,32 @@ export function AppStateProvider({ children }: { children: ReactNode }) {
     setColorScheme(state.darkMode ? "dark" : "light");
   }, [state.darkMode, setColorScheme]);
 
-  const value = { ...buildValue(state, dispatch), hydrated, refreshProfileFromServer: () => setProfileRefresh((v) => v + 1) };
+  const replaceChildData = useCallback((snapshot: { baby: Partial<BabyModuleState>; profile: Partial<ChildProfileFields> }) => {
+    // Asnjë dërgim detajesh derisa të lexohen ato të fëmijës së ri: përndryshe detajet e telefonit (bosh, ose
+    // të fëmijës tjetër) do të mbishkruanin ato të serverit.
+    lastDetailsSent.current = null;
+    dispatch({ type: "REPLACE_CHILD", baby: snapshot.baby, profile: snapshot.profile });
+    setProfileRefresh((v) => v + 1);
+  }, []);
+
+  const flushPendingProfile = useCallback(async () => {
+    const profile = latestState.current.profile;
+    let ok = true;
+    if (await isBabyProfilePending()) {
+      const dob = profile.babyDob ? localDateKey(new Date(profile.babyDob)) : null;
+      ok = (await saveBabyProfileRemote(profile.babyName, dob)) && ok;
+    }
+    if (await isProfileDetailsPending()) ok = (await saveProfileDetailsRemote(detailsFromState(latestState.current))) && ok;
+    return ok;
+  }, []);
+
+  const value = {
+    ...buildValue(state, dispatch),
+    hydrated,
+    refreshProfileFromServer: () => setProfileRefresh((v) => v + 1),
+    replaceChildData,
+    flushPendingProfile,
+  };
   return <AppStateContext.Provider value={value}>{children}</AppStateContext.Provider>;
 }
 

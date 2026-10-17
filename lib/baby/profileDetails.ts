@@ -1,6 +1,7 @@
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { supabase } from "@/lib/supabase/client";
 import { resolveDataOwnerId } from "@/lib/baby/household";
+import { getActiveChildId } from "@/lib/children/store";
 import type { AppState, BabyGender, BloodType } from "@/lib/state/types";
 import type { EmergencyContact, MedicalInfoRow } from "@/lib/state/babyTypes";
 
@@ -77,12 +78,19 @@ const DETAILS_PENDING_KEY = "bebix_baby_details_pending";
 /** Dërgon detajet te serveri; kur s'ka rrjet, i shënon "në pritje" për hapjen tjetër. */
 export async function saveProfileDetailsRemote(details: ProfileDetails): Promise<boolean> {
   try {
-    const ownerId = await resolveDataOwnerId();
-    if (!ownerId) throw new Error("no owner");
-    const { error } = await supabase
-      .from("baby_profiles")
-      .upsert({ user_id: ownerId, details, updated_at: new Date().toISOString() }, { onConflict: "user_id" });
-    if (error) throw error;
+    const childId = getActiveChildId();
+    if (childId) {
+      // Detajet i përkasin fëmijës aktiv.
+      const { error } = await supabase.from("children").update({ details, updated_at: new Date().toISOString() }).eq("id", childId);
+      if (error) throw error;
+    } else {
+      const ownerId = await resolveDataOwnerId();
+      if (!ownerId) throw new Error("no owner");
+      const { error } = await supabase
+        .from("baby_profiles")
+        .upsert({ user_id: ownerId, details, updated_at: new Date().toISOString() }, { onConflict: "user_id" });
+      if (error) throw error;
+    }
     await AsyncStorage.removeItem(DETAILS_PENDING_KEY);
     return true;
   } catch {
@@ -97,6 +105,12 @@ export async function isProfileDetailsPending(): Promise<boolean> {
 
 /** Detajet e ruajtura te serveri, ose null (s'ka rresht, s'ka rrjet, ose bosh). */
 export async function fetchProfileDetails(): Promise<Partial<ProfileDetails> | null> {
+  const childId = getActiveChildId();
+  if (childId) {
+    const { data, error } = await supabase.from("children").select("details").eq("id", childId).maybeSingle();
+    if (error || !data) return null;
+    return parseDetails(data.details);
+  }
   const ownerId = await resolveDataOwnerId();
   if (!ownerId) return null;
   const { data, error } = await supabase.from("baby_profiles").select("details").eq("user_id", ownerId).maybeSingle();

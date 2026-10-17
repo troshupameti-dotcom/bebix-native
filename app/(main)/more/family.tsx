@@ -15,6 +15,7 @@ import {
 import { personLabel, type HouseholdPerson, type HouseholdRole } from "@/lib/baby/team";
 import { useHouseholdRole } from "@/lib/hooks/useHouseholdRole";
 import { syncBabyRecords } from "@/lib/baby/babyRecordsSync";
+import { getActiveChildId } from "@/lib/children/store";
 import { retrySync } from "@/lib/baby/syncStatus";
 import { useAppState } from "@/lib/state/AppStateContext";
 import { friendlyError } from "@/lib/errors/userMessage";
@@ -74,7 +75,7 @@ export default function FamilyScreen() {
       // Shënimet e veta që s'kanë arritur ende në server dërgohen PARA se
       // telefoni të kalojë te bebi i familjes (pas bashkimit pastrohen).
       try {
-        await syncBabyRecords(state.baby);
+        await syncBabyRecords(state.baby, getActiveChildId());
       } catch {
         // Pa rrjet, bashkimi do të dështojë vetë me mesazhin e vet.
       }

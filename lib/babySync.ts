@@ -2,6 +2,7 @@ import { log } from "@/lib/log";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { supabase } from "@/lib/supabase/client";
 import { resolveDataOwnerId } from "@/lib/baby/household";
+import { getActiveChildId } from "@/lib/children/store";
 
 /**
  * Sinkronizon emrin dhe datëlindjen e bebit te Supabase (tabela
@@ -17,6 +18,16 @@ import { resolveDataOwnerId } from "@/lib/baby/household";
  *   ditëlindjen një ditë para — dhe urimi e muaji i ri vinin një ditë herët.
  */
 export async function syncBabyProfileToSupabase(babyName: string | null, babyDobKey: string | null): Promise<boolean> {
+  // Disa fëmijë: emri dhe data shkojnë te fëmija aktiv (serveri e pasqyron fëmijën falas te baby_profiles).
+  const childId = getActiveChildId();
+  if (childId) {
+    const { error } = await supabase
+      .from("children")
+      .update({ name: babyName, birth_date: babyDobKey, updated_at: new Date().toISOString() })
+      .eq("id", childId);
+    if (error) log("Gabim gjatë ruajtjes së fëmijës:", error.message);
+    return !error;
+  }
   // Profili i bebit i perket pronarit te te dhenave, jo secilit prind.
   const userId = await resolveDataOwnerId();
   if (!userId) return false;
@@ -59,6 +70,12 @@ export async function isBabyProfilePending(): Promise<boolean> {
  * vetëm në telefonin ku u shkruan: partneri e shihte bebin pa emër.
  */
 export async function fetchBabyProfileBasics(): Promise<{ babyName: string | null; babyDob: string | null } | null> {
+  const childId = getActiveChildId();
+  if (childId) {
+    const { data, error } = await supabase.from("children").select("name, birth_date").eq("id", childId).maybeSingle();
+    if (error || !data) return null;
+    return { babyName: data.name ?? null, babyDob: data.birth_date ?? null };
+  }
   const ownerId = await resolveDataOwnerId();
   if (!ownerId) return null;
   const { data, error } = await supabase
@@ -120,6 +137,15 @@ export async function syncProfilePhotoToSupabase(
   // Fotoja e bebit i përket bebit (pronarit të të dhënave); fotoja e prindit
   // i përket llogarisë vetë. Më parë të dyja shkonin te pronari, dhe fotoja e
   // prindit të dytë zëvendësonte atë të pronarit në telefonin e tij.
+  const childId = kind === "baby" ? getActiveChildId() : null;
+  if (childId) {
+    const { error } = await supabase
+      .from("children")
+      .update({ photo_path: storagePath, updated_at: new Date().toISOString() })
+      .eq("id", childId);
+    if (error) log("Gabim gjatë sinkronizimit të fotos së fëmijës:", error.message);
+    return;
+  }
   const userId = kind === "baby" ? await resolveDataOwnerId() : await currentUserId();
   if (!userId) return;
 
@@ -141,14 +167,17 @@ export async function fetchProfilePhotoPaths(): Promise<{
   const selfId = await currentUserId();
   if (!ownerId || !selfId) return null;
 
+  const childId = getActiveChildId();
   const [{ data: owner, error: ownerError }, { data: self }] = await Promise.all([
-    supabase.from("baby_profiles").select("baby_photo_path").eq("user_id", ownerId).maybeSingle(),
+    childId
+      ? supabase.from("children").select("baby_photo_path:photo_path").eq("id", childId).maybeSingle()
+      : supabase.from("baby_profiles").select("baby_photo_path").eq("user_id", ownerId).maybeSingle(),
     supabase.from("baby_profiles").select("parent_photo_path").eq("user_id", selfId).maybeSingle(),
   ]);
   if (ownerError) return null;
 
   return {
-    babyPhotoPath: owner?.baby_photo_path ?? null,
+    babyPhotoPath: (owner as { baby_photo_path?: string | null } | null)?.baby_photo_path ?? null,
     parentPhotoPath: self?.parent_photo_path ?? null,
   };
 }

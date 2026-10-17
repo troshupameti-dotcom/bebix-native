@@ -2,7 +2,15 @@ import { log } from "@/lib/log";
 import { useEffect, useRef, useState } from "react";
 import { AppState } from "react-native";
 import { useAppState } from "@/lib/state/AppStateContext";
-import { resetBabyRecordsSyncState, syncBabyRecords } from "@/lib/baby/babyRecordsSync";
+import {
+  exportRecordsSyncState, importRecordsSyncState, mergeRecordsPatch, resetBabyRecordsSyncState, syncBabyRecords,
+} from "@/lib/baby/babyRecordsSync";
+import { ChildError, setActiveChildRemote } from "@/lib/children/api";
+import { resolveChildren } from "@/lib/children/resolve";
+import { childProfileOf, clearChildSnapshots, dropChildSnapshot, loadChildSnapshot, saveChildSnapshot } from "@/lib/children/stash";
+import { clearChildrenStore, getChildrenState, setChildrenState } from "@/lib/children/store";
+import { registerChildSwitchRunner, takeChildSwitch } from "@/lib/children/switchRequest";
+import { parseDate } from "@/lib/age/engine";
 import { claimDataOwner, claimLocalData } from "@/lib/auth/localDataOwner";
 import { resolveDataOwnerId, resolveDataOwnerIdStrict } from "@/lib/baby/household";
 import { registerSyncRequest, resetSyncStatus, setSyncPhase } from "@/lib/baby/syncStatus";
@@ -35,19 +43,59 @@ const DEBOUNCE_MS = 2_500;
  * punon, ai nis sapo mbaron i pari.
  */
 export function useBabyRecordsSync(isAuthenticated: boolean) {
-  const { state, hydrated, applyBabyRecordsPatch, resetBabyData, refreshProfileFromServer } = useAppState();
+  const { state, hydrated, applyBabyRecordsPatch, resetBabyData, refreshProfileFromServer, replaceChildData, flushPendingProfile } =
+    useAppState();
 
   // Refs, që efektet të mos rinisen në çdo shkrim (react-hooks/refs: shkrimi
   // bëhet në efekt, jo gjatë render-it).
   const latestBaby = useRef(state.baby);
+  const latestProfile = useRef(state.profile);
   const apply = useRef(applyBabyRecordsPatch);
   const reset = useRef(resetBabyData);
   const refreshProfile = useRef(refreshProfileFromServer);
+  const replaceChild = useRef(replaceChildData);
+  const flushProfile = useRef(flushPendingProfile);
   useEffect(() => {
     latestBaby.current = state.baby;
+    latestProfile.current = state.profile;
     apply.current = applyBabyRecordsPatch;
     reset.current = resetBabyData;
     refreshProfile.current = refreshProfileFromServer;
+    replaceChild.current = replaceChildData;
+    flushProfile.current = flushPendingProfile;
+  });
+
+  /**
+   * Ndërrimi i fëmijës aktiv. Rendi ka rëndësi: (1) dërgohet gjithçka e fëmijës aktual, (2) serveri pranon
+   * fëmijën e ri (i kyçuri refuzohet), (3) fëmija aktual ruhet në telefon, (4) hapet tjetri — nga kopja e tij
+   * në telefon, ose bosh dhe merret i plotë nga serveri. Çdo dështim para hapit (4) e lë gjithçka si ishte.
+   */
+  const switchChild = useRef(async (target: string) => {
+    const from = getChildrenState().activeChildId;
+    if (from === target) return;
+    const child = getChildrenState().children.find((c) => c.id === target);
+    if (!child) throw new ChildError("NOT_ALLOWED");
+    if (child.isLocked) throw new ChildError("PREMIUM_REQUIRED");
+    if (!(await flushProfile.current())) throw new Error("OFFLINE");
+
+    const patch = from ? await syncBabyRecords(latestBaby.current, from) : null;
+    await setActiveChildRemote(target);
+    if (from) {
+      const baby = patch ? { ...latestBaby.current, ...mergeRecordsPatch(latestBaby.current, patch) } : latestBaby.current;
+      await saveChildSnapshot(from, { baby, profile: childProfileOf(latestProfile.current), sync: await exportRecordsSyncState() });
+    }
+    const snapshot = await loadChildSnapshot(target);
+    await importRecordsSyncState(snapshot?.sync ?? null);
+    const dob = parseDate(child.birthDate);
+    setChildrenState({
+      activeChildId: target,
+      children: getChildrenState().children.map((c) => ({ ...c, isActive: c.id === target })),
+    });
+    replaceChild.current({
+      baby: snapshot?.baby ?? {},
+      profile: snapshot?.profile ?? { babyName: child.name, babyDob: dob ? dob.toISOString() : null, babyPhotoPath: child.photoPath },
+    });
+    await dropChildSnapshot(target);
   });
 
   const running = useRef(false);
@@ -82,12 +130,33 @@ export function useBabyRecordsSync(isAuthenticated: boolean) {
         const ownerId = await resolveDataOwnerIdStrict();
         if (ownerId && (await claimDataOwner(ownerId)) === "switched") {
           await resetBabyRecordsSyncState();
+          // Fëmijët e familjes së mëparshme s'janë më të këtij telefoni.
+          await clearChildrenStore();
+          await clearChildSnapshots();
           reset.current({ keepParent: true });
           refreshProfile.current();
           setOwnerVersion((v) => v + 1);
           return null;
         }
-        return syncBabyRecords(latestBaby.current);
+        const children = await resolveChildren();
+        // Premium skadoi dhe fëmija aktiv u kyç: kalohet te fëmija falas (të dhënat e tjetrit mbeten).
+        const forced = children.mode === "ready" && children.switchTo ? children.switchTo : null;
+        const request = takeChildSwitch();
+        if (forced || request) {
+          const target = forced ?? (request as NonNullable<typeof request>).childId;
+          try {
+            await switchChild.current(target);
+            request?.resolve();
+            // Sync-u i radhës tërheq shënimet e fëmijës së ri.
+            queued.current = true;
+            return null;
+          } catch (e) {
+            // Prindi e sheh arsyen te ekrani (p.sh. Premium); sync-u i fëmijës aktual vazhdon si zakonisht.
+            request?.reject(e);
+            if (forced) throw e;
+          }
+        }
+        return syncBabyRecords(latestBaby.current, children.mode === "ready" ? children.activeChildId : null);
       })()
         .then((patch) => {
           setSyncPhase("synced");
@@ -124,11 +193,14 @@ export function useBabyRecordsSync(isAuthenticated: boolean) {
     // historikun e llogarisë së mëparshme te kjo.
     ownerReady.current = false;
     registerSyncRequest(() => runSync.current());
+    registerChildSwitchRunner(() => runSync.current());
     (async () => {
       const { data } = await supabase.auth.getSession();
       const userId = data.session?.user.id;
       if (userId && (await claimLocalData(userId)) === "switched") {
         await resetBabyRecordsSyncState();
+        await clearChildrenStore();
+        await clearChildSnapshots();
         if (cancelled) return;
         reset.current();
         queued.current = false;
@@ -152,6 +224,7 @@ export function useBabyRecordsSync(isAuthenticated: boolean) {
 
     return () => {
       cancelled = true;
+      registerChildSwitchRunner(null);
       resetSyncStatus();
       clearInterval(interval);
       subscription.remove();
