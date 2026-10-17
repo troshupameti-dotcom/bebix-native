@@ -21,6 +21,7 @@ import { setNightOverride, useNightMode } from "@/lib/baby/nightMode";
 import { computeAgeText } from "@/lib/dateUtils";
 import { WHATS_NEW_KEY, WHATS_NEW_VERSION } from "@/lib/whatsNew";
 import { searchSettings } from "@/lib/settings/search";
+import { IconTile, TILE_COLORS } from "@/components/settings/IconTile";
 
 type Row = {
   key: string;
@@ -40,27 +41,7 @@ type Row = {
 
 type Section = { key: string; title: string; rows: Row[] };
 
-/** Ngjyrat e pllakave të ikonave: paleta e sistemit të Apple-it, e njohur dhe e lexueshme në të dyja temat. */
-const C = {
-  red: "#FF3B30",
-  orange: "#FF9500",
-  pink: "#FF2D55",
-  purple: "#AF52DE",
-  indigo: "#5856D6",
-  blue: "#007AFF",
-  teal: "#30B0C7",
-  green: "#34C759",
-  gray: "#8E8E93",
-} as const;
-
-/** Pllaka e ikonës: katror i rrumbullakosur me ngjyrë, ikonë e bardhë (si te iPhone). */
-function IconTile({ icon: Glyph, color, size = 30 }: { icon: LucideIcon; color: string; size?: number }) {
-  return (
-    <View style={{ width: size, height: size, borderRadius: size * 0.26, backgroundColor: color, alignItems: "center", justifyContent: "center" }}>
-      <Glyph size={size * 0.58} color="#FFFFFF" strokeWidth={2.2} />
-    </View>
-  );
-}
+const C = TILE_COLORS;
 
 /** Një rresht: ikona me ngjyrë, emri, vlera aktuale dhe shigjeta. Zonë prekjeje ≥ 52pt. */
 function SettingsRow({ row, last, subtitle }: { row: Row; last: boolean; subtitle?: string }) {
