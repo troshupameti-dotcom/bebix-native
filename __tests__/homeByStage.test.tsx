@@ -70,10 +70,12 @@ describe("kujtesat sipas fazës", () => {
   const t = (key: string, p?: Record<string, string | number>) =>
     Object.entries(p ?? {}).reduce((s, [k, v]) => s.replace(`{${k}}`, String(v)), (translations.sq as Record<string, string>)[key] ?? key);
   const life = { createdAt: "", updatedAt: "", editCount: 0, deletedAt: null, archivedAt: null };
+  const elevenHoursAgo = new Date(NOW.getTime() - 11 * 3_600_000).toISOString();
   const baby = {
     ...initialBabyState,
-    feedingLog: [{ ...life, id: "f", type: "bottle", amountMl: null, durationMin: null, side: null, foodCategory: null, at: "2026-10-14T01:00:00Z", note: "" }],
-    diaperLog: [{ ...life, id: "d", type: "wet", color: null, consistency: null, at: "2026-10-14T01:00:00Z", note: "" }],
+    // 11 orë para "tani" të testit (ora lokale), që të mos varet nga zona orare (CI e provon edhe në UTC+12).
+    feedingLog: [{ ...life, id: "f", type: "bottle", amountMl: null, durationMin: null, side: null, foodCategory: null, at: elevenHoursAgo, note: "" }],
+    diaperLog: [{ ...life, id: "d", type: "wet", color: null, consistency: null, at: elevenHoursAgo, note: "" }],
   } as never;
 
   it("me trackers: ushqyerja dhe pelena; pa trackers (3–12 vjeç): asnjëra", () => {

@@ -5,7 +5,8 @@ import { emptyProfile } from "@/lib/state/types";
 // Datat si në app: mesnatë LOKALE (profili ruan datën e lindjes kështu), që testi të vlejë në çdo zonë kohore.
 const local = (y: number, m: number, d: number, h = 0) => new Date(y, m - 1, d, h).toISOString();
 const NOW = new Date(2026, 9, 6, 10);
-const life = { createdAt: "2026-09-01T00:00:00Z", updatedAt: "2026-09-20T12:00:00Z", editCount: 0, deletedAt: null, archivedAt: null };
+// Ora lokale (mesditë): data e përditësimit del "20 shtator" në çdo zonë orare (CI e provon edhe në UTC+12).
+const life = { createdAt: "2026-09-01T00:00:00Z", updatedAt: local(2026, 9, 20, 12), editCount: 0, deletedAt: null, archivedAt: null };
 
 function baby(extra: Partial<BabyModuleState> = {}): BabyModuleState {
   return { ...initialBabyState, ...extra };
