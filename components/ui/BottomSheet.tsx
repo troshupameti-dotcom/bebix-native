@@ -1,6 +1,7 @@
-import { Keyboard, Modal, Platform, Pressable, View, ScrollView, useWindowDimensions } from "react-native";
+import { Modal, Pressable, View, ScrollView, useWindowDimensions } from "react-native";
 import { MotiView } from "moti";
-import { ReactNode, useEffect, useState } from "react";
+import { ReactNode } from "react";
+import { useKeyboardHeight } from "@/lib/ui/useKeyboardHeight";
 
 type BottomSheetProps = {
   visible: boolean;
@@ -8,25 +9,6 @@ type BottomSheetProps = {
   children: ReactNode;
   maxHeightPct?: number;
 };
-
-/**
- * Lartësia e tastierës së hapur (0 kur është mbyllur). Dritarja e Modal-it me `statusBarTranslucent` nuk ngjitet vetë
- * kur hapet tastiera (Android me ekran të plotë, edhe iPhone), ndaj forma mbetej poshtë tastierës dhe s'dukej.
- */
-function useKeyboardHeight(): number {
-  const [height, setHeight] = useState(0);
-  useEffect(() => {
-    const showEvent = Platform.OS === "ios" ? "keyboardWillShow" : "keyboardDidShow";
-    const hideEvent = Platform.OS === "ios" ? "keyboardWillHide" : "keyboardDidHide";
-    const show = Keyboard.addListener(showEvent, (e) => setHeight(e.endCoordinates.height));
-    const hide = Keyboard.addListener(hideEvent, () => setHeight(0));
-    return () => {
-      show.remove();
-      hide.remove();
-    };
-  }, []);
-  return height;
-}
 
 /**
  * Reusable slide-up sheet — used for "add item" pickers, custom-entry

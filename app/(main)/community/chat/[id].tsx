@@ -1,14 +1,15 @@
 import { useCallback, useEffect, useRef, useState } from "react";
-import { View, Text, FlatList, Pressable, TextInput, KeyboardAvoidingView, Platform, ActivityIndicator, Alert } from "react-native";
+import { View, Text, FlatList, Pressable, TextInput, Platform, ActivityIndicator, Alert, useWindowDimensions } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useFocusEffect, useLocalSearchParams, useRouter } from "expo-router";
 import * as ScreenCapture from "expo-screen-capture";
+import { ArrowUp, Camera, Ellipsis } from "lucide-react-native";
 import { BackButton, goBackOr } from "@/components/ui/BackButton";
-import { Icon } from "@/components/ui/Icon";
-import { shadows } from "@/lib/shadows";
+import { Avatar } from "@/components/community/PostCard";
 import { haptics } from "@/lib/haptics";
 import { useTranslation } from "@/lib/i18n/LanguageContext";
 import { useThemeColors } from "@/lib/theme/useThemeColors";
+import { useKeyboardHeight } from "@/lib/ui/useKeyboardHeight";
 import { formatTime, formatDate } from "@/lib/dateUtils";
 import { logWarn } from "@/lib/log";
 import { blockUser, getCurrentUserId } from "@/lib/communityData";
@@ -17,11 +18,21 @@ import {
   PAGE_SIZE, sendMessage, subscribeToConversation, type Message,
 } from "@/lib/community/messages";
 
+/** Mesazhet e të njëjtit person brenda kaq minutash bashkohen në një grup (ora del vetëm te i fundit). */
+const GROUP_MINUTES = 5;
+
+function sameGroup(a: Message | undefined, b: Message | undefined): boolean {
+  return (
+    !!a && !!b && a.kind === "text" && b.kind === "text" && a.senderId === b.senderId && dayKey(a.at) === dayKey(b.at) &&
+    Math.abs(new Date(a.at).getTime() - new Date(b.at).getTime()) <= GROUP_MINUTES * 60_000
+  );
+}
+
 /**
- * Biseda: mesazhet (më të rejat poshtë), dërgimi, fshirja e mesazhit tim
- * (shtyp gjatë), bllokimi. Mesazhet e reja vijnë menjëherë.
- * Screenshot-i: në Android ndalohet (ekrani del i zi); në iPhone, ku Apple s'e
- * lejon ndalimin, biseda merr shënimin "bëri një screenshot".
+ * Biseda: mesazhet (më të rejat poshtë), dërgimi, fshirja e mesazhit tim (shtyp gjatë), bllokimi. Mesazhet e reja
+ * vijnë menjëherë. Mesazhet e njëpasnjëshme të të njëjtit person grupohen, me orën vetëm te i fundit.
+ * Screenshot-i: në Android ndalohet (ekrani del i zi); në iPhone, ku Apple s'e lejon ndalimin, biseda merr shënimin
+ * "bëri një screenshot".
  */
 export default function ChatScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
@@ -35,6 +46,13 @@ export default function ChatScreen() {
   const [sending, setSending] = useState(false);
   const [hasMore, setHasMore] = useState(true);
   const loadingMore = useRef(false);
+
+  // Tastiera: hapësira poshtë = sa e mbulon tastiera ekranin e bisedës (pa shiritin e tab-eve, kur është aty).
+  const keyboard = useKeyboardHeight();
+  const { height: windowHeight } = useWindowDimensions();
+  const containerRef = useRef<View>(null);
+  const [bottomGap, setBottomGap] = useState(0);
+  const lift = Math.max(0, keyboard - bottomGap);
 
   ScreenCapture.usePreventScreenCapture(`dm-${id}`);
 
@@ -160,24 +178,64 @@ export default function ChatScreen() {
     ]);
   }
 
-  // Ndarësi i ditës shfaqet sipër mesazhit të parë të çdo dite (lista është përmbys).
+  function dayLabel(iso: string): string {
+    const now = new Date();
+    const yesterday = new Date(now.getFullYear(), now.getMonth(), now.getDate() - 1);
+    if (dayKey(iso) === dayKey(now.toISOString())) return t("diary_today");
+    if (dayKey(iso) === dayKey(yesterday.toISOString())) return t("diary_yesterday");
+    return formatDate(iso, lang);
+  }
+
+  // Lista është përmbys: index + 1 = mesazhi më i vjetër (sipër), index − 1 = më i riu (poshtë).
   const renderItem = ({ item, index }: { item: Message; index: number }) => {
     const older = messages[index + 1];
+    const newer = messages[index - 1];
     const showDay = !older || dayKey(older.at) !== dayKey(item.at);
     const mine = item.senderId === me;
+    const joinsAbove = !showDay && sameGroup(older, item);
+    const joinsBelow = sameGroup(item, newer) && dayKey(newer?.at ?? "") === dayKey(item.at);
+
+    // Qoshja ngjitur me grupin bëhet e vogël, që mesazhet e një grupi të duken bashkë.
+    const big = 20;
+    const small = 6;
+    const corners = mine
+      ? { borderTopRightRadius: joinsAbove ? small : big, borderBottomRightRadius: joinsBelow ? small : big, borderTopLeftRadius: big, borderBottomLeftRadius: big }
+      : { borderTopLeftRadius: joinsAbove ? small : big, borderBottomLeftRadius: joinsBelow ? small : big, borderTopRightRadius: big, borderBottomRightRadius: big };
+
     return (
       <View>
-        {showDay ? <Text className="my-3 text-center font-bodyMedium text-[11px] text-ink-faint">{formatDate(item.at, lang)}</Text> : null}
-        {item.kind === "screenshot" ? (
-          <Text className="my-1.5 text-center font-body text-[11px] text-ink-faint">
-            {mine ? t("dm_screenshot_me") : t("dm_screenshot_other", { name: other?.otherName ?? "" })}
-          </Text>
-        ) : (
-          <Pressable onLongPress={() => messageMenu(item)} delayLongPress={350} className={`my-1 max-w-[80%] ${mine ? "self-end" : "self-start"}`}>
-            <View style={mine ? undefined : shadows.soft} className={`rounded-2xl px-3.5 py-2.5 ${mine ? "rounded-br-md bg-olive" : "rounded-bl-md bg-surface"}`}>
-              <Text className={`font-body text-[14px] leading-5 ${mine ? "text-on-accent" : "text-ink"}`}>{item.body}</Text>
+        {showDay ? (
+          <View className="my-4 items-center">
+            <View className="rounded-full bg-cream-soft px-3 py-1">
+              <Text className="font-bodyMedium text-[11.5px] text-ink-soft">{dayLabel(item.at)}</Text>
             </View>
-            <Text className={`mt-0.5 font-body text-[10px] text-ink-faint ${mine ? "text-right" : "text-left"}`}>{formatTime(item.at, lang)}</Text>
+          </View>
+        ) : null}
+        {item.kind === "screenshot" ? (
+          <View className="my-2 flex-row items-center justify-center">
+            <Camera size={12} color={theme.inkFaint} strokeWidth={2} />
+            <Text className="ml-1.5 font-body text-[11.5px] text-ink-faint">
+              {mine ? t("dm_screenshot_me") : t("dm_screenshot_other", { name: other?.otherName ?? "" })}
+            </Text>
+          </View>
+        ) : (
+          <Pressable
+            onLongPress={() => messageMenu(item)}
+            delayLongPress={350}
+            accessibilityLabel={`${item.body}, ${formatTime(item.at, lang)}`}
+            className={`max-w-[78%] ${mine ? "self-end" : "self-start"} ${joinsAbove ? "mt-0.5" : "mt-2"}`}
+          >
+            <View
+              style={corners}
+              className={`px-3.5 py-2 ${mine ? "bg-olive" : "border border-cream-line bg-surface"}`}
+            >
+              <Text className={`font-body text-[15px] leading-[21px] ${mine ? "text-on-accent" : "text-ink"}`}>{item.body}</Text>
+            </View>
+            {!joinsBelow ? (
+              <Text className={`mt-1 font-body text-[10.5px] text-ink-faint ${mine ? "text-right" : "text-left"} px-1`}>
+                {formatTime(item.at, lang)}
+              </Text>
+            ) : null}
           </Pressable>
         )}
       </View>
@@ -186,13 +244,29 @@ export default function ChatScreen() {
 
   return (
     <SafeAreaView className="flex-1 bg-cream" edges={["top"]}>
-      <View className="flex-row items-center border-b border-cream-line px-5 pb-2 pt-2">
-        <BackButton fallback="/community/inbox" className="mr-3" />
-        <Pressable onPress={() => other && router.push(`/community/user/${other.otherId}`)} className="flex-1" accessibilityRole="button">
-          <Text className="font-display text-lg text-ink" numberOfLines={1}>{other?.otherName ?? ""}</Text>
+      {/* Koka: foto dhe emri (hapin profilin), menuja. */}
+      <View className="flex-row items-center border-b border-cream-line px-4 pb-2.5 pt-1.5">
+        <BackButton fallback="/community/inbox" className="mr-1" />
+        <Pressable
+          onPress={() => other && router.push(`/community/user/${other.otherId}`)}
+          disabled={!other}
+          className="flex-1 flex-row items-center"
+          accessibilityRole="button"
+          accessibilityLabel={other ? `${other.otherName}, ${t("dm_view_profile")}` : undefined}
+        >
+          {other ? <Avatar initial={other.otherName.trim().charAt(0).toUpperCase() || "?"} accent="olive" size={38} userId={other.otherId} /> : null}
+          <Text className="ml-2.5 flex-1 font-bodySemibold text-[16px] text-ink" numberOfLines={1}>
+            {other?.otherName ?? ""}
+          </Text>
         </Pressable>
-        <Pressable onPress={chatMenu} hitSlop={10} accessibilityRole="button" accessibilityLabel={t("dm_options")} className="h-10 w-10 items-center justify-center">
-          <Text className="font-bodySemibold text-lg leading-5 text-ink-faint">⋯</Text>
+        <Pressable
+          onPress={chatMenu}
+          hitSlop={10}
+          accessibilityRole="button"
+          accessibilityLabel={t("dm_options")}
+          className="h-10 w-10 items-center justify-center rounded-full"
+        >
+          <Ellipsis size={20} color={theme.ink} strokeWidth={2.2} />
         </Pressable>
       </View>
 
@@ -200,7 +274,17 @@ export default function ChatScreen() {
       {other === null ? <Text className="mt-10 text-center font-body text-sm text-ink-soft">{t("dm_missing")}</Text> : null}
 
       {other ? (
-        <KeyboardAvoidingView className="flex-1" behavior={Platform.OS === "ios" ? "padding" : undefined} keyboardVerticalOffset={60}>
+        <View
+          ref={containerRef}
+          className="flex-1"
+          style={{ paddingBottom: lift }}
+          onLayout={() =>
+            containerRef.current?.measureInWindow((_x, y, _w, h) => {
+              // Sa hapësirë ka poshtë bisedës deri në fund të ekranit (p.sh. shiriti i tab-eve).
+              if (keyboard === 0) setBottomGap(Math.max(0, windowHeight - (y + h)));
+            })
+          }
+        >
           <FlatList
             data={messages}
             inverted
@@ -208,13 +292,21 @@ export default function ChatScreen() {
             renderItem={renderItem}
             onEndReached={() => void loadOlder()}
             onEndReachedThreshold={0.3}
-            contentContainerStyle={{ paddingHorizontal: 16, paddingVertical: 8 }}
-            ListEmptyComponent={<Text className="my-6 text-center font-body text-xs text-ink-faint" style={{ transform: [{ scaleY: -1 }] }}>{t("dm_say_hi")}</Text>}
+            keyboardShouldPersistTaps="handled"
+            keyboardDismissMode="interactive"
+            contentContainerStyle={{ paddingHorizontal: 14, paddingVertical: 10 }}
+            ListEmptyComponent={
+              <View className="my-10 items-center px-8" style={{ transform: [{ scaleY: -1 }] }}>
+                <Avatar initial={other.otherName.trim().charAt(0).toUpperCase() || "?"} accent="olive" size={64} userId={other.otherId} />
+                <Text className="mt-3 font-bodySemibold text-[16px] text-ink">{other.otherName}</Text>
+                <Text className="mt-1 text-center font-body text-[13px] text-ink-soft">{t("dm_say_hi")}</Text>
+              </View>
+            }
           />
 
           {other.canSend ? (
-            <View className="border-t border-cream-line bg-cream px-4 pb-3 pt-2">
-              <View style={shadows.soft} className="flex-row items-end rounded-xl2 bg-surface px-3 py-2">
+            <View className="flex-row items-end px-3 pb-3 pt-1.5">
+              <View className="mr-2 min-h-[44px] flex-1 justify-center rounded-[22px] border border-cream-line bg-surface px-4">
                 <TextInput
                   value={draft}
                   onChangeText={setDraft}
@@ -222,23 +314,29 @@ export default function ChatScreen() {
                   placeholderTextColor={theme.inkFaint}
                   multiline
                   maxLength={MESSAGE_MAX}
-                  className="max-h-28 flex-1 py-1.5 font-body text-sm text-ink"
+                  accessibilityLabel={t("dm_placeholder")}
+                  className="max-h-32 py-2.5 font-body text-[15px] text-ink"
                 />
-                <Pressable
-                  onPress={() => void send()}
-                  disabled={!canSend}
-                  accessibilityRole="button"
-                  accessibilityLabel={t("dm_send")}
-                  className={`ml-2 h-10 w-10 items-center justify-center rounded-full ${canSend ? "bg-olive" : "bg-cream-line"}`}
-                >
-                  {sending ? <ActivityIndicator size="small" color={theme.onAccent} /> : <Icon name="send" size={16} color={canSend ? theme.onAccent : theme.inkFaint} />}
-                </Pressable>
               </View>
+              <Pressable
+                onPress={() => void send()}
+                disabled={!canSend}
+                accessibilityRole="button"
+                accessibilityLabel={t("dm_send")}
+                accessibilityState={{ disabled: !canSend }}
+                className={`h-11 w-11 items-center justify-center rounded-full ${canSend ? "bg-olive" : "bg-cream-soft"}`}
+              >
+                {sending ? (
+                  <ActivityIndicator size="small" color={theme.onAccent} />
+                ) : (
+                  <ArrowUp size={20} color={canSend ? theme.onAccent : theme.inkFaint} strokeWidth={2.6} />
+                )}
+              </Pressable>
             </View>
           ) : (
             <Text className="border-t border-cream-line px-6 py-4 text-center font-body text-xs leading-5 text-ink-faint">{t("dm_cannot_send")}</Text>
           )}
-        </KeyboardAvoidingView>
+        </View>
       ) : null}
     </SafeAreaView>
   );
