@@ -13,6 +13,7 @@ import { hasAndroidWidgets, hasIosWidgets } from "@/lib/widgets/available";
 import { nativeGoogleAvailable } from "@/lib/auth/googleNative";
 import { useAppState } from "@/lib/state/AppStateContext";
 import { savePendingProfile } from "@/lib/babyProfile";
+import { DOUBLE_TAP_MS, useTabDoubleTap } from "@/lib/navigation/useTabDoubleTap";
 
 afterEach(() => jest.restoreAllMocks());
 
@@ -93,5 +94,44 @@ describe("llogari e re", () => {
     expect(profile!.babyName).toBe("Ana");
     const dob = new Date(profile!.babyDob as string);
     expect([dob.getFullYear(), dob.getMonth(), dob.getDate()]).toEqual([2025, 2, 10]);
+  });
+});
+
+describe("tab-i i Komunitetit", () => {
+  it("një prekje s'bën asgjë (faqja mbetet siç ishte); dy prekje të shpejta: në krye dhe rifreskim", async () => {
+    const router = require("expo-router") as { useNavigation: () => unknown };
+    let listener: ((e: { target?: string }) => void) | null = null;
+    let index = 1;
+    const tabs = {
+      getState: () => ({ type: "tab", index, routes: [{ key: "baby" }, { key: "community" }] }),
+      getParent: () => undefined,
+      addListener: (_: string, cb: (e: { target?: string }) => void) => {
+        listener = cb;
+        return () => {};
+      },
+    };
+    jest.spyOn(router, "useNavigation").mockReturnValue({ getParent: () => tabs });
+    const onDouble = jest.fn();
+    function Probe() {
+      useTabDoubleTap(onDouble);
+      return null;
+    }
+    await renderScreen(<Probe />);
+    const tap = async () => act(async () => { listener!({ target: "community" }); await new Promise((r) => setTimeout(r, 30)); });
+
+    await tap();
+    expect(onDouble).not.toHaveBeenCalled();
+    await new Promise((r) => setTimeout(r, DOUBLE_TAP_MS + 20));
+    await tap();
+    expect(onDouble).not.toHaveBeenCalled();
+    await tap();
+    expect(onDouble).toHaveBeenCalledTimes(1);
+
+    // Kalimi nga një tab tjetër s'është prekja e parë.
+    index = 0;
+    await tap();
+    index = 1;
+    await tap();
+    expect(onDouble).toHaveBeenCalledTimes(1);
   });
 });

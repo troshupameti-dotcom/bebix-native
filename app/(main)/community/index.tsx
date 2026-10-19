@@ -1,7 +1,8 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { View, Text, FlatList, RefreshControl, Pressable, TextInput, ActivityIndicator } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
-import { useRouter, useFocusEffect, useScrollToTop, useLocalSearchParams } from "expo-router";
+import { useRouter, useFocusEffect, useLocalSearchParams } from "expo-router";
+import { useTabDoubleTap } from "@/lib/navigation/useTabDoubleTap";
 import { useAppState } from "@/lib/state/AppStateContext";
 import { useTranslation } from "@/lib/i18n/LanguageContext";
 import { Icon } from "@/components/ui/Icon";
@@ -62,8 +63,6 @@ export default function CommunityScreen() {
   const theme = useThemeColors();
   const specialties = useSpecialties();
   const listRef = useRef<FlatList<CommunityPost>>(null);
-  // Shtypja e tab-it kur je tashmë në të të çon në krye të faqes (si te Instagrami).
-  useScrollToTop(listRef);
 
   const [filters, setFiltersState] = useState<Filters>(NO_FILTERS);
   const { tab, topic, specialty, query } = filters;
@@ -226,6 +225,12 @@ export default function CommunityScreen() {
     await Promise.all([loadStatic(), reload({ reset: true, spinner: false })]);
     setRefreshing(false);
   }, [loadStatic, reload]);
+
+  // Tab-i i Komunitetit: një prekje të kthen te faqja ashtu siç ishte; dy prekje të çojnë në krye dhe e rifreskojnë.
+  useTabDoubleTap(() => {
+    listRef.current?.scrollToOffset({ offset: 0, animated: true });
+    void onRefresh();
+  });
 
   // Postime të reja: kontrollohet pak herë, vetëm kur skeda "Për ty" është pa filtra, dhe vetëm për kohën e postimit më të ri.
   const checkNewPosts = useCallback(async () => {
