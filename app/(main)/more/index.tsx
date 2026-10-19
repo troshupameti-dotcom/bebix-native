@@ -5,7 +5,7 @@ import { useRouter, useScrollToTop } from "expo-router";
 import Constants from "expo-constants";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import {
-  Baby, Bell, Bookmark, ChevronRight, CloudMoon, Contrast, FileText, Gift, Heart, Info, Languages, LifeBuoy, LogOut, Package, Search, Sparkles, Stethoscope, Trash, UserRound, Users, X, type LucideIcon,
+  Baby, Bell, Bookmark, ChevronRight, CloudMoon, Contrast, FileText, Gift, Heart, Info, Languages, LifeBuoy, LogOut, Package, Search, ShieldCheck, Sparkles, Stethoscope, Trash, UserRound, Users, X, type LucideIcon,
 } from "lucide-react-native";
 import { useAppState } from "@/lib/state/AppStateContext";
 import { useLanguage } from "@/lib/i18n/LanguageContext";
@@ -21,6 +21,7 @@ import { computeAgeText } from "@/lib/dateUtils";
 import { WHATS_NEW_KEY, WHATS_NEW_VERSION } from "@/lib/whatsNew";
 import { searchSettings } from "@/lib/settings/search";
 import { IconTile, TILE_COLORS } from "@/components/settings/IconTile";
+import { useIsAdmin } from "@/lib/admin/access";
 
 type Row = {
   key: string;
@@ -162,6 +163,8 @@ export default function MoreScreen() {
   const { email, provider } = useAuthUser();
   const [query, setQuery] = useState("");
   const [whatsNewSeen, setWhatsNewSeen] = useState(true);
+  // Paneli i adminit shfaqet vetëm për llogaritë te tabela `admins`.
+  const isAdmin = useIsAdmin() === true;
 
   useEffect(() => {
     let alive = true;
@@ -346,6 +349,25 @@ export default function MoreScreen() {
               </View>
               <ChevronRight size={18} color={theme.inkFaint} strokeWidth={2} />
             </Pressable>
+
+            {isAdmin ? (
+              <Pressable
+                onPress={() => router.push("/more/admin")}
+                accessibilityRole="button"
+                accessibilityLabel="Paneli i adminit: porositë, produktet, ekspertët, raportimet dhe partnerët"
+                style={({ pressed }) => [shadows.soft, { opacity: pressed ? 0.9 : 1 }]}
+                className="mx-4 mb-5 flex-row items-center rounded-2xl bg-surface p-4"
+              >
+                <View className="mr-3.5">
+                  <IconTile icon={ShieldCheck} color={C.indigo} size={40} />
+                </View>
+                <View className="flex-1">
+                  <Text className="font-bodySemibold text-sm text-ink">Paneli i adminit</Text>
+                  <Text className="mt-0.5 font-body text-xs text-ink-soft">Porositë, produktet, ekspertët, raportimet, partnerët</Text>
+                </View>
+                <ChevronRight size={18} color={theme.inkFaint} strokeWidth={2} />
+              </Pressable>
+            ) : null}
 
             {/* Qendra e kontrollit: tema, modaliteti i natës, gjuha. */}
             <View className="mx-4 mb-6 flex-row" style={{ gap: 12 }}>
