@@ -1,7 +1,7 @@
 import { Modal, Pressable, View, ScrollView, useWindowDimensions } from "react-native";
 import { MotiView } from "moti";
 import { ReactNode } from "react";
-import { useKeyboardHeight } from "@/lib/ui/useKeyboardHeight";
+import { useKeyboardInset } from "@/lib/ui/keyboard";
 
 type BottomSheetProps = {
   visible: boolean;
@@ -17,12 +17,12 @@ type BottomSheetProps = {
  * Kur hapet tastiera, dritarja ngjitet mbi të dhe zvogëlohet sa duhet, që fusha ku shkruan të shihet gjithmonë.
  */
 export function BottomSheet({ visible, onClose, children, maxHeightPct = 80 }: BottomSheetProps) {
-  const keyboard = useKeyboardHeight();
+  const { ref, inset: keyboard, onLayout } = useKeyboardInset();
   const { height: windowHeight } = useWindowDimensions();
   const maxHeight = Math.max(200, (windowHeight * maxHeightPct) / 100 - keyboard);
   return (
     <Modal visible={visible} transparent animationType="fade" onRequestClose={onClose} statusBarTranslucent>
-      <View className="flex-1 justify-end" style={{ paddingBottom: keyboard }}>
+      <View ref={ref} onLayout={onLayout} className="flex-1 justify-end" style={{ paddingBottom: keyboard }}>
         <Pressable className="absolute inset-0 bg-black/40" onPress={onClose} />
         <MotiView
           from={{ translateY: 420 }}

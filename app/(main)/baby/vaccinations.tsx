@@ -1,5 +1,6 @@
 import { useState } from "react";
-import { View, Text, ScrollView, Pressable } from "react-native";
+import { View, Text, Pressable } from "react-native";
+import { KeyboardScrollView } from "@/lib/ui/keyboard";
 import { ThemedSwitch } from "@/components/ui/ThemedSwitch";
 import { MotiView } from "moti";
 import { SafeAreaView } from "react-native-safe-area-context";
@@ -125,7 +126,7 @@ export default function VaccinationsScreen() {
         <Text className="font-display text-xl text-ink">{t("vaccine_screen_title")}</Text>
       </View>
 
-      <ScrollView className="flex-1 px-5" contentContainerStyle={{ paddingBottom: 24 }}>
+      <KeyboardScrollView className="flex-1 px-5" contentContainerStyle={{ paddingBottom: 24 }}>
         {vaccines.length === 0 ? (
           <View className="items-center gap-2 py-16">
             <Icon name="syringe" size={26} color="#E9DFCC" />
@@ -178,7 +179,7 @@ export default function VaccinationsScreen() {
             );
           })
         )}
-      </ScrollView>
+      </KeyboardScrollView>
 
       <View className="px-5 pb-6">
         <Pressable onPress={openNew} className="flex-row items-center justify-center gap-2 rounded-2xl bg-ink py-4">

@@ -1,6 +1,7 @@
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { buildIosWidgetProps, desiredLiveActivity, sameActivity, type LiveActivityProps } from "@/lib/widgets/iosProps";
 import type { WidgetSnapshot } from "@/lib/widgets/snapshot";
+import { hasIosWidgets } from "@/lib/widgets/available";
 
 const ACTIVITY_KEY = "bebix_live_activity_v1";
 
@@ -12,6 +13,7 @@ type Stored = { id: string; props: LiveActivityProps } | null;
  * në iOS — në Android s'ekzistojnë.
  */
 export async function syncIosWidgets(snapshot: WidgetSnapshot): Promise<void> {
+  if (!hasIosWidgets()) return;
   try {
     /* eslint-disable @typescript-eslint/no-require-imports */
     const Quick = (require("@/widgets/iphone/BebixQuickWidget") as typeof import("@/widgets/iphone/BebixQuickWidget")).default;

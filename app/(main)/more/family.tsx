@@ -1,5 +1,6 @@
 import { useCallback, useState } from "react";
-import { View, Text, TextInput, Pressable, ActivityIndicator, ScrollView, Alert, Share, KeyboardAvoidingView, Platform, Switch } from "react-native";
+import { View, Text, TextInput, Pressable, ActivityIndicator, ScrollView, Alert, Share, Switch } from "react-native";
+import { KeyboardSafeView } from "@/lib/ui/keyboard";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useFocusEffect } from "expo-router";
 import { Icon } from "@/components/ui/Icon";
@@ -148,7 +149,7 @@ export default function FamilyScreen() {
 
   return (
     <SafeAreaView className="flex-1 bg-cream" edges={["top"]}>
-      <KeyboardAvoidingView className="flex-1" behavior={Platform.OS === "ios" ? "padding" : undefined}>
+      <KeyboardSafeView>
         <View className="flex-row items-center px-5 pt-2 mb-4">
           <BackButton fallback="/(main)/more" className="mr-3" />
           <Text className="font-display text-xl text-ink">{t("family_title")}</Text>
@@ -323,7 +324,7 @@ export default function FamilyScreen() {
             </View>
           )}
         </ScrollView>
-      </KeyboardAvoidingView>
+      </KeyboardSafeView>
     </SafeAreaView>
   );
 }

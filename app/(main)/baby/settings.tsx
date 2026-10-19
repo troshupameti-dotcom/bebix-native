@@ -1,5 +1,6 @@
 import { useState } from "react";
-import { View, Text, ScrollView, Pressable, TextInput, Image, Alert, Modal, Platform } from "react-native";
+import { View, Text, Pressable, Image, Alert, Modal, Platform } from "react-native";
+import { KeyboardScrollView } from "@/lib/ui/keyboard";
 import { router } from "expo-router";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { pickMedia } from "@/lib/media/imagePicker";
@@ -40,13 +41,12 @@ function genderStyle(g: BabyGender, isActive: boolean) {
     : { border: "border-ink/10", bg: "bg-surface", text: "text-ink" };
 }
 
-function formatDobDisplay(d: Date | null): string {
-  if (!d) return "Zgjidh datën e lindjes";
-  return d.toLocaleDateString("sq-AL", { year: "numeric", month: "long", day: "numeric" });
+function formatDobDisplay(d: Date, lang: "sq" | "en"): string {
+  return d.toLocaleDateString(lang === "en" ? "en-GB" : "sq-AL", { year: "numeric", month: "long", day: "numeric" });
 }
 
 export default function BabySettingsScreen() {
-  const { t } = useTranslation();
+  const { t, lang } = useTranslation();
   const userId = useCurrentUserId();
   const { state, updateProfile, baby, resetBabyData } = useAppState();
   const { profile } = state;
@@ -197,7 +197,7 @@ export default function BabySettingsScreen() {
         <View style={{ width: 36 }} />
       </View>
 
-      <ScrollView className="flex-1 px-5" contentContainerStyle={{ paddingBottom: 40 }}>
+      <KeyboardScrollView className="flex-1 px-5" contentContainerStyle={{ paddingBottom: 40 }}>
         <Pressable onPress={pickPhoto} className="mb-6 items-center gap-2 pt-2">
           {profile.babyPhoto ? (
             <Image source={{ uri: profile.babyPhoto }} className="h-24 w-24 rounded-full" />
@@ -211,25 +211,27 @@ export default function BabySettingsScreen() {
 
         <Text className="mb-2 font-bodySemibold text-base text-ink">{t("baby_settings_edit_profile")}</Text>
         <View style={shadows.soft} className="gap-4 rounded-xl3 border border-ink/10 bg-surface p-5">
-          <Field label={t("baby_settings_name")}>
-            <TextInput value={name} onChangeText={setName} className="font-body text-[15px] text-ink" />
-          </Field>
-          <Field label={t("baby_settings_nickname")}>
-            <TextInput value={nickname} onChangeText={setNickname} className="font-body text-[15px] text-ink" />
-          </Field>
+          {/* Fushat si te "Info mjekësore": titull i vogël dhe kuti me kornizë. */}
+          <FormField label={t("baby_settings_name")} value={name} onChangeText={setName} autoCapitalize="words" />
+          <FormField label={t("baby_settings_nickname")} value={nickname} onChangeText={setNickname} autoCapitalize="words" />
 
           {/* Data e lindjes — picker rrotullues, s'lejon data në të ardhmen (ndryshim #2) */}
-          <Field label={t("baby_settings_dob")}>
-            <Pressable onPress={openDobPicker} className="flex-row items-center justify-between py-1">
-              <Text className={`font-body text-[15px] ${dob ? "text-ink" : "text-ink-soft"}`}>
-                {formatDobDisplay(dob)}
+          <View className="gap-1.5">
+            <Text className="font-bodyMedium text-[12.5px] text-ink-soft">{t("baby_settings_dob")}</Text>
+            <Pressable
+              onPress={openDobPicker}
+              accessibilityRole="button"
+              className="flex-row items-center justify-between rounded-2xl border border-ink/10 bg-surface px-4 py-3.5"
+            >
+              <Text className={`font-body text-[15px] ${dob ? "text-ink" : "text-ink-faint"}`}>
+                {dob ? formatDobDisplay(dob, lang) : t("baby_settings_dob_pick")}
               </Text>
               <Icon name="chevronRight" size={16} color="#A79D8A" />
             </Pressable>
-          </Field>
+          </View>
 
           <View className="gap-1.5">
-            <Text className="font-bodyMedium text-[13px] text-ink-soft">{t("baby_settings_gender")}</Text>
+            <Text className="font-bodyMedium text-[12.5px] text-ink-soft">{t("baby_settings_gender")}</Text>
             <View className="flex-row gap-2">
               {GENDERS.map((g) => {
                 const isActive = gender === g;
@@ -339,7 +341,7 @@ export default function BabySettingsScreen() {
         <Pressable onPress={resyncFromAccount} className="items-center rounded-2xl border border-ink/10 bg-surface py-4">
           <Text className="font-bodyMedium text-[14px] text-ink">{t("baby_settings_resync")}</Text>
         </Pressable>
-      </ScrollView>
+      </KeyboardScrollView>
 
       {/* Modal me picker rrotullues — vetëm iOS. Android hapet si dialog nativ më lart. */}
       {Platform.OS === "ios" && (
@@ -361,7 +363,7 @@ export default function BabySettingsScreen() {
                 mode="date"
                 display="spinner"
                 maximumDate={new Date()}
-                locale="sq-AL"
+                locale={lang === "en" ? "en-GB" : "sq-AL"}
                 onChange={(_event, selectedDate) => {
                   if (selectedDate) setTempDob(selectedDate);
                 }}
@@ -372,14 +374,5 @@ export default function BabySettingsScreen() {
         </Modal>
       )}
     </SafeAreaView>
-  );
-}
-
-function Field({ label, children }: { label: string; children: React.ReactNode }) {
-  return (
-    <View className="gap-1.5 border-b border-ink/8 pb-3">
-      <Text className="font-bodyMedium text-[13px] text-ink-soft">{label}</Text>
-      {children}
-    </View>
   );
 }

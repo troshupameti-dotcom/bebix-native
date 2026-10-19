@@ -18,6 +18,8 @@ import { routeForNotification } from "@/lib/notifications/routing";
 import { useBabyRecordsSync } from "@/lib/hooks/useBabyRecordsSync";
 import { currentPath, noteTabSwitch, sectionOf } from "@/lib/navigation/history";
 import { hardwareBack } from "@/components/ui/BackButton";
+import { useNightMode } from "@/lib/baby/nightMode";
+import { NIGHT_COLORS } from "@/components/baby/NightClock";
 
 // AI-ja rri ne mes: aty ku ishte butoni rrethor, pra duart e mesuara e
 // gjejne ne te njejtin vend, dhe eshte pika me e arritshme me gisht.
@@ -61,6 +63,8 @@ export default function MainLayout() {
   }, [loading, canBrowse]);
 
   const pathname = usePathname();
+  // Modaliteti i natës zë faqen kryesore: edhe shiriti poshtë errësohet, që të mos ndriçojë dhomën.
+  const night = useNightMode();
 
   // Mysafiri në faqen kryesore të Dyqanit: "prapa" e çon te hyrja (ku mund të
   // hyjë ose të regjistrohet), jo te Bebi dhe as jashtë app-it.
@@ -145,12 +149,10 @@ export default function MainLayout() {
 
   if (loading || !canBrowse) return null;
 
-  const colors = {
-    background: theme.surface,
-    border: theme.creamLine,
-    active: theme.ink,
-    inactive: theme.inkFaint,
-  };
+  const nightBar = night.active && role !== "viewer" && (pathname === "/baby" || pathname === "/");
+  const colors = nightBar
+    ? { background: NIGHT_COLORS.bg, border: NIGHT_COLORS.line, active: NIGHT_COLORS.text, inactive: NIGHT_COLORS.faint }
+    : { background: theme.surface, border: theme.creamLine, active: theme.ink, inactive: theme.inkFaint };
   const tabBarHeight = 58 + insets.bottom;
   const tabBarPaddingBottom = Math.max(insets.bottom, 10);
 

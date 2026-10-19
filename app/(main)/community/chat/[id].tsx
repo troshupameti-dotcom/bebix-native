@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from "react";
-import { View, Text, FlatList, Pressable, TextInput, Platform, ActivityIndicator, Alert, useWindowDimensions } from "react-native";
+import { View, Text, FlatList, Pressable, TextInput, Platform, ActivityIndicator, Alert } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useFocusEffect, useLocalSearchParams, useRouter } from "expo-router";
 import * as ScreenCapture from "expo-screen-capture";
@@ -9,7 +9,7 @@ import { Avatar } from "@/components/community/PostCard";
 import { haptics } from "@/lib/haptics";
 import { useTranslation } from "@/lib/i18n/LanguageContext";
 import { useThemeColors } from "@/lib/theme/useThemeColors";
-import { useKeyboardHeight } from "@/lib/ui/useKeyboardHeight";
+import { useKeyboardInset } from "@/lib/ui/keyboard";
 import { formatTime, formatDate } from "@/lib/dateUtils";
 import { logWarn } from "@/lib/log";
 import { blockUser, getCurrentUserId } from "@/lib/communityData";
@@ -48,11 +48,7 @@ export default function ChatScreen() {
   const loadingMore = useRef(false);
 
   // Tastiera: hapësira poshtë = sa e mbulon tastiera ekranin e bisedës (pa shiritin e tab-eve, kur është aty).
-  const keyboard = useKeyboardHeight();
-  const { height: windowHeight } = useWindowDimensions();
-  const containerRef = useRef<View>(null);
-  const [bottomGap, setBottomGap] = useState(0);
-  const lift = Math.max(0, keyboard - bottomGap);
+  const { ref: keyboardRef, inset: keyboardInset, onLayout: onKeyboardLayout } = useKeyboardInset();
 
   ScreenCapture.usePreventScreenCapture(`dm-${id}`);
 
@@ -274,17 +270,7 @@ export default function ChatScreen() {
       {other === null ? <Text className="mt-10 text-center font-body text-sm text-ink-soft">{t("dm_missing")}</Text> : null}
 
       {other ? (
-        <View
-          ref={containerRef}
-          className="flex-1"
-          style={{ paddingBottom: lift }}
-          onLayout={() =>
-            containerRef.current?.measureInWindow((_x, y, _w, h) => {
-              // Sa hapësirë ka poshtë bisedës deri në fund të ekranit (p.sh. shiriti i tab-eve).
-              if (keyboard === 0) setBottomGap(Math.max(0, windowHeight - (y + h)));
-            })
-          }
-        >
+        <View ref={keyboardRef} className="flex-1" style={{ paddingBottom: keyboardInset }} onLayout={onKeyboardLayout}>
           <FlatList
             data={messages}
             inverted

@@ -1,10 +1,10 @@
 import { useState } from "react";
-import { View, Text, ScrollView, Pressable, Linking } from "react-native";
+import { View, Text, ScrollView, Pressable } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { Icon } from "@/components/ui/Icon";
 import { shadows } from "@/lib/shadows";
 import { BackButton } from "@/components/ui/BackButton";
-import { SUPPORT_EMAIL } from "@/lib/support";
+import { openSupportEmail } from "@/lib/support";
 import { useTranslation } from "@/lib/i18n/LanguageContext";
 import type { TranslationKey } from "@/lib/i18n/translations";
 
@@ -48,7 +48,7 @@ export default function HelpCenterScreen() {
         <Text className="font-bodyMedium text-xs text-ink-faint uppercase px-5 mb-2">{t("help_contact")}</Text>
         <View className="px-5">
           <Pressable
-            onPress={() => Linking.openURL(`mailto:${SUPPORT_EMAIL}?subject=${encodeURIComponent(t("help_email_subject"))}`)}
+            onPress={() => void openSupportEmail(t("help_email_subject"), t("support_no_mail_app"))}
             style={shadows.soft}
             className="flex-row items-center bg-surface rounded-xl2 px-4 py-3.5 mb-3"
           >

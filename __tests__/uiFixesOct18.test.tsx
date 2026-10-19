@@ -3,7 +3,7 @@
  * re e postimit (eksperti i verifikuar, "Lexo më shumë", "M'ndihmoi").
  */
 import { fakeSupabase, renderScreen, visibleText } from "./helpers/screen";
-import { Image, Keyboard, Text, View } from "react-native";
+import { Dimensions, Image, Keyboard, Text, View } from "react-native";
 import { act, type ReactTestInstance } from "react-test-renderer";
 import { BottomSheet } from "@/components/ui/BottomSheet";
 import { PostCard } from "@/components/community/PostCard";
@@ -14,7 +14,8 @@ jest.mock("@/components/shop/BrandMarquee", () => ({ BrandMarquee: () => null })
 
 describe("dritarja nga poshtë", () => {
   it("ngjitet mbi tastierën kur ajo hapet dhe kthehet kur mbyllet", async () => {
-    const listeners: Record<string, (e: { endCoordinates: { height: number } }) => void> = {};
+    const listeners: Record<string, (e: { endCoordinates: { height: number; screenY: number } }) => void> = {};
+    const screen = Dimensions.get("screen").height;
     jest.spyOn(Keyboard, "addListener").mockImplementation(((event: string, cb: never) => {
       listeners[event] = cb;
       return { remove: () => {} };
@@ -26,9 +27,10 @@ describe("dritarja nga poshtë", () => {
     );
     const outer = () => r.root.findAll((n) => n.type === View && n.props.className === "flex-1 justify-end")[0];
     expect(outer().props.style).toEqual({ paddingBottom: 0 });
-    await act(async () => (listeners.keyboardWillShow ?? listeners.keyboardDidShow)({ endCoordinates: { height: 300 } }));
+    // Tastiera 300 pikë, e ngjitur në fund të ekranit; dritarja (Modal) zë gjithë ekranin.
+    await act(async () => (listeners.keyboardWillChangeFrame ?? listeners.keyboardDidShow)({ endCoordinates: { height: 300, screenY: screen - 300 } }));
     expect(outer().props.style).toEqual({ paddingBottom: 300 });
-    await act(async () => (listeners.keyboardWillHide ?? listeners.keyboardDidHide)({ endCoordinates: { height: 0 } }));
+    await act(async () => (listeners.keyboardWillHide ?? listeners.keyboardDidHide)({ endCoordinates: { height: 0, screenY: screen } }));
     expect(outer().props.style).toEqual({ paddingBottom: 0 });
   });
 });

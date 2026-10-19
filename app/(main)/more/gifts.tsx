@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
-import { View, Text, ScrollView, Pressable, TextInput, Image, Share, ActivityIndicator } from "react-native";
+import { View, Text, Pressable, TextInput, Image, Share, ActivityIndicator } from "react-native";
+import { KeyboardScrollView } from "@/lib/ui/keyboard";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useRouter } from "expo-router";
 import { ZoomScreen } from "@/components/ZoomScreen";
@@ -225,9 +226,9 @@ export default function GiftListScreen() {
     <SafeAreaView className="flex-1 bg-cream" edges={["top"]}>
       <ZoomScreen>
         {header}
-        <ScrollView contentContainerStyle={{ paddingBottom: 48 }} keyboardShouldPersistTaps="handled">
+        <KeyboardScrollView contentContainerStyle={{ paddingBottom: 48 }}>
           {body}
-        </ScrollView>
+        </KeyboardScrollView>
       </ZoomScreen>
     </SafeAreaView>
   );

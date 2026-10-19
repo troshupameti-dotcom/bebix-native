@@ -1,6 +1,7 @@
 import { useToast } from "@/lib/toast/ToastContext";
 import { useEffect, useState } from "react";
 import { View, Text, ScrollView, Pressable, Image, ActivityIndicator, FlatList } from "react-native";
+import { KeyboardScrollView } from "@/lib/ui/keyboard";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import { useAppState } from "@/lib/state/AppStateContext";
@@ -137,7 +138,7 @@ export default function ProductDetailsScreen() {
         </View>
       </View>
 
-      <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={{ paddingBottom: 130 }}>
+      <KeyboardScrollView showsVerticalScrollIndicator={false} contentContainerStyle={{ paddingBottom: 130 }}>
         {/* Gallery — swipe-able nëse ka më shumë se 1 foto */}
         <View>
           {gallerySlides.length > 0 ? (
@@ -254,7 +255,7 @@ export default function ProductDetailsScreen() {
             </ScrollView>
           </>
         )}
-      </ScrollView>
+      </KeyboardScrollView>
 
       {/* Sticky bottom actions */}
       <View className="absolute bottom-0 left-0 right-0 bg-cream px-5 pt-3 pb-6 flex-row" style={shadows.softLg}>

@@ -237,7 +237,7 @@ export default function TimeCapsuleScreen() {
           />
           <Text className="font-body text-xs text-ink-soft">{t("capsule_seal_hint")}</Text>
           <Pressable onPress={confirmSeal} disabled={sealing} className="items-center rounded-2xl bg-ink py-4" style={{ minHeight: 56 }}>
-            {sealing ? <ActivityIndicator color="#FBF6EE" /> : <Text className="font-bodyMedium text-[15px] text-cream">{t("capsule_seal")} 💌</Text>}
+            {sealing ? <ActivityIndicator className="text-cream" /> : <Text className="font-bodyMedium text-[15px] text-cream">{t("capsule_seal")} 💌</Text>}
           </Pressable>
         </ScrollView>
       </BottomSheet>

@@ -5,9 +5,8 @@ import {
   TextInput,
   Pressable,
   ScrollView,
-  KeyboardAvoidingView,
-  Platform,
 } from "react-native";
+import { KeyboardSafeView } from "@/lib/ui/keyboard";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { Icon } from "@/components/ui/Icon";
 import { useTranslation } from "@/lib/i18n/LanguageContext";
@@ -65,11 +64,7 @@ export default function AiChatScreen() {
         </View>
       </View>
 
-      <KeyboardAvoidingView
-        behavior={Platform.OS === "ios" ? "padding" : undefined}
-        className="flex-1"
-        keyboardVerticalOffset={90}
-      >
+      <KeyboardSafeView>
         {/* Messages */}
         <ScrollView
           ref={scrollRef}
@@ -128,7 +123,7 @@ export default function AiChatScreen() {
             <Icon name="send" size={18} color={input.trim() ? "#FFFFFF" : "#A79D8A"} />
           </Pressable>
         </View>
-      </KeyboardAvoidingView>
+      </KeyboardSafeView>
     </SafeAreaView>
   );
 }

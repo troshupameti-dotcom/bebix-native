@@ -45,7 +45,7 @@ export function PostVideo({ url, aspectRatio, duration, interactive, onPressPrev
   const label = formatVideoDuration(duration);
   return (
     <Pressable
-      onPress={interactive ? () => Linking.openURL(url) : onPressPreview}
+      onPress={interactive ? () => void Linking.openURL(url).catch(() => {}) : onPressPreview}
       accessibilityRole="button"
       accessibilityLabel={t("video_play")}
       style={{ aspectRatio }}

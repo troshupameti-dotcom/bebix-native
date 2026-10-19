@@ -6,7 +6,7 @@ import { signedUrlForProfilePhoto } from "@/lib/baby/profilePhotos";
 import {
   fetchBabyProfileBasics, fetchParentName, fetchProfilePhotoPaths, isBabyProfilePending, isParentNamePending, saveBabyProfileRemote, saveParentNameRemote,
 } from "@/lib/babySync";
-import { localDateKey } from "@/lib/babyProfile";
+import { getPendingProfile, localDateKey } from "@/lib/babyProfile";
 import { mergeRecordsPatch, resetBabyRecordsSyncState } from "@/lib/baby/babyRecordsSync";
 import { loadAppState, saveAppState } from "@/lib/state/persistence";
 import { CHILD_PROFILE_KEYS, type ChildProfileFields } from "@/lib/children/stash";
@@ -391,8 +391,15 @@ export function AppStateProvider({ children }: { children: ReactNode }) {
         await saveBabyProfileRemote(profile.babyName, dob);
         return;
       }
-      const basics = await fetchBabyProfileBasics().catch(() => null);
-      if (!alive || !basics) return;
+      const fetched = await fetchBabyProfileBasics().catch(() => null);
+      // Llogari e re: emri dhe data e regjistrimit mund të mos kenë arritur ende te serveri kur lexohet (sidomos
+      // kur telefoni sapo u pastrua nga llogaria e mëparshme). Deri atëherë merren nga ato të regjistrimit.
+      const pending = await getPendingProfile().catch(() => null);
+      const basics = {
+        babyName: fetched?.babyName || pending?.babyName || null,
+        babyDob: fetched?.babyDob || pending?.babyDob || null,
+      };
+      if (!alive || (!fetched && !pending)) return;
       const patch: Partial<BabyProfile> = {};
       if (basics.babyName && basics.babyName !== profile.babyName) patch.babyName = basics.babyName;
       if (basics.babyDob) {

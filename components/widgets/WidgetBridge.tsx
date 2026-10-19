@@ -9,6 +9,7 @@ import { applyPending, planDrain, type WidgetAction } from "@/lib/widgets/queue"
 import { buildSnapshot, sameSnapshot } from "@/lib/widgets/snapshot";
 import { drainQueue, loadSnapshot, QUEUE_EVENT, saveSnapshot } from "@/lib/widgets/store";
 import { syncIosWidgets } from "@/lib/widgets/iosSync";
+import { hasAndroidWidgets } from "@/lib/widgets/available";
 import type { WidgetSnapshot } from "@/lib/widgets/snapshot";
 
 /** Rivizatimi i widget-eve: Android (react-native-android-widget) dhe iPhone (expo-widgets + Live Activity). */
@@ -17,7 +18,7 @@ async function reloadWidgets(snapshot: WidgetSnapshot | null) {
     if (snapshot) await syncIosWidgets(snapshot);
     return;
   }
-  if (Platform.OS !== "android") return;
+  if (!hasAndroidWidgets()) return;
   try {
     // eslint-disable-next-line @typescript-eslint/no-require-imports
     const { refreshAndroidWidgets } = require("@/widgets/android-home/taskHandler") as typeof import("@/widgets/android-home/taskHandler");

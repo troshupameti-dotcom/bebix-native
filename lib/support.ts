@@ -1,3 +1,5 @@
+import { Alert, Linking } from "react-native";
+
 /**
  * Kontakti i mbështetjes — një vend i vetëm.
  *
@@ -20,4 +22,16 @@ export const WEB_BASE_URL = "https://www.bebix.store";
 
 export function webLegalUrl(language: string, doc: "terms" | "privacy"): string {
   return `${WEB_BASE_URL}/${language === "en" ? "en" : "sq"}/legal/${doc}`;
+}
+
+/**
+ * Hap emailin për mbështetjen. Telefoni pa aplikacion emaili (p.sh. iPhone pa Mail) e refuzon lidhjen `mailto:`:
+ * atëherë prindi sheh adresën, në vend të një gabimi të heshtur.
+ */
+export async function openSupportEmail(subject: string, noAppMessage: string): Promise<void> {
+  try {
+    await Linking.openURL(`mailto:${SUPPORT_EMAIL}?subject=${encodeURIComponent(subject)}`);
+  } catch {
+    Alert.alert(SUPPORT_EMAIL, noAppMessage);
+  }
 }

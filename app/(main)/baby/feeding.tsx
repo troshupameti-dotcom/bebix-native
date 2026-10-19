@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { View, Text, ScrollView, Pressable, TextInput } from "react-native";
+import { View, Text, Pressable, TextInput } from "react-native";
+import { KeyboardScrollView } from "@/lib/ui/keyboard";
 import { shadows } from "@/lib/shadows";
 import { JustSaved } from "@/components/baby/JustSaved";
 import { trackRecordLogged, trackRecordUndone } from "@/lib/analytics/babyEvents";
@@ -292,7 +293,7 @@ export default function FeedingScreen() {
         <Text className="font-display text-xl text-ink">{t("feeding_screen_title")}</Text>
       </View>
 
-      <ScrollView className="flex-1 px-5" contentContainerStyle={{ paddingBottom: 24 }}>
+      <KeyboardScrollView className="flex-1 px-5" contentContainerStyle={{ paddingBottom: 24 }}>
         <SinceHero
           title={t("feeding_last_title")}
           lastAt={log[0]?.at ?? null}
@@ -497,7 +498,7 @@ export default function FeedingScreen() {
             </MotiView>
           ))
         )}
-      </ScrollView>
+      </KeyboardScrollView>
 
       <View className="px-5 pb-6">
         {/* Dytësore: shumica e shënimeve bëhen me pllakat lart. */}

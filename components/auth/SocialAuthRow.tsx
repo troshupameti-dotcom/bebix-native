@@ -7,6 +7,8 @@ import { authCallbackUrl } from "@/lib/auth/callbackUrl";
 import Svg, { Path } from "react-native-svg";
 import { supabase } from "@/lib/supabase/client";
 import { parseOAuthRedirect } from "@/lib/auth/oauthRedirect";
+import { nativeGoogleAvailable, signInWithGoogleNative } from "@/lib/auth/googleNative";
+import { captureToSentry } from "@/lib/errors/sentry";
 import { useThemeColors } from "@/lib/theme/useThemeColors";
 import { useTranslation } from "@/lib/i18n/LanguageContext";
 
@@ -26,8 +28,8 @@ const buttonClass =
 /**
  * Hyrja me Apple dhe Google.
  *
- * - Google: fluksi OAuth i Supabase-it në shfletuesin e brendshëm, që kthehet
- *   në app me skemën `bebix://`.
+ * - Google: hyrja native (me emrin "Bebix") kur build-i ka ID-të e Google-it; përndryshe fluksi OAuth i
+ *   Supabase-it në shfletuesin e brendshëm, që kthehet në app me skemën `bebix://`.
  * - Apple: në iPhone me hyrjen NATIVE (`expo-apple-authentication` +
  *   `signInWithIdToken`), siç e kërkon App Store (udhëzimi 4.8) kur ofrohet
  *   Google. Në Android butoni fshihet: Apple aty kërkon një "Services ID" të
@@ -117,6 +119,21 @@ ${redirectTo}` : t("auth_redirect_blocked");
     inFlight.current = true;
 
     try {
+      // Hyrja native (pa adresën e serverit në ekran). Nëse s'punon (p.sh. konfigurim i paplotë te Google),
+      // vazhdohet me hyrjen në shfletues, që prindi të mos mbetet jashtë.
+      if (nativeGoogleAvailable()) {
+        try {
+          const native = await signInWithGoogleNative();
+          if (native.type === "cancelled") return;
+          const { data, error } = await supabase.auth.signInWithIdToken({ provider: "google", token: native.idToken });
+          if (error) throw error;
+          if (data.user?.id) await onSignedIn?.(data.user.id);
+          return;
+        } catch (e) {
+          captureToSentry(e, "google-native-signin");
+        }
+      }
+
       const redirectTo = authCallbackUrl();
       const { data, error } = await supabase.auth.signInWithOAuth({
         provider,

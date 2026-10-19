@@ -1,11 +1,12 @@
 import { useState } from "react";
-import { View, Text, ScrollView, Pressable, Linking } from "react-native";
+import { View, Text, ScrollView, Pressable } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { Icon } from "@/components/ui/Icon";
 import { shadows } from "@/lib/shadows";
 import { BackButton } from "@/components/ui/BackButton";
 import { useThemeColors } from "@/lib/theme/useThemeColors";
-import { SUPPORT_EMAIL } from "@/lib/support";
+import { SUPPORT_EMAIL, openSupportEmail } from "@/lib/support";
+import { useTranslation } from "@/lib/i18n/LanguageContext";
 
 /**
  * Tekstet ligjore.
@@ -118,6 +119,7 @@ const DOCS: { title: string; body: string }[] = [
 
 export default function LegalScreen() {
   const theme = useThemeColors();
+  const { t } = useTranslation();
   const [openIndex, setOpenIndex] = useState<number | null>(null);
 
   return (
@@ -149,7 +151,7 @@ export default function LegalScreen() {
           ))}
 
           <Pressable
-            onPress={() => Linking.openURL(`mailto:${SUPPORT_EMAIL}?subject=Pyetje%20ligjore%20ose%20privatësie`)}
+            onPress={() => void openSupportEmail("Pyetje ligjore ose privatësie", t("support_no_mail_app"))}
             style={shadows.soft}
             className="bg-surface rounded-xl2 px-4 py-3.5 flex-row items-center mt-2"
           >

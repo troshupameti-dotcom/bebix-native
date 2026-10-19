@@ -1,5 +1,6 @@
 import { useMemo, useRef, useState } from "react";
 import { View, Text, ScrollView, Pressable, Image, TextInput, Alert, Share } from "react-native";
+import { KeyboardScrollView } from "@/lib/ui/keyboard";
 import { router, useScrollToTop } from "expo-router";
 import { MotiView } from "moti";
 import { SafeAreaView } from "react-native-safe-area-context";
@@ -709,7 +710,7 @@ export default function BabyProfileScreen() {
       </View>
       ) : null}
 
-      <ScrollView ref={scrollRef} className="flex-1 px-5" contentContainerStyle={{ paddingBottom: 120 }} showsVerticalScrollIndicator={false}>
+      <KeyboardScrollView ref={scrollRef} className="flex-1 px-5" contentContainerStyle={{ paddingBottom: 120 }} showsVerticalScrollIndicator={false}>
         {tabNow === "today" && (
           <MotiView from={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ type: "timing", duration: 200 }}>
             {/* Hero — foto e madhe, jo ikonë e vogël. Kjo âsht qendra
@@ -1144,7 +1145,7 @@ export default function BabyProfileScreen() {
             </Pressable>
           </MotiView>
         )}
-      </ScrollView>
+      </KeyboardScrollView>
 
       {/* ---- Sheets ---- */}
       <BottomSheet visible={sheet === "growth"} onClose={closeSheet}>

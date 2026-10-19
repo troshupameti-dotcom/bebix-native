@@ -1,5 +1,6 @@
 import { useState } from "react";
-import { View, Text, Pressable, TextInput, Image, ScrollView, Alert, ActivityIndicator } from "react-native";
+import { View, Text, Pressable, TextInput, Image, Alert, ActivityIndicator } from "react-native";
+import { KeyboardScrollView } from "@/lib/ui/keyboard";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { pickMedia } from "@/lib/media/imagePicker";
 import { setMyCommunityAvatar } from "@/lib/community/avatars";
@@ -111,7 +112,7 @@ export default function ProfileScreen() {
         </Pressable>
       </View>
 
-      <ScrollView contentContainerStyle={{ paddingBottom: 40 }} keyboardShouldPersistTaps="handled">
+      <KeyboardScrollView contentContainerStyle={{ paddingBottom: 40 }}>
         <View className="items-center mb-6">
           <Pressable accessibilityRole="button" accessibilityLabel={t("prof_change_photo")} onPress={pickPhoto} className="w-24 h-24 rounded-full bg-olive-bg items-center justify-center overflow-hidden mb-2">
             {photo ? <Image source={{ uri: photo }} className="w-24 h-24" /> : <Icon name="camera" size={28} color="#6E7452" />}
@@ -205,7 +206,7 @@ export default function ProfileScreen() {
             </Pressable>
           </View>
         </View>
-      </ScrollView>
+      </KeyboardScrollView>
     </SafeAreaView>
   );
 }

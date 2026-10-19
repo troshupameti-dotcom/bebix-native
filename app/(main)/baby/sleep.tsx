@@ -1,7 +1,8 @@
 import { useCallback, useMemo, useState } from "react";
 import { JustSaved } from "@/components/baby/JustSaved";
 import { trackRecordLogged, trackRecordUndone } from "@/lib/analytics/babyEvents";
-import { View, Text, ScrollView, Pressable } from "react-native";
+import { View, Text, Pressable } from "react-native";
+import { KeyboardScrollView } from "@/lib/ui/keyboard";
 import { MotiView } from "moti";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { Icon } from "@/components/ui/Icon";
@@ -117,7 +118,7 @@ export default function SleepScreen() {
         <Text className="font-display text-xl text-ink">{t("sleep_screen_title")}</Text>
       </View>
 
-      <ScrollView className="flex-1 px-5" contentContainerStyle={{ paddingBottom: 24 }}>
+      <KeyboardScrollView className="flex-1 px-5" contentContainerStyle={{ paddingBottom: 24 }}>
         <StatsRow
           stats={[
             { label: t("sleep_stats_today"), value: stats.today },
@@ -182,7 +183,7 @@ export default function SleepScreen() {
             </MotiView>
           ))
         )}
-      </ScrollView>
+      </KeyboardScrollView>
 
       {justSaved ? (
         <View className="px-5">

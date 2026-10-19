@@ -1,5 +1,6 @@
 import { useCallback, useState } from "react";
-import { View, Text, ScrollView, Pressable, TextInput, ActivityIndicator, KeyboardAvoidingView, Platform, Image } from "react-native";
+import { View, Text, ScrollView, Pressable, TextInput, ActivityIndicator, Image } from "react-native";
+import { KeyboardSafeView } from "@/lib/ui/keyboard";
 import * as ImagePicker from "expo-image-picker";
 import { pickMedia } from "@/lib/media/imagePicker";
 import { SafeAreaView } from "react-native-safe-area-context";
@@ -114,7 +115,7 @@ export default function DoctorRegistrationScreen() {
         <Text className="font-display text-xl text-ink ml-1">{t("doc_title")}</Text>
       </View>
 
-      <KeyboardAvoidingView className="flex-1" behavior={Platform.OS === "ios" ? "padding" : undefined} keyboardVerticalOffset={90}>
+      <KeyboardSafeView>
         <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={{ paddingHorizontal: 20, paddingBottom: 40 }}>
           {existing && existing.status !== "rejected" ? (
             <StatusBanner app={existing} />
@@ -221,7 +222,7 @@ export default function DoctorRegistrationScreen() {
             </>
           )}
         </ScrollView>
-      </KeyboardAvoidingView>
+      </KeyboardSafeView>
     </SafeAreaView>
   );
 }

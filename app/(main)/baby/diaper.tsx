@@ -1,7 +1,8 @@
 import { useCallback, useMemo, useState } from "react";
 import { JustSaved } from "@/components/baby/JustSaved";
 import { trackRecordLogged, trackRecordUndone } from "@/lib/analytics/babyEvents";
-import { View, Text, ScrollView, Pressable } from "react-native";
+import { View, Text, Pressable } from "react-native";
+import { KeyboardScrollView } from "@/lib/ui/keyboard";
 import { MotiView } from "moti";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { Icon } from "@/components/ui/Icon";
@@ -102,7 +103,7 @@ export default function DiaperScreen() {
         <Text className="font-display text-xl text-ink">{t("diaper_screen_title")}</Text>
       </View>
 
-      <ScrollView className="flex-1 px-5" contentContainerStyle={{ paddingBottom: 24 }}>
+      <KeyboardScrollView className="flex-1 px-5" contentContainerStyle={{ paddingBottom: 24 }}>
         <SinceHero
           title={t("diaper_last_title")}
           lastAt={log[0]?.at ?? null}
@@ -185,7 +186,7 @@ export default function DiaperScreen() {
             </MotiView>
           ))
         )}
-      </ScrollView>
+      </KeyboardScrollView>
 
       {form && (
         <RecordSheet

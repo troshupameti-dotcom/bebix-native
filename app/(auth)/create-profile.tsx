@@ -1,5 +1,6 @@
 import { useState } from "react";
-import { View, Text, KeyboardAvoidingView, Platform, Pressable } from "react-native";
+import { View, Text, Pressable } from "react-native";
+import { KeyboardSafeView } from "@/lib/ui/keyboard";
 import { router, useLocalSearchParams } from "expo-router";
 import { MotiView } from "moti";
 import { SafeAreaView } from "react-native-safe-area-context";
@@ -102,7 +103,7 @@ export default function CreateProfileScreen() {
 
   return (
     <SafeAreaView className="flex-1 bg-cream" edges={["top", "bottom"]}>
-      <KeyboardAvoidingView behavior={Platform.OS === "ios" ? "padding" : undefined} className="flex-1">
+      <KeyboardSafeView>
         <View className="flex-row items-center justify-between px-4 pt-2">
           <BackButton onPress={goBack} />
 
@@ -208,7 +209,7 @@ export default function CreateProfileScreen() {
             onPress={step < 3 ? handleNext : handleFinish}
           />
         </View>
-      </KeyboardAvoidingView>
+      </KeyboardSafeView>
     </SafeAreaView>
   );
 }

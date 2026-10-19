@@ -1,5 +1,6 @@
 import { useMemo, useState } from "react";
-import { View, Text, ScrollView, Pressable } from "react-native";
+import { View, Text, Pressable } from "react-native";
+import { KeyboardScrollView } from "@/lib/ui/keyboard";
 import { useContentWidth } from "@/lib/layout";
 import { SafeAreaView } from "react-native-safe-area-context";
 import Svg, { Path, Circle, Defs, LinearGradient, Stop, Line as SvgLine } from "react-native-svg";
@@ -150,7 +151,7 @@ export default function GrowthScreen() {
         })}
       </View>
 
-      <ScrollView className="flex-1 px-5" contentContainerStyle={{ paddingBottom: 24 }}>
+      <KeyboardScrollView className="flex-1 px-5" contentContainerStyle={{ paddingBottom: 24 }}>
         {/* Vlera e fundit dhe grafiku, gjithmonë të dukshëm. */}
         <View style={shadows.soft} className="mb-5 rounded-xl3 border border-ink/10 bg-surface p-5">
           {last ? (
@@ -254,7 +255,7 @@ export default function GrowthScreen() {
             </View>
           </>
         )}
-      </ScrollView>
+      </KeyboardScrollView>
 
       <View className="px-5 pb-6">
         <Pressable onPress={openNew} className="flex-row items-center justify-center gap-2 rounded-2xl bg-ink py-4">

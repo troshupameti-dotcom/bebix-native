@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
-import { View, Text, Pressable, ScrollView, KeyboardAvoidingView, Platform, Alert } from "react-native";
+import { View, Text, Pressable, ScrollView, Alert } from "react-native";
+import { KeyboardSafeView } from "@/lib/ui/keyboard";
 import * as WebBrowser from "expo-web-browser";
 import { ThemedSwitch } from "@/components/ui/ThemedSwitch";
 import { router, useLocalSearchParams } from "expo-router";
@@ -32,7 +33,7 @@ const initialValues: SignupFormValues = {
 export default function SignupScreen() {
   const { t, language } = useTranslation();
   const { redirect } = useLocalSearchParams<{ redirect?: string }>();
-  const { state } = useAppState();
+  const { state, refreshProfileFromServer } = useAppState();
   const [values, setValues] = useState<SignupFormValues>(initialValues);
   const [errors, setErrors] = useState<FormErrors<SignupFormValues>>({});
   const [submitError, setSubmitError] = useState<string | null>(null);
@@ -105,6 +106,8 @@ export default function SignupScreen() {
   async function finishSignIn(userId: string | undefined) {
     if (userId) {
       await syncPendingProfileToSupabase(userId);
+      // Emri dhe data sapo arritën te serveri: rilexohen, që Cilësimet e bebit t'i tregojnë menjëherë.
+      refreshProfileFromServer();
     }
     await markOnboardingSeen();
     router.replace(safeRedirect(redirect) as never);
@@ -112,7 +115,7 @@ export default function SignupScreen() {
 
   return (
     <SafeAreaView className="flex-1 bg-cream" edges={["top", "bottom"]}>
-      <KeyboardAvoidingView behavior={Platform.OS === "ios" ? "padding" : undefined} className="flex-1">
+      <KeyboardSafeView>
         <View className="flex-row px-4 pt-2">
           <BackButton fallback="/(auth)/welcome" />
         </View>
@@ -212,7 +215,7 @@ export default function SignupScreen() {
             </View>
           </MotiView>
         </ScrollView>
-      </KeyboardAvoidingView>
+      </KeyboardSafeView>
     </SafeAreaView>
   );
 }

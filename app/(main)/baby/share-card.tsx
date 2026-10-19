@@ -166,7 +166,7 @@ export default function ShareCardScreen() {
           className="flex-row items-center justify-center gap-2 rounded-2xl bg-ink"
           style={{ minHeight: 56, opacity: ready ? 1 : 0.6 }}
         >
-          {sharing || !ready ? <ActivityIndicator color="#FBF6EE" /> : <Icon name="share" size={17} color="#FBF6EE" />}
+          {sharing || !ready ? <ActivityIndicator className="text-cream" /> : <Icon name="share" size={17} color="#FBF6EE" />}
           <Text className="font-bodySemibold text-[15px] text-cream">{t("card_share")}</Text>
         </Pressable>
         <Text className="mt-2 text-center font-body text-[11px] text-ink-faint">{t("card_share_hint")}</Text>

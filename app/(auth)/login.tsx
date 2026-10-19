@@ -1,5 +1,6 @@
 import { useState } from "react";
-import { View, Text, Pressable, ScrollView, KeyboardAvoidingView, Platform } from "react-native";
+import { View, Text, Pressable, ScrollView } from "react-native";
+import { KeyboardSafeView } from "@/lib/ui/keyboard";
 import { router, useLocalSearchParams } from "expo-router";
 import { MotiView } from "moti";
 import { SafeAreaView } from "react-native-safe-area-context";
@@ -10,6 +11,7 @@ import { SocialAuthRow } from "@/components/auth/SocialAuthRow";
 import { supabase } from "@/lib/supabase/client";
 import { markOnboardingSeen, markGuestMode } from "@/lib/hooks/useOnboardingStatus";
 import { syncPendingProfileToSupabase } from "@/lib/babyProfile";
+import { useAppState } from "@/lib/state/AppStateContext";
 import { useTranslation } from "@/lib/i18n/LanguageContext";
 import type { LoginFormValues, FormErrors } from "@/types/auth";
 import { BackButton } from "@/components/ui/BackButton";
@@ -21,6 +23,7 @@ const initialValues: LoginFormValues = { email: "", password: "" };
 
 export default function LoginScreen() {
   const { t } = useTranslation();
+  const { refreshProfileFromServer } = useAppState();
   const { redirect } = useLocalSearchParams<{ redirect?: string }>();
   const [values, setValues] = useState<LoginFormValues>(initialValues);
   const [errors, setErrors] = useState<FormErrors<LoginFormValues>>({});
@@ -60,6 +63,8 @@ export default function LoginScreen() {
   async function finishSignIn(userId: string | undefined) {
     if (userId) {
       await syncPendingProfileToSupabase(userId);
+      // Emri dhe data sapo arritën te serveri: rilexohen, që Cilësimet e bebit t'i tregojnë menjëherë.
+      refreshProfileFromServer();
     }
     await markOnboardingSeen();
     router.replace(safeRedirect(redirect) as never);
@@ -67,7 +72,7 @@ export default function LoginScreen() {
 
   return (
     <SafeAreaView className="flex-1 bg-cream" edges={["top", "bottom"]}>
-      <KeyboardAvoidingView behavior={Platform.OS === "ios" ? "padding" : undefined} className="flex-1">
+      <KeyboardSafeView>
         <View className="flex-row px-4 pt-2">
           <BackButton fallback="/(auth)/welcome" />
         </View>
@@ -145,7 +150,7 @@ export default function LoginScreen() {
             )}
           </MotiView>
         </ScrollView>
-      </KeyboardAvoidingView>
+      </KeyboardSafeView>
     </SafeAreaView>
   );
 }

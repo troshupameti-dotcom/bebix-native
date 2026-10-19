@@ -35,10 +35,15 @@ export function formatDate(iso: string | null, lang: "sq" | "en"): string {
 export function formatTime(iso: string, lang: "sq" | "en"): string {
   const date = new Date(iso);
   if (isNaN(date.getTime())) return "";
-  return date.toLocaleTimeString(lang === "en" ? "en-GB" : "sq-AL", {
-    hour: "2-digit",
-    minute: "2-digit",
-  });
+  return clockTime(date);
+}
+
+/**
+ * Ora gjithmonë 24-orëshe ("02:01"), në çdo telefon. Shqipja e iPhone-it (sq-AL) e jep 12-orëshe me "p.d."/"m.d.",
+ * prandaj ora ndërtohet me dorë, pa lokalizim.
+ */
+export function clockTime(date: Date): string {
+  return `${String(date.getHours()).padStart(2, "0")}:${String(date.getMinutes()).padStart(2, "0")}`;
 }
 
 export function formatDuration(startIso: string, endIso: string | null): string {

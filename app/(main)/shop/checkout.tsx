@@ -1,13 +1,13 @@
 import { useCallback, useEffect, useRef, useState, type ReactNode } from "react";
 import AsyncStorage from "@react-native-async-storage/async-storage";
-import { View, Text, Pressable, TextInput, ScrollView, ActivityIndicator, Image, useWindowDimensions, type TextInputProps } from "react-native";
+import { View, Text, Pressable, TextInput, ScrollView, ActivityIndicator, Image, type TextInputProps } from "react-native";
 import { SafeAreaView, useSafeAreaInsets } from "react-native-safe-area-context";
 import { useRouter } from "expo-router";
 import { useAppState } from "@/lib/state/AppStateContext";
 import { useTranslation } from "@/lib/i18n/LanguageContext";
 import { Icon } from "@/components/ui/Icon";
 import { useThemeColors } from "@/lib/theme/useThemeColors";
-import { useKeyboardHeight } from "@/lib/ui/useKeyboardHeight";
+import { useKeyboardInset } from "@/lib/ui/keyboard";
 import { supabase } from "@/lib/supabase/client";
 import { BackButton } from "@/components/ui/BackButton";
 import { fetchSavedContact } from "@/lib/shop/orders";
@@ -84,11 +84,7 @@ export default function CheckoutScreen() {
   const theme = useThemeColors();
   const insets = useSafeAreaInsets();
   // Tastiera: shiriti i konfirmimit ngjitet mbi të (pa shiritin e tab-eve, kur është aty).
-  const keyboard = useKeyboardHeight();
-  const { height: windowHeight } = useWindowDimensions();
-  const containerRef = useRef<View>(null);
-  const [bottomGap, setBottomGap] = useState(0);
-  const lift = Math.max(0, keyboard - bottomGap);
+  const { ref: keyboardRef, inset: lift, onLayout: onKeyboardLayout } = useKeyboardInset();
 
   useEffect(() => {
     let active = true;
@@ -394,17 +390,7 @@ export default function CheckoutScreen() {
         <Text className="font-display text-2xl text-ink">{t("co_title")}</Text>
       </View>
 
-      <View
-        ref={containerRef}
-        className="flex-1"
-        style={{ paddingBottom: lift }}
-        onLayout={() =>
-          containerRef.current?.measureInWindow((_x, y, _w, h) => {
-            // Hapësira poshtë ekranit (p.sh. shiriti i tab-eve), që tastiera të mos llogaritet dy herë.
-            if (keyboard === 0) setBottomGap(Math.max(0, windowHeight - (y + h)));
-          })
-        }
-      >
+      <View ref={keyboardRef} className="flex-1" style={{ paddingBottom: lift }} onLayout={onKeyboardLayout}>
         <ScrollView
           className="flex-1 px-4"
           showsVerticalScrollIndicator={false}
