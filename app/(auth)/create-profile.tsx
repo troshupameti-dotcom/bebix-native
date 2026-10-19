@@ -57,7 +57,12 @@ export default function CreateProfileScreen() {
     }
 
     if (step === 2) {
-      if (expecting ? !parseDueInput(dobInput) : dobInput.trim() && !parseDobInput(dobInput)) {
+      // E detyrueshme: datëlindja (ose, te "Pres bebe", data e pritur). Pa të app-i s'di moshën dhe s'përshtatet.
+      if (!dobInput.trim()) {
+        setError(t(expecting ? "create_profile_error_due_required" : "create_profile_error_dob_required"));
+        return;
+      }
+      if (expecting ? !parseDueInput(dobInput) : !parseDobInput(dobInput)) {
         setError(t("create_profile_error_dob"));
         return;
       }
@@ -66,10 +71,16 @@ export default function CreateProfileScreen() {
   }
 
   async function handleFinish() {
-    const babyDob = !expecting && dobInput.trim() ? parseDobInput(dobInput) : null;
+    const babyDob = !expecting ? parseDobInput(dobInput) : null;
     const babyDueDate = expecting ? parseDueInput(dobInput) : null;
 
-    updateProfile({ parentName: parentName.trim() });
+    // Edhe në telefon menjëherë (jo vetëm te serveri pas regjistrimit): Cilësimet e bebit i shohin që në hapjen e parë.
+    const [y, m, d] = (babyDob ?? "").split("-").map(Number);
+    updateProfile({
+      parentName: parentName.trim(),
+      babyName: babyName.trim() || null,
+      ...(babyDob ? { babyDob: new Date(y, m - 1, d).toISOString() } : {}),
+    });
     await savePendingProfile({
       parentName: parentName.trim(),
       babyName: babyName.trim(),

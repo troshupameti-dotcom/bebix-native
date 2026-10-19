@@ -86,7 +86,7 @@ export default function InboxScreen() {
             className="flex-row items-center px-5 py-3 active:opacity-70"
             style={{ minHeight: 68 }}
           >
-            <Avatar initial={item.otherName.trim().charAt(0).toUpperCase() || "?"} accent={item.otherIsExpert ? "orange" : "olive"} size={48} />
+            <Avatar initial={item.otherName.trim().charAt(0).toUpperCase() || "?"} accent={item.otherIsExpert ? "orange" : "olive"} size={48} userId={item.otherId} />
             <View className="ml-3 flex-1">
               <View className="flex-row items-center">
                 <Text className={`flex-1 text-sm text-ink ${item.unread ? "font-bodySemibold" : "font-bodyMedium"}`} numberOfLines={1}>

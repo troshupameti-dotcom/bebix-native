@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { View, Text, FlatList, RefreshControl, Pressable, TextInput, ActivityIndicator } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
-import { useRouter, useFocusEffect, useScrollToTop } from "expo-router";
+import { useRouter, useFocusEffect, useScrollToTop, useLocalSearchParams } from "expo-router";
 import { useAppState } from "@/lib/state/AppStateContext";
 import { useTranslation } from "@/lib/i18n/LanguageContext";
 import { Icon } from "@/components/ui/Icon";
@@ -180,6 +180,14 @@ export default function CommunityScreen() {
       alive = false;
     };
   }, [ageFeedKey, changeFilters]);
+
+  // Hapur nga `#tema` e një postimi në një ekran tjetër (profili, postimi): feed-i me atë temë.
+  const { topic: topicParam } = useLocalSearchParams<{ topic?: string }>();
+  useEffect(() => {
+    if (topicParam && topicParam !== filtersRef.current.topic) {
+      changeFilters({ tab: "all", topic: topicParam, specialty: null, ageGroupId: null });
+    }
+  }, [topicParam, changeFilters]);
 
   // Kërkimi nis pak pas shkrimit të fundit.
   useEffect(() => {
@@ -495,7 +503,15 @@ export default function CommunityScreen() {
         data={feedLoading || failed ? [] : posts}
         keyExtractor={(p) => p.id}
         renderItem={({ item }) => (
-          <PostCard post={item} onOpen={() => router.push(`/community/post/${item.id}`)} onRemoved={removePost} />
+          <PostCard
+            post={item}
+            onOpen={() => router.push(`/community/post/${item.id}`)}
+            onRemoved={removePost}
+            onTagPress={(tag) => {
+              listRef.current?.scrollToOffset({ offset: 0, animated: true });
+              changeFilters({ tab: "all", topic: tag, specialty: null, ageGroupId: null });
+            }}
+          />
         )}
         ListHeaderComponent={header}
         ListEmptyComponent={empty}

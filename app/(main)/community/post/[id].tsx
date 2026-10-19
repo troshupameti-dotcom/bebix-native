@@ -39,7 +39,7 @@ function CommentRow({
   const initial = comment.authorName.trim().charAt(0).toUpperCase() || "?";
   return (
     <View className={`flex-row mb-4 ${isReply ? "ml-9 mt-3 mb-0" : ""}`}>
-      <Avatar initial={initial} accent="olive" size={isReply ? 30 : 36} />
+      <Avatar initial={initial} accent="olive" size={isReply ? 30 : 36} userId={comment.authorId} />
       <View className="flex-1 ml-2.5">
         <Pressable
           onLongPress={() => {

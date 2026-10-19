@@ -63,6 +63,22 @@ export default function BabySettingsScreen() {
   const [medicalNotes, setMedicalNotes] = useState(profile.medicalNotes);
   const [parentNotes, setParentNotes] = useState(profile.parentNotes);
 
+  // Profili mund të vijë nga serveri pasi ekrani është hapur (llogari e re, telefon i ri): fushat që prindi s'i ka
+  // prekur ende marrin vlerat e reja. Më parë mbeteshin bosh, dhe "Ruaj" i fshinte emrin dhe datën.
+  const [seen, setSeen] = useState({ name: profile.babyName ?? "", nickname: profile.nickname ?? "", dob: profile.babyDob });
+  const incoming = { name: profile.babyName ?? "", nickname: profile.nickname ?? "", dob: profile.babyDob };
+  if (incoming.name !== seen.name || incoming.nickname !== seen.nickname || incoming.dob !== seen.dob) {
+    setSeen(incoming);
+    if (name === seen.name) setName(incoming.name);
+    if (nickname === seen.nickname) setNickname(incoming.nickname);
+    const seenDob = seen.dob ? new Date(seen.dob).getTime() : null;
+    if ((dob ? dob.getTime() : null) === seenDob) {
+      const next = incoming.dob ? new Date(incoming.dob) : null;
+      setDob(next);
+      setTempDob(next ?? new Date());
+    }
+  }
+
   const [contactName, setContactName] = useState("");
   const [contactRelation, setContactRelation] = useState("");
   const [contactPhone, setContactPhone] = useState("");

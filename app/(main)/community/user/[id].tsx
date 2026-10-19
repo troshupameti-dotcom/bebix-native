@@ -4,6 +4,7 @@ import { SafeAreaView } from "react-native-safe-area-context";
 import { useFocusEffect, useLocalSearchParams, useRouter } from "expo-router";
 import { BackButton } from "@/components/ui/BackButton";
 import { Avatar, PostCard } from "@/components/community/PostCard";
+import { ProfileStats } from "@/components/community/ProfileStats";
 import { haptics } from "@/lib/haptics";
 import { useTranslation } from "@/lib/i18n/LanguageContext";
 import { useThemeColors } from "@/lib/theme/useThemeColors";
@@ -98,14 +99,13 @@ export default function UserProfileScreen() {
 
   const header = profile ? (
     <View className="items-center px-5 pb-4 pt-2">
-      <Avatar initial={profile.name.trim().charAt(0).toUpperCase() || "?"} accent="olive" size={72} />
+      <Avatar initial={profile.name.trim().charAt(0).toUpperCase() || "?"} accent="olive" size={88} userId={profile.userId} />
       <Text className="mt-3 font-display text-xl text-ink">{profile.name}</Text>
-      {!profile.limited ? (
-        <Text className="mt-1 font-body text-xs text-ink-soft">
-          {t("dm_followers", { n: profile.followers })} · {t("dm_following", { n: profile.following })}
-        </Text>
-      ) : null}
       {profile.followsMe ? <Text className="mt-1 font-bodyMedium text-[11px] text-olive">{t("dm_follows_you")}</Text> : null}
+      {/* Postime · Ndjekës · Të ndjekur: listat i sheh vetëm kush është mik (ndiqni njëri-tjetrin). */}
+      {!profile.limited ? (
+        <ProfileStats userId={profile.userId} name={profile.name} posts={posts.length} followers={profile.followers} following={profile.following} />
+      ) : null}
 
       {!profile.blocked && !profile.limited ? (
         <View className="mt-4 w-full flex-row" style={{ gap: 10 }}>

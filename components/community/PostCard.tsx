@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { View, Text, Pressable } from "react-native";
+import { View, Text, Pressable, Image } from "react-native";
 import { useRouter } from "expo-router";
 import { BadgeCheck, Bookmark, Ellipsis, Heart, Info, MessageCircle, Send } from "lucide-react-native";
 import { haptics } from "@/lib/haptics";
@@ -18,11 +18,37 @@ import {
   toggleSave as apiToggleSave,
 } from "@/lib/communityData";
 import { PostMediaGrid } from "@/components/community/PostMediaGrid";
+import { useAuthorAvatar } from "@/lib/community/avatars";
 import { ModerationSheet, type ModerationTarget } from "@/components/community/ModerationSheet";
 
-export function Avatar({ initial, accent, size = 44 }: { initial: string; accent: "olive" | "orange"; size?: number }) {
+/**
+ * Avatari i një personi në komunitet: fotoja e tij e profilit kur ka (`userId`), përndryshe shkronja e parë.
+ * Fotoja lexohet nga profili, jo nga postimi: kur ndërrohet, del e reja edhe te postimet e vjetra.
+ */
+export function Avatar({
+  initial,
+  accent,
+  size = 44,
+  userId,
+}: {
+  initial: string;
+  accent: "olive" | "orange";
+  size?: number;
+  userId?: string | null;
+}) {
+  const photo = useAuthorAvatar(userId);
   const bg = accent === "olive" ? "bg-olive-bg" : "bg-orange-bg";
   const fg = accent === "olive" ? "text-olive" : "text-orange";
+  if (photo) {
+    return (
+      <Image
+        source={{ uri: photo }}
+        style={{ width: size, height: size, borderRadius: size / 2 }}
+        className="bg-cream-soft"
+        accessibilityIgnoresInvertColors
+      />
+    );
+  }
   return (
     <View style={{ width: size, height: size, borderRadius: size / 2 }} className={`items-center justify-center ${bg}`}>
       <Text style={{ fontSize: size * 0.4 }} className={`font-bodySemibold ${fg}`}>{initial}</Text>
@@ -45,6 +71,8 @@ type PostCardProps = {
   interactiveMedia?: boolean;
   /** false te faqja e vetë autorit (profili, eksperti): emri s'hap sërish të njëjtën faqe. */
   linkAuthor?: boolean;
+  /** Prekja e `#temës`: te feed-i filtron në vend; gjetkë hap feed-in me atë temë. */
+  onTagPress?: (tag: string) => void;
 };
 
 /** Te feed-i teksti i gjatë pritet pas kaq rreshtash; "Lexo më shumë" hap postimin. */
@@ -57,7 +85,7 @@ const LONG_TEXT = 280;
  * teksti, fotot/videot, dhe një rresht veprimesh: "M'ndihmoi", komentet, shpërndarja, ruajtja. Pa hije të rënda dhe
  * pa ngjyra të ngulitura: ndjek temën e çelët dhe të errët.
  */
-export function PostCard({ post, onOpen, onRemoved, interactiveMedia = false, linkAuthor = true }: PostCardProps) {
+export function PostCard({ post, onOpen, onRemoved, interactiveMedia = false, linkAuthor = true, onTagPress }: PostCardProps) {
   const myId = useCurrentUserId();
   const router = useRouter();
   const { t, language } = useTranslation();
@@ -135,7 +163,7 @@ export function PostCard({ post, onOpen, onRemoved, interactiveMedia = false, li
           accessibilityLabel={post.authorIsExpert ? `${post.authorName}, ${expertLabel}` : post.authorName}
           className="flex-1 flex-row items-center"
         >
-          <Avatar initial={post.authorInitial} accent={post.accent} size={42} />
+          <Avatar initial={post.authorInitial} accent={post.accent} size={42} userId={post.authorId} />
           <View className="ml-3 flex-1">
             <View className="flex-row items-center">
               <Text className="flex-shrink font-bodySemibold text-[15px] text-ink" numberOfLines={1}>
@@ -175,10 +203,22 @@ export function PostCard({ post, onOpen, onRemoved, interactiveMedia = false, li
         </View>
       ) : null}
 
+      {/* Tema: prekja shfaq të gjitha postimet me të njëjtën temë. */}
       {post.tag ? (
-        <View className="mt-2.5 self-start rounded-full bg-cream-soft px-3 py-1">
+        <Pressable
+          onPress={() => {
+            const tag = post.tag as string;
+            haptics.select();
+            if (onTagPress) onTagPress(tag);
+            else router.push({ pathname: "/community", params: { topic: tag } });
+          }}
+          accessibilityRole="button"
+          accessibilityLabel={`#${post.tag}`}
+          hitSlop={6}
+          className="mt-2.5 self-start rounded-full bg-cream-soft px-3 py-1"
+        >
           <Text className="font-bodyMedium text-[12px] text-ink-soft">{`#${post.tag}`}</Text>
-        </View>
+        </Pressable>
       ) : null}
 
       {post.media.length ? (

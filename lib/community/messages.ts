@@ -96,6 +96,30 @@ export async function fetchPublicProfile(userId: string): Promise<PublicProfile 
   };
 }
 
+export type FollowPerson = { userId: string; name: string };
+
+/**
+ * Ndjekësit ose të ndjekurit e një personi. I sheh vetë personi dhe miqtë e tij (ndiqni njëri-tjetrin);
+ * `allowed: false` për të tjerët (shohin vetëm numrat). Pa migrimin e profileve: `allowed: false`.
+ */
+export async function fetchFollowList(userId: string, kind: "followers" | "following"): Promise<{ allowed: boolean; people: FollowPerson[] }> {
+  const [allowed, list] = await Promise.all([
+    supabase.rpc("community_can_see_follows", { p_user: userId }),
+    supabase.rpc("community_follow_list", { p_user: userId, p_kind: kind }),
+  ]);
+  if (allowed.error || list.error) {
+    if (isMissing(allowed.error) || isMissing(list.error)) return { allowed: false, people: [] };
+    throw new Error((allowed.error ?? list.error)?.message);
+  }
+  return {
+    allowed: !!allowed.data,
+    people: ((list.data ?? []) as { user_id: string; display_name: string | null }[]).map((r) => ({
+      userId: r.user_id,
+      name: r.display_name ?? "Prind",
+    })),
+  };
+}
+
 export async function followUser(userId: string): Promise<void> {
   const { data } = await supabase.auth.getSession();
   const me = data.session?.user.id;

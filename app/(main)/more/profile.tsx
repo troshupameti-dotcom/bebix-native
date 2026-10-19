@@ -2,6 +2,7 @@ import { useState } from "react";
 import { View, Text, Pressable, TextInput, Image, ScrollView, Alert, ActivityIndicator } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { pickMedia } from "@/lib/media/imagePicker";
+import { setMyCommunityAvatar } from "@/lib/community/avatars";
 import { useAppState } from "@/lib/state/AppStateContext";
 import { ParentRelation } from "@/lib/state/types";
 import { Icon } from "@/components/ui/Icon";
@@ -57,6 +58,8 @@ export default function ProfileScreen() {
       setPhotoPath(path);
       void syncProfilePhotoToSupabase("parent", path);
     }
+    // E njëjta foto edhe në komunitet (profili dhe postimet, edhe të vjetrat). Pa rrjet ose pa migrim: s'prish asgjë.
+    void setMyCommunityAvatar({ uri: localUri, mimeType: result.assets[0].mimeType ?? null }).catch(() => {});
   };
 
   const save = () => {
