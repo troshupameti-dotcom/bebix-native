@@ -1,12 +1,13 @@
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState, type ReactNode } from "react";
 import AsyncStorage from "@react-native-async-storage/async-storage";
-import { View, Text, Pressable, TextInput, ScrollView, ActivityIndicator } from "react-native";
-import { SafeAreaView } from "react-native-safe-area-context";
+import { View, Text, Pressable, TextInput, ScrollView, ActivityIndicator, Image, useWindowDimensions, type TextInputProps } from "react-native";
+import { SafeAreaView, useSafeAreaInsets } from "react-native-safe-area-context";
 import { useRouter } from "expo-router";
 import { useAppState } from "@/lib/state/AppStateContext";
 import { useTranslation } from "@/lib/i18n/LanguageContext";
 import { Icon } from "@/components/ui/Icon";
-import { shadows } from "@/lib/shadows";
+import { useThemeColors } from "@/lib/theme/useThemeColors";
+import { useKeyboardHeight } from "@/lib/ui/useKeyboardHeight";
 import { supabase } from "@/lib/supabase/client";
 import { BackButton } from "@/components/ui/BackButton";
 import { fetchSavedContact } from "@/lib/shop/orders";
@@ -80,6 +81,14 @@ export default function CheckoutScreen() {
   // E njëjta referencë në çdo riprovim të kësaj porosie: nëse përgjigjja e
   // serverit humb në rrjet, riprovimi s'krijon porosi të dytë.
   const orderRef = useRef(newOrderRef());
+  const theme = useThemeColors();
+  const insets = useSafeAreaInsets();
+  // Tastiera: shiriti i konfirmimit ngjitet mbi të (pa shiritin e tab-eve, kur është aty).
+  const keyboard = useKeyboardHeight();
+  const { height: windowHeight } = useWindowDimensions();
+  const containerRef = useRef<View>(null);
+  const [bottomGap, setBottomGap] = useState(0);
+  const lift = Math.max(0, keyboard - bottomGap);
 
   useEffect(() => {
     let active = true;
@@ -301,14 +310,14 @@ export default function CheckoutScreen() {
           {isGuest ? t("co_guest_placed_body") : t("co_placed_body")}
         </Text>
         {cardRetry ? (
-          <View className="self-stretch rounded-xl2 bg-cream-soft p-4 mb-6">
+          <View className="self-stretch rounded-xl2 border border-cream-line bg-surface p-4 mb-6">
             <Text className="font-bodySemibold text-sm text-ink mb-1">{t("co_card_unpaid_title")}</Text>
             <Text className="font-body text-xs text-ink-soft leading-5 mb-3">{t("co_card_unpaid_body")}</Text>
             <Pressable
               onPress={retryCard}
               disabled={cardBusy}
               accessibilityRole="button"
-              className={`bg-olive rounded-xl2 py-3 px-6 items-center ${cardBusy ? "opacity-50" : ""}`}
+              className={`bg-olive rounded-full py-3.5 px-6 items-center ${cardBusy ? "opacity-50" : ""}`}
             >
               <Text className="font-bodyMedium text-sm text-on-accent">{cardBusy ? t("co_card_redirect") : t("co_card_retry")}</Text>
             </Pressable>
@@ -316,7 +325,7 @@ export default function CheckoutScreen() {
           </View>
         ) : null}
         {placedPay?.method === "bank_transfer" && BANK_DETAILS && placedId ? (
-          <View className="self-stretch rounded-xl2 bg-cream-soft p-4 mb-6">
+          <View className="self-stretch rounded-xl2 border border-cream-line bg-surface p-4 mb-6">
             <Text className="font-bodySemibold text-sm text-ink mb-2">{t("co_bank_title")}</Text>
             {([
               [t("co_bank_beneficiary"), BANK_DETAILS.beneficiary],
@@ -340,7 +349,7 @@ export default function CheckoutScreen() {
                 router.dismissAll();
                 router.replace("/shop"); router.push("/shop/orders"); // stiva: Dyqani, pastaj Porositë; "mbrapa" kthen te Dyqani, jo te kreu
               }}
-              className="bg-olive rounded-xl2 py-3 px-6 mb-3"
+              className="self-stretch items-center bg-olive rounded-full py-4 mb-3"
             >
               <Text className="font-bodyMedium text-sm text-on-accent">{t("co_see_order")}</Text>
             </Pressable>
@@ -358,7 +367,7 @@ export default function CheckoutScreen() {
             router.dismissAll();
             router.replace("/shop"); router.push("/shop/orders"); // stiva: Dyqani, pastaj Porositë; "mbrapa" kthen te Dyqani, jo te kreu
           }}
-          className="bg-olive rounded-xl2 py-3 px-6 mb-3"
+          className="self-stretch items-center bg-olive rounded-full py-4 mb-3"
         >
           <Text className="font-bodyMedium text-sm text-on-accent">{t("co_see_order")}</Text>
         </Pressable>
@@ -375,191 +384,241 @@ export default function CheckoutScreen() {
     );
   }
 
+  const payByCard = method === "card" && AVAILABLE_METHODS.includes("card");
+  const grandTotal = cartTotal() + shippingFee;
+
   return (
     <SafeAreaView className="flex-1 bg-cream" edges={["top"]}>
-      <View className="flex-row items-center px-5 pt-2 mb-4">
+      <View className="flex-row items-center px-4 pt-2 pb-3">
         <BackButton fallback="/(main)/shop/cart" className="mr-3" />
         <Text className="font-display text-2xl text-ink">{t("co_title")}</Text>
       </View>
 
-      <ScrollView className="px-5" showsVerticalScrollIndicator={false} contentContainerStyle={{ paddingBottom: 40 }}>
-        {/* Pa llogari: porosia vazhdon; llogaria mbetet opsion, jo kusht. */}
-        {isGuest && (
-          <View className="mb-4 flex-row items-center gap-3 rounded-xl2 bg-olive-bg p-3.5">
-            <Icon name="user" size={18} color="#6E7452" />
-            <Text className="flex-1 font-body text-xs leading-5 text-ink-soft">{t("co_guest_note")}</Text>
-            <Pressable
-              onPress={() => router.push({ pathname: "/(auth)/login", params: { redirect: "/shop/checkout" } })}
-              hitSlop={8}
-            >
-              <Text className="font-bodySemibold text-xs text-olive">{t("co_login_action")}</Text>
-            </Pressable>
-          </View>
-        )}
-        {/* Çfarë po porosit — e dukshme para se të mbushet formulari */}
-        <View style={shadows.soft} className="bg-surface rounded-xl2 p-4 mb-5">
-          {state.cartItems.map((item) => (
-            <View key={item.id} className="flex-row items-center justify-between mb-2">
-              <Text className="flex-1 font-body text-xs text-ink-soft" numberOfLines={1}>
-                {item.name} ×{item.qty}
-              </Text>
-              <Text className="font-bodyMedium text-xs text-ink ml-3">€{(item.price * item.qty).toFixed(2)}</Text>
+      <View
+        ref={containerRef}
+        className="flex-1"
+        style={{ paddingBottom: lift }}
+        onLayout={() =>
+          containerRef.current?.measureInWindow((_x, y, _w, h) => {
+            // Hapësira poshtë ekranit (p.sh. shiriti i tab-eve), që tastiera të mos llogaritet dy herë.
+            if (keyboard === 0) setBottomGap(Math.max(0, windowHeight - (y + h)));
+          })
+        }
+      >
+        <ScrollView
+          className="flex-1 px-4"
+          showsVerticalScrollIndicator={false}
+          keyboardShouldPersistTaps="handled"
+          contentContainerStyle={{ paddingBottom: 24 }}
+        >
+          {/* Pa llogari: porosia vazhdon; llogaria mbetet opsion, jo kusht. */}
+          {isGuest && (
+            <View className="mb-6 flex-row items-center gap-3 rounded-xl2 bg-olive-bg px-4 py-3.5">
+              <Icon name="user" size={18} color={theme.olive} />
+              <Text className="flex-1 font-body text-[13px] leading-5 text-ink-soft">{t("co_guest_note")}</Text>
+              <Pressable
+                onPress={() => router.push({ pathname: "/(auth)/login", params: { redirect: "/shop/checkout" } })}
+                hitSlop={8}
+              >
+                <Text className="font-bodySemibold text-[13px] text-olive">{t("co_login_action")}</Text>
+              </Pressable>
             </View>
-          ))}
-          <View className="flex-row items-center justify-between pt-2 mt-1 border-t border-cream-line">
-            <Text className="font-bodyMedium text-sm text-ink-soft">{t("co_products_total")}</Text>
-            <Text className="font-bodyMedium text-sm text-ink">€{cartTotal().toFixed(2)}</Text>
-          </View>
-          {shownFee !== undefined ? (
-            <View className="flex-row items-center justify-between pt-1.5">
-              <Text className="font-bodyMedium text-sm text-ink-soft">{t("co_shipping")}</Text>
-              <Text className="font-bodyMedium text-sm text-ink">{shownFee === 0 ? t("co_shipping_free") : `€${shownFee.toFixed(2)}`}</Text>
+          )}
+
+          {/* Çfarë po porosit, e dukshme para se të mbushet formulari */}
+          <Section title={t("co_sec_items")}>
+            {state.cartItems.map((item) => (
+              <View key={item.id} className="flex-row items-center px-4 py-3 border-b border-cream-line">
+                <View
+                  className={`w-12 h-12 rounded-xl items-center justify-center overflow-hidden mr-3 ${item.imageUrl ? "" : "bg-olive-bg"}`}
+                  style={item.imageUrl ? { backgroundColor: "#FFFFFF", padding: 3 } : undefined}
+                >
+                  {item.imageUrl ? (
+                    <Image source={{ uri: item.imageUrl }} className="w-full h-full" resizeMode="contain" />
+                  ) : (
+                    <Icon name={item.icon as never} size={20} color={theme.olive} />
+                  )}
+                </View>
+                <View className="flex-1 mr-3">
+                  <Text className="font-bodyMedium text-sm text-ink" numberOfLines={2}>{item.name}</Text>
+                  <Text className="font-body text-xs text-ink-faint mt-0.5">×{item.qty}</Text>
+                </View>
+                <Text className="font-bodySemibold text-sm text-ink">€{(item.price * item.qty).toFixed(2)}</Text>
+              </View>
+            ))}
+            <View className="px-4 py-3 gap-2">
+              <Row label={t("co_products_total")} value={`€${cartTotal().toFixed(2)}`} />
+              {shownFee !== undefined ? (
+                <Row label={t("co_shipping")} value={shownFee === 0 ? t("co_shipping_free") : `€${shownFee.toFixed(2)}`} />
+              ) : null}
+            </View>
+          </Section>
+          <Text className="-mt-4 mb-6 px-1 font-body text-xs text-ink-faint leading-4">{t("co_delivery_note")}</Text>
+
+          <Section title={t("co_sec_contact")}>
+            <Field label={t("co_full_name")} value={fullName} onChangeText={setFullName} placeholder={t("co_ph_name")} autoComplete="name" />
+            <Field
+              label={t("co_phone")}
+              value={phone}
+              onChangeText={setPhone}
+              placeholder={t("co_ph_phone")}
+              keyboardType="phone-pad"
+              autoComplete="tel"
+              last={!isGuest}
+            />
+            {isGuest ? (
+              <Field
+                label={t("co_email")}
+                value={email}
+                onChangeText={setEmail}
+                placeholder={t("co_ph_email")}
+                keyboardType="email-address"
+                autoCapitalize="none"
+                autoCorrect={false}
+                autoComplete="email"
+                last
+              />
+            ) : null}
+          </Section>
+
+          <Section title={t("co_sec_address")}>
+            <Field label={t("co_address")} value={address} onChangeText={setAddress} placeholder={t("co_ph_address")} autoComplete="street-address" />
+            <Field label={t("co_city")} value={city} onChangeText={setCity} placeholder={t("co_ph_city")} last />
+          </Section>
+
+          {quoteWorks ? (
+            <View className="mb-6">
+              <SectionTitle>{t("co_country")}</SectionTitle>
+              <View className="flex-row gap-2">
+                {SHIPPING_COUNTRIES.map((c) => {
+                  const active = c.code === country;
+                  return (
+                    <Pressable
+                      key={c.code}
+                      onPress={() => setCountry(c.code)}
+                      accessibilityRole="button"
+                      accessibilityState={{ selected: active }}
+                      className={`flex-1 rounded-2xl border px-2 py-3 items-center ${active ? "border-olive bg-olive-bg" : "border-cream-line bg-surface"}`}
+                    >
+                      <Text className="font-bodySemibold text-[13px] text-center text-ink" numberOfLines={2}>
+                        {language === "en" ? c.en : c.sq}
+                      </Text>
+                      <Text className={`font-body text-xs mt-0.5 ${active ? "text-olive" : "text-ink-faint"}`}>€{c.fee.toFixed(2)}</Text>
+                    </Pressable>
+                  );
+                })}
+              </View>
             </View>
           ) : null}
-          <View className="flex-row items-center justify-between pt-2 mt-2 border-t border-cream-line">
-            <Text className="font-bodySemibold text-sm text-ink">{t("co_grand_total")}</Text>
-            <Text className="font-bodySemibold text-lg text-ink">€{(cartTotal() + shippingFee).toFixed(2)}</Text>
-          </View>
-          <Text className="font-body text-[11px] text-ink-faint mt-2 leading-4">
-            {t("co_delivery_note")}
-          </Text>
-        </View>
 
-        <Text className="font-bodyMedium text-sm text-ink-soft mb-2">{t("co_full_name")}</Text>
-        <TextInput
-          value={fullName}
-          onChangeText={setFullName}
-          placeholder={t("co_ph_name")}
-          placeholderClassName="text-ink-faint"
-          style={shadows.soft}
-          className="bg-surface rounded-xl2 px-4 py-3 font-body text-sm text-ink mb-4"
-        />
+          {quoteWorks && AVAILABLE_METHODS.length > 1 ? (
+            <Section title={t("co_pay_method")}>
+              {AVAILABLE_METHODS.map((m, i) => {
+                const active = method === m;
+                return (
+                  <Pressable
+                    key={m}
+                    onPress={() => setMethod(m)}
+                    accessibilityRole="radio"
+                    accessibilityState={{ selected: active }}
+                    className={`flex-row items-start px-4 py-3.5 ${i < AVAILABLE_METHODS.length - 1 ? "border-b border-cream-line" : ""}`}
+                  >
+                    <View className={`mt-0.5 mr-3 w-5 h-5 rounded-full border-2 items-center justify-center ${active ? "border-olive" : "border-cream-line"}`}>
+                      {active ? <View className="w-2.5 h-2.5 rounded-full bg-olive" /> : null}
+                    </View>
+                    <View className="flex-1">
+                      <Text className="font-bodySemibold text-sm text-ink">{t(PAY_TITLE[m])}</Text>
+                      <Text className="font-body text-xs text-ink-faint mt-0.5 leading-4">{t(PAY_HINT[m])}</Text>
+                    </View>
+                  </Pressable>
+                );
+              })}
+            </Section>
+          ) : null}
+        </ScrollView>
 
-        <Text className="font-bodyMedium text-sm text-ink-soft mb-2">{t("co_phone")}</Text>
-        <TextInput
-          value={phone}
-          onChangeText={setPhone}
-          placeholder={t("co_ph_phone")}
-          placeholderClassName="text-ink-faint"
-          keyboardType="phone-pad"
-          style={shadows.soft}
-          className="bg-surface rounded-xl2 px-4 py-3 font-body text-sm text-ink mb-4"
-        />
-
-        {authState === "out" && (
-          <>
-            <Text className="font-bodyMedium text-sm text-ink-soft mb-2">{t("co_email")}</Text>
-            <TextInput
-              value={email}
-              onChangeText={setEmail}
-              placeholder={t("co_ph_email")}
-              placeholderClassName="text-ink-faint"
-              keyboardType="email-address"
-              autoCapitalize="none"
-              autoCorrect={false}
-              style={shadows.soft}
-              className="bg-surface rounded-xl2 px-4 py-3 font-body text-sm text-ink mb-4"
-            />
-          </>
-        )}
-
-        <Text className="font-bodyMedium text-sm text-ink-soft mb-2">{t("co_address")}</Text>
-        <TextInput
-          value={address}
-          onChangeText={setAddress}
-          placeholder={t("co_ph_address")}
-          placeholderClassName="text-ink-faint"
-          style={shadows.soft}
-          className="bg-surface rounded-xl2 px-4 py-3 font-body text-sm text-ink mb-4"
-        />
-
-        <Text className="font-bodyMedium text-sm text-ink-soft mb-2">{t("co_city")}</Text>
-        <TextInput
-          value={city}
-          onChangeText={setCity}
-          placeholder={t("co_ph_city")}
-          placeholderClassName="text-ink-faint"
-          style={shadows.soft}
-          className="bg-surface rounded-xl2 px-4 py-3 font-body text-sm text-ink mb-4"
-        />
-
-        {quoteWorks ? <Text className="font-bodyMedium text-sm text-ink-soft mb-2">{t("co_country")}</Text> : null}
-        {quoteWorks ? <View className="flex-row gap-2 mb-6">
-          {SHIPPING_COUNTRIES.map((c) => {
-            const active = c.code === country;
-            return (
-              <Pressable
-                key={c.code}
-                onPress={() => setCountry(c.code)}
-                accessibilityRole="button"
-                accessibilityState={{ selected: active }}
-                className={`flex-1 rounded-xl2 px-2 py-3 items-center ${active ? "bg-ink" : "bg-surface"}`}
-                style={active ? undefined : shadows.soft}
-              >
-                <Text className={`font-bodySemibold text-xs text-center ${active ? "text-on-accent" : "text-ink"}`} numberOfLines={2}>
-                  {language === "en" ? c.en : c.sq}
+        {/* Shiriti poshtë: totali dhe konfirmimi gjithmonë në sy; njoftimet dalin mbi butonin, aty ku shikon klienti. */}
+        <View className="border-t border-cream-line bg-cream px-4 pt-3" style={{ paddingBottom: lift > 0 ? 12 : Math.max(insets.bottom, 12) }}>
+          {changes.length > 0 && (
+            <View className="bg-olive-bg rounded-2xl p-3 mb-3">
+              <Text className="font-bodySemibold text-xs text-ink mb-1">{t("co_changes_title")}</Text>
+              {changes.map((c, i) => (
+                <Text key={i} className="font-body text-xs text-ink-soft leading-5">
+                  {c.kind === "removed"
+                    ? t("co_change_removed", { name: c.name })
+                    : c.kind === "price"
+                      ? t("co_change_price", { name: c.name, from: c.from.toFixed(2), to: c.to.toFixed(2) })
+                      : t("co_change_qty", { name: c.name, n: c.to })}
                 </Text>
-                <Text className={`font-body text-[11px] mt-0.5 ${active ? "text-on-accent" : "text-ink-faint"}`}>€{c.fee.toFixed(2)}</Text>
-              </Pressable>
-            );
-          })}
-        </View> : null}
-
-        {quoteWorks && AVAILABLE_METHODS.length > 1 ? (
-          <View className="mb-6">
-            <Text className="font-bodyMedium text-sm text-ink-soft mb-2">{t("co_pay_method")}</Text>
-            {AVAILABLE_METHODS.map((m) => {
-              const active = method === m;
-              return (
-                <Pressable
-                  key={m}
-                  onPress={() => setMethod(m)}
-                  accessibilityRole="radio"
-                  accessibilityState={{ selected: active }}
-                  className={`rounded-xl2 px-4 py-3 mb-2 border ${active ? "border-ink bg-cream-soft" : "border-cream-line bg-surface"}`}
-                >
-                  <Text className="font-bodySemibold text-sm text-ink">{t(PAY_TITLE[m])}</Text>
-                  <Text className="font-body text-xs text-ink-faint mt-0.5 leading-4">{t(PAY_HINT[m])}</Text>
-                </Pressable>
-              );
-            })}
-          </View>
-        ) : null}
-
-        {changes.length > 0 && (
-          <View className="bg-olive-bg rounded-xl2 p-3 mb-4">
-            <Text className="font-bodySemibold text-xs text-ink mb-1">{t("co_changes_title")}</Text>
-            {changes.map((c, i) => (
-              <Text key={i} className="font-body text-xs text-ink-soft leading-5">
-                {c.kind === "removed"
-                  ? t("co_change_removed", { name: c.name })
-                  : c.kind === "price"
-                    ? t("co_change_price", { name: c.name, from: c.from.toFixed(2), to: c.to.toFixed(2) })
-                    : t("co_change_qty", { name: c.name, n: c.to })}
-              </Text>
-            ))}
-          </View>
-        )}
-
-        {error && (
-          <View className="bg-orange-bg rounded-xl2 p-3 mb-4">
-            <Text className="font-body text-xs text-orange leading-5">{error}</Text>
-          </View>
-        )}
-
-        <Pressable
-          onPress={submitOrder}
-          disabled={!canSubmit || loading}
-          className="bg-olive rounded-xl2 py-3.5 items-center"
-          style={{ opacity: canSubmit && !loading ? 1 : 0.5 }}
-        >
-          {loading ? (
-            <ActivityIndicator className="text-on-accent" />
-          ) : (
-            <Text className="font-bodySemibold text-sm text-on-accent">{t(method === "card" && AVAILABLE_METHODS.includes("card") ? "co_card_confirm" : "co_confirm")}</Text>
+              ))}
+            </View>
           )}
-        </Pressable>
-      </ScrollView>
+
+          {error && (
+            <View className="bg-orange-bg rounded-2xl p-3 mb-3">
+              <Text className="font-body text-xs text-orange leading-5">{error}</Text>
+            </View>
+          )}
+
+          <View className="flex-row items-center gap-4">
+            <View>
+              <Text className="font-body text-xs text-ink-faint">{t("co_grand_total")}</Text>
+              <Text className="font-display text-xl text-ink">€{grandTotal.toFixed(2)}</Text>
+            </View>
+            <Pressable
+              onPress={submitOrder}
+              disabled={!canSubmit || loading}
+              accessibilityRole="button"
+              className="flex-1 bg-olive rounded-full py-4 items-center"
+              style={{ opacity: canSubmit && !loading ? 1 : 0.5 }}
+            >
+              {loading ? (
+                <ActivityIndicator className="text-on-accent" />
+              ) : (
+                <Text className="font-bodySemibold text-[15px] text-on-accent">{t(payByCard ? "co_card_confirm" : "co_confirm")}</Text>
+              )}
+            </Pressable>
+          </View>
+        </View>
+      </View>
     </SafeAreaView>
+  );
+}
+
+function SectionTitle({ children }: { children: ReactNode }) {
+  return <Text className="font-bodySemibold text-[15px] text-ink mb-2 px-1">{children}</Text>;
+}
+
+/** Një grup i pastër: titull sipër, kartë e sheshtë me vijë të hollë (pa hije). */
+function Section({ title, children }: { title: string; children: ReactNode }) {
+  return (
+    <View className="mb-6">
+      <SectionTitle>{title}</SectionTitle>
+      <View className="bg-surface rounded-xl2 border border-cream-line overflow-hidden">{children}</View>
+    </View>
+  );
+}
+
+function Row({ label, value }: { label: string; value: string }) {
+  return (
+    <View className="flex-row items-center justify-between">
+      <Text className="font-body text-sm text-ink-soft">{label}</Text>
+      <Text className="font-bodyMedium text-sm text-ink">{value}</Text>
+    </View>
+  );
+}
+
+/** Fushë brenda grupit: etiketa e vogël sipër, teksti poshtë; prekja kudo në rresht e hap tastierën. */
+function Field({ label, last, ...input }: TextInputProps & { label: string; last?: boolean }) {
+  const ref = useRef<TextInput>(null);
+  return (
+    <Pressable
+      onPress={() => ref.current?.focus()}
+      accessible={false}
+      className={`px-4 pt-3 pb-2 ${last ? "" : "border-b border-cream-line"}`}
+    >
+      <Text className="font-bodyMedium text-xs text-ink-faint">{label}</Text>
+      <TextInput ref={ref} {...input} placeholderClassName="text-ink-faint" className="font-body text-[15px] text-ink py-1.5" />
+    </Pressable>
   );
 }

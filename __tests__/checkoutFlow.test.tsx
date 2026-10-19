@@ -93,4 +93,12 @@ describe("arkëtimi", () => {
     expect(visibleText(r.root)).toContain(sq.co_err_phone);
     expect(orderCalls()).toHaveLength(0);
   });
+
+  it("dizajni: seksionet me tituj, dhe totali rri pranë butonit “Konfirmo” (shiriti poshtë)", async () => {
+    const r = await openCheckout();
+    const text = visibleText(r.root);
+    expect(text).toEqual(expect.arrayContaining([sq.co_sec_items, sq.co_sec_contact, sq.co_sec_address]));
+    const total = text.lastIndexOf("€22.50");
+    expect(text.indexOf(sq.co_confirm)).toBe(total + 1);
+  });
 });
