@@ -1426,7 +1426,15 @@ export const translations = {
     ai_chat_title: "Asistenti AI",
     ai_chat_subtitle: "Gjithmonë gati",
     ai_chat_welcome: "Pyet çdo gjë për bebin: ushqyerje, gjumë, zhvillim.",
-    ai_chat_placeholder_reply: "Lidhja me AI ende nuk është aktive. Kjo është një përgjigje shembull.",
+    ai_chat_typing: "Bebix AI po shkruan…",
+    ai_chat_send: "Dërgo pyetjen",
+    ai_chat_disclaimer: "Informacion i përgjithshëm, jo diagnozë. Në emergjencë thirrni 112.",
+    ai_chat_err_auth: "Hyni në llogari që të pyesni asistentin AI.",
+    ai_chat_not_ready: "Asistenti AI po aktivizohet. Provoni përsëri pak më vonë.",
+    ai_chat_limit: "Arritët kufirin e sotëm prej {n} pyetjesh. Nesër mund të pyesni përsëri.",
+    ai_chat_busy: "Asistenti AI s'u përgjigj këtë herë. Provoni përsëri pas pak.",
+    ai_chat_refusal: "Për këtë pyetje s'mund të ndihmoj. Për çdo shqetësim shëndetësor, flisni me pediatrin.",
+    ai_chat_offline: "S'ka lidhje me internetin. Kontrolloni lidhjen dhe provoni përsëri.",
     ai_chat_input_ph: "Shkruaj një pyetje...",
 
     // ---- Baby module: celesa te shtuar (ishin te mungues dhe shfaqeshin si celesa te papapunuar ne UI) ----
@@ -3014,7 +3022,15 @@ export const translations = {
     ai_chat_title: "AI Assistant",
     ai_chat_subtitle: "Always ready to help",
     ai_chat_welcome: "Hi! Ask me anything about your baby — feeding, sleep, development, or any concern.",
-    ai_chat_placeholder_reply: "Thanks for the question! The real AI connection isn't active yet — this is just a sample reply for now.",
+    ai_chat_typing: "Bebix AI is typing…",
+    ai_chat_send: "Send question",
+    ai_chat_disclaimer: "General information, not a diagnosis. In an emergency, call 112.",
+    ai_chat_err_auth: "Log in to ask the AI assistant.",
+    ai_chat_not_ready: "The AI assistant is being switched on. Please try again a little later.",
+    ai_chat_limit: "You've reached today's limit of {n} questions. You can ask again tomorrow.",
+    ai_chat_busy: "The AI assistant didn't answer this time. Please try again in a moment.",
+    ai_chat_refusal: "I can't help with this question. For any health concern, talk to your pediatrician.",
+    ai_chat_offline: "No internet connection. Check your connection and try again.",
     ai_chat_input_ph: "Type a question...",
 
     // ---- Baby module: celesa te shtuar (ishin te mungues dhe shfaqeshin si celesa te papapunuar ne UI) ----

@@ -135,3 +135,22 @@ describe("tab-i i Komunitetit", () => {
     expect(onDouble).toHaveBeenCalledTimes(1);
   });
 });
+
+describe("modaliteti i natës nga Cilësimet", () => {
+  it("“Mbyll” të kthen te Cilësimet kur u ndez prej andej; kur ndizet vetë, mbetesh te kreu", async () => {
+    const { router } = require("./helpers/screen") as { router: () => Record<string, jest.Mock> };
+    const { NightMode } = require("@/components/baby/NightMode") as typeof import("@/components/baby/NightMode");
+    const night = require("@/lib/baby/nightMode") as typeof import("@/lib/baby/nightMode");
+
+    night.openNightModeFrom("/(main)/more");
+    const r = await renderScreen(<NightMode />);
+    const close = () => act(async () => r.root.findAll((n) => n.props.accessibilityLabel === "Mbyll" && typeof n.props.onPress === "function")[0].props.onPress());
+    await close();
+    expect(router().navigate).toHaveBeenLastCalledWith("/(main)/more");
+
+    router().navigate.mockClear();
+    night.setNightOverride("on");
+    await close();
+    expect(router().navigate).not.toHaveBeenCalled();
+  });
+});

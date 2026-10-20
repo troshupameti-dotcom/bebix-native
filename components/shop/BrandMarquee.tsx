@@ -18,24 +18,22 @@ import type { Brand } from "@/lib/homeContent";
 
 /**
  * Logot vijnë të njësuara nga bebix-web/scripts/brand-logos.py: pa të bardhën përreth, me të njëjtën peshë pamore
- * dhe hapësirë brenda kanavacës 2:1, ndaj s'kanë nevojë për kornizë. Për temën e errët ka version më vete
- * (`/brands/wide-dark/`), ku shkrimet e errëta (Dr. Brown's, Tommee Tippee) janë të çelëta.
+ * dhe hapësirë brenda kanavacës 2:1, ndaj në temën e çelët s'kanë nevojë për kornizë.
+ * Në temën e errët rrinë mbi pllaka të çelëta (si te dyqanet e mëdha): logot janë dizajnuar për sfond të bardhë, dhe
+ * mbi të errët humbisnin e kuqja e Huggies, bordoja e Momcozy dhe shkrimi blu i Philips.
  */
 const LOGO_W = 104;
 const LOGO_H = 52;
-// Negativ: logot kanë hapësirë të zbrazët brenda kanavacës 2:1, ndaj mbivendoset pak ajo pjesë transparente dhe
-// markat dalin më afër njëra-tjetrës pa u zvogëluar.
-const GAP = -16;
-const COLUMN = LOGO_W + GAP;
+// Tema e çelët: negativ, se logot kanë hapësirë të zbrazët brenda kanavacës 2:1 dhe markat dalin më afër pa u
+// zvogëluar. Tema e errët: pllakat s'mbivendosen.
+const GAP_LIGHT = -16;
+const GAP_DARK = 10;
+/** Pllaka e logos në temën e errët: e bardhë e ngrohtë, jo e bardhë e fortë që vret sytë natën. */
+const DARK_TILE = "#F4F1EC";
 /** Pikselë në sekondë: i ngadaltë, që logot të lexohen. */
 const SPEED = 28;
 /** Pas sa kohësh nga ndalimi rifillon lëvizja vetë. */
 const RESUME_MS = 1200;
-
-/** Logoja për temën: version i errët kur ekziston (logot e Bebix-it), përndryshe e njëjta. */
-export function logoForTheme(url: string, dark: boolean): string {
-  return dark && url.includes("/brands/wide/") ? url.replace("/brands/wide/", "/brands/wide-dark/") : url;
-}
 
 function Tile({ brand, dark, ink, onPress }: { brand: Brand; dark: boolean; ink: string; onPress: () => void }) {
   return (
@@ -46,17 +44,18 @@ function Tile({ brand, dark, ink, onPress }: { brand: Brand; dark: boolean; ink:
       style={({ pressed }) => ({
         width: LOGO_W,
         height: LOGO_H,
-        marginRight: GAP,
+        marginRight: dark ? GAP_DARK : GAP_LIGHT,
         alignItems: "center",
         justifyContent: "center",
         opacity: pressed ? 0.6 : 1,
+        ...(dark ? { backgroundColor: DARK_TILE, borderRadius: 14, overflow: "hidden" as const } : null),
       })}
     >
       {brand.logoUrl ? (
-        <Image source={{ uri: logoForTheme(brand.logoUrl, dark) }} style={{ width: LOGO_W, height: LOGO_H }} resizeMode="contain" />
+        <Image source={{ uri: brand.logoUrl }} style={{ width: LOGO_W, height: LOGO_H }} resizeMode="contain" />
       ) : (
-        // Pa logo: emri si shenjë e thjeshtë, me të njëjtën peshë si logot.
-        <Text style={{ color: ink, fontSize: 13, fontFamily: "Inter_600SemiBold", textAlign: "center", paddingHorizontal: 6 }} numberOfLines={2}>
+        // Pa logo: emri si shenjë e thjeshtë, me të njëjtën peshë si logot (mbi pllakë në temën e errët).
+        <Text style={{ color: dark ? "#2A2620" : ink, fontSize: 13, fontFamily: "Inter_600SemiBold", textAlign: "center", paddingHorizontal: 6 }} numberOfLines={2}>
           {brand.name}
         </Text>
       )}
@@ -78,7 +77,7 @@ export function BrandMarquee({ brands, onOpen }: { brands: Brand[]; onOpen: (b: 
   }, []);
   const running = moving && focused && appActive;
   // Gjerësia e një kopjeje të listës.
-  const rowWidth = brands.length * COLUMN;
+  const rowWidth = brands.length * (LOGO_W + (theme.isDark ? GAP_DARK : GAP_LIGHT));
 
   // Të gjitha këto lexohen dhe shkruhen te thread-i i ndërfaqes.
   const offset = useSharedValue(0);

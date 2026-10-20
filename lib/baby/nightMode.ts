@@ -123,7 +123,24 @@ export function setNightLightLevel(lightLevel: number) {
 export const hourLabel = (h: number) => `${String(h).padStart(2, "0")}:00`;
 
 /** Ndez ose fik me dorë, deri në mëngjes. */
+// Ku të kthehet "Mbyll": kur modaliteti ndizet nga Cilësimet, mbyllja të çon atje, jo te kreu.
+let returnTo: string | null = null;
+
+/** Ndiz modalitetin e natës nga një ekran tjetër; "Mbyll" të kthen te ai ekran. */
+export function openNightModeFrom(route: string, now: Date = new Date()) {
+  setNightOverride("on", now);
+  returnTo = route;
+}
+
+/** Ekrani ku të kthehet mbyllja (vetëm një herë), ose null kur modaliteti u ndez vetë ose nga kreu. */
+export function takeNightReturn(): string | null {
+  const route = returnTo;
+  returnTo = null;
+  return route;
+}
+
 export function setNightOverride(mode: "on" | "off", now: Date = new Date()) {
+  if (mode === "off") returnTo = null;
   const override: NightOverride = { mode, until: nextMorning(now).toISOString() };
   set({ override });
   AsyncStorage.setItem(OVERRIDE_KEY, JSON.stringify(override)).catch(() => {});

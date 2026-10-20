@@ -77,7 +77,7 @@ m = render(row("order_placed"), order(), meta);
 check("në dorëzim: teksti i zakonshëm mbetet", m.html.includes("Paguan kur ta marrësh"));
 
 m = render(row("order_placed"), order(), meta);
-check("logoja: shkronja të çelëta mbi breshëri të errët me sfond të vetin (lexohet edhe në modalitet të errët)", m.html.includes('wordmark-dark.png') && !m.html.includes('/wordmark.png') && m.html.includes('bgcolor="#1c2b43"'));
+check("logoja: imazhi me sfond të bardhë të ngulitur (s'e ndryshon modaliteti i errët), me përmasa të shkruara", m.html.includes('/email-logo.png') && m.html.includes('width="169" height="60"') && !m.html.includes('wordmark-dark.png'));
 check("emaili ka titullin, tekstin dhe lidhjen pas ndryshimit të strukturës", m.html.includes("Faleminderit për porosinë!") && m.html.includes("Shiko porositë e mia") && m.html.includes("bebix.store</a>"));
 
 m = render(row("order_placed"), order({ lang: "de" }), meta);

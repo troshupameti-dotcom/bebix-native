@@ -7,7 +7,8 @@ import { haptics } from "@/lib/haptics";
 import { formatTime } from "@/lib/dateUtils";
 import { durationLabel } from "@/lib/baby/dayStats";
 import { isNapAt } from "@/lib/baby/sleepKind";
-import { setNightLightLevel, setNightOverride, useNightMode } from "@/lib/baby/nightMode";
+import { setNightLightLevel, setNightOverride, takeNightReturn, useNightMode } from "@/lib/baby/nightMode";
+import { router } from "expo-router";
 import { useScreenBrightness } from "@/lib/baby/nightScreen";
 import { trackRecordLogged, trackRecordUndone } from "@/lib/analytics/babyEvents";
 import {
@@ -189,7 +190,12 @@ export function NightMode() {
           <Icon name="flash" size={20} color={C.text} />
         </Pressable>
         <Pressable
-          onPress={() => setNightOverride("off")}
+          onPress={() => {
+            // U ndez nga Cilësimet: mbyllja të kthen atje.
+            const back = takeNightReturn();
+            setNightOverride("off");
+            if (back) router.navigate(back as never);
+          }}
           hitSlop={8}
           accessibilityRole="button"
           accessibilityLabel={t("night_exit")}

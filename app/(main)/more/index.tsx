@@ -16,7 +16,7 @@ import { useAuthUser } from "@/lib/hooks/useAuthUser";
 import { useThemeColors } from "@/lib/theme/useThemeColors";
 import { unregisterPushToken } from "@/lib/notifications";
 import { GIFTS_ENABLED } from "@/lib/gifts/enabled";
-import { setNightOverride, useNightMode } from "@/lib/baby/nightMode";
+import { openNightModeFrom, setNightOverride, useNightMode } from "@/lib/baby/nightMode";
 import { computeAgeText } from "@/lib/dateUtils";
 import { WHATS_NEW_KEY, WHATS_NEW_VERSION } from "@/lib/whatsNew";
 import { searchSettings } from "@/lib/settings/search";
@@ -394,7 +394,8 @@ export default function MoreScreen() {
                     setNightOverride("off");
                     return;
                   }
-                  setNightOverride("on");
+                  // "Mbyll" te modaliteti i natës të kthen këtu.
+                  openNightModeFrom("/(main)/more");
                   router.navigate("/(main)/baby");
                 }}
               />

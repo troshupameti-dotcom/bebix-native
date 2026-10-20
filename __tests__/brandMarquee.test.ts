@@ -13,6 +13,8 @@ import type { Brand } from "@/lib/homeContent";
 let mockFocused = true;
 jest.mock("expo-router", () => ({ useIsFocused: () => mockFocused }));
 jest.mock("@/components/ui/Icon", () => ({ Icon: () => null }));
+let mockDark = false;
+jest.mock("@/lib/theme/useThemeColors", () => ({ useThemeColors: () => ({ isDark: mockDark, ink: mockDark ? "#F1ECE4" : "#1C1A16" }) }));
 jest.mock("react-native-worklets", () => require("react-native-worklets/src/mock"));
 
 /** Gjendja e ciklit të kornizave të Reanimated-it (mock-u zyrtar s'e ka useFrameCallback). */
@@ -84,10 +86,20 @@ describe("shiriti i markave", () => {
 });
 
 describe("logot në temën e errët", () => {
-  const { logoForTheme } = require("@/components/shop/BrandMarquee") as typeof import("@/components/shop/BrandMarquee");
-  it("logot e Bebix-it marrin versionin e errët; të tjerat mbeten si janë", () => {
-    expect(logoForTheme("https://www.bebix.store/brands/wide/dr-browns.png", true)).toBe("https://www.bebix.store/brands/wide-dark/dr-browns.png");
-    expect(logoForTheme("https://www.bebix.store/brands/wide/dr-browns.png", false)).toBe("https://www.bebix.store/brands/wide/dr-browns.png");
-    expect(logoForTheme("https://cdn.example.com/logo.png", true)).toBe("https://cdn.example.com/logo.png");
+  it("rrinë mbi pllaka të çelëta me logon origjinale; në temën e çelët pa pllakë", () => {
+    const logo = [{ id: "h", name: "Huggies", logoUrl: "https://www.bebix.store/brands/wide/huggies.png", icon: "shop" } as unknown as Brand];
+    const tileOf = (r: ReactTestRenderer) => r.root.findAll((n) => n.props.accessibilityLabel === "Huggies" && typeof n.props.style === "function")[0];
+    const imageOf = (r: ReactTestRenderer) => r.root.findAll((n) => n.props.source?.uri)[0];
+
+    mockDark = true;
+    const dark = mount(logo);
+    expect(tileOf(dark).props.style({ pressed: false }).backgroundColor).toBeDefined();
+    expect(imageOf(dark).props.source.uri).toBe("https://www.bebix.store/brands/wide/huggies.png");
+    act(() => dark.unmount());
+
+    mockDark = false;
+    const light = mount(logo);
+    expect(tileOf(light).props.style({ pressed: false }).backgroundColor).toBeUndefined();
+    act(() => light.unmount());
   });
 });

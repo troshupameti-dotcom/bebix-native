@@ -165,12 +165,13 @@ function itemsTable(o: Order, meta: Meta, L: (typeof TX)[Lang]): string {
 }
 
 function shell(title: string, body: string, lang: Lang): string {
-  // Logoja rri te një breshëri e errët me ngjyrë të vetën (shkronjat e çelëta, X e kaltër): me sfond të bardhë ose të zi
-  // (modaliteti i errët i Gmail-it e kthen të bardhën në të zezë) mbetet gjithmonë e lexueshme, sepse sfondi i saj nuk ndryshon.
+  // Logoja (shenja "b×" + "bebix") ka sfondin e bardhë të ngulitur në imazh, me qoshe të rrumbullakëta. Klientët e emailit
+  // në modalitetin e errët (Gmail dhe Outlook në telefon) ndryshojnë ngjyrat e HTML-së, por imazhet s'i prekin kurrë: në
+  // emailin e çelët logoja bashkohet me kartën e bardhë, në të errëtin del si pllakë e pastër. 3x për ekranet retina.
   return `<!doctype html><html lang="${lang}"><head><meta charset="utf-8"><meta name="color-scheme" content="light"><meta name="supported-color-schemes" content="light"></head><body style="margin:0;background:#f8f6f2;font-family:Arial,Helvetica,sans-serif;">
   <table role="presentation" width="100%" cellspacing="0" cellpadding="0"><tr><td align="center" style="padding:24px 12px;">
     <table role="presentation" width="100%" cellspacing="0" cellpadding="0" bgcolor="#ffffff" style="max-width:520px;background:#ffffff;border-radius:16px;overflow:hidden;">
-      <tr><td bgcolor="#1c2b43" style="background:#1c2b43;padding:20px 28px;"><img src="${SITE}/wordmark-dark.png" width="110" alt="Bebix" style="display:block;width:110px;height:auto;border:0;font-size:22px;font-weight:700;color:#f3f3f1;"></td></tr>
+      <tr><td bgcolor="#ffffff" style="background:#ffffff;padding:18px 20px 14px;border-bottom:1px solid #efe9e1;"><img src="${SITE}/email-logo.png" width="169" height="60" alt="Bebix" style="display:block;width:169px;height:60px;border:0;font-size:22px;font-weight:700;color:#1c2b43;"></td></tr>
       <tr><td style="padding:24px 28px 28px;">
         <table role="presentation" width="100%" cellspacing="0" cellpadding="0">
           <tr><td style="font-size:18px;font-weight:700;color:#1c1a16;padding:0 0 6px;">${esc(title)}</td></tr>

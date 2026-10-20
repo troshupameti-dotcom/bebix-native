@@ -7,7 +7,7 @@ import fs from "node:fs";
 
 // Si Supabase pas 30 tetorit 2026: tabelat e reja s'marrin më leje vetë (tabelat bazë më lart i kanë, si në prodhim).
 // Kështu testi kap çdo tabelë të re pa GRANT, që në prodhim do të jepte "permission denied".
-const AFTER_OCT_30 = "create role service_role; alter default privileges in schema public revoke all on tables from anon, authenticated;";
+const AFTER_OCT_30 = "create role service_role bypassrls; alter default privileges in schema public revoke all on tables from anon, authenticated;";
 
 const MIGRATION = new URL("../migrations/20261021090000_age_system_01_children.sql", import.meta.url);
 const db = new PGlite();
