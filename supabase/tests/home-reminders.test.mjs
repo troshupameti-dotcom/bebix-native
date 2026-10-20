@@ -5,6 +5,10 @@
 import { PGlite } from "@electric-sql/pglite";
 import fs from "node:fs";
 
+// Si Supabase pas 30 tetorit 2026: tabelat e reja s'marrin më leje vetë (tabelat bazë më lart i kanë, si në prodhim).
+// Kështu testi kap çdo tabelë të re pa GRANT, që në prodhim do të jepte "permission denied".
+const AFTER_OCT_30 = "create role service_role; alter default privileges in schema public revoke all on tables from anon, authenticated;";
+
 const CHILDREN = new URL("../migrations/20261021090000_age_system_01_children.sql", import.meta.url);
 const HOME = new URL("../migrations/20261021090300_age_system_04_home_reminders.sql", import.meta.url);
 const db = new PGlite();
@@ -34,6 +38,7 @@ create table public.baby_records (user_id uuid not null, id text not null, baby_
   occurred_at timestamptz, created_at timestamptz not null default now(), updated_at timestamptz not null default now(),
   deleted_at timestamptz, archived_at timestamptz, created_by uuid, primary key (user_id, id));
 `);
+await db.exec(AFTER_OCT_30);
 for (const [name, file] of [["fëmijët", CHILDREN], ["kreu dhe kujtesat", HOME], ["kreu dhe kujtesat (sërish)", HOME]]) {
   try { await db.exec(fs.readFileSync(file, "utf8")); console.log(`OK  migrimi: ${name}`); }
   catch (e) { console.log(`GABIM te migrimi ${name}:`, e.message); process.exit(1); }

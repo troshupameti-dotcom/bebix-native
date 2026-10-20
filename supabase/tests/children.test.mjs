@@ -5,6 +5,10 @@
 import { PGlite } from "@electric-sql/pglite";
 import fs from "node:fs";
 
+// Si Supabase pas 30 tetorit 2026: tabelat e reja s'marrin më leje vetë (tabelat bazë më lart i kanë, si në prodhim).
+// Kështu testi kap çdo tabelë të re pa GRANT, që në prodhim do të jepte "permission denied".
+const AFTER_OCT_30 = "create role service_role; alter default privileges in schema public revoke all on tables from anon, authenticated;";
+
 const MIGRATION = new URL("../migrations/20261021090000_age_system_01_children.sql", import.meta.url);
 const db = new PGlite();
 process.on("uncaughtException", (e) => { console.log("GABIM i papritur:", String(e.message).slice(0, 300)); process.exit(1); });
@@ -73,6 +77,7 @@ await db.query(`insert into public.baby_profiles (user_id, baby_name, baby_dob, 
 await db.query(`insert into public.baby_profiles (user_id, parent_name) values ($1, 'Babi'), ($2, 'Dikush')`, [dad, emptyProfile]);
 await db.query(`insert into public.baby_records (user_id, id, kind) values ($1, 'r1', 'feeding'), ($1, 'r2', 'diaper'), ($2, 'x1', 'sleep')`, [mom, noProfile]);
 
+await db.exec(AFTER_OCT_30);
 const source = fs.readFileSync(MIGRATION, "utf8");
 try { await db.exec(source); console.log("OK  migrimi u ekzekutua pa gabime"); }
 catch (e) { console.log("GABIM te migrimi:", e.message); process.exit(1); }
@@ -181,6 +186,12 @@ await as(pregnant);
 const due = (await one(`select public.add_child('Bebi', null, current_date + 90) id`)).id;
 const dueRow = (await all(`select * from public.my_children()`))[0];
 check("shtatzënia: fëmija i parë vetëm me datë të pritur, falas", dueRow.id === due && dueRow.is_free && dueRow.birth_date === null && dueRow.due_date !== null);
+
+// Lejet e API-së (pas 30 tetorit Supabase s'i jep vetë): i kyçuri lexon planin dhe zgjedhjen e vet; mysafiri asgjë.
+await as(mom);
+check("API: i kyçuri lexon user_plans dhe child_selection", (await fails(`select * from public.user_plans`)) === null && (await fails(`select * from public.child_selection`)) === null);
+await as(null);
+check("API: mysafiri s'lexon fëmijët, planet as zgjedhjet", !!(await fails(`select * from public.children`)) && !!(await fails(`select * from public.user_plans`)) && !!(await fails(`select * from public.child_selection`)));
 
 console.log(`\n${pass} OK, ${fail} gabime`);
 process.exit(fail ? 1 : 0);

@@ -5,6 +5,10 @@
 import { PGlite } from "@electric-sql/pglite";
 import fs from "node:fs";
 
+// Si Supabase pas 30 tetorit 2026: tabelat e reja s'marrin më leje vetë (tabelat bazë më lart i kanë, si në prodhim).
+// Kështu testi kap çdo tabelë të re pa GRANT, që në prodhim do të jepte "permission denied".
+const AFTER_OCT_30 = "create role service_role; alter default privileges in schema public revoke all on tables from anon, authenticated;";
+
 const MIGRATION = new URL("../migrations/20261021090100_age_system_02_shop.sql", import.meta.url);
 const db = new PGlite();
 process.on("uncaughtException", (e) => { console.log("GABIM i papritur:", String(e.message).slice(0, 300)); process.exit(1); });
@@ -48,6 +52,7 @@ await prod("Çanta shkolle 36–72", "36", "72", feeding, { brand });
 await prod("Joaktiv", null, null, feeding, { active: false });
 await prod("Mosha e çuditshme", '"6 muaj"', null);
 
+await db.exec(AFTER_OCT_30);
 try { await db.exec(fs.readFileSync(MIGRATION, "utf8")); console.log("OK  migrimi u ekzekutua pa gabime"); }
 catch (e) { console.log("GABIM te migrimi:", e.message); process.exit(1); }
 try { await db.exec(fs.readFileSync(MIGRATION, "utf8")); console.log("OK  migrimi i dytë pa gabime"); }

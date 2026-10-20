@@ -38,6 +38,12 @@ create policy "pregnancy_weeks_admin"
   using (public.is_admin())
   with check (public.is_admin());
 
+-- Lejet e API-së të shkruara shprehimisht (nga 30 tetori 2026 Supabase s'i jep më vetë për tabelat e reja):
+-- leximi për të gjithë, shkrimi për të kyçurit (RLS e lë vetëm adminin), service_role të gjitha.
+grant select on public.pregnancy_weeks to anon, authenticated;
+grant insert, update, delete on public.pregnancy_weeks to authenticated;
+grant all on public.pregnancy_weeks to service_role;
+
 -- Shembull si shtohet një javë (pa e ekzekutuar këtu):
 -- insert into public.pregnancy_weeks (lang, week_from, week_to, title, body, ideas)
 -- values ('sq', 12, 12, 'Titulli', 'Teksti i javës 12.', array['Ide 1', 'Ide 2']);

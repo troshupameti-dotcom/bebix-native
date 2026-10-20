@@ -6,6 +6,10 @@
 import { PGlite } from "@electric-sql/pglite";
 import fs from "node:fs";
 
+// Si Supabase pas 30 tetorit 2026: tabelat e reja s'marrin më leje vetë (tabelat bazë më lart i kanë, si në prodhim).
+// Kështu testi kap çdo tabelë të re pa GRANT, që në prodhim do të jepte "permission denied".
+const AFTER_OCT_30 = "create role service_role; alter default privileges in schema public revoke all on tables from anon, authenticated;";
+
 const AUTO = new URL("../migrations/20261015090000_auto_groups.sql", import.meta.url);
 const CHILDREN = new URL("../migrations/20261021090000_age_system_01_children.sql", import.meta.url);
 const COMMUNITY = new URL("../migrations/20261021090200_age_system_03_community.sql", import.meta.url);
@@ -48,6 +52,7 @@ create table public.community_posts (id uuid primary key default gen_random_uuid
 insert into public.community_groups (name) values ('Gjidhënia');
 `);
 
+await db.exec(AFTER_OCT_30);
 for (const [name, file] of [["grupet automatike", AUTO], ["fëmijët", CHILDREN], ["komuniteti sipas moshës", COMMUNITY], ["komuniteti (sërish)", COMMUNITY]]) {
   try { await db.exec(fs.readFileSync(file, "utf8")); console.log(`OK  migrimi: ${name}`); }
   catch (e) { console.log(`GABIM te migrimi ${name}:`, e.message); process.exit(1); }

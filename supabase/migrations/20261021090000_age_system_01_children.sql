@@ -100,6 +100,13 @@ create policy "child_selection_own_read"
   using (user_id = (select auth.uid()));
 revoke insert, update, delete on public.child_selection from anon, authenticated;
 
+-- Lejet e API-së të shkruara shprehimisht: nga 30 tetori 2026 Supabase s'u jep më vetë leje tabelave të reja te
+-- "public" (pa to app-i merr "permission denied"). Leximi vetëm për të kyçurit (RLS e kufizon te të vetat);
+-- shkrimi vetëm përmes funksioneve. service_role (funksionet në server) i ka të gjitha, si tabelat e tjera.
+revoke all on public.children, public.user_plans, public.child_selection from anon;
+grant select on public.user_plans, public.child_selection to authenticated;
+grant all on public.children, public.user_plans, public.child_selection to service_role;
+
 -- --- 3) Plani ---------------------------------------------------------------
 
 -- Premium pa datë skadimi = pa afat.
