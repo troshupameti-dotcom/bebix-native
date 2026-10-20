@@ -3,8 +3,11 @@
  * "permission denied". Çdo migrim që krijon tabelë ose pamje (nga migrimet e sistemit të moshës e tutje, ato që
  * s'janë ekzekutuar ende në prodhim) duhet ta shkruajë lejen në të njëjtin skedar.
  */
-import fs from "fs";
-import path from "path";
+/* eslint-disable @typescript-eslint/no-require-imports -- si te backNavigation.test: pa tipet e Node në projekt */
+const fs = require("fs") as { readdirSync(dir: string): string[]; readFileSync(file: string, enc: "utf8"): string };
+const path = require("path") as { join(...p: string[]): string };
+/* eslint-enable @typescript-eslint/no-require-imports */
+declare const __dirname: string;
 
 const DIR = path.join(__dirname, "..", "supabase", "migrations");
 /** Migrimet para këtij emri janë ekzekutuar në prodhim para ndryshimit dhe i kanë lejet. */
