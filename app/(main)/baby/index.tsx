@@ -25,6 +25,7 @@ import { themedTone } from "@/lib/theme/tone";
 import { NowCard } from "@/components/baby/NowCard";
 import { WeeklyRecapCard } from "@/components/baby/WeeklyRecapCard";
 import { MemoriesCard } from "@/components/baby/MemoriesCard";
+import { StoryTonightCard } from "@/components/stories/StoryTonightCard";
 import { CelebrationModal } from "@/components/baby/CelebrationModal";
 import { useCelebration } from "@/lib/baby/useCelebration";
 import { TeamCard } from "@/components/baby/TeamCard";
@@ -874,6 +875,9 @@ export default function BabyProfileScreen() {
             ) : null}
 
             {/* "Këtë javë" (zhvillimi i bebit) u hoq më 15 tetor. Të dhënat mjekësore rrinë te cilësimet e bebit. */}
+
+            {/* Përralla e mbrëmjes, sipas moshës; biblioteka e plotë hapet prej këtu ose nga Cilësimet. */}
+            {can("stories") ? <StoryTonightCard months={ageInfo.months} /> : null}
 
             {/* Kujtimet në fund: sot para 1 muaji / 1 viti, filmi i muajit, kapsula, libri. */}
             {can("moments") ? <MemoriesCard baby={b} profile={profile} babyName={babyName} /> : null}

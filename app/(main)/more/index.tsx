@@ -5,7 +5,7 @@ import { useRouter, useScrollToTop } from "expo-router";
 import Constants from "expo-constants";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import {
-  Baby, Bell, Bookmark, ChevronRight, CloudMoon, Contrast, FileText, Gift, Heart, Info, Languages, LifeBuoy, LogOut, Package, Search, ShieldCheck, Sparkles, Stethoscope, Trash, UserRound, Users, X, type LucideIcon,
+  Baby, Bell, BookOpen, Bookmark, ChevronRight, CloudMoon, Contrast, FileText, Gift, Heart, Info, Languages, LifeBuoy, LogOut, Package, Search, ShieldCheck, Sparkles, Stethoscope, Trash, UserRound, Users, X, type LucideIcon,
 } from "lucide-react-native";
 import { useAppState } from "@/lib/state/AppStateContext";
 import { useLanguage } from "@/lib/i18n/LanguageContext";
@@ -207,6 +207,7 @@ export default function MoreScreen() {
             ? [{ key: "gifts", icon: Gift, color: C.purple, label: t("gift_title"), keywords: "dhurata lista gifts registry", onPress: () => router.push("/more/gifts") }]
             : []),
           { key: "posts", icon: Bookmark, color: C.teal, label: t("saved_posts"), keywords: "postime komuniteti posts", onPress: () => router.push("/community/saved", { withAnchor: true }) },
+          { key: "stories", icon: BookOpen, color: C.green, label: t("stories_title"), keywords: "perralla histori lexim gjume te preferuarat stories tales bedtime reading", onPress: () => router.push("/baby/stories", { withAnchor: true }) },
         ],
       },
       {

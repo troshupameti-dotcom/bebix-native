@@ -20,7 +20,9 @@ export type Feature =
   /** Feed-i i komunitetit sipas grupmoshës. */
   | "communityAgeFeed"
   | "moments"
-  | "medical";
+  | "medical"
+  /** Përrallat: karta "Përrallë për sonte" te kreu (biblioteka hapet edhe nga Cilësimet). */
+  | "stories";
 
 /** "none" = pa fëmijë aktiv ose pa datë: kreu neutral dhe dyqani i plotë, pa e hequr asgjë që prindi përdor sot. */
 export type StageOrNone = Stage | "none";
@@ -37,6 +39,7 @@ export const STAGE_FEATURES: Record<StageOrNone, Record<Feature, boolean>> = {
     communityAgeFeed: true,
     moments: true,
     medical: true,
+    stories: false,
   },
   infant: {
     trackers: true,
@@ -49,6 +52,7 @@ export const STAGE_FEATURES: Record<StageOrNone, Record<Feature, boolean>> = {
     communityAgeFeed: true,
     moments: true,
     medical: true,
+    stories: true,
   },
   toddler: {
     trackers: true,
@@ -61,6 +65,7 @@ export const STAGE_FEATURES: Record<StageOrNone, Record<Feature, boolean>> = {
     communityAgeFeed: true,
     moments: true,
     medical: true,
+    stories: true,
   },
   child: {
     trackers: false,
@@ -73,6 +78,7 @@ export const STAGE_FEATURES: Record<StageOrNone, Record<Feature, boolean>> = {
     communityAgeFeed: true,
     moments: true,
     medical: true,
+    stories: true,
   },
   archive: {
     trackers: false,
@@ -85,6 +91,7 @@ export const STAGE_FEATURES: Record<StageOrNone, Record<Feature, boolean>> = {
     communityAgeFeed: false,
     moments: true,
     medical: true,
+    stories: false,
   },
   none: {
     trackers: true,
@@ -97,6 +104,7 @@ export const STAGE_FEATURES: Record<StageOrNone, Record<Feature, boolean>> = {
     communityAgeFeed: false,
     moments: true,
     medical: true,
+    stories: true,
   },
 };
 
