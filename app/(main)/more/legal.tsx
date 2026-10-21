@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { useLocalSearchParams } from "expo-router";
 import { View, Text, ScrollView, Pressable } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { Icon } from "@/components/ui/Icon";
@@ -20,7 +21,7 @@ import { useTranslation } from "@/lib/i18n/LanguageContext";
  * (pranonte porosi). Tani secila prej tyre përshkruan gjendjen e vërtetë.
  */
 
-const LAST_UPDATED = "28 shtator 2026";
+const LAST_UPDATED = "21 tetor 2026";
 
 const DOCS: { title: string; body: string }[] = [
   {
@@ -40,6 +41,7 @@ const DOCS: { title: string; body: string }[] = [
       "• Komuniteti: postimet, komentet, pëlqimet, foto e video që ngarkon.\n" +
       "• Dyqani: emri, telefoni dhe adresa që shkruan te porosia, bashkë me produktet e porositura.\n" +
       "• Telefoni: një identifikues për njoftimet (push token), nëse i lejon njoftimet.\n" +
+      "• Asistenti AI: sa pyetje ke bërë sot (pa përmbajtjen), dhe përgjigjet që raporton vetë. Bisedat nuk ruhen.\n" +
       "• Rrëzimet e app-it: kur app-i rrëzohet, dërgohet një raport teknik (modeli i telefonit, versioni i sistemit dhe i app-it, vendi i gabimit) — pa emër, pa email, pa të dhënat e bebit.\n" +
       "• Përdorimi: ngjarje të përgjithshme si hapja e app-it, hapja e dyqanit, krijimi i një porosie, regjistrimi i një ushqyerjeje, gjumi ose pelene (vetëm lloji dhe ora, jo sasia apo shënimet), ftesa te Familja dhe sa lloje njoftimesh ke fikur. Lidhen me një identifikues të rastësishëm ose me ID-në teknike të llogarisë, pa emra, pa adresa, pa email dhe pa emrin apo datëlindjen e bebit.\n\n" +
       "KU RUHEN\n" +
@@ -47,7 +49,7 @@ const DOCS: { title: string; body: string }[] = [
       "PSE\n" +
       "Për të ta ofruar shërbimin që kërkon: ruajtja e historikut të bebit, njoftimet që zgjedh, komuniteti dhe dërgimi i porosive. Të dhënat e bebit i përpunojmë me pëlqimin tënd; porositë, sepse na duhen për të përmbushur blerjen.\n\n" +
       "ME KË NDAHEN\n" +
-      "Nuk i shesim të dhënat tua, asnjëherë. I ndajmë vetëm me ata që na ndihmojnë ta ofrojmë shërbimin: Supabase (ruajtja, BE), Vercel (faqja e webit; regjistrat teknikë si adresa IP), Expo (dërgimi i njoftimeve), Sentry (raportet e rrëzimeve), PostHog (statistikat e përdorimit të përshkruara më lart; serverë në SHBA), Resend (email-et e konfirmimit dhe të rikthimit të fjalëkalimit), Google ose Apple (vetëm kur zgjedh të hysh me ta), dhe partnerin që të dërgon porosinë — atij i shkojnë emri, telefoni dhe adresa, pa të cilat dërgesa nuk bëhet dot. Asgjë prej të dhënave të bebit nuk u jepet partnerëve. Kur fton një prind tjetër te Familja, ai sheh dhe shton të dhënat e bebit njësoj si ti.\n\n" +
+      "Nuk i shesim të dhënat tua, asnjëherë. I ndajmë vetëm me ata që na ndihmojnë ta ofrojmë shërbimin: Supabase (ruajtja, BE), Vercel (faqja e webit; regjistrat teknikë si adresa IP), Expo (dërgimi i njoftimeve), Sentry (raportet e rrëzimeve), PostHog (statistikat e përdorimit të përshkruara më lart; serverë në SHBA), Resend (email-et e konfirmimit dhe të rikthimit të fjalëkalimit), Anthropic (asistenti AI: vetëm pyetjet që i bën dhe mosha e fëmijës, kur e përdor dhe pasi jep pëlqimin; serverë në SHBA), Stripe (vetëm kur zgjedh të paguash me kartë: pagesa bëhet në faqen e Stripe, ndaj numrin e kartës nuk e shohim as e ruajmë ne), Google ose Apple (vetëm kur zgjedh të hysh me ta), dhe partnerin që të dërgon porosinë — atij i shkojnë emri, telefoni dhe adresa, pa të cilat dërgesa nuk bëhet dot. Asgjë prej të dhënave të bebit nuk u jepet partnerëve. Kur fton një prind tjetër te Familja, ai sheh dhe shton të dhënat e bebit njësoj si ti.\n\n" +
       "SA KOHË\n" +
       "Të dhënat e llogarisë dhe të bebit rrinë derisa ta fshish llogarinë. Porositë ruhen edhe pas fshirjes, të anonimizuara, sepse na kërkohen për kontabilitet.\n\n" +
       "TË DREJTAT E TUA\n" +
@@ -84,8 +86,20 @@ const DOCS: { title: string; body: string }[] = [
   {
     title: "Funksionet me AI",
     body:
-      "Disa pjesë të app-it përdorin modele gjuhësore të palëve të treta, të ushqyera me të dhënat që fut vetë (p.sh. mosha e bebit).\n\n" +
-      "Përgjigjet mund të përmbajnë pasaktësi. Përdori si ide, jo si fakt — dhe kurrë si këshillë mjekësore. Ajo që shkruan te biseda me AI-n i dërgohet ofruesit të modelit për ta përpunuar.",
+      "Bebix AI është asistent me inteligjencë artificiale, jo mjek dhe jo njeri. Përgjigjet i shkruan modeli Claude i kompanisë Anthropic (SHBA).\n\n" +
+      "KUSH E PËRDOR\n" +
+      "Vetëm prindërit dhe kujdestarët mbi 18 vjeç, me llogari. Nuk është për fëmijë. Para përdorimit të parë app-i kërkon pëlqimin tënd, dhe pa të asgjë nuk dërgohet.\n\n" +
+      "ÇFARË DËRGOHET\n" +
+      "Pyetjet që shkruan te biseda (deri në 20 mesazhet e fundit), gjuha, dhe faza e mosha e fëmijës. Nuk dërgohen emri yt, emri i bebit, email-i apo vendndodhja. Mos shkruaj te biseda të dhëna që të identifikojnë ty ose fëmijën.\n\n" +
+      "SI RUHEN\n" +
+      "Bebix nuk i ruan bisedat: zhduken kur mbyll ekranin. Anthropic i përpunon vetëm për të shkruar përgjigjen dhe, sipas kushteve të tij për bizneset, nuk i përdor për të trajnuar modelet. Për kufirin ditor ruajmë vetëm sa pyetje ke bërë sot, pa përmbajtjen. Kur raporton një përgjigje, ruajmë pyetjen, përgjigjen dhe arsyen, që t'i shqyrtojë ekipi i Bebix-it.\n\n" +
+      "KUFIZIMET\n" +
+      "• Informacion i përgjithshëm, jo diagnozë dhe jo këshillë mjekësore. Përgjigjet mund të kenë pasaktësi: përdori si ide, jo si fakt.\n" +
+      "• Nuk jep doza ilaçesh dhe nuk thotë kur të nisësh apo të ndalosh një ilaç.\n" +
+      "• Në emergjencë thirr 112 ose shko në urgjencë; mos prit përgjigje nga AI-ja.\n" +
+      "• Ka kufi pyetjesh në ditë për çdo llogari.\n\n" +
+      "RAPORTIMI\n" +
+      "Te çdo përgjigje ka butonin \"Raporto\". Raportimet i shqyrton ekipi i Bebix-it, dhe na ndihmojnë ta përmirësojmë asistentin.",
   },
   {
     title: "Rregullat e Komunitetit",
@@ -120,7 +134,11 @@ const DOCS: { title: string; body: string }[] = [
 export default function LegalScreen() {
   const theme = useThemeColors();
   const { t } = useTranslation();
-  const [openIndex, setOpenIndex] = useState<number | null>(null);
+  // `section=ai`: hapet direkt pjesa e AI-së (nga dritarja e pëlqimit të asistentit).
+  const { section } = useLocalSearchParams<{ section?: string }>();
+  const [openIndex, setOpenIndex] = useState<number | null>(() =>
+    section === "ai" ? DOCS.findIndex((d) => d.title === "Funksionet me AI") : null
+  );
 
   return (
     <SafeAreaView className="flex-1 bg-cream" edges={["top"]}>

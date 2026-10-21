@@ -1,4 +1,4 @@
-import { useState, useRef } from "react";
+import { useEffect, useState, useRef } from "react";
 import {
   View,
   Text,
@@ -6,14 +6,20 @@ import {
   Pressable,
   ScrollView,
   ActivityIndicator,
+  Alert,
 } from "react-native";
 import { KeyboardSafeView } from "@/lib/ui/keyboard";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { Icon } from "@/components/ui/Icon";
 import { useTranslation } from "@/lib/i18n/LanguageContext";
 import { shadows } from "@/lib/shadows";
-import { BackButton } from "@/components/ui/BackButton";
-import { askAi, type AiFailure } from "@/lib/ai/chat";
+import { BackButton, goBackOr } from "@/components/ui/BackButton";
+import { askAi, reportAiAnswer, type AiFailure, type AiReportReason } from "@/lib/ai/chat";
+import { giveAiConsent, hasAiConsent } from "@/lib/ai/consent";
+import { useCurrentUserId } from "@/lib/hooks/useCurrentUserId";
+import { useToast } from "@/lib/toast/ToastContext";
+import { AiConsent } from "@/components/ai/AiConsent";
+import { AiReportSheet } from "@/components/ai/AiReportSheet";
 import { useActiveChild } from "@/lib/age/useActiveChild";
 import { useAppState } from "@/lib/state/AppStateContext";
 import { computeAgeText } from "@/lib/dateUtils";
@@ -34,6 +40,8 @@ type ChatMessage = {
   text: string;
   /** Mesazh nga app-i (përshëndetja, gabimet), jo përgjigje e AI-së: s'i dërgohet AI-së në pyetjen tjetër. */
   notice?: boolean;
+  /** Te përgjigjet e AI-së: pyetja që i paraprin, për raportimin. */
+  question?: string;
 };
 
 export default function AiChatScreen() {
@@ -41,6 +49,21 @@ export default function AiChatScreen() {
   const { t, lang } = useTranslation();
   const { state } = useAppState();
   const active = useActiveChild();
+  const userId = useCurrentUserId();
+  const { showToast } = useToast();
+
+  // Pëlqimi para përdorimit të parë (null derisa të lexohet).
+  const [consent, setConsent] = useState<{ userId: string; given: boolean } | null>(null);
+  useEffect(() => {
+    if (!userId) return;
+    let alive = true;
+    void hasAiConsent(userId).then((given) => alive && setConsent({ userId, given }));
+    return () => {
+      alive = false;
+    };
+  }, [userId]);
+  const consented = consent?.userId === userId ? consent.given : null;
+  const [reporting, setReporting] = useState<ChatMessage | null>(null);
 
   const [input, setInput] = useState("");
   const [sending, setSending] = useState(false);
@@ -69,11 +92,23 @@ export default function AiChatScreen() {
       { stage: active.stage ?? undefined, age: dob ? computeAgeText(dob, lang) : undefined }
     );
     const reply: ChatMessage = result.ok
-      ? { id: `a-${Date.now()}`, role: "ai", text: result.text }
+      ? { id: `a-${Date.now()}`, role: "ai", text: result.text, question: trimmed }
       : { id: `n-${Date.now()}`, role: "ai", text: t(FAILURE_KEY[result.reason], { n: result.limit ?? 30 }), notice: true };
     setMessages((prev) => [...prev, reply]);
     setSending(false);
     scrollToEnd();
+  }
+
+  async function sendReport(reason: AiReportReason, note: string) {
+    const target = reporting;
+    if (!target) return;
+    const ok = await reportAiAnswer({ question: target.question ?? "", answer: target.text, reason, note });
+    if (ok) {
+      setReporting(null);
+      showToast(t("ai_report_sent"));
+    } else {
+      Alert.alert(t("ai_report_title"), t("ai_report_failed"));
+    }
   }
 
   return (
@@ -90,6 +125,18 @@ export default function AiChatScreen() {
         </View>
       </View>
 
+      {consented === null ? (
+        <ActivityIndicator className="mt-10 text-olive" />
+      ) : !consented ? (
+        <AiConsent
+          onAccept={() => {
+            if (!userId) return;
+            void giveAiConsent(userId);
+            setConsent({ userId, given: true });
+          }}
+          onLater={() => goBackOr("/(main)/baby")}
+        />
+      ) : (
       <KeyboardSafeView>
         {/* Messages */}
         <ScrollView
@@ -121,6 +168,18 @@ export default function AiChatScreen() {
                 >
                   {m.text}
                 </Text>
+                {/* Çdo përgjigje e AI-së mund të raportohet pa dalë nga app-i (kërkesë e Google Play). */}
+                {m.role === "ai" && !m.notice ? (
+                  <Pressable
+                    onPress={() => setReporting(m)}
+                    accessibilityRole="button"
+                    accessibilityLabel={t("ai_report_title")}
+                    hitSlop={8}
+                    className="mt-2 self-start"
+                  >
+                    <Text className="font-bodyMedium text-[11px] text-ink-faint">{t("ai_report")}</Text>
+                  </Pressable>
+                ) : null}
               </View>
             </View>
           ))}
@@ -165,6 +224,8 @@ export default function AiChatScreen() {
           </Pressable>
         </View>
       </KeyboardSafeView>
+      )}
+      <AiReportSheet visible={!!reporting} onClose={() => setReporting(null)} onSend={sendReport} />
     </SafeAreaView>
   );
 }

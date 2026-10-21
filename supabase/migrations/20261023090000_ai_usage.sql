@@ -1,4 +1,4 @@
--- Asistenti AI: kufiri ditor i pyetjeve për çdo llogari (kontrolli i kostos). E numëron vetëm funksioni `ai-chat`
+-- Asistenti AI: kufiri ditor i pyetjeve për çdo llogari (kontrolli i kostos) dhe raportimet e përgjigjeve (më poshtë). E numëron vetëm funksioni `ai-chat`
 -- në server (service_role); klienti s'e lexon as e shkruan tabelën. Dita numërohet sipas orës së Kosovës.
 -- I sigurt për t'u ekzekutuar dy herë.
 
@@ -39,3 +39,40 @@ $$;
 
 revoke execute on function public.ai_take_quota(uuid, integer) from public, anon, authenticated;
 grant execute on function public.ai_take_quota(uuid, integer) to service_role;
+
+-- Raportimet e përgjigjeve të AI-së (Google Play kërkon që përdoruesi ta raportojë një përgjigje pa dalë nga app-i).
+-- Prindi shton vetëm raportimet e veta; i lexojnë dhe i shënojnë si të shqyrtuara vetëm adminët.
+create table if not exists public.ai_reports (
+  id         uuid primary key default gen_random_uuid(),
+  user_id    uuid not null default auth.uid() references auth.users(id) on delete cascade,
+  question   text not null check (char_length(question) between 1 and 2000),
+  answer     text not null check (char_length(answer) between 1 and 8000),
+  reason     text not null check (reason in ('wrong', 'unsafe', 'inappropriate', 'other')),
+  note       text check (note is null or char_length(note) <= 300),
+  status     text not null default 'open' check (status in ('open', 'reviewed')),
+  created_at timestamptz not null default now()
+);
+
+alter table public.ai_reports enable row level security;
+
+drop policy if exists "ai_reports_insert_own" on public.ai_reports;
+create policy "ai_reports_insert_own"
+  on public.ai_reports for insert to authenticated
+  with check (user_id = (select auth.uid()) and status = 'open');
+
+drop policy if exists "ai_reports_admin_read" on public.ai_reports;
+create policy "ai_reports_admin_read"
+  on public.ai_reports for select to authenticated
+  using (public.is_admin());
+
+drop policy if exists "ai_reports_admin_update" on public.ai_reports;
+create policy "ai_reports_admin_update"
+  on public.ai_reports for update to authenticated
+  using (public.is_admin())
+  with check (public.is_admin());
+
+revoke all on public.ai_reports from anon, authenticated;
+grant insert (question, answer, reason, note) on public.ai_reports to authenticated;
+grant select on public.ai_reports to authenticated;
+grant update (status) on public.ai_reports to authenticated;
+grant all on public.ai_reports to service_role;

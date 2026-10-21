@@ -1,9 +1,9 @@
 import { useState } from "react";
 import { Text, View } from "react-native";
 import { useToast } from "@/lib/toast/ToastContext";
-import { AdminScreen, Btn, Card, Chips, Empty, ErrorNote, Loading, Pill, confirm, runAction, useAdminData } from "@/components/admin/AdminUI";
-import { fetchReports, markReports, removeReported, type ReportGroup, type ReportTab } from "@/lib/admin/api";
-import { REPORT_REASON, REPORT_STATUS, TONES, dateOnly } from "@/lib/admin/labels";
+import { AdminScreen, Btn, Card, Chips, Empty, ErrorNote, Loading, Pill, SectionTitle, confirm, runAction, useAdminData } from "@/components/admin/AdminUI";
+import { fetchAiReports, fetchReports, markAiReportReviewed, markReports, removeReported, type ReportGroup, type ReportTab } from "@/lib/admin/api";
+import { AI_REPORT_REASON, REPORT_REASON, REPORT_STATUS, TONES, dateOnly, dateTime } from "@/lib/admin/labels";
 
 const TABS: { key: ReportTab; label: string }[] = [
   { key: "open", label: "Të hapura" },
@@ -16,7 +16,10 @@ const TABS: { key: ReportTab; label: string }[] = [
 export default function AdminReports() {
   const { showToast } = useToast();
   const [tab, setTab] = useState<ReportTab>("open");
-  const { data, error, refreshing, reload, pull } = useAdminData(() => fetchReports(tab), [tab]);
+  const { data, error, refreshing, reload, pull } = useAdminData(async () => {
+    const [community, ai] = await Promise.all([fetchReports(tab), fetchAiReports(tab)]);
+    return { community, ai };
+  }, [tab]);
 
   function remove(g: ReportGroup) {
     const noun = g.kind === "post" ? "postimin" : "komentin";
@@ -40,8 +43,47 @@ export default function AdminReports() {
       <Chips items={TABS} value={tab} onChange={setTab} />
       <ErrorNote message={error} />
       {!data && !error ? <Loading /> : null}
-      {data && data.length === 0 ? <Empty title="S'ka raportime me këtë filtër." /> : null}
-      {data?.map((g) => {
+      {/* Përgjigjet e asistentit AI (pas migrimit të AI-së). */}
+      {data?.ai && data.ai.length > 0 ? (
+        <>
+          <SectionTitle>Asistenti AI</SectionTitle>
+          {data.ai.map((r) => (
+            <Card key={r.id}>
+              <View className="flex-row flex-wrap items-center gap-2">
+                <Pill label={AI_REPORT_REASON[r.reason] ?? r.reason} tone={r.reason === "unsafe" ? TONES.red : TONES.orange} />
+                <Pill label={r.status === "open" ? "E hapur" : "E shqyrtuar"} />
+                <Text className="font-body text-xs text-ink-faint">{dateTime(r.createdAt)}</Text>
+              </View>
+              <Text className="mt-3 font-bodySemibold text-xs text-ink-soft">Pyetja</Text>
+              <Text className="mt-1 font-body text-sm leading-5 text-ink">{r.question || "—"}</Text>
+              <Text className="mt-3 font-bodySemibold text-xs text-ink-soft">Përgjigjja e AI-së</Text>
+              <View className="mt-1 rounded-xl bg-cream-soft p-3.5">
+                <Text className="font-body text-sm leading-5 text-ink">{r.answer}</Text>
+              </View>
+              {r.note ? <Text className="mt-2 font-body text-xs text-ink-soft">Shënim: {r.note}</Text> : null}
+              {r.status === "open" ? (
+                <View className="mt-4 flex-row">
+                  <Btn
+                    small
+                    kind="light"
+                    label="Shënoje të shqyrtuar"
+                    onPress={() =>
+                      void runAction(() => markAiReportReviewed(r.id), () => {
+                        showToast("U ruajt.");
+                        reload();
+                      })
+                    }
+                  />
+                </View>
+              ) : null}
+            </Card>
+          ))}
+          <SectionTitle>Komuniteti</SectionTitle>
+        </>
+      ) : null}
+      {data && data.community.length === 0 && !(data.ai && data.ai.length) ? <Empty title="S'ka raportime me këtë filtër." /> : null}
+      {data && data.community.length === 0 && data.ai && data.ai.length > 0 ? <Empty title="S'ka raportime të Komunitetit me këtë filtër." /> : null}
+      {data?.community.map((g) => {
         const noun = g.kind === "post" ? "Postim" : "Koment";
         return (
           <Card key={`${g.kind}:${g.targetId}`}>

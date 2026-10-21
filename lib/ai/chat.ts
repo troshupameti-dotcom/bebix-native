@@ -32,3 +32,16 @@ export async function askAi(history: AiTurn[], lang: "sq" | "en", context: AiCon
   if (typeof body?.text === "string" && body.text.trim()) return { ok: true, text: body.text.trim() };
   return { ok: false, reason: "busy" };
 }
+
+export type AiReportReason = "wrong" | "unsafe" | "inappropriate" | "other";
+
+/** Raporton një përgjigje (Google Play e kërkon brenda app-it). I lexojnë vetëm adminët. false kur s'u dërgua. */
+export async function reportAiAnswer(input: { question: string; answer: string; reason: AiReportReason; note: string }): Promise<boolean> {
+  const { error } = await supabase.from("ai_reports").insert({
+    question: input.question.slice(0, 2000),
+    answer: input.answer.slice(0, 8000),
+    reason: input.reason,
+    note: input.note.trim().slice(0, 300) || null,
+  });
+  return !error;
+}

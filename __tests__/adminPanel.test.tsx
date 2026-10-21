@@ -154,9 +154,15 @@ describe("çdo ekran i panelit hapet me të dhëna", () => {
     await settle();
     expect(visibleText(experts.root).join(" ")).toContain("Dr. Arta");
 
+    fake.tables.ai_reports = [{ id: "ai1", question: "Sa gjumë?", answer: "Rreth 14 orë.", reason: "unsafe", note: null, status: "open", created_at: ORDER.created_at }];
     const reports = await renderScreen(<AdminReports />);
     await settle();
-    expect(visibleText(reports.root).join(" ")).toContain("Shitje Spam");
+    const reportsText = visibleText(reports.root).join(" ");
+    expect(reportsText).toContain("Shitje Spam");
+    // Raportimet e asistentit AI dalin në krye, me arsyen, pyetjen dhe përgjigjen.
+    expect(reportsText).toContain("Asistenti AI");
+    expect(reportsText).toContain("E rrezikshme për shëndetin");
+    expect(reportsText).toContain("Rreth 14 orë.");
 
     const partners = await renderScreen(<AdminPartners />);
     await settle();

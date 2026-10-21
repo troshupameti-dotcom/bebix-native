@@ -61,6 +61,13 @@ export const REPORT_REASON: Record<string, string> = {
   other: "Tjetër",
 };
 
+export const AI_REPORT_REASON: Record<string, string> = {
+  wrong: "E pasaktë",
+  unsafe: "E rrezikshme për shëndetin",
+  inappropriate: "E papërshtatshme ose fyese",
+  other: "Tjetër",
+};
+
 export const REPORT_STATUS: Record<string, string> = {
   open: "E hapur",
   reviewed: "E shqyrtuar",

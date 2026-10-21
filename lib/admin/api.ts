@@ -33,13 +33,15 @@ export type Dashboard = {
 };
 
 export async function fetchDashboard(): Promise<Dashboard> {
-  const [summary, top, products, partners, experts, reports] = await Promise.all([
+  const [summary, top, products, partners, experts, reports, aiReports] = await Promise.all([
     supabase.from("admin_sales_summary").select("*").maybeSingle(),
     supabase.from("admin_top_products").select("*").order("revenue", { ascending: false }).limit(8),
     supabase.from("products").select("id", { count: "exact", head: true }).eq("approval_status", "pending").not("created_by_partner", "is", null),
     supabase.from("partners").select("id", { count: "exact", head: true }).eq("status", "pending"),
     supabase.from("expert_applications").select("id", { count: "exact", head: true }).eq("status", "pending"),
     supabase.from("community_reports").select("id", { count: "exact", head: true }).eq("status", "open"),
+    // Pa migrimin e AI-së tabela mungon: numri del 0.
+    supabase.from("ai_reports").select("id", { count: "exact", head: true }).eq("status", "open"),
   ]);
   fail(summary.error);
   const s = (summary.data ?? {}) as Record<string, unknown>;
@@ -55,7 +57,7 @@ export async function fetchDashboard(): Promise<Dashboard> {
     pendingProducts: products.count ?? 0,
     pendingPartners: partners.count ?? 0,
     pendingExperts: experts.count ?? 0,
-    openReports: reports.count ?? 0,
+    openReports: (reports.count ?? 0) + (aiReports.error ? 0 : aiReports.count ?? 0),
     top: ((top.data ?? []) as Record<string, unknown>[]).map((r) => ({
       id: String(r.product_id),
       name: String(r.product_name ?? "—"),
@@ -501,6 +503,33 @@ export async function removeReported(kind: "post" | "comment", id: string): Prom
 
 export async function markReports(kind: "post" | "comment", id: string, status: "dismissed" | "reviewed"): Promise<void> {
   const { error } = await supabase.from("community_reports").update({ status }).eq(kind === "post" ? "post_id" : "comment_id", id);
+  fail(error);
+}
+
+// ---- Raportimet e asistentit AI ----
+
+export type AiReport = { id: string; question: string; answer: string; reason: string; note: string | null; status: string; createdAt: string };
+
+/** Përgjigjet e AI-së që raportuan prindërit; null kur tabela s'ekziston ende (para migrimit të AI-së). */
+export async function fetchAiReports(tab: ReportTab): Promise<AiReport[] | null> {
+  if (tab === "dismissed") return [];
+  let query = supabase.from("ai_reports").select("id, question, answer, reason, note, status, created_at").order("created_at", { ascending: false }).limit(100);
+  if (tab !== "all") query = query.eq("status", tab);
+  const { data, error } = await query;
+  if (error) return null;
+  return ((data ?? []) as Record<string, any>[]).map((r) => ({
+    id: r.id,
+    question: r.question ?? "",
+    answer: r.answer ?? "",
+    reason: r.reason ?? "other",
+    note: r.note ?? null,
+    status: r.status ?? "open",
+    createdAt: r.created_at,
+  }));
+}
+
+export async function markAiReportReviewed(id: string): Promise<void> {
+  const { error } = await supabase.from("ai_reports").update({ status: "reviewed" }).eq("id", id);
   fail(error);
 }
 
