@@ -23,6 +23,8 @@ export type StoryMeta = {
   cover: string | null;
   /** Foto nga bucket-i publik `story-covers`, për përrallat që shtohen më vonë nga baza. */
   coverUrl: string | null;
+  /** Ilustrimi që vizatoi Claude për përrallën e javës (SVG i pastruar); null te përrallat e tjera. */
+  coverSvg: string | null;
   featured: boolean;
   sortOrder: number;
   /** Versioni i tekstit: kur ndryshon, teksti i ruajtur në telefon merret sërish. */

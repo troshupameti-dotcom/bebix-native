@@ -2,7 +2,7 @@ import { Pressable, Text, View } from "react-native";
 import { useRouter } from "expo-router";
 import * as WebBrowser from "expo-web-browser";
 import {
-  BadgeCheck, ChartColumn, ChevronRight, ExternalLink, Flag, Layers, Megaphone, Package, Receipt, Store, Tags, Wallet, type LucideIcon,
+  BadgeCheck, BookOpen, ChartColumn, ChevronRight, ExternalLink, Flag, Layers, Megaphone, Package, Receipt, Store, Tags, Wallet, type LucideIcon,
 } from "lucide-react-native";
 import { AdminScreen, ErrorNote, Kpi, Loading, SectionTitle, useAdminData } from "@/components/admin/AdminUI";
 import { IconTile, TILE_COLORS as C } from "@/components/settings/IconTile";
@@ -32,6 +32,7 @@ export default function AdminHome() {
     { key: "products", icon: Package, color: C.blue, label: "Produktet", onPress: () => go("/more/admin/products") },
     { key: "experts", icon: BadgeCheck, color: C.teal, label: "Ekspertët", count: data?.pendingExperts, onPress: () => go("/more/admin/experts") },
     { key: "reports", icon: Flag, color: C.red, label: "Raportimet", count: data?.openReports, onPress: () => go("/more/admin/reports") },
+    { key: "stories", icon: BookOpen, color: C.green, label: "Përrallat", count: data?.storyDrafts, onPress: () => go("/more/admin/stories") },
     { key: "partners", icon: Store, color: C.green, label: "Partnerët", count: data?.pendingPartners, onPress: () => go("/more/admin/partners") },
     { key: "payouts", icon: Wallet, color: C.indigo, label: "Pagesat e partnerëve", onPress: () => go("/more/admin/payouts") },
   ];

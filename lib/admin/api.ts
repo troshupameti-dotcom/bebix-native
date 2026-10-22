@@ -1,6 +1,8 @@
+import { FunctionsFetchError, FunctionsHttpError } from "@supabase/supabase-js";
 import { supabase } from "@/lib/supabase/client";
 import { mapOrder, type MyOrder } from "@/lib/shop/orders";
 import { periodRange, type PeriodKey } from "@/lib/admin/labels";
+import { readingMinutes } from "@/lib/stories/catalog";
 
 /**
  * Të dhënat e panelit të adminit. Të njëjtat kërkesa si paneli i webit (bebix-web/app/admin): çdo gjë kalon me
@@ -29,11 +31,13 @@ export type Dashboard = {
   pendingPartners: number;
   pendingExperts: number;
   openReports: number;
+  /** Përralla nga Claude që presin aprovimin. */
+  storyDrafts: number;
   top: { id: string; name: string; units: number; revenue: number }[];
 };
 
 export async function fetchDashboard(): Promise<Dashboard> {
-  const [summary, top, products, partners, experts, reports, aiReports] = await Promise.all([
+  const [summary, top, products, partners, experts, reports, aiReports, drafts] = await Promise.all([
     supabase.from("admin_sales_summary").select("*").maybeSingle(),
     supabase.from("admin_top_products").select("*").order("revenue", { ascending: false }).limit(8),
     supabase.from("products").select("id", { count: "exact", head: true }).eq("approval_status", "pending").not("created_by_partner", "is", null),
@@ -42,6 +46,8 @@ export async function fetchDashboard(): Promise<Dashboard> {
     supabase.from("community_reports").select("id", { count: "exact", head: true }).eq("status", "open"),
     // Pa migrimin e AI-së tabela mungon: numri del 0.
     supabase.from("ai_reports").select("id", { count: "exact", head: true }).eq("status", "open"),
+    // Pa migrimin e përrallave tabela mungon: numri del 0.
+    supabase.from("stories").select("id", { count: "exact", head: true }).eq("status", "draft"),
   ]);
   fail(summary.error);
   const s = (summary.data ?? {}) as Record<string, unknown>;
@@ -58,6 +64,7 @@ export async function fetchDashboard(): Promise<Dashboard> {
     pendingPartners: partners.count ?? 0,
     pendingExperts: experts.count ?? 0,
     openReports: (reports.count ?? 0) + (aiReports.error ? 0 : aiReports.count ?? 0),
+    storyDrafts: drafts.error ? 0 : drafts.count ?? 0,
     top: ((top.data ?? []) as Record<string, unknown>[]).map((r) => ({
       id: String(r.product_id),
       name: String(r.product_name ?? "—"),
@@ -644,4 +651,127 @@ export async function setPayoutStatus(id: string, status: string): Promise<void>
   if (status === "paid") patch.paid_at = new Date().toISOString();
   const { error } = await supabase.from("partner_payouts").update(patch).eq("id", id);
   fail(error);
+}
+
+// ---- Përrallat ----
+
+export type StoryTab = "draft" | "published" | "archived";
+
+export type AdminStory = {
+  id: string;
+  slug: string;
+  title: string;
+  summary: string;
+  paragraphs: string[];
+  categories: string[];
+  ageMin: number;
+  ageMax: number;
+  readingMinutes: number;
+  cover: string | null;
+  coverUrl: string | null;
+  coverSvg: string | null;
+  status: StoryTab;
+  source: "editor" | "ai";
+  featured: boolean;
+  idea: string | null;
+  createdAt: string;
+  publishedAt: string | null;
+};
+
+const STORY_COLUMNS =
+  "id, slug, title, summary, paragraphs, categories, age_min_months, age_max_months, reading_minutes, cover_key, cover_url, cover_svg, status, source, featured, ai_idea, created_at, published_at";
+
+function mapStory(r: Record<string, unknown>): AdminStory {
+  return {
+    id: String(r.id),
+    slug: String(r.slug),
+    title: String(r.title ?? ""),
+    summary: String(r.summary ?? ""),
+    paragraphs: Array.isArray(r.paragraphs) ? (r.paragraphs as string[]) : [],
+    categories: Array.isArray(r.categories) ? (r.categories as string[]) : [],
+    ageMin: num(r.age_min_months),
+    ageMax: num(r.age_max_months),
+    readingMinutes: num(r.reading_minutes),
+    cover: (r.cover_key as string | null) ?? null,
+    coverUrl: (r.cover_url as string | null) ?? null,
+    coverSvg: (r.cover_svg as string | null) ?? null,
+    status: r.status as StoryTab,
+    source: r.source === "ai" ? "ai" : "editor",
+    featured: !!r.featured,
+    idea: (r.ai_idea as string | null) ?? null,
+    createdAt: String(r.created_at),
+    publishedAt: (r.published_at as string | null) ?? null,
+  };
+}
+
+/** Përrallat sipas gjendjes: draftet e reja të parat; të publikuarat sipas datës së publikimit. */
+export async function fetchAdminStories(tab: StoryTab): Promise<AdminStory[]> {
+  const { data, error } = await supabase
+    .from("stories")
+    .select(STORY_COLUMNS)
+    .eq("status", tab)
+    .order(tab === "published" ? "published_at" : "created_at", { ascending: false, nullsFirst: false })
+    .limit(80);
+  fail(error);
+  return ((data ?? []) as Record<string, unknown>[]).map(mapStory);
+}
+
+export async function fetchAdminStory(id: string): Promise<AdminStory | null> {
+  const { data, error } = await supabase.from("stories").select(STORY_COLUMNS).eq("id", id).maybeSingle();
+  fail(error);
+  return data ? mapStory(data as Record<string, unknown>) : null;
+}
+
+/** Publikimi e nxjerr menjëherë te prindërit (data e publikimit vendoset vetë); arkivimi e heq pa e fshirë. */
+export async function setStoryStatus(id: string, status: StoryTab): Promise<void> {
+  const { error } = await supabase.from("stories").update({ status }).eq("id", id);
+  fail(error);
+}
+
+export async function setStoryFeatured(id: string, featured: boolean): Promise<void> {
+  const { error } = await supabase.from("stories").update({ featured }).eq("id", id);
+  fail(error);
+}
+
+/** Paragrafët ndahen me një rresht bosh; koha e leximit llogaritet sërish. */
+export function splitParagraphs(text: string): string[] {
+  return text
+    .split(/\n\s*\n/)
+    .map((p) => p.replace(/\s*\n\s*/g, " ").trim())
+    .filter(Boolean);
+}
+
+export function validateStoryText(v: { title: string; summary: string; paragraphs: string[] }): string | null {
+  if (v.title.trim().length < 3 || v.title.trim().length > 80) return "Titulli duhet të ketë 3 deri në 80 shkronja.";
+  if (!v.summary.trim() || v.summary.trim().length > 400) return "Përshkrimi duhet të ketë deri në 400 shkronja.";
+  if (v.paragraphs.length < 1 || v.paragraphs.length > 200) return "Teksti duhet të ketë të paktën një paragraf.";
+  return null;
+}
+
+export async function saveStoryText(id: string, v: { title: string; summary: string; paragraphs: string[] }): Promise<void> {
+  const problem = validateStoryText(v);
+  if (problem) throw new Error(problem);
+  const { error } = await supabase
+    .from("stories")
+    .update({ title: v.title.trim(), summary: v.summary.trim(), paragraphs: v.paragraphs, reading_minutes: readingMinutes(v.paragraphs) })
+    .eq("id", id);
+  fail(error);
+}
+
+/**
+ * "Shkruaj një tani": Claude nis përrallën në server (zgjat 1–2 minuta) dhe ajo del te draftet. Mesazhi i gabimit
+ * thotë çfarë mungon, p.sh. çelësi i Anthropic te Supabase.
+ */
+export async function requestStoryDraft(idea: string): Promise<void> {
+  const { error } = await supabase.functions.invoke("story-draft", { body: { idea: idea.trim().slice(0, 300) } });
+  if (!error) return;
+  if (error instanceof FunctionsHttpError) {
+    const status = error.context?.status as number | undefined;
+    const payload = (await error.context?.json?.().catch(() => null)) as { error?: string; limit?: number } | null;
+    if (status === 404) throw new Error("Funksioni story-draft s'është publikuar ende te Supabase.");
+    if (payload?.error === "not_configured") throw new Error("Mungon çelësi ANTHROPIC_API_KEY te Supabase → Edge Functions → Secrets.");
+    if (payload?.error === "limit") throw new Error(`Sot u shkruan tashmë ${payload.limit ?? 5} përralla. Provoni nesër.`);
+  }
+  if (error instanceof FunctionsFetchError) throw new Error("S'ka lidhje me internetin.");
+  throw new Error("Përralla s'u nis. Provoni përsëri pas pak.");
 }

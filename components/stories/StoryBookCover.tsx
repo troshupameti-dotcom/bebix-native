@@ -11,7 +11,7 @@ const LABEL_TEXT = "#2B2620";
 const LABEL_FAINT = "#8C8172";
 
 type Props = {
-  story: Pick<StoryMeta, "cover" | "coverUrl" | "title">;
+  story: Pick<StoryMeta, "cover" | "coverUrl" | "title"> & { coverSvg?: string | null };
   width: number;
   /** Titulli mbi kopertinë (si në një libër të vërtetë); në madhësi të vogla fshihet. */
   showTitle?: boolean;

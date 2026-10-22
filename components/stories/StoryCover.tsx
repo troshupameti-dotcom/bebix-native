@@ -1,12 +1,15 @@
-import { useState, type ReactNode } from "react";
+import { useMemo, useState, type ReactNode } from "react";
 import { Image, View, type StyleProp, type ViewStyle } from "react-native";
-import Svg, { Circle, Ellipse, G, Line, Path, Rect } from "react-native-svg";
+import Svg, { Circle, Ellipse, G, Line, Path, Rect, SvgXml } from "react-native-svg";
+// I njëjti pastrues si në server (funksioni story-draft): figura vizatohet vetëm kur kalon kontrollin edhe këtu.
+import { sanitizeSvg } from "@/supabase/functions/story-draft/svg";
 import type { StoryMeta } from "@/lib/stories/types";
 
 /**
  * Ilustrimet e përrallave, të vizatuara në app (pa skedarë dhe pa lidhje të jashtme): një skenë më vete për çdo
  * përrallë, me ngjyrat e buta të Bebix-it. Janë figura, jo pjesë e temës, ndaj ngjyrat janë fikse dhe duken njësoj
- * në temën e çelët dhe të errët. Përrallat që shtohen më vonë nga baza mund të sjellin foto (`cover_url`, nga
+ * në temën e çelët dhe të errët. Përrallat e javës sjellin ilustrimin që vizatoi Claude (`cover_svg`, i pastruar).
+ * Përrallat që shtohen më vonë nga baza mund të sjellin edhe foto (`cover_url`, nga
  * bucket-i `story-covers`); pa foto dhe pa skenë të njohur del libri i hapur.
  */
 type Scene = { bg: string; draw: () => ReactNode };
@@ -369,7 +372,7 @@ const BOOK: Scene = {
 export const STORY_SCENES = Object.keys(SCENES);
 
 type Props = {
-  story: Pick<StoryMeta, "cover" | "coverUrl">;
+  story: Pick<StoryMeta, "cover" | "coverUrl"> & { coverSvg?: string | null };
   style?: StyleProp<ViewStyle>;
   /** Rrumbullakimi i qosheve. */
   radius?: number;
@@ -379,6 +382,7 @@ export function StoryCover({ story, style, radius = 18 }: Props) {
   const [photoFailed, setPhotoFailed] = useState(false);
   const scene = (story.cover && SCENES[story.cover]) || BOOK;
   const photo = story.coverUrl && !photoFailed ? story.coverUrl : null;
+  const drawn = useMemo(() => (story.coverSvg ? sanitizeSvg(story.coverSvg) : null), [story.coverSvg]);
   return (
     <View
       style={[{ overflow: "hidden", borderRadius: radius, backgroundColor: scene.bg }, style]}
@@ -388,6 +392,8 @@ export function StoryCover({ story, style, radius = 18 }: Props) {
     >
       {photo ? (
         <Image source={{ uri: photo }} style={{ width: "100%", height: "100%" }} resizeMode="cover" onError={() => setPhotoFailed(true)} />
+      ) : drawn ? (
+        <SvgXml xml={drawn.replace("<svg ", '<svg preserveAspectRatio="xMidYMid slice" ')} width="100%" height="100%" />
       ) : (
         <Svg width="100%" height="100%" viewBox="0 0 160 120" preserveAspectRatio="xMidYMid slice">
           <Rect x={0} y={0} width={160} height={120} fill={scene.bg} />

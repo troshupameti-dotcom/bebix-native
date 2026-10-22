@@ -9,6 +9,14 @@ import type { Story, StoryMeta } from "@/lib/stories/types";
  * s'ka as atë (ose migrimi s'është ekzekutuar ende), përrallat që vijnë me app-in.
  */
 const META_COLUMNS = "slug, title, summary, categories, age_min_months, age_max_months, reading_minutes, cover_key, cover_url, featured, sort_order, updated_at";
+/** Kolona e ilustrimit të Claude-it vjen me migrimin 20261025090000; para tij pyetja përsëritet pa të. */
+let hasSvgColumn = true;
+const metaColumns = (): string => (hasSvgColumn ? `${META_COLUMNS}, cover_svg` : META_COLUMNS);
+function svgColumnMissing(error: { code?: string; message?: string } | null): boolean {
+  if (!error || !hasSvgColumn || (error.code !== "42703" && !/cover_svg/.test(error.message ?? ""))) return false;
+  hasSvgColumn = false;
+  return true;
+}
 const PAGE = 200;
 const MAX_PAGES = 5;
 const INDEX_KEY = "bebix_stories_index_v1";
@@ -24,6 +32,7 @@ type Row = {
   reading_minutes: number | null;
   cover_key: string | null;
   cover_url: string | null;
+  cover_svg?: string | null;
   featured: boolean | null;
   sort_order: number | null;
   updated_at: string | null;
@@ -41,6 +50,7 @@ function toMeta(r: Row): StoryMeta {
     readingMinutes: r.reading_minutes ?? (r.paragraphs ? readingMinutes(r.paragraphs) : 3),
     cover: r.cover_key,
     coverUrl: r.cover_url,
+    coverSvg: r.cover_svg ?? null,
     featured: !!r.featured,
     sortOrder: r.sort_order ?? 1000,
     updatedAt: r.updated_at,
@@ -59,16 +69,19 @@ export function cachedIndex(): StoryIndex {
 
 async function fetchServerIndex(): Promise<StoryMeta[] | null> {
   const rows: Row[] = [];
-  for (let page = 0; page < MAX_PAGES; page++) {
-    const { data, error } = await supabase
+  const fetchPage = (page: number) =>
+    supabase
       .from("stories")
-      .select(META_COLUMNS)
+      .select(metaColumns())
       .eq("status", "published")
       .order("sort_order", { ascending: true })
       .order("slug", { ascending: true })
       .range(page * PAGE, page * PAGE + PAGE - 1);
+  for (let page = 0; page < MAX_PAGES; page++) {
+    let { data, error } = await fetchPage(page);
+    if (svgColumnMissing(error)) ({ data, error } = await fetchPage(page));
     if (error || !Array.isArray(data)) return null;
-    rows.push(...(data as Row[]));
+    rows.push(...(data as unknown as Row[]));
     if (data.length < PAGE) break;
   }
   return rows.map(toMeta);
@@ -118,14 +131,11 @@ export async function loadStory(slug: string): Promise<Story | null> {
   const local = bundledStory(slug);
   if (local && (!meta || meta.updatedAt == null)) return local;
 
-  const { data, error } = await supabase
-    .from("stories")
-    .select(`${META_COLUMNS}, paragraphs`)
-    .eq("slug", slug)
-    .eq("status", "published")
-    .maybeSingle();
+  const fetchOne = () => supabase.from("stories").select(`${metaColumns()}, paragraphs` as string).eq("slug", slug).eq("status", "published").maybeSingle();
+  let { data, error } = await fetchOne();
+  if (svgColumnMissing(error)) ({ data, error } = await fetchOne());
   if (!error && data) {
-    const row = data as Row;
+    const row = data as unknown as Row;
     const story: Story = { ...toMeta(row), paragraphs: (row.paragraphs ?? []).filter((p) => typeof p === "string" && p.trim()) };
     if (story.paragraphs.length) {
       memoryStories.set(slug, story);
@@ -142,5 +152,6 @@ export async function loadStory(slug: string): Promise<Story | null> {
 
 export function __resetStoriesCacheForTests() {
   memoryIndex = null;
+  hasSvgColumn = true;
   memoryStories.clear();
 }

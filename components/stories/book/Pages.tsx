@@ -73,7 +73,7 @@ export function MeasureLines({
 }
 
 type CoverProps = {
-  story: Pick<StoryMeta, "title" | "cover" | "coverUrl">;
+  story: Pick<StoryMeta, "title" | "cover" | "coverUrl"> & { coverSvg?: string | null };
   metrics: BookMetrics;
   fonts: BookFonts;
   theme: ReaderTheme;
@@ -139,7 +139,7 @@ type EndProps = {
   fonts: BookFonts;
   theme: ReaderTheme;
   labels: { end: string; body: string; again: string; next: string; library: string };
-  next: Pick<StoryMeta, "title" | "cover" | "coverUrl"> | null;
+  next: (Pick<StoryMeta, "title" | "cover" | "coverUrl"> & { coverSvg?: string | null }) | null;
   onAgain: () => void;
   onNext: () => void;
   onLibrary: () => void;

@@ -40,6 +40,7 @@ export const BUNDLED_STORIES: Story[] = (bundled as BundledStory[]).map((s) => (
   readingMinutes: readingMinutes(s.paragraphs),
   cover: s.cover,
   coverUrl: null,
+  coverSvg: null,
   featured: s.featured,
   sortOrder: s.sortOrder,
   updatedAt: null,
