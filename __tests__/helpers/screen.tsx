@@ -66,6 +66,8 @@ type FakeSupabase = {
 export const fakeSupabase = (): FakeSupabase => require("@/lib/supabase/client").__fake;
 
 jest.mock("@react-native-async-storage/async-storage", () => require("@react-native-async-storage/async-storage/jest/async-storage-mock"));
+// GestureHandlerRootView-i i dritareve (p.sh. fotoja e zmadhuar) kërkon modulin native të gjesteve: këtu është një View.
+jest.mock("react-native-gesture-handler", () => ({ ...jest.requireActual("react-native-gesture-handler"), GestureHandlerRootView: require("react-native").View }));
 jest.mock("@react-native-community/netinfo", () => require("@react-native-community/netinfo/jest/netinfo-mock.js"));
 jest.mock("react-native-worklets", () => require("react-native-worklets/src/mock"));
 // Mock-u zyrtar s'e ka useFrameCallback (shiriti i markave): një cikël që s'nis kurrë.

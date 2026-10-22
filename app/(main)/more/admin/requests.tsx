@@ -1,5 +1,6 @@
 import { useState } from "react";
-import { Image, ScrollView, Text, View } from "react-native";
+import { Image, Pressable, ScrollView, Text, View } from "react-native";
+import { PhotoViewer } from "@/components/ui/PhotoViewer";
 import { useToast } from "@/lib/toast/ToastContext";
 import { AdminScreen, Btn, Card, Empty, ErrorNote, Loading, TextSheet, runAction, useAdminData } from "@/components/admin/AdminUI";
 import { fetchProductRequests, reviewProduct } from "@/lib/admin/api";
@@ -11,6 +12,7 @@ export default function AdminRequests() {
   const { data, error, refreshing, reload, pull } = useAdminData(fetchProductRequests, []);
   const [busy, setBusy] = useState<string | null>(null);
   const [rejecting, setRejecting] = useState<string | null>(null);
+  const [photo, setPhoto] = useState<{ uri: string; caption: string } | null>(null);
 
   async function approve(id: string) {
     setBusy(id);
@@ -31,7 +33,9 @@ export default function AdminRequests() {
           {p.images.length ? (
             <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: 8 }} className="mb-3">
               {p.images.map((u) => (
-                <Image key={u} source={{ uri: u }} className="h-28 w-28 rounded-xl border border-cream-line" style={{ backgroundColor: "#FFFFFF" }} resizeMode="contain" />
+                <Pressable key={u} onPress={() => setPhoto({ uri: u, caption: p.name })} accessibilityRole="imagebutton" accessibilityLabel={`Zmadho foton: ${p.name}`}>
+                  <Image source={{ uri: u }} className="h-28 w-28 rounded-xl border border-cream-line" style={{ backgroundColor: "#FFFFFF" }} resizeMode="contain" />
+                </Pressable>
               ))}
             </ScrollView>
           ) : null}
@@ -49,6 +53,8 @@ export default function AdminRequests() {
           </View>
         </Card>
       ))}
+
+      {photo ? <PhotoViewer uri={photo.uri} caption={photo.caption} onClose={() => setPhoto(null)} /> : null}
 
       <TextSheet
         visible={!!rejecting}

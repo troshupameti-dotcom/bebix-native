@@ -92,6 +92,25 @@ describe("porositë", () => {
   });
 });
 
+describe("fotoja e produktit te porosia", () => {
+  it("prekja e fotos e hap të zmadhuar me emrin e produktit; ✕ e mbyll", async () => {
+    const fake = fakeSupabase();
+    fake.tables.admins = { user_id: "me" };
+    fake.tables.orders = [ORDER];
+    fake.tables.products = [{ id: "p1", image_url: "https://bebix.store/p1.png" }];
+    fake.tables.partner_products = [];
+    const r = await renderScreen(<AdminOrders />);
+    await settle();
+    const label = (l: string) => r.root.findAll((n) => n.props.accessibilityLabel === l && typeof n.props.onPress === "function");
+    expect(label("Mbyll foton")).toHaveLength(0);
+    await act(async () => label("Zmadho foton: Pelena")[0].props.onPress());
+    expect(label("Mbyll foton").length).toBeGreaterThan(0);
+    expect(r.root.findAll((n) => n.props.source?.uri === "https://bebix.store/p1.png" && n.props.resizeMode === "contain").length).toBeGreaterThan(1);
+    await act(async () => label("Mbyll foton")[0].props.onPress());
+    expect(label("Mbyll foton")).toHaveLength(0);
+  });
+});
+
 describe("produktet për aprovim", () => {
   it("“Aprovo” thërret admin_review_product si paneli i webit", async () => {
     const fake = fakeSupabase();

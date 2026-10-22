@@ -6,6 +6,7 @@ import {
   AdminScreen, Btn, Card, Chips, Empty, ErrorNote, Loading, OptionSheet, Pill, SearchField, confirm, runAction, useAdminData, useDebounced,
 } from "@/components/admin/AdminUI";
 import { useThemeColors } from "@/lib/theme/useThemeColors";
+import { PhotoViewer } from "@/components/ui/PhotoViewer";
 import { ORDERS_PAGE, fetchOrderItemMeta, fetchOrders, setOrderStatus, setPaymentStatus, type AdminOrder } from "@/lib/admin/api";
 import {
   ORDER_STATUS, PAYMENT_METHOD_LABEL, PAYMENT_STATUS, PERIODS, dateTime, dayLabel, eur, optionOf, sameDay, shortOrder, type PeriodKey,
@@ -28,6 +29,8 @@ export default function AdminOrders() {
   const q = useDebounced(query);
   const [limit, setLimit] = useState(ORDERS_PAGE);
   const [picker, setPicker] = useState<{ order: AdminOrder; kind: "status" | "payment" } | null>(null);
+  // Fotoja e produktit e zmadhuar (prekja mbi foton e vogël).
+  const [photo, setPhoto] = useState<{ uri: string; caption: string } | null>(null);
 
   const { data, error, refreshing, reload, pull } = useAdminData(async () => {
     const res = await fetchOrders({ status, q, period, limit });
@@ -94,6 +97,7 @@ export default function AdminOrders() {
             muted={theme.inkFaint}
             onStatus={() => setPicker({ order: o, kind: "status" })}
             onPayment={() => setPicker({ order: o, kind: "payment" })}
+            onPhoto={(uri, caption) => setPhoto({ uri, caption })}
           />
         </View>
       ))}
@@ -112,6 +116,7 @@ export default function AdminOrders() {
         onPick={pick}
         onClose={() => setPicker(null)}
       />
+      {photo ? <PhotoViewer uri={photo.uri} caption={photo.caption} onClose={() => setPhoto(null)} /> : null}
     </AdminScreen>
   );
 }
@@ -131,12 +136,14 @@ function OrderCard({
   muted,
   onStatus,
   onPayment,
+  onPhoto,
 }: {
   order: AdminOrder;
   meta?: Map<string, { img: string | null; code: string }>;
   muted: string;
   onStatus: () => void;
   onPayment: () => void;
+  onPhoto: (uri: string, caption: string) => void;
 }) {
   const status = optionOf(ORDER_STATUS, o.status);
   const payment = optionOf(PAYMENT_STATUS, o.paymentStatus);
@@ -177,9 +184,11 @@ function OrderCard({
           return (
             <View key={item.id} className="flex-row items-center">
               {img ? (
-                <Image source={{ uri: img }} className="mr-3 h-11 w-11 rounded-lg border border-cream-line" style={{ backgroundColor: "#FFFFFF" }} resizeMode="contain" />
+                <Pressable onPress={() => onPhoto(img, `${item.name} × ${item.qty}`)} accessibilityRole="imagebutton" accessibilityLabel={`Zmadho foton: ${item.name}`} className="mr-3">
+                  <Image source={{ uri: img }} className="h-14 w-14 rounded-lg border border-cream-line" style={{ backgroundColor: "#FFFFFF" }} resizeMode="contain" />
+                </Pressable>
               ) : (
-                <View className="mr-3 h-11 w-11 rounded-lg bg-cream-soft" />
+                <View className="mr-3 h-14 w-14 rounded-lg bg-cream-soft" />
               )}
               <View className="flex-1">
                 <Text className="font-bodyMedium text-[13px] text-ink" numberOfLines={2}>{item.name} × {item.qty}</Text>
