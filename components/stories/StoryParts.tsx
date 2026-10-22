@@ -1,7 +1,7 @@
 import { memo } from "react";
 import { View, Text, Pressable, type ViewStyle } from "react-native";
-import { Castle, Clock, Compass, Heart, HeartHandshake, Lightbulb, Moon, PawPrint, Rainbow, type LucideIcon } from "lucide-react-native";
-import { StoryCover } from "@/components/stories/StoryCover";
+import { BookOpen, Castle, Clock, Compass, Heart, HeartHandshake, Lightbulb, Moon, PawPrint, Rainbow, type LucideIcon } from "lucide-react-native";
+import { StoryBookCover } from "@/components/stories/StoryBookCover";
 import { useTranslation } from "@/lib/i18n/LanguageContext";
 import { useThemeColors } from "@/lib/theme/useThemeColors";
 import { ageRangeYears } from "@/lib/stories/catalog";
@@ -67,7 +67,7 @@ function ProgressLine({ progress }: { progress: StoryProgress }) {
 
 type RowProps = { story: StoryMeta; favorite: boolean; progress: StoryProgress | null; onPress: (slug: string) => void };
 
-/** Rreshti i listës: ilustrimi, titulli, përshkrimi dhe koha e leximit. */
+/** Rreshti i listës (telefon): libri i vogël, titulli, përshkrimi dhe koha e leximit. */
 export const StoryRow = memo(function StoryRow({ story, favorite, progress, onPress }: RowProps) {
   const { t } = useTranslation();
   const c = useThemeColors();
@@ -77,9 +77,9 @@ export const StoryRow = memo(function StoryRow({ story, favorite, progress, onPr
       onPress={() => onPress(story.slug)}
       accessibilityRole="button"
       accessibilityLabel={`${story.title}. ${meta.minutes(story)}, ${meta.ages(story)}${progress?.finished ? `. ${t("stories_finished")}` : ""}`}
-      className="mb-3 flex-row gap-3.5 rounded-xl2 border border-ink/10 bg-surface p-3"
+      className="mb-3 flex-row items-center gap-4 rounded-xl2 border border-ink/10 bg-surface py-3 pl-3.5 pr-3"
     >
-      <StoryCover story={story} style={{ width: 92, height: 92 }} radius={14} />
+      <StoryBookCover story={story} width={64} showTitle={false} />
       <View className="flex-1 justify-center">
         <View className="flex-row items-start gap-2">
           <Text className="flex-1 font-bodySemibold text-[15px] leading-5 text-ink" numberOfLines={2}>
@@ -103,36 +103,104 @@ export const StoryRow = memo(function StoryRow({ story, favorite, progress, onPr
   );
 });
 
-/** Karta e madhe e "Të veçuarave". */
-export function FeaturedCard({ story, width, onPress }: { story: StoryMeta; width: number; onPress: (slug: string) => void }) {
+/** Libri me titull në kopertinë: "Të veçuarat" dhe rrjeti i librave në ekranet e gjera. */
+export const BookCard = memo(function BookCard({
+  story,
+  width,
+  titleFont,
+  favorite,
+  progress,
+  onPress,
+}: {
+  story: StoryMeta;
+  width: number;
+  titleFont?: string;
+  favorite?: boolean;
+  progress?: StoryProgress | null;
+  onPress: (slug: string) => void;
+}) {
+  const { t } = useTranslation();
+  const c = useThemeColors();
   const meta = useStoryMeta();
   return (
     <Pressable
       onPress={() => onPress(story.slug)}
       accessibilityRole="button"
-      accessibilityLabel={`${story.title}. ${meta.minutes(story)}, ${meta.ages(story)}`}
+      accessibilityLabel={`${story.title}. ${meta.minutes(story)}, ${meta.ages(story)}${progress?.finished ? `. ${t("stories_finished")}` : ""}`}
       style={{ width }}
     >
-      <StoryCover story={story} style={{ width, height: Math.round(width * 0.62) }} radius={20} />
-      <Text className="mt-2 font-bodySemibold text-[15px] text-ink" numberOfLines={1}>
-        {story.title}
-      </Text>
-      <Text className="font-body text-xs text-ink-faint">
-        {meta.minutes(story)} · {meta.ages(story)}
-      </Text>
+      <StoryBookCover story={story} width={width} titleFont={titleFont} />
+      <View className="mt-2.5 flex-row items-center gap-1.5">
+        <Text className="flex-1 font-body text-xs text-ink-faint" numberOfLines={1}>
+          {meta.minutes(story)} · {meta.ages(story)}
+          {progress?.finished ? ` · ${t("stories_finished")}` : ""}
+        </Text>
+        {favorite ? <Heart size={13} color={c.orange} fill={c.orange} /> : null}
+      </View>
+      {progress && !progress.finished ? <ProgressLine progress={progress} /> : null}
     </Pressable>
   );
-}
+});
 
-/** Pllaka e vogël për "Të lexuara së fundmi" dhe "Të preferuarat". */
+/** Libri i vogël për "Të lexuara së fundmi" dhe "Të preferuarat", me sa është lexuar. */
 export function StoryTile({ story, progress, onPress, style }: { story: StoryMeta; progress: StoryProgress | null; onPress: (slug: string) => void; style?: ViewStyle }) {
   return (
-    <Pressable onPress={() => onPress(story.slug)} accessibilityRole="button" accessibilityLabel={story.title} style={[{ width: 132 }, style]}>
-      <StoryCover story={story} style={{ width: 132, height: 96 }} radius={16} />
-      <Text className="mt-1.5 font-bodyMedium text-[13px] leading-[17px] text-ink" numberOfLines={2}>
+    <Pressable onPress={() => onPress(story.slug)} accessibilityRole="button" accessibilityLabel={story.title} style={[{ width: 96 }, style]}>
+      <StoryBookCover story={story} width={96} showTitle={false} />
+      <Text className="mt-2 font-bodyMedium text-[12.5px] leading-4 text-ink" numberOfLines={2}>
         {story.title}
       </Text>
       {progress && !progress.finished ? <ProgressLine progress={progress} /> : null}
     </Pressable>
+  );
+}
+
+/** "Përrallë për sonte" në krye të bibliotekës: libri, përshkrimi dhe "Lexo tani" (ose "Vazhdo leximin"). */
+export function HeroCard({
+  story,
+  wide,
+  fonts,
+  progress,
+  onOpen,
+  onRead,
+}: {
+  story: StoryMeta;
+  wide: boolean;
+  fonts: { title: string; italic: string };
+  progress: StoryProgress | null;
+  onOpen: (slug: string) => void;
+  onRead: (slug: string, from: number) => void;
+}) {
+  const { t } = useTranslation();
+  const c = useThemeColors();
+  const meta = useStoryMeta();
+  const resume = progress && !progress.finished && progress.page > 0 ? progress.page : 0;
+  return (
+    <View className="mt-2 flex-row items-center gap-4 rounded-xl3 bg-cream-soft" style={{ padding: wide ? 24 : 16 }}>
+      <Pressable onPress={() => onOpen(story.slug)} accessibilityRole="button" accessibilityLabel={story.title}>
+        <StoryBookCover story={story} width={wide ? 150 : 108} showTitle={wide} titleFont={fonts.title} />
+      </Pressable>
+      <View className="flex-1">
+        <Text className="font-bodyMedium text-[12px] uppercase tracking-wider text-ink-soft">{t("stories_tonight")}</Text>
+        <Text style={{ fontFamily: fonts.title, fontSize: wide ? 26 : 20, lineHeight: wide ? 32 : 25, color: c.ink, marginTop: 4 }} numberOfLines={2}>
+          {story.title}
+        </Text>
+        <Text style={{ fontFamily: fonts.italic, fontSize: wide ? 15.5 : 13.5, lineHeight: wide ? 23 : 19, color: c.inkSoft, marginTop: 4 }} numberOfLines={wide ? 3 : 2}>
+          {story.summary}
+        </Text>
+        <Text className="mt-1.5 font-body text-[11.5px] text-ink-faint">
+          {meta.minutes(story)} · {meta.ages(story)}
+        </Text>
+        <Pressable
+          onPress={() => onRead(story.slug, resume)}
+          accessibilityRole="button"
+          className="mt-3 flex-row items-center gap-1.5 self-start rounded-full bg-ink px-4"
+          style={{ minHeight: 40 }}
+        >
+          <BookOpen size={15} color={c.cream} />
+          <Text className="font-bodySemibold text-[13.5px] text-cream">{resume ? t("stories_continue") : t("stories_read_now")}</Text>
+        </Pressable>
+      </View>
+    </View>
   );
 }

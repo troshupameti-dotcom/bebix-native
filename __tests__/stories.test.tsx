@@ -1,7 +1,7 @@
 /**
  * Përrallat: përmbajtja e app-it është e plotë dhe e njëjtë me migrimin, kërkimi dhe filtrat punojnë, biblioteka
- * hapet edhe pa rrjet (me përrallat e app-it), faqja e përrallës dhe lexuesi ruajnë të preferuarat dhe faqen ku
- * mbeti prindi, dhe madhësia e tekstit ndryshon.
+ * hapet edhe pa rrjet (me përrallat e app-it), libri ndan tekstin në faqe sipas ekranit (një faqe ose dy), faqet
+ * kthehen dhe vendi i leximit ruhet, dhe madhësia e tekstit dhe pamja e librit ndryshojnë.
  */
 import { fakeSupabase, renderScreen, router, setParams, visibleText } from "./helpers/screen";
 import { StyleSheet, Text, TextInput } from "react-native";
@@ -16,6 +16,7 @@ import { __resetStoryIndexForTests } from "@/lib/stories/useStoryIndex";
 import { __resetStoryUserDataForTests } from "@/lib/stories/userData";
 import { STORY_CATEGORIES } from "@/lib/stories/types";
 import { hasFeature } from "@/lib/age/stageConfig";
+import { DEFAULT_SIZE, anchorOfPosition, bookMetrics, buildBook, linesToSlices, packPages, paragraphPages, positionCount, positionOfAnchor } from "@/components/stories/book/layout";
 import raw from "@/content/stories/sq.json";
 
 /* eslint-disable @typescript-eslint/no-require-imports -- si te migrationGrants.test: pa tipet e Node në projekt */
@@ -173,7 +174,7 @@ describe("biblioteka", () => {
 });
 
 describe("faqja e përrallës", () => {
-  it("tregon kohën, moshën, kategoritë; “Lexo” hap lexuesin; zemra e ruan dhe e dërgon te baza", async () => {
+  it("tregon kohën, moshën, kategoritë; “Lexo” hap librin nga kopertina; zemra e ruan dhe e dërgon te baza", async () => {
     setParams({ slug: "varka-e-letres" });
     const r = await renderScreen(<StoryDetail />);
     await settle();
@@ -186,7 +187,7 @@ describe("faqja e përrallës", () => {
     expect(r.root.findAll((n) => n.props.accessibilityLabel === "Hiq nga të preferuarat").length).toBeGreaterThan(0);
     expect(fakeSupabase().calls.some((c) => c.name === "story_favorites")).toBe(true);
     await pressText(r, "Lexo");
-    expect(router().push).toHaveBeenCalledWith({ pathname: "/(main)/baby/stories/read/[slug]", params: { slug: "varka-e-letres", page: "0" } });
+    expect(router().push).toHaveBeenCalledWith({ pathname: "/(main)/baby/stories/read/[slug]", params: { slug: "varka-e-letres", from: "0" } });
   });
 
   it("përralla që s'është më në bazë, dhe gabimi pa rrjet për përrallë që s'e ka telefoni", async () => {
@@ -205,18 +206,71 @@ describe("faqja e përrallës", () => {
   });
 });
 
-describe("lexuesi", () => {
-  const story = BUNDLED_STORIES.find((s) => s.slug === "varka-e-letres")!;
+describe("faqosja e librit", () => {
+  const m = { innerH: 100, lineHeight: 20, paragraphGap: 10 };
 
-  it("faqe pas faqeje, me progres; faqja ruhet dhe “Vazhdo” e hap aty", async () => {
-    setParams({ slug: story.slug, page: "0" });
+  it("rreshtat ndahen në faqe pa humbur asnjë shkronjë, dhe s'lihet një rresht i vetëm në krye të faqes", () => {
+    const para = "Një dy tre katër pesë gjashtë shtatë tetë nëntë dhjetë njëmbëdhjetë.";
+    const lines = ["Një dy ", "tre katër ", "pesë gjashtë ", "shtatë tetë ", "nëntë ", "dhjetë njëmbëdhjetë."];
+    const slices = linesToSlices(para, lines)!;
+    expect(slices.join("")).toBe(para);
+    const pages = packPages([slices], m);
+    // 5 rreshta zënë faqen; i gjashti do mbetej vetëm, ndaj faqja e parë merr 4 dhe e dyta 2.
+    expect(pages.map((p) => p.length)).toEqual([1, 1]);
+    expect(pages[0][0].text + " " + pages[1][0].text).toBe(para);
+    expect(pages[1][0].start).toBe(slices.slice(0, 4).join("").length);
+  });
+
+  it("rreshtat e telefonit pa hapësirën në fund merren nga teksti origjinal; vizë ndarëse → pa matje", () => {
+    expect(linesToSlices("Ana ka një mace.", ["Ana ka", "një mace."])).toEqual(["Ana ka ", "një mace."]);
+    expect(linesToSlices("Ana ka një mace.", ["Ana ka një ma-", "ce."])).toBeNull();
+  });
+
+  it("telefon: një faqe; tablet ose ekran i gjerë: libër i hapur me dy faqe", () => {
+    expect(bookMetrics(390, 700, DEFAULT_SIZE).mode).toBe("single");
+    expect(bookMetrics(320, 480, DEFAULT_SIZE).mode).toBe("single");
+    expect(bookMetrics(1180, 760, DEFAULT_SIZE).mode).toBe("spread");
+    expect(bookMetrics(1024, 1300, DEFAULT_SIZE).mode).toBe("spread");
+    const small = bookMetrics(320, 480, DEFAULT_SIZE);
+    expect(small.innerW).toBeGreaterThan(200);
+    expect(small.pageW).toBeLessThanOrEqual(320);
+  });
+
+  it("vendi i leximit mbetet i njëjtë kur ndryshon faqosja (shkronja ose ekrani)", () => {
+    const paragraphs = BUNDLED_STORIES[0].paragraphs;
+    const single = buildBook(paragraphPages(paragraphs), "single");
+    const anchor = anchorOfPosition(single, "single", 4);
+    expect(anchor).toEqual({ kind: "text", paragraph: 3, offset: 0 });
+    const spread = buildBook(paragraphPages(paragraphs), "spread");
+    expect(spread.length % 2).toBe(0);
+    const pos = positionOfAnchor(spread, "spread", anchor);
+    const shown = [spread[pos * 2], spread[pos * 2 + 1]];
+    expect(shown.some((p) => p.kind === "text" && p.blocks[0].paragraph === 3)).toBe(true);
+    expect(positionOfAnchor(spread, "spread", { kind: "end" })).toBe(positionCount(spread, "spread") - 1);
+  });
+});
+
+describe("lexuesi (libri)", () => {
+  const story = BUNDLED_STORIES.find((s) => s.slug === "varka-e-letres")!;
+  const total = story.paragraphs.length + 2;
+  /** Pa matje rreshtash (si në teste), libri kalon te "një paragraf në faqe" pas pak. */
+  const openBook = async (params: Record<string, string>) => {
+    setParams({ slug: story.slug, ...params });
     const r = await renderScreen(<StoryReader />);
+    await act(async () => { await new Promise((res) => setTimeout(res, 950)); });
     await settle();
-    expect(text(r)).toContain(`Faqja 1 nga ${story.paragraphs.length}`);
+    return r;
+  };
+
+  it("hapet te kopertina; faqet kthehen përpara dhe mbrapa; vendi ruhet dhe “Vazhdo leximin” e hap aty", async () => {
+    const r = await openBook({ from: "0" });
+    expect(text(r)).toContain("Përrallat e Bebix-it");
+    expect(text(r)).toContain(`Faqja 1 nga ${total}`);
+    await pressLabel(r, "Faqja tjetër");
     expect(text(r)).toContain(story.paragraphs[0]);
+    expect(text(r)).toContain(`Faqja 2 nga ${total}`);
     await pressLabel(r, "Faqja tjetër");
     await pressLabel(r, "Faqja tjetër");
-    expect(text(r)).toContain(`Faqja 3 nga ${story.paragraphs.length}`);
     expect(text(r)).toContain(story.paragraphs[2]);
     await pressLabel(r, "Faqja e mëparshme");
     expect(text(r)).toContain(story.paragraphs[1]);
@@ -225,36 +279,39 @@ describe("lexuesi", () => {
     setParams({ slug: story.slug });
     const detail = await renderScreen(<StoryDetail />);
     await settle();
-    expect(text(detail)).toContain("Vazhdo nga faqja 2");
+    expect(text(detail)).toContain("Vazhdo leximin");
+    expect(text(detail)).toContain("14% e lexuar");
   });
 
-  it("A+ / A− ndryshojnë madhësinë e tekstit dhe zgjedhja ruhet", async () => {
-    setParams({ slug: story.slug, page: "1" });
-    const r = await renderScreen(<StoryReader />);
-    await settle();
-    const size = () => StyleSheet.flatten(paragraphNode(r.root, story.paragraphs[1]).props.style).fontSize as number;
-    const start = size();
-    await pressLabel(r, "Tekst më i madh");
-    expect(size()).toBeGreaterThan(start);
+  it("“Vazhdo” hap librin te paragrafi ku mbeti prindi", async () => {
+    const r = await openBook({ from: "3" });
+    expect(text(r)).toContain(story.paragraphs[3]);
+    expect(text(r)).toContain(`Faqja 5 nga ${total}`);
+  });
 
-    const again = await renderScreen(<StoryReader />);
-    await settle();
-    expect(StyleSheet.flatten(paragraphNode(again.root, story.paragraphs[1]).props.style).fontSize).toBe(size());
-    await pressLabel(again, "Tekst më i vogël");
-    await pressLabel(again, "Tekst më i vogël");
-    expect(StyleSheet.flatten(paragraphNode(again.root, story.paragraphs[1]).props.style).fontSize).toBeLessThan(start);
+  it("madhësia e tekstit ndryshon nga “Pamja e leximit” dhe ruhet; pamja “Natë”", async () => {
+    const r = await openBook({ from: "1" });
+    const size = (root: ReactTestInstance) => StyleSheet.flatten(paragraphNode(root, story.paragraphs[1]).props.style).fontSize as number;
+    const start = size(r.root);
+    await pressLabel(r, "Pamja e leximit");
+    await pressLabel(r, "Tekst më i madh");
+    await act(async () => { await new Promise((res) => setTimeout(res, 950)); });
+    expect(size(r.root)).toBeGreaterThan(start);
+    await pressLabel(r, "Natë");
+    const night = StyleSheet.flatten(paragraphNode(r.root, story.paragraphs[1]).props.style).color;
+
+    const again = await openBook({ from: "1" });
+    expect(size(again.root)).toBeGreaterThan(start);
+    expect(StyleSheet.flatten(paragraphNode(again.root, story.paragraphs[1]).props.style).color).toBe(night);
   });
 
   it("në fund: “Fund”, përralla tjetër dhe “Lexo përsëri”; përralla shënohet e lexuar", async () => {
-    const last = story.paragraphs.length - 1;
-    setParams({ slug: story.slug, page: String(last) });
-    const r = await renderScreen(<StoryReader />);
-    await settle();
-    await pressLabel(r, "Përfundo");
+    const r = await openBook({ from: String(story.paragraphs.length - 1) });
+    await pressLabel(r, "Faqja tjetër");
     expect(text(r)).toContain("Fund");
     expect(text(r)).toContain("Përralla tjetër");
     await pressText(r, "Lexo përsëri");
-    expect(text(r)).toContain(`Faqja 1 nga ${story.paragraphs.length}`);
+    expect(text(r)).toContain(`Faqja 1 nga ${total}`);
 
     setParams({ slug: story.slug });
     const detail = await renderScreen(<StoryDetail />);

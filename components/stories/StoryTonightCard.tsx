@@ -2,7 +2,7 @@ import { useMemo } from "react";
 import { View, Text, Pressable } from "react-native";
 import { router } from "expo-router";
 import { BookOpen, ChevronRight } from "lucide-react-native";
-import { StoryCover } from "@/components/stories/StoryCover";
+import { StoryBookCover } from "@/components/stories/StoryBookCover";
 import { useStoryMeta } from "@/components/stories/StoryParts";
 import { useTranslation } from "@/lib/i18n/LanguageContext";
 import { useThemeColors } from "@/lib/theme/useThemeColors";
@@ -38,9 +38,9 @@ export function StoryTonightCard({ months }: { months: number | null }) {
         onPress={() => router.push({ pathname: "/(main)/baby/stories/[slug]", params: { slug: story.slug } })}
         accessibilityRole="button"
         accessibilityLabel={`${t("stories_tonight")}: ${story.title}. ${meta.minutes(story)}`}
-        className="flex-row items-center gap-3.5"
+        className="flex-row items-center gap-4 pl-1"
       >
-        <StoryCover story={story} style={{ width: 104, height: 80 }} radius={16} />
+        <StoryBookCover story={story} width={62} showTitle={false} />
         <View className="flex-1">
           <Text className="font-bodySemibold text-[15px] leading-5 text-ink" numberOfLines={2}>
             {story.title}

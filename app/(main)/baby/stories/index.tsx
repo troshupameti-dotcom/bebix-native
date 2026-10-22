@@ -4,21 +4,26 @@ import { SafeAreaView } from "react-native-safe-area-context";
 import { router } from "expo-router";
 import { Heart, Search, X } from "lucide-react-native";
 import { BackButton } from "@/components/ui/BackButton";
-import { CATEGORY_META, Chip, FeaturedCard, SectionTitle, StoryRow, StoryTile } from "@/components/stories/StoryParts";
+import { BookCard, CATEGORY_META, Chip, HeroCard, SectionTitle, StoryRow, StoryTile } from "@/components/stories/StoryParts";
+import { useBookFonts } from "@/components/stories/book/theme";
 import { useTranslation } from "@/lib/i18n/LanguageContext";
 import { useThemeColors } from "@/lib/theme/useThemeColors";
 import { useActiveChild } from "@/lib/age/useActiveChild";
 import { useStoryIndex } from "@/lib/stories/useStoryIndex";
 import { useStoryUserData } from "@/lib/stories/userData";
-import { bandForMonths, filterStories, fitsBand } from "@/lib/stories/catalog";
+import { bandForMonths, filterStories, fitsBand, storyOfTheDay } from "@/lib/stories/catalog";
 import { AGE_BANDS, STORY_CATEGORIES, type AgeBand, type StoryCategory, type StoryMeta } from "@/lib/stories/types";
 import type { TranslationKey } from "@/lib/i18n/translations";
 
 const BAND_LABEL: Record<AgeBand, TranslationKey> = { "0-1": "stories_age_0_1", "1-3": "stories_age_1_3", "3-6": "stories_age_3_6" };
+/** Gjerësia më e madhe e përmbajtjes: në tablet dhe web biblioteka rri në mes, jo e shtrirë skaj më skaj. */
+const MAX_CONTENT = 1100;
+const GRID_GAP = 20;
 
 /**
- * Biblioteka e përrallave: kërkimi, mosha, kategoritë, të veçuarat, të lexuarat së fundmi dhe të preferuarat.
- * Lista është virtuale (FlatList), që të mbajë qindra përralla pa e rënduar telefonin.
+ * Biblioteka e përrallave: përralla e mbrëmjes, kërkimi, mosha, kategoritë, të veçuarat, të lexuarat së fundmi dhe
+ * të preferuarat. Në telefon lista ka rreshta; në ekranet e gjera (tablet, telefon i palosshëm, web) librat dalin në
+ * rrjet. Lista është virtuale (FlatList), që të mbajë qindra përralla pa e rënduar telefonin.
  */
 export default function StoriesLibrary() {
   const { t, lang } = useTranslation();
@@ -27,6 +32,12 @@ export default function StoriesLibrary() {
   const { months } = useActiveChild();
   const index = useStoryIndex();
   const user = useStoryUserData();
+  const fonts = useBookFonts();
+  const padH = Math.max(20, Math.round((width - MAX_CONTENT) / 2));
+  const contentW = width - padH * 2;
+  const wide = contentW >= 640;
+  const cols = wide ? Math.max(3, Math.floor((contentW + GRID_GAP) / (160 + GRID_GAP))) : 1;
+  const cardW = wide ? Math.min(200, Math.floor((contentW - GRID_GAP * (cols - 1)) / cols)) : 0;
 
   const [query, setQuery] = useState("");
   const [category, setCategory] = useState<StoryCategory | null>(null);
@@ -43,12 +54,17 @@ export default function StoriesLibrary() {
     () => filterStories(index.stories, { query, category, band, only: favoritesOnly ? favoriteSet : null }),
     [index.stories, query, category, band, favoritesOnly, favoriteSet]
   );
-  const featured = useMemo(() => index.stories.filter((s) => s.featured && (!band || fitsBand(s, band))), [index.stories, band]);
+  const forAge = useMemo(() => (band ? index.stories.filter((s) => fitsBand(s, band)) : index.stories), [index.stories, band]);
+  const tonight = useMemo(() => storyOfTheDay(forAge, null), [forAge]);
+  const featured = useMemo(() => forAge.filter((s) => s.featured && s.slug !== tonight?.slug), [forAge, tonight]);
   const pick = (slugs: string[]) => slugs.map((s) => bySlug.get(s)).filter((s): s is StoryMeta => !!s).slice(0, 10);
   const recent = pick(user.recent);
   const favorites = pick(user.favorites);
 
   const open = useCallback((slug: string) => router.push({ pathname: "/(main)/baby/stories/[slug]", params: { slug } }), []);
+  const read = useCallback((slug: string, from: number) => router.push({ pathname: "/(main)/baby/stories/read/[slug]", params: { slug, from: String(from) } }), []);
+  const bleed = { marginHorizontal: -padH };
+  const rowPad = { paddingHorizontal: padH };
   const countLabel = (n: number) => (n === 1 ? t("stories_count_one") : t("stories_count", { n }));
   const clearFilters = () => {
     setQuery("");
@@ -78,14 +94,14 @@ export default function StoriesLibrary() {
         ) : null}
       </View>
 
-      <ScrollView horizontal showsHorizontalScrollIndicator={false} className="-mx-5 mt-3" contentContainerStyle={{ paddingHorizontal: 20, gap: 8 }}>
+      <ScrollView horizontal showsHorizontalScrollIndicator={false} className="mt-3" style={bleed} contentContainerStyle={{ ...rowPad, gap: 8 }}>
         <Chip label={t("stories_age_all")} selected={!band} onPress={() => setBand(null)} />
         {(Object.keys(AGE_BANDS) as AgeBand[]).map((b) => (
           <Chip key={b} label={t(BAND_LABEL[b])} selected={band === b} onPress={() => setBand(band === b ? null : b)} />
         ))}
       </ScrollView>
 
-      <ScrollView horizontal showsHorizontalScrollIndicator={false} className="-mx-5 mt-2" contentContainerStyle={{ paddingHorizontal: 20, gap: 8 }}>
+      <ScrollView horizontal showsHorizontalScrollIndicator={false} className="mt-2" style={bleed} contentContainerStyle={{ ...rowPad, gap: 8 }}>
         <Chip
           label={t("stories_favorites")}
           icon={Heart}
@@ -113,12 +129,18 @@ export default function StoriesLibrary() {
 
       {index.loading ? null : browsing ? (
         <>
+          {tonight ? (
+            <>
+              <View style={{ height: 14 }} />
+              <HeroCard story={tonight} wide={wide} fonts={fonts} progress={user.progressOf(tonight.slug)} onOpen={open} onRead={read} />
+            </>
+          ) : null}
           {featured.length ? (
             <>
               <SectionTitle title={t("stories_featured")} />
-              <ScrollView horizontal showsHorizontalScrollIndicator={false} className="-mx-5" contentContainerStyle={{ paddingHorizontal: 20, gap: 14 }}>
+              <ScrollView horizontal showsHorizontalScrollIndicator={false} style={bleed} contentContainerStyle={{ ...rowPad, gap: 18, paddingBottom: 14 }}>
                 {featured.map((s) => (
-                  <FeaturedCard key={s.slug} story={s} width={Math.min(260, Math.round(width * 0.66))} onPress={open} />
+                  <BookCard key={s.slug} story={s} width={wide ? 160 : 132} titleFont={fonts.title} favorite={favoriteSet.has(s.slug)} onPress={open} />
                 ))}
               </ScrollView>
             </>
@@ -126,7 +148,7 @@ export default function StoriesLibrary() {
           {recent.length ? (
             <>
               <SectionTitle title={t("stories_recent")} />
-              <ScrollView horizontal showsHorizontalScrollIndicator={false} className="-mx-5" contentContainerStyle={{ paddingHorizontal: 20, gap: 12 }}>
+              <ScrollView horizontal showsHorizontalScrollIndicator={false} style={bleed} contentContainerStyle={{ ...rowPad, gap: 16, paddingBottom: 10 }}>
                 {recent.map((s) => (
                   <StoryTile key={s.slug} story={s} progress={user.progressOf(s.slug)} onPress={open} />
                 ))}
@@ -136,7 +158,7 @@ export default function StoriesLibrary() {
           {favorites.length ? (
             <>
               <SectionTitle title={t("stories_favorites")} />
-              <ScrollView horizontal showsHorizontalScrollIndicator={false} className="-mx-5" contentContainerStyle={{ paddingHorizontal: 20, gap: 12 }}>
+              <ScrollView horizontal showsHorizontalScrollIndicator={false} style={bleed} contentContainerStyle={{ ...rowPad, gap: 16, paddingBottom: 10 }}>
                 {favorites.map((s) => (
                   <StoryTile key={s.slug} story={s} progress={user.progressOf(s.slug)} onPress={open} />
                 ))}
@@ -152,18 +174,32 @@ export default function StoriesLibrary() {
   );
 
   return (
-    <SafeAreaView className="flex-1 bg-cream" edges={["top"]}>
-      <View className="flex-row items-center gap-3 px-4 pb-3 pt-2">
+    <SafeAreaView className="flex-1 bg-cream" edges={["top", "left", "right"]}>
+      <View className="flex-row items-center gap-3 pb-3 pt-2" style={{ paddingHorizontal: Math.max(16, padH - 4) }}>
         <BackButton fallback="/(main)/baby" />
-        <Text className="font-display text-xl text-ink" accessibilityRole="header">
-          {t("stories_title")}
-        </Text>
+        <View className="flex-1">
+          <Text className="font-display text-xl text-ink" accessibilityRole="header">
+            {t("stories_title")}
+          </Text>
+          <Text className="font-body text-xs text-ink-soft" numberOfLines={1}>
+            {t("stories_library_sub")}
+          </Text>
+        </View>
       </View>
 
       <FlatList
+        key={"cols-" + cols}
         data={index.loading ? [] : results}
         keyExtractor={(s) => s.slug}
-        renderItem={({ item }) => <StoryRow story={item} favorite={favoriteSet.has(item.slug)} progress={user.progressOf(item.slug)} onPress={open} />}
+        numColumns={cols}
+        columnWrapperStyle={cols > 1 ? { gap: GRID_GAP, marginBottom: 26 } : undefined}
+        renderItem={({ item }) =>
+          cols > 1 ? (
+            <BookCard story={item} width={cardW} titleFont={fonts.title} favorite={favoriteSet.has(item.slug)} progress={user.progressOf(item.slug)} onPress={open} />
+          ) : (
+            <StoryRow story={item} favorite={favoriteSet.has(item.slug)} progress={user.progressOf(item.slug)} onPress={open} />
+          )
+        }
         extraData={user}
         ListHeaderComponent={header}
         ListEmptyComponent={
@@ -190,7 +226,7 @@ export default function StoriesLibrary() {
         keyboardDismissMode="on-drag"
         initialNumToRender={8}
         windowSize={7}
-        contentContainerStyle={{ paddingHorizontal: 20, paddingBottom: 32 }}
+        contentContainerStyle={{ paddingHorizontal: padH, paddingBottom: 32 }}
       />
     </SafeAreaView>
   );

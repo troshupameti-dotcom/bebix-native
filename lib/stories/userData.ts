@@ -9,6 +9,10 @@ import { useCurrentUserId } from "@/lib/hooks/useCurrentUserId";
  * e radhës. Kur vjen lista nga serveri, fiton ajo, përveç ndryshimeve të padërguara të këtij telefoni.
  */
 type Favorite = { on: boolean; at: string; dirty?: boolean };
+/**
+ * Vendi i leximit sipas paragrafit (`page` = paragrafi ku nis faqja, `pages` = numri i paragrafëve): faqet e librit
+ * ndryshojnë me ekranin dhe madhësinë e shkronjave, paragrafët jo.
+ */
 export type StoryProgress = { page: number; pages: number; finished: boolean; at: string; dirty?: boolean };
 type Data = { favorites: Record<string, Favorite>; progress: Record<string, StoryProgress> };
 
@@ -133,10 +137,10 @@ export function toggleFavorite(slug: string, userId: string | null) {
   return on;
 }
 
-/** Faqja ku mbeti prindi (nga 0). Në faqen e fundit përralla shënohet e lexuar, dhe mbetet e tillë. */
-export function saveProgress(slug: string, page: number, pages: number, userId: string | null) {
+/** Paragrafi ku mbeti prindi (nga 0). Kur arrin te "Fund", përralla shënohet e lexuar dhe mbetet e tillë. */
+export function saveProgress(slug: string, page: number, pages: number, userId: string | null, reachedEnd = false) {
   const prev = data.progress[slug];
-  const finished = page >= pages - 1 || !!prev?.finished;
+  const finished = reachedEnd || !!prev?.finished;
   if (prev && prev.page === page && prev.pages === pages && prev.finished === finished) return;
   const p: StoryProgress = { page, pages, finished, at: new Date().toISOString(), dirty: !!userId };
   set({ ...data, progress: { ...data.progress, [slug]: p } });
