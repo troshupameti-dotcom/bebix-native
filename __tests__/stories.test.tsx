@@ -10,7 +10,8 @@ import StoriesLibrary from "@/app/(main)/baby/stories/index";
 import StoryDetail from "@/app/(main)/baby/stories/[slug]";
 import StoryReader from "@/app/(main)/baby/stories/read/[slug]";
 import { STORY_SCENES } from "@/components/stories/StoryCover";
-import { BUNDLED_STORIES, bandForMonths, filterStories, storyOfTheDay } from "@/lib/stories/catalog";
+import { BUNDLED_STORIES, bandForMonths, filterStories, isEvening, storyOfTheDay, tonightPool } from "@/lib/stories/catalog";
+import { StoryTonightCard, __resetTonightPickForTests } from "@/components/stories/StoryTonightCard";
 import { __resetStoriesCacheForTests } from "@/lib/stories/api";
 import { __resetStoryIndexForTests } from "@/lib/stories/useStoryIndex";
 import { __resetStoryUserDataForTests } from "@/lib/stories/userData";
@@ -317,5 +318,43 @@ describe("lexuesi (libri)", () => {
     const detail = await renderScreen(<StoryDetail />);
     await settle();
     expect(text(detail)).toContain("E lexuar");
+  });
+});
+
+describe("karta e kreut: Përrallë për sonte", () => {
+  const evening = new Date(2026, 9, 22, 20, 30);
+  beforeEach(() => __resetTonightPickForTests());
+
+  it("radha e sontme nis me përrallën e ditës, pa përsëritje; qielli i natës nga 17:00 deri në 04:59", () => {
+    const pool = tonightPool(BUNDLED_STORIES, 30, evening);
+    expect(pool[0].slug).toBe(storyOfTheDay(BUNDLED_STORIES, 30, evening)!.slug);
+    expect(new Set(pool.map((s) => s.slug)).size).toBe(pool.length);
+    expect([isEvening(17), isEvening(23), isEvening(4), isEvening(5), isEvening(16)]).toEqual([true, true, true, false, false]);
+  });
+
+  it("“Lexo tani” hap librin; “Një tjetër” ndërron përrallën; biblioteka hapet me një prekje", async () => {
+    const pool = tonightPool(BUNDLED_STORIES, 30, evening);
+    const r = await renderScreen(<StoryTonightCard months={30} now={evening} />);
+    await settle();
+    expect(text(r)).toContain("Përrallë për sonte");
+    expect(text(r)).toContain(pool[0].title);
+    await pressText(r, "Lexo tani");
+    expect(router().push).toHaveBeenCalledWith({ pathname: "/(main)/baby/stories/read/[slug]", params: { slug: pool[0].slug, from: "0" } });
+    await pressText(r, "Një tjetër");
+    expect(text(r)).toContain(pool[1].title);
+    await pressLabel(r, "Të gjitha përrallat");
+    expect(router().push).toHaveBeenCalledWith("/(main)/baby/stories");
+  });
+
+  it("kur prindi ka nisur ta lexojë: “Vazhdo · %” e hap aty ku mbeti", async () => {
+    const story = tonightPool(BUNDLED_STORIES, 30, evening)[0];
+    setParams({ slug: story.slug, from: "3" });
+    await renderScreen(<StoryReader />);
+    await act(async () => { await new Promise((res) => setTimeout(res, 950)); });
+    const r = await renderScreen(<StoryTonightCard months={30} now={evening} />);
+    await settle();
+    const pct = Math.round((3 / story.paragraphs.length) * 100);
+    await pressText(r, `Vazhdo · ${pct}%`);
+    expect(router().push).toHaveBeenCalledWith({ pathname: "/(main)/baby/stories/read/[slug]", params: { slug: story.slug, from: "3" } });
   });
 });

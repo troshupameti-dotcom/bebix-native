@@ -93,11 +93,27 @@ export function ageRangeYears(story: StoryMeta): { from: number; to: number } {
  * E njëjta ditë jep të njëjtën përrallë, që të mos ndryshojë sa herë hapet faqja.
  */
 export function storyOfTheDay<T extends StoryMeta>(list: T[], months: number | null | undefined, day: Date = new Date()): T | null {
-  if (!list.length) return null;
+  return tonightPool(list, months, day)[0] ?? null;
+}
+
+/**
+ * Radha e përrallave për sonte: e para është përralla e ditës, pastaj të tjerat e së njëjtës zgjedhje (për "Një
+ * tjetër"), dhe në fund çdo përrallë tjetër që i përshtatet moshës.
+ */
+export function tonightPool<T extends StoryMeta>(list: T[], months: number | null | undefined, day: Date = new Date()): T[] {
+  if (!list.length) return [];
   const band = bandForMonths(months);
   const forAge = band ? list.filter((s) => fitsBand(s, band)) : list;
-  const pool = forAge.filter((s) => s.categories.includes("sleep"));
-  const choice = pool.length ? pool : forAge.length ? forAge : list;
+  const sleep = forAge.filter((s) => s.categories.includes("sleep"));
+  const choice = sortStories(sleep.length ? sleep : forAge.length ? forAge : list);
   const dayNumber = Math.floor(new Date(day.getFullYear(), day.getMonth(), day.getDate()).getTime() / 86_400_000);
-  return sortStories(choice)[((dayNumber % choice.length) + choice.length) % choice.length];
+  const start = ((dayNumber % choice.length) + choice.length) % choice.length;
+  const rotated = [...choice.slice(start), ...choice.slice(0, start)];
+  const rest = sortStories(forAge.length ? forAge : list).filter((s) => !rotated.includes(s));
+  return [...rotated, ...rest];
+}
+
+/** Mbrëmja dhe nata (17:00–04:59): kartela e kreut merr qiellin e natës. */
+export function isEvening(hour: number): boolean {
+  return hour >= 17 || hour < 5;
 }
