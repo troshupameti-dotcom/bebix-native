@@ -21,7 +21,7 @@ import { useTranslation } from "@/lib/i18n/LanguageContext";
  * (pranonte porosi). Tani secila prej tyre përshkruan gjendjen e vërtetë.
  */
 
-const LAST_UPDATED = "21 tetor 2026";
+const LAST_UPDATED = "24 tetor 2026";
 
 const DOCS: { title: string; body: string }[] = [
   {
@@ -46,6 +46,8 @@ const DOCS: { title: string; body: string }[] = [
       "• Përdorimi: ngjarje të përgjithshme si hapja e app-it, hapja e dyqanit, krijimi i një porosie, regjistrimi i një ushqyerjeje, gjumi ose pelene (vetëm lloji dhe ora, jo sasia apo shënimet), ftesa te Familja dhe sa lloje njoftimesh ke fikur. Lidhen me një identifikues të rastësishëm ose me ID-në teknike të llogarisë, pa emra, pa adresa, pa email dhe pa emrin apo datëlindjen e bebit.\n\n" +
       "KU RUHEN\n" +
       "Te Supabase, në serverë brenda Bashkimit Evropian (Frankfurt). Fotot e momenteve rrinë në një hapësirë private: i sheh vetëm ti dhe prindi që fton te Familja, me një lidhje të përkohshme. Postimet, komentet dhe fotot e Komunitetit janë publike: i sheh kushdo, edhe në faqen e webit www.bebix.store.\n\n" +
+      "COOKIES\n" +
+      "Faqja e webit përdor vetëm cookies dhe ruajtje në shfletues që i duhen asaj për të punuar: për të të mbajtur të kyçur, për gjuhën, temën e ngjyrave dhe zonën kohore që zgjedh, si dhe për shportën dhe formularët e papërfunduar, që ruhen vetëm në shfletuesin tënd. Nuk përdorim cookies reklamash ose gjurmimi, as cookies të palëve të treta, ndaj nuk të kërkojmë pëlqim për to. Statistikat e vizitave në web numërohen pa cookie. Cookies mund t'i fshish kur të duash nga rregullimet e shfletuesit; pas kësaj do të duhet të hysh sërish në llogari.\n\n" +
       "PSE\n" +
       "Për të ta ofruar shërbimin që kërkon: ruajtja e historikut të bebit, njoftimet që zgjedh, komuniteti dhe dërgimi i porosive. Të dhënat e bebit i përpunojmë me pëlqimin tënd; porositë, sepse na duhen për të përmbushur blerjen.\n\n" +
       "ME KË NDAHEN\n" +
