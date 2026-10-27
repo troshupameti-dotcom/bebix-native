@@ -3,9 +3,9 @@ import type { ImageSourcePropType } from "react-native";
 /**
  * Fotot e kategorive të dyqanit.
  *
- * Janë brenda app-it, jo në Storage: nëntë figura fikse prej 130 KB gjithsej
+ * Janë brenda app-it, jo në Storage: dymbëdhjetë figura fikse prej rreth 160 KB gjithsej
  * ngarkohen menjëherë, punojnë pa internet dhe nuk kërkojnë asnjë kërkesë
- * rrjeti sa herë hapet dyqani. Në Storage do të ishin nëntë kërkesa çdo herë
+ * rrjeti sa herë hapet dyqani. Në Storage do të ishin dymbëdhjetë kërkesa çdo herë
  * për diçka që nuk ndryshon kurrë.
  *
  * Çelësi është ai i kategorisë ashtu siç rri te baza — jo një slug i ri —
@@ -32,6 +32,9 @@ export const CATEGORY_PHOTOS: Record<string, ImageSourcePropType> = {
   "Dhoma e bebit": require("@/assets/images/categories/dhoma.jpg"),
   "Për nënën": require("@/assets/images/categories/nena.jpg"),
   "Dhurata për bebe": require("@/assets/images/categories/dhurata.jpg"),
+  shkolla: require("@/assets/images/categories/shkolla.jpg"),
+  "lodra-edukative": require("@/assets/images/categories/lodra-edukative.jpg"),
+  "veshje-femije": require("@/assets/images/categories/veshje-femije.jpg"),
 };
 
 /**

@@ -16,6 +16,9 @@ Te prera ne katror dhe ripermasuar ne 256x256, cilesi 82.
 | dhoma.jpg | pexels.com/photo/4713247 |
 | nena.jpg | pexels.com/photo/4876253 |
 | dhurata.jpg | pexels.com/photo/5872362 |
+| shkolla.jpg | pexels.com/photo/28503359 |
+| lodra-edukative.jpg | pexels.com/photo/35579565 |
+| veshje-femije.jpg | pexels.com/photo/28907988 |
 | te-gjitha.jpg | prerë nga assets/images/onboarding/shop-products.jpg (foto e app-it) |
 
 **Mos i zevendeso me figura nga kerkimi i thjeshte i internetit.** Ato
