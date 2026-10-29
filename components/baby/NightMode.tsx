@@ -178,7 +178,7 @@ export function NightMode() {
 
   return (
     <SafeAreaView style={{ flex: 1, backgroundColor: C.bg }} edges={["top", "bottom"]}>
-      <StatusBar barStyle="light-content" backgroundColor={C.bg} />
+      <StatusBar barStyle="light-content" />
       {/* Qielli me Hënën dhe yjet: pas gjithçkaje, pa marrë prekje */}
       <NightSky />
       <View style={{ flexDirection: "row", alignItems: "center", justifyContent: "space-between", paddingHorizontal: 12, paddingTop: 4 }}>

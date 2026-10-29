@@ -134,6 +134,23 @@ export function hardwareBackTarget(previous: string | null, current: string | nu
   return decision.kind === "goto" ? decision.path : null;
 }
 
+/** Gjendja e navigimit, aq sa duhet për të parë stivat në rrugën e hapur. */
+export type NavState = { type?: string; index?: number; routes: { state?: NavState }[] };
+
+/**
+ * A ka një stivë në rrugën e hapur një faqe poshtë asaj që shihet, pra a ka çka të mbyllë `dismiss`. Si
+ * `router.canDismiss()`, por njeh edhe stivat pa `type` që hapen me withAnchor: te expo-router 58 ai i anashkalon
+ * (ENG-22019), dhe "Porositë" mbetej e hapur në stivën e Dyqanit.
+ */
+export function canDismissFocused(state: NavState | null | undefined): boolean {
+  for (let s = state; s && s.routes.length > 0; ) {
+    const index = s.index ?? (s.type === "tab" ? 0 : s.routes.length - 1);
+    if (s.type !== "tab" && index > 0) return true;
+    s = s.routes[index]?.state;
+  }
+  return false;
+}
+
 /**
  * Rruga e fundit që i përket një pjese TJETËR të app-it, duke kërkuar prapa
  * në krejt historikun — jo vetëm një hap. Përdoret kur stiva nismore (pop)

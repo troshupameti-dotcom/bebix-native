@@ -7,6 +7,7 @@ import {
   ScrollView,
   ActivityIndicator,
   Alert,
+  type ScrollViewInstance,
 } from "react-native";
 import { KeyboardSafeView } from "@/lib/ui/keyboard";
 import { SafeAreaView } from "react-native-safe-area-context";
@@ -45,7 +46,7 @@ type ChatMessage = {
 };
 
 export default function AiChatScreen() {
-  const scrollRef = useRef<ScrollView>(null);
+  const scrollRef = useRef<ScrollViewInstance>(null);
   const { t, lang } = useTranslation();
   const { state } = useAppState();
   const active = useActiveChild();

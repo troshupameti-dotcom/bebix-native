@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from "react";
-import { View, Text, ScrollView, Pressable, Image, Alert, TextInput } from "react-native";
+import { View, Text, ScrollView, Pressable, Image, Alert, TextInput, type ScrollViewInstance } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useRouter, useScrollToTop } from "expo-router";
 import Constants from "expo-constants";
@@ -153,7 +153,7 @@ function ControlTile({
 export default function MoreScreen() {
   const router = useRouter();
   // Shtypja e tab-it kur je tashmë në të të çon në krye të faqes (si te Instagrami).
-  const scrollRef = useRef<ScrollView>(null);
+  const scrollRef = useRef<ScrollViewInstance>(null);
   useScrollToTop(scrollRef);
   const theme = useThemeColors();
   const { state, setDarkMode } = useAppState();

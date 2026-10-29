@@ -1,5 +1,5 @@
 import { useMemo, useRef, useState } from "react";
-import { View, Text, ScrollView, Pressable, Image, TextInput, Alert, Share } from "react-native";
+import { View, Text, ScrollView, Pressable, Image, TextInput, Alert, Share, type ScrollViewInstance } from "react-native";
 import { KeyboardScrollView } from "@/lib/ui/keyboard";
 import { router, useScrollToTop } from "expo-router";
 import { MotiView } from "moti";
@@ -150,7 +150,7 @@ export default function BabyProfileScreen() {
 
   const [activeTab, setActiveTab] = useState<TabKey>("today");
   // Shtypja e tab-it kur je tashmë në të të çon në krye të faqes (si te Instagrami).
-  const scrollRef = useRef<ScrollView>(null);
+  const scrollRef = useRef<ScrollViewInstance>(null);
   useScrollToTop(scrollRef);
   // Kreu sipas fazës së fëmijës aktiv (lib/age/stageConfig.ts): çka s'vlen për moshën, fshihet. Pa datë: si më parë.
   const ageInfo = useActiveChild();

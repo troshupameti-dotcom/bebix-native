@@ -1,6 +1,8 @@
 import { Pressable } from "react-native";
 import { router, type Href } from "expo-router";
-import { currentPath, decideBack, hardwareBackTarget, lastPathInOtherSection, noteBackMove, originOf, rewindTo } from "@/lib/navigation/history";
+import {
+  canDismissFocused, currentPath, decideBack, hardwareBackTarget, lastPathInOtherSection, noteBackMove, originOf, rewindTo, type NavState,
+} from "@/lib/navigation/history";
 import { Icon } from "@/components/ui/Icon";
 import { haptics } from "@/lib/haptics";
 import { shadows } from "@/lib/shadows";
@@ -27,8 +29,14 @@ import { useTranslation } from "@/lib/i18n/LanguageContext";
  */
 function returnTo(path: string) {
   rewindTo(path);
-  if (router.canDismiss()) router.dismiss();
+  if (router.canDismiss() || canDismissFocused(navigation?.getRootState() as NavState | undefined)) router.dismiss();
   router.replace(path as Href);
+}
+
+let navigation: { getRootState(): unknown } | null = null;
+/** Thirret nga rrënja e app-it me `useNavigationContainerRef()`, që kthimi të shohë stivat e hapura. */
+export function registerNavigation(ref: { getRootState(): unknown }) {
+  navigation = ref;
 }
 
 export function goBackOr(fallback: Href) {

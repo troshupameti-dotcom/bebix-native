@@ -174,7 +174,7 @@ export default function MainLayout() {
   return (
     <View style={{ flex: 1 }}>
       <Tabs
-        initialRouteName={isAuthenticated ? "baby" : "shop"}
+        // Tab-i i parë hapet nga app/index.tsx (Bebi ose Dyqani sipas llogarisë); "firstRoute" është Bebi, i pari në listë.
         // Mysafiri s'ka tab-e të tjera: "prapa" nga Dyqani s'duhet ta çojë te Bebi.
         backBehavior={isAuthenticated ? "firstRoute" : "none"}
         screenOptions={{
@@ -210,7 +210,9 @@ export default function MainLayout() {
           />
         ))}
 
-        <Tabs.Screen name="notifications" options={{ href: null }} />
+        {/* Pa buton në shirit, por hapet nga zilja. Jo `href: null`: te expo-router 58 ajo e fsheh krejt skedën
+            dhe çdo hapje kthehet te skeda e parë. */}
+        <Tabs.Screen name="notifications" options={{ tabBarButton: () => null }} />
       </Tabs>
 
     </View>

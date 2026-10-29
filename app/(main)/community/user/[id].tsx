@@ -144,7 +144,7 @@ export default function UserProfileScreen() {
 
       <Text className="mt-6 self-start font-bodySemibold text-sm text-ink">{t("dm_posts")}</Text>
     </View>
-  ) : null;
+  ) : undefined;
 
   return (
     <SafeAreaView className="flex-1 bg-cream" edges={["top"]}>

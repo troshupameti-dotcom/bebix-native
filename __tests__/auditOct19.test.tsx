@@ -59,7 +59,8 @@ describe("tastiera", () => {
         <Text>Forma</Text>
       </KeyboardSafeView>
     );
-    const box = () => r.root.findAll((n) => n.type === View && visibleText(n).includes("Forma"))[0];
+    // Pamja më e brendshme me "Forma" (KeyboardSafeView); sipër saj janë mbështjellësit e helper-it.
+    const box = () => r.root.findAll((n) => n.type === View && visibleText(n).includes("Forma")).at(-1)!;
     const pad = () => [box().props.style].flat(2).reduce((acc: number, s: { paddingBottom?: number } | undefined) => s?.paddingBottom ?? acc, 0);
     expect(pad()).toBe(0);
     await act(async () => listeners.keyboardWillChangeFrame({ endCoordinates: { height: 320, screenY: screen - 320 } }));

@@ -48,7 +48,7 @@ export default function NotificationsInboxScreen() {
             >
               <Text className="font-bodyMedium text-xs text-olive">{t("inbox_mark_all")}</Text>
             </Pressable>
-          ) : null
+          ) : undefined
         }
         ListEmptyComponent={
           <View className="flex-1 items-center justify-center px-6 pb-16">

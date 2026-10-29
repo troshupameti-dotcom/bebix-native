@@ -1,5 +1,5 @@
 import { NativeModules, Platform, TurboModuleRegistry } from "react-native";
-import { requireOptionalNativeModule } from "expo-modules-core";
+import { requireOptionalNativeModule } from "expo";
 
 /**
  * A ka ky build modulin e widget-eve? Expo Go dhe build-et e vjetra s'e kanë. Kontrolli bëhet PARA `require`-it:

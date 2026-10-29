@@ -10,8 +10,10 @@ import {
   type KeyboardEvent,
   type NativeScrollEvent,
   type NativeSyntheticEvent,
+  type ScrollViewInstance,
   type ScrollViewProps,
   type StyleProp,
+  type ViewInstance,
   type ViewStyle,
 } from "react-native";
 
@@ -23,7 +25,7 @@ import {
  * e iPad-it s'mbulon fundin e ekranit, ndaj s'ngjit asgjë.
  */
 export function useKeyboardInset(onKeyboard?: (keyboardTop: number) => void) {
-  const ref = useRef<View>(null);
+  const ref = useRef<ViewInstance>(null);
   const onKeyboardRef = useRef(onKeyboard);
   useEffect(() => {
     onKeyboardRef.current = onKeyboard;
@@ -107,11 +109,11 @@ export function KeyboardScrollView({
   onScroll,
   boxClassName = "flex-1",
   ...props
-}: ScrollViewProps & { ref?: Ref<ScrollView>; children?: ReactNode; className?: string; boxClassName?: string }) {
-  const scrollRef = useRef<ScrollView | null>(null);
+}: ScrollViewProps & { ref?: Ref<ScrollViewInstance>; children?: ReactNode; className?: string; boxClassName?: string }) {
+  const scrollRef = useRef<ScrollViewInstance | null>(null);
   const offset = useRef(0);
   const reveal = useCallback((keyboardTop: number) => {
-    const input = TextInput.State.currentlyFocusedInput?.() as unknown as View | null;
+    const input = TextInput.State.currentlyFocusedInput?.() as unknown as ViewInstance | null;
     if (!input) return;
     // Pritet një çast, që hapësira poshtë të jetë vendosur para matjes.
     setTimeout(() => {
@@ -123,10 +125,10 @@ export function KeyboardScrollView({
   }, []);
   const { ref: boxRef, inset, onLayout } = useKeyboardInset(reveal);
   const setRef = useCallback(
-    (node: ScrollView | null) => {
+    (node: ScrollViewInstance | null) => {
       scrollRef.current = node;
       if (typeof ref === "function") ref(node);
-      else if (ref) (ref as { current: ScrollView | null }).current = node;
+      else if (ref) (ref as { current: ScrollViewInstance | null }).current = node;
     },
     [ref]
   );

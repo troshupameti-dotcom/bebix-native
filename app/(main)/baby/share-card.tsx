@@ -1,5 +1,5 @@
 import { useMemo, useRef, useState } from "react";
-import { View, Text, Pressable, ScrollView, Image, ActivityIndicator, useWindowDimensions } from "react-native";
+import { View, Text, Pressable, ScrollView, Image, ActivityIndicator, useWindowDimensions, type ViewInstance } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useLocalSearchParams } from "expo-router";
 import { captureRef } from "react-native-view-shot";
@@ -77,7 +77,7 @@ export default function ShareCardScreen() {
   const [aspect, setAspect] = useState<CardAspect>("square");
   const [loadedUri, setLoadedUri] = useState<string | null>(null);
   const [sharing, setSharing] = useState(false);
-  const cardRef = useRef<View>(null);
+  const cardRef = useRef<ViewInstance>(null);
 
   const babyName = state.profile.nickname || state.profile.babyName || t("your_baby");
   const dateIso = params.kind === "milestone" || params.kind === "moment" ? (sourceMoment?.date ?? new Date().toISOString()) : new Date().toISOString();

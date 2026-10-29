@@ -1,5 +1,5 @@
 import { forwardRef } from "react";
-import { View, Text, Image } from "react-native";
+import { View, Text, Image, type ViewInstance } from "react-native";
 import type { CardAspect, CardContent, CardTemplate } from "@/lib/share/cards";
 
 const WORDMARK_ON_LIGHT = require("@/assets/images/wordmark.png");
@@ -22,7 +22,7 @@ type Props = {
  * app-it — që imazhi të dalë njësoj kudo ku ndahet. Logoja e vogël Bebix
  * rri poshtë, e qetë.
  */
-export const ShareCard = forwardRef<View, Props>(function ShareCard({ template, aspect, content, photoUri, width, onPhotoLoad }, ref) {
+export const ShareCard = forwardRef<ViewInstance, Props>(function ShareCard({ template, aspect, content, photoUri, width, onPhotoLoad }, ref) {
   const s = width / BASE;
   const height = aspect === "story" ? width * (16 / 9) : width;
   const story = aspect === "story";

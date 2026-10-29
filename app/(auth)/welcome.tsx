@@ -1,6 +1,6 @@
 import { useRef, useState } from "react";
 import { useThemeColors } from "@/lib/theme/useThemeColors";
-import { View, Text, Pressable, ScrollView, NativeSyntheticEvent, NativeScrollEvent } from "react-native";
+import { View, Text, Pressable, ScrollView, NativeSyntheticEvent, NativeScrollEvent, type ScrollViewInstance } from "react-native";
 import { useContentWidth } from "@/lib/layout";
 import { router } from "expo-router";
 import { MotiView } from "moti";
@@ -26,7 +26,7 @@ export default function WelcomeScreen() {
   const { t } = useTranslation();
   const theme = useThemeColors();
   const [index, setIndex] = useState(0);
-  const scrollRef = useRef<ScrollView>(null);
+  const scrollRef = useRef<ScrollViewInstance>(null);
 
   function handleScrollEnd(e: NativeSyntheticEvent<NativeScrollEvent>) {
     const next = Math.round(e.nativeEvent.contentOffset.x / SCREEN_WIDTH);

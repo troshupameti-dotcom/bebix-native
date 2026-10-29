@@ -11,11 +11,12 @@ import "expo-router/build/testing-library/mocks";
 import { useEffect, type ComponentType } from "react";
 import { Text } from "react-native";
 import { act, create, type ReactTestRenderer } from "react-test-renderer";
-import { Stack, Tabs, router, usePathname } from "expo-router";
+import { Stack, Tabs, router, useNavigationContainerRef, usePathname } from "expo-router";
 import { ExpoRoot } from "expo-router/build/ExpoRoot";
 import { getMockContext } from "expo-router/build/testing-library/mock-config";
-import { store } from "expo-router/build/global-state/router-store";
-import { goBackOr, hardwareBack } from "@/components/ui/BackButton";
+import { navigationRef } from "expo-router/build/global-state/navigationRef";
+import { getRouteInfoFromState } from "expo-router/build/global-state/getRouteInfoFromState";
+import { goBackOr, hardwareBack, registerNavigation } from "@/components/ui/BackButton";
 import { noteTabSwitch, recordPath, resetHistory, sectionOf, currentPath } from "@/lib/navigation/history";
 
 /* eslint-disable @typescript-eslint/no-require-imports -- fabrikat e jest.mock dhe layout-et e vërteta ngarkohen me require() */
@@ -35,17 +36,20 @@ const screenFiles = fs.readdirSync(MAIN, { recursive: true })
   .filter((f) => f.endsWith(".tsx") && !f.endsWith("_layout.tsx"))
   .map((f) => f.replace(/\.tsx$/, ""));
 
+/** Si ThemedStack te app/_layout.tsx: shënon rrugët dhe i jep kthimit gjendjen e navigimit. */
 function Root() {
   const p = usePathname();
+  const nav = useNavigationContainerRef();
   useEffect(() => { recordPath(p); }, [p]);
+  useEffect(() => { registerNavigation(nav); }, [nav]);
   return <Stack screenOptions={{ headerShown: false }} />;
 }
 /** Si app/(main)/_layout.tsx për përdoruesin e kyçur; prekja e tab-it shënohet si te guardTabPress. */
 function Main() {
   return (
-    <Tabs initialRouteName="baby" backBehavior="firstRoute" screenOptions={{ headerShown: false }}>
+    <Tabs backBehavior="firstRoute" screenOptions={{ headerShown: false }}>
       {TABS.map((n) => <Tabs.Screen key={n} name={n} />)}
-      <Tabs.Screen name="notifications" options={{ href: null }} />
+      <Tabs.Screen name="notifications" options={{ tabBarButton: () => null }} />
     </Tabs>
   );
 }
@@ -66,19 +70,19 @@ const routeOf = (f: string) => "/" + f.replace(/\/index$/, "").replace(/\[[^\]]+
 const sectionRoot = (s: string) => `/${s}`;
 const inner = screenFiles.filter((f) => f.includes("/") && !f.endsWith("/index")).map(routeOf);
 
-const where = () => store.getRouteInfo().pathname;
+const where = () => getRouteInfoFromState(navigationRef.getRootState() as Parameters<typeof getRouteInfoFromState>[0]).pathname;
 const step = (fn: () => void) => act(() => { fn(); jest.runOnlyPendingTimers(); });
 /** Prekja e tab-it: si te layout-i (shënimi), pastaj navigimi që ruan ekranin ku kishte mbetur tab-i. */
 const tapTab = (name: string) => step(() => {
   if (sectionOf(currentPath()) !== name) noteTabSwitch();
-  (store.navigationRef.current as unknown as { navigate: (n: string) => void }).navigate(name);
+  (navigationRef.current as unknown as { navigate: (n: string) => void }).navigate(name);
 });
 const push = (p: string) => step(() => router.push(p as never));
 const back = () => step(() => goBackOr("/"));
 /** Android: hardwareBack(); kur kthen false, sistemi bën pop vetë. */
-const androidBack = () => step(() => { if (!hardwareBack()) store.navigationRef.current?.goBack(); });
+const androidBack = () => step(() => { if (!hardwareBack()) navigationRef.current?.goBack(); });
 /** iPhone: rrëshqitja mbrapa, pa asnjë shënim nga app-i. */
-const swipeBack = () => step(() => store.navigationRef.current?.goBack());
+const swipeBack = () => step(() => navigationRef.current?.goBack());
 
 let root: ReactTestRenderer | null = null;
 function open(start = "/baby") {
@@ -144,7 +148,9 @@ describe("hyrja nga një pjesë tjetër", () => {
 
   it("njoftimet → vaksinat → mbrapa = njoftimet → mbrapa = Home (pa rreth)", () => {
     open();
-    push("/notifications");
+    // Zilja te Bebi: njoftimet hapen (te expo-router 58, `href: null` e bënte skedën të pahapshme).
+    step(() => router.push("/(main)/notifications" as never));
+    expect(where()).toBe("/notifications");
     push("/baby/vaccinations");
     back();
     expect(where()).toBe("/notifications");

@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useRef, useState, type ReactNode } from "react";
 import AsyncStorage from "@react-native-async-storage/async-storage";
-import { View, Text, Pressable, TextInput, ScrollView, ActivityIndicator, Image, type TextInputProps } from "react-native";
+import { View, Text, Pressable, TextInput, ScrollView, ActivityIndicator, Image, type TextInputInstance, type TextInputProps } from "react-native";
 import { SafeAreaView, useSafeAreaInsets } from "react-native-safe-area-context";
 import { useRouter } from "expo-router";
 import { useAppState } from "@/lib/state/AppStateContext";
@@ -596,7 +596,7 @@ function Row({ label, value }: { label: string; value: string }) {
 
 /** Fushë brenda grupit: etiketa e vogël sipër, teksti poshtë; prekja kudo në rresht e hap tastierën. */
 function Field({ label, last, ...input }: TextInputProps & { label: string; last?: boolean }) {
-  const ref = useRef<TextInput>(null);
+  const ref = useRef<TextInputInstance>(null);
   return (
     <Pressable
       onPress={() => ref.current?.focus()}

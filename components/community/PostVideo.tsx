@@ -1,5 +1,5 @@
 import { Linking, Pressable, Text, View } from "react-native";
-import { requireOptionalNativeModule } from "expo-modules-core";
+import { requireOptionalNativeModule } from "expo";
 import { Icon } from "@/components/ui/Icon";
 import { useTranslation } from "@/lib/i18n/LanguageContext";
 

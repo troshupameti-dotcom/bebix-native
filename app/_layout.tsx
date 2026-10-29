@@ -3,7 +3,7 @@ import "@/lib/theme/interop";
 import { installErrorReporter } from "@/lib/errors/reporter";
 import { initSentry, wrapWithSentry } from "@/lib/errors/sentry";
 import { useEffect } from "react";
-import { Stack, usePathname } from "expo-router";
+import { Stack, useNavigationContainerRef, usePathname } from "expo-router";
 import { StatusBar } from "expo-status-bar";
 import { GestureHandlerRootView } from "react-native-gesture-handler";
 import * as SplashScreen from "expo-splash-screen";
@@ -19,6 +19,7 @@ import { AppStateProvider } from "@/lib/state/AppStateContext";
 import { ToastProvider } from "@/lib/toast/ToastContext";
 import { useThemeColors } from "@/lib/theme/useThemeColors";
 import { recordPath } from "@/lib/navigation/history";
+import { registerNavigation } from "@/components/ui/BackButton";
 import { BrandSplash } from "@/components/ui/BrandSplash";
 import { MAX_CONTENT_WIDTH } from "@/lib/layout";
 import { OfflineBanner } from "@/components/ui/OfflineBanner";
@@ -94,12 +95,16 @@ function RootLayout() {
 function ThemedStack() {
   const theme = useThemeColors();
   const pathname = usePathname();
+  const navigation = useNavigationContainerRef();
 
   // Kthimi duhet te dije ku ishte perdoruesi vertet: me kater tabe, secili
   // me stiven e vet, `router.back()` nuk mjafton (shih goBackOr).
   useEffect(() => {
     recordPath(pathname);
   }, [pathname]);
+  useEffect(() => {
+    registerNavigation(navigation);
+  }, [navigation]);
 
   return (
     <>

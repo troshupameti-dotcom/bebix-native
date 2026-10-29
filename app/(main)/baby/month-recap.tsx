@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from "react";
-import { View, Text, Pressable, Image, ActivityIndicator } from "react-native";
+import { View, Text, Pressable, Image, ActivityIndicator, type ViewInstance } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useLocalSearchParams } from "expo-router";
 import { goBackOr } from "@/components/ui/BackButton";
@@ -80,7 +80,7 @@ export default function MonthRecapScreen() {
   const [index, setIndex] = useState(0);
   const [paused, setPaused] = useState(false);
   const [sharing, setSharing] = useState(false);
-  const slideRef = useRef<View>(null);
+  const slideRef = useRef<ViewInstance>(null);
 
   useEffect(() => {
     if (paused || slides.length === 0) return;

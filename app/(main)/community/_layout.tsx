@@ -5,7 +5,7 @@ import { Stack } from "expo-router";
  * (p.sh. "Porositë e mia" nga Cilësimet, ose një njoftim). Pa këtë, faqja hapej e vetme në stivë dhe mbetej aty
  * pas kthimit: tab-i i kësaj pjese rihapej te ajo, jo te fillimi.
  */
-export const unstable_settings = { initialRouteName: "index" };
+export const unstable_settings = { anchor: "index" };
 
 export default function CommunityLayout() {
   return <Stack screenOptions={{ headerShown: false }} />;

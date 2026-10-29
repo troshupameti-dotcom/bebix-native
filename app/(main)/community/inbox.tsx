@@ -74,7 +74,7 @@ export default function InboxScreen() {
               <Text className="mb-1 text-center font-bodySemibold text-sm text-ink">{t("dm_empty_title")}</Text>
               <Text className="text-center font-body text-xs leading-5 text-ink-soft">{t("dm_empty_sub")}</Text>
             </View>
-          ) : null
+          ) : undefined
         }
         renderItem={({ item }) => (
           <Pressable

@@ -7,6 +7,7 @@
 import { createElement } from "react";
 import { act, create, type ReactTestRenderer } from "react-test-renderer";
 import { AppState } from "react-native";
+import { GestureHandlerRootView } from "react-native-gesture-handler";
 import { BrandMarquee } from "@/components/shop/BrandMarquee";
 import type { Brand } from "@/lib/homeContent";
 
@@ -39,7 +40,8 @@ const setAppState = (v: string) => Object.defineProperty(AppState, "currentState
 function mount(brands = many): ReactTestRenderer {
   let r!: ReactTestRenderer;
   act(() => {
-    r = create(createElement(BrandMarquee, { brands, onOpen: () => {} }));
+    // Gesture Handler 3: gjestet duhet të jenë brenda GestureHandlerRootView, si te app/_layout.tsx.
+    r = create(createElement(GestureHandlerRootView, null, createElement(BrandMarquee, { brands, onOpen: () => {} })));
   });
   return r;
 }
