@@ -17,6 +17,7 @@ import {
 import { Icon, type IconName } from "@/components/ui/Icon";
 import { AnalogNightClock, NIGHT_COLORS as C } from "@/components/baby/NightClock";
 import { NightLight, lightBrightness } from "@/components/baby/NightLight";
+import { NightSky } from "@/components/baby/NightSky";
 
 /** Një nga tre butonat e natës: i madh, katror, me ikonë dhe një fjalë. */
 function NightButton({ icon, label, onPress, on = false }: { icon: IconName; label: string; onPress: () => void; on?: boolean }) {
@@ -50,8 +51,9 @@ type Saved = { kind: "feeding" | "diaper" | "sleep"; id: string | null; text: st
 
 /**
  * Pamja e natës, e thjeshtë: ora, sa kohë fle (ose është zgjuar) bebi, dhe tre butona poshtë ku arrin gishti i
- * madh: Ushqim, Pelenë, Gjumë. Lart vetëm ikona e dritës së kuqe dhe "Mbyll". E kuqe mbi të zezë, ekrani i
- * errësuar vetë; pa animacione dhe pa emoji. Çdo prekje dridhet dhe shkruan "U ruajt" me mundësi anulimi.
+ * madh: Ushqim, Pelenë, Gjumë. Lart vetëm ikona e dritës së kuqe dhe "Mbyll". E kuqe mbi qiellin e natës (blu e
+ * mesnatës shumë e errët, Hëna dhe yjet: NightSky), ekrani i errësuar vetë; pa animacione dhe pa emoji. Çdo prekje
+ * dridhet dhe shkruan "U ruajt" me mundësi anulimi.
  */
 export function NightMode() {
   const { t, lang } = useTranslation();
@@ -175,6 +177,8 @@ export function NightMode() {
   return (
     <SafeAreaView style={{ flex: 1, backgroundColor: C.bg }} edges={["top", "bottom"]}>
       <StatusBar barStyle="light-content" backgroundColor={C.bg} />
+      {/* Qielli me Hënën dhe yjet: pas gjithçkaje, pa marrë prekje */}
+      <NightSky />
       <View style={{ flexDirection: "row", alignItems: "center", justifyContent: "space-between", paddingHorizontal: 12, paddingTop: 4 }}>
         {/* Drita e kuqe: vetëm ikona (emri i saj u lexohet lexuesve të ekranit). */}
         <Pressable
