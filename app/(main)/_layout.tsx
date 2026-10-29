@@ -211,8 +211,9 @@ export default function MainLayout() {
         ))}
 
         {/* Pa buton në shirit, por hapet nga zilja. Jo `href: null`: te expo-router 58 ajo e fsheh krejt skedën
-            dhe çdo hapje kthehet te skeda e parë. */}
-        <Tabs.Screen name="notifications" options={{ tabBarButton: () => null }} />
+            dhe çdo hapje kthehet te skeda e parë. `display: "none"`: pa të, vendi bosh i butonit mbetej djathtas
+            dhe pesë skedat e tjera ngjeshen majtas. */}
+        <Tabs.Screen name="notifications" options={{ tabBarButton: () => null, tabBarItemStyle: { display: "none" } }} />
       </Tabs>
 
     </View>

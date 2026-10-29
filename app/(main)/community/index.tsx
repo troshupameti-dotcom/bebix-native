@@ -16,6 +16,8 @@ import { specialtyLabel } from "@/lib/community/specialties";
 import { fetchInbox, setMyCommunityName } from "@/lib/community/messages";
 import { useActiveChild } from "@/lib/age/useActiveChild";
 import { hasFeature } from "@/lib/age/stageConfig";
+import { useScreenshotMode } from "@/lib/demo/screenshotMode";
+import { DEMO_PARENT_NAME } from "@/lib/demo/communityDemo";
 import {
   fetchGroups, fetchExperts, fetchTopics, fetchTips, fetchFeed, fetchNewestPostAt, fetchAgeGroup, FEED_PAGE_SIZE,
   CommunityGroup, CommunityExpert, CommunityTopic, CommunityTip, CommunityPost, FeedTab,
@@ -260,6 +262,15 @@ export default function CommunityScreen() {
     }, [reload, loadStatic, checkNewPosts])
   );
 
+  // Mënyra e fotografimit (Cilësimet, vetëm në zhvillim) ndërron burimin e postimeve: lista ngarkohet nga e para.
+  const shots = useScreenshotMode();
+  const lastShots = useRef(shots);
+  useEffect(() => {
+    if (lastShots.current === shots) return;
+    lastShots.current = shots;
+    void reload({ reset: true, spinner: true });
+  }, [shots, reload]);
+
   const showNewPosts = useCallback(() => {
     listRef.current?.scrollToOffset({ offset: 0, animated: true });
     setNewPosts(false);
@@ -474,7 +485,7 @@ export default function CommunityScreen() {
             className="w-9 h-9 rounded-full bg-olive-bg items-center justify-center ml-1"
           >
             <Text className="font-bodySemibold text-sm text-olive">
-              {(state.profile.parentName || "T").trim().charAt(0).toUpperCase()}
+              {((shots ? DEMO_PARENT_NAME : state.profile.parentName) || "T").trim().charAt(0).toUpperCase()}
             </Text>
           </Pressable>
         </View>

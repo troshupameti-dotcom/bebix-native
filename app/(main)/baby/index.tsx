@@ -396,7 +396,11 @@ export default function BabyProfileScreen() {
     const oldest = candidates.sort((x, y) => y.hrs - x.hrs)[0];
     if (oldest.hrs < 2) return null; // krejt âsht "e freskët", s'ka nevojë me sugjeru
     const hrsRounded = Math.floor(oldest.hrs);
-    const text = t(oldest.kind === "feeding" ? "baby_since_feeding" : "baby_since_diaper", { n: hrsRounded });
+    // Pas dy ditësh në ditë: "243 orë" s'lexohej.
+    const text =
+      hrsRounded >= 48
+        ? t(oldest.kind === "feeding" ? "baby_since_feeding_days" : "baby_since_diaper_days", { n: Math.floor(hrsRounded / 24) })
+        : t(oldest.kind === "feeding" ? "baby_since_feeding" : "baby_since_diaper", { n: hrsRounded });
     return { text, icon: oldest.icon, route: oldest.route };
   }, [b.feedingLog, b.diaperLog, t]);
 

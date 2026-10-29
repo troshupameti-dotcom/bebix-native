@@ -20,6 +20,7 @@ import { ToastProvider } from "@/lib/toast/ToastContext";
 import { useThemeColors } from "@/lib/theme/useThemeColors";
 import { recordPath } from "@/lib/navigation/history";
 import { registerNavigation } from "@/components/ui/BackButton";
+import { loadScreenshotMode } from "@/lib/demo/screenshotMode";
 import { BrandSplash } from "@/components/ui/BrandSplash";
 import { MAX_CONTENT_WIDTH } from "@/lib/layout";
 import { OfflineBanner } from "@/components/ui/OfflineBanner";
@@ -105,6 +106,9 @@ function ThemedStack() {
   useEffect(() => {
     registerNavigation(navigation);
   }, [navigation]);
+  useEffect(() => {
+    void loadScreenshotMode();
+  }, []);
 
   return (
     <>

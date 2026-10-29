@@ -231,7 +231,10 @@ export function durationLabel(minutes: number, t: Translate): string {
 export function sinceLabel(iso: string | null, t: Translate, now: Date = new Date()): string | null {
   const at = time(iso);
   if (at === null) return null;
-  return durationLabel(Math.max(0, Math.round((now.getTime() - at) / 60000)), t);
+  const minutes = Math.max(0, Math.round((now.getTime() - at) / 60000));
+  // Pas dy ditësh në ditë ("10 ditë"), jo "243 orë 25 min".
+  if (minutes >= 48 * 60) return t("dur_days", { n: Math.floor(minutes / 1440) });
+  return durationLabel(minutes, t);
 }
 
 /* ------------------------------------------------------------------ *

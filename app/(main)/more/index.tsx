@@ -22,6 +22,8 @@ import { WHATS_NEW_KEY, WHATS_NEW_VERSION } from "@/lib/whatsNew";
 import { searchSettings } from "@/lib/settings/search";
 import { IconTile, TILE_COLORS } from "@/components/settings/IconTile";
 import { useIsAdmin } from "@/lib/admin/access";
+import { ThemedSwitch } from "@/components/ui/ThemedSwitch";
+import { setScreenshotMode, useScreenshotMode } from "@/lib/demo/screenshotMode";
 
 type Row = {
   key: string;
@@ -158,6 +160,7 @@ export default function MoreScreen() {
   const theme = useThemeColors();
   const { state, setDarkMode } = useAppState();
   const night = useNightMode();
+  const screenshotMode = useScreenshotMode();
   const { profile } = state;
   const { t, language, setLanguage } = useLanguage();
   const { email, provider } = useAuthUser();
@@ -440,6 +443,17 @@ export default function MoreScreen() {
               {/* Nga app.json, që të mos mbetet "1.0.0" pas çdo publikimi. */}
               Bebix v{Constants.expoConfig?.version ?? "1.0.0"}
             </Text>
+
+            {/* Për fotot e app-it në rrjetet sociale; në app-in e dyqaneve s'shfaqet kurrë. */}
+            {__DEV__ ? (
+              <View className="mx-4 mt-4 flex-row items-center rounded-2xl bg-surface px-4 py-3.5" style={shadows.soft}>
+                <View className="mr-3 flex-1">
+                  <Text className="font-bodySemibold text-sm text-ink">{t("screenshot_mode")}</Text>
+                  <Text className="mt-0.5 font-body text-xs leading-5 text-ink-soft">{t("screenshot_mode_hint")}</Text>
+                </View>
+                <ThemedSwitch value={screenshotMode} onValueChange={setScreenshotMode} accessibilityLabel={t("screenshot_mode")} />
+              </View>
+            ) : null}
           </>
         )}
       </ScrollView>

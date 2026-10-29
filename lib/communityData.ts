@@ -10,6 +10,8 @@ import {
 } from "@/lib/community/media";
 import { sanitizeSearch } from "@/lib/community/feedFilters";
 import { expertPhotoUrl } from "@/lib/community/expertPhoto";
+import { isScreenshotMode } from "@/lib/demo/screenshotMode";
+import { demoComments, demoFeed, demoNewestAt, demoPost, demoPostsByAuthor, isDemoId } from "@/lib/demo/communityDemo";
 
 export type Accent = "olive" | "orange";
 
@@ -354,6 +356,8 @@ async function followScope(uid: string): Promise<{ authorIds: string[]; groupIds
 }
 
 export async function fetchFeed(options: FeedOptions = {}): Promise<CommunityPost[]> {
+  // Mënyra e fotografimit (vetëm në zhvillim): postime shembull, pa emra të vërtetë.
+  if (isScreenshotMode()) return demoFeed(options);
   const uid = await getCurrentUserId();
   let query = supabase.from("community_feed").select("*");
   if (options.before) query = query.lt("created_at", options.before);
@@ -417,6 +421,7 @@ async function myReactions(uid: string | null, ids: string[]): Promise<{ likedId
 const LIST_LIMIT = 50;
 
 export async function fetchPost(id: string): Promise<CommunityPost | null> {
+  if (isDemoId(id)) return demoPost(id);
   const uid = await getCurrentUserId();
   const { data, error } = await supabase.from("community_feed").select("*").eq("id", id).maybeSingle();
   if (error) throw error;
@@ -457,6 +462,7 @@ export async function fetchSavedPosts(): Promise<CommunityPost[]> {
 }
 
 export async function fetchPostsByAuthor(authorId: string): Promise<CommunityPost[]> {
+  if (isDemoId(authorId)) return demoPostsByAuthor(authorId);
   const uid = await getCurrentUserId();
   const { data, error } = await supabase
     .from("community_feed")
@@ -539,6 +545,7 @@ export async function deletePost(post: { id: string; media: StoredMedia[] }) {
 }
 
 export async function toggleLike(postId: string, liked: boolean) {
+  if (isDemoId(postId)) return;
   const uid = await getCurrentUserId();
   if (!uid) throw new Error("Duhet të jesh i kyçur.");
   if (liked) {
@@ -551,6 +558,7 @@ export async function toggleLike(postId: string, liked: boolean) {
 }
 
 export async function toggleSave(postId: string, saved: boolean) {
+  if (isDemoId(postId)) return;
   const uid = await getCurrentUserId();
   if (!uid) throw new Error("Duhet të jesh i kyçur.");
   if (saved) {
@@ -580,6 +588,7 @@ export async function expertsByUserId(userIds: string[]): Promise<Map<string, Co
 }
 
 export async function fetchComments(postId: string): Promise<CommunityComment[]> {
+  if (isDemoId(postId)) return demoComments(postId);
   const [{ data, error }, blocked] = await Promise.all([
     supabase
       .from("community_comments")
@@ -605,6 +614,7 @@ export async function fetchComments(postId: string): Promise<CommunityComment[]>
 
 /** Koha e postimit më të ri në rrjedhë: pas saj kontrollohet nëse ka postime të reja ("Postime të reja ↑"). */
 export async function fetchNewestPostAt(): Promise<string | null> {
+  if (isScreenshotMode()) return demoNewestAt();
   const { data } = await supabase
     .from("community_feed")
     .select("created_at")
@@ -615,6 +625,7 @@ export async function fetchNewestPostAt(): Promise<string | null> {
 }
 
 export async function addComment(input: { postId: string; text: string; parentId?: string | null; authorName: string }) {
+  if (isDemoId(input.postId)) return;
   const uid = await getCurrentUserId();
   if (!uid) throw new Error("Duhet të jesh i kyçur.");
   const { error } = await supabase.from("community_comments").insert({
