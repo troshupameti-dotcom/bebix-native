@@ -12,6 +12,9 @@ import AsyncStorage from "@react-native-async-storage/async-storage";
 
 /** "digital" = ora me shifra; "analog" = ora e murit, e rrumbullakët, vetëm me vija. */
 export type NightClockStyle = "digital" | "analog";
+/** Ngjyra e shkrimeve natën (ora, teksti, butonat). E kuqja e prish më pak gjumin, prandaj është parazgjedhja. */
+export const NIGHT_TEXT_COLORS = ["red", "silver", "blue", "rose"] as const;
+export type NightTextColor = (typeof NIGHT_TEXT_COLORS)[number];
 export type NightPrefs = {
   auto: boolean;
   fromHour: number;
@@ -21,10 +24,11 @@ export type NightPrefs = {
   dimLevel: number | null;
   /** Fuqia e dritës së kuqe (0–1), e mbajtur mend nga hera e fundit. */
   lightLevel: number;
+  textColor: NightTextColor;
 };
 export type NightOverride = { mode: "on" | "off"; until: string } | null;
 
-export const DEFAULT_NIGHT_PREFS: NightPrefs = { auto: true, fromHour: 22, toHour: 6, clock: "digital", dimLevel: 0.1, lightLevel: 0.4 };
+export const DEFAULT_NIGHT_PREFS: NightPrefs = { auto: true, fromHour: 22, toHour: 6, clock: "digital", dimLevel: 0.1, lightLevel: 0.4, textColor: "red" };
 /** Zgjedhjet e ndriçimit te cilësimet: shumë i ulët, i ulët, ose siç e ka telefoni. */
 export const DIM_LEVELS = [0.04, 0.1, null] as const;
 /** Zgjedhja me dorë skadon në këtë orë të mëngjesit. */
@@ -85,6 +89,7 @@ export function cleanPrefs(raw: Partial<NightPrefs> | null | undefined): NightPr
     ...r,
     dimLevel: r.dimLevel === null || unit(r.dimLevel) ? r.dimLevel : DEFAULT_NIGHT_PREFS.dimLevel,
     lightLevel: unit(r.lightLevel) ? r.lightLevel : DEFAULT_NIGHT_PREFS.lightLevel,
+    textColor: NIGHT_TEXT_COLORS.includes(r.textColor) ? r.textColor : DEFAULT_NIGHT_PREFS.textColor,
   };
 }
 
@@ -113,6 +118,10 @@ export function setNightClock(clock: NightClockStyle) {
 
 export function setNightDim(dimLevel: number | null) {
   savePrefs({ dimLevel });
+}
+
+export function setNightTextColor(textColor: NightTextColor) {
+  savePrefs({ textColor });
 }
 
 export function setNightLightLevel(lightLevel: number) {

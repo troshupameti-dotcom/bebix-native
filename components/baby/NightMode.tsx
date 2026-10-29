@@ -15,12 +15,12 @@ import {
   elapsedSeconds, finishTimer, formatElapsed, loadTimer, saveTimer, startTimer, suggestedSide, type BreastTimer,
 } from "@/lib/baby/breastTimer";
 import { Icon, type IconName } from "@/components/ui/Icon";
-import { AnalogNightClock, NIGHT_COLORS as C } from "@/components/baby/NightClock";
+import { AnalogNightClock, nightPalette, type NightPalette } from "@/components/baby/NightClock";
 import { NightLight, lightBrightness } from "@/components/baby/NightLight";
 import { NightSky } from "@/components/baby/NightSky";
 
 /** Një nga tre butonat e natës: i madh, katror, me ikonë dhe një fjalë. */
-function NightButton({ icon, label, onPress, on = false }: { icon: IconName; label: string; onPress: () => void; on?: boolean }) {
+function NightButton({ icon, label, onPress, on = false, colors: C }: { icon: IconName; label: string; onPress: () => void; on?: boolean; colors: NightPalette }) {
   return (
     <Pressable
       onPress={onPress}
@@ -59,6 +59,8 @@ export function NightMode() {
   const { t, lang } = useTranslation();
   const { state, baby } = useAppState();
   const night = useNightMode();
+  // ngjyra e shkrimeve e zgjedhur te cilësimet (e kuqja si parazgjedhje)
+  const C = nightPalette(night.prefs.textColor);
   const b = state.baby;
   const { height } = useWindowDimensions();
   const compact = height < 720;
@@ -211,7 +213,7 @@ export function NightMode() {
 
       <View style={{ flex: 1, alignItems: "center", justifyContent: "center", paddingHorizontal: 24 }}>
         {analog ? (
-          <AnalogNightClock now={now} size={compact ? 170 : 220} />
+          <AnalogNightClock now={now} size={compact ? 170 : 220} colors={C} />
         ) : (
           <Text style={{ color: C.text, fontSize: compact ? 64 : 80, fontFamily: "Inter_600SemiBold", letterSpacing: -2 }}>
             {formatTime(now.toISOString(), lang)}
@@ -235,9 +237,9 @@ export function NightMode() {
 
       {/* Tre butona, poshtë, ku arrin gishti i madh me një dorë. */}
       <View style={{ flexDirection: "row", gap: 12, paddingHorizontal: 16, paddingBottom: 16 }}>
-        <NightButton icon="spoon" label={feedLabel} onPress={feed} on={!!timer} />
-        <NightButton icon="diaper" label={t("night_btn_diaper")} onPress={diaper} />
-        <NightButton icon="moon" label={ongoing ? t("night_btn_wake") : t("night_btn_sleep")} onPress={toggleSleep} on={!!ongoing} />
+        <NightButton icon="spoon" label={feedLabel} onPress={feed} on={!!timer} colors={C} />
+        <NightButton icon="diaper" label={t("night_btn_diaper")} onPress={diaper} colors={C} />
+        <NightButton icon="moon" label={ongoing ? t("night_btn_wake") : t("night_btn_sleep")} onPress={toggleSleep} on={!!ongoing} colors={C} />
       </View>
     </SafeAreaView>
   );

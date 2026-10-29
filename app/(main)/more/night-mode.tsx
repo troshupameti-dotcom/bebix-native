@@ -5,18 +5,51 @@ import { router } from "expo-router";
 import { BackButton } from "@/components/ui/BackButton";
 import { ThemedSwitch } from "@/components/ui/ThemedSwitch";
 import { Icon } from "@/components/ui/Icon";
-import { AnalogNightClock, NIGHT_COLORS } from "@/components/baby/NightClock";
+import { AnalogNightClock, NIGHT_COLORS, NIGHT_PALETTES, nightPalette, type NightPalette } from "@/components/baby/NightClock";
 import { shadows } from "@/lib/shadows";
 import { haptics } from "@/lib/haptics";
 import { useTranslation } from "@/lib/i18n/LanguageContext";
 import { useThemeColors } from "@/lib/theme/useThemeColors";
 import { formatTime } from "@/lib/dateUtils";
 import {
-  DIM_LEVELS, hourLabel, setNightAuto, setNightClock, setNightDim, setNightHours, setNightOverride, useNightMode, type NightClockStyle,
+  DIM_LEVELS, NIGHT_TEXT_COLORS, hourLabel, setNightAuto, setNightClock, setNightDim, setNightHours, setNightOverride, setNightTextColor, useNightMode,
+  type NightClockStyle, type NightTextColor,
 } from "@/lib/baby/nightMode";
 import type { TranslationKey } from "@/lib/i18n/translations";
 
 const DIM_LABELS: Record<string, TranslationKey> = { "0.04": "night_dim_low", "0.1": "night_dim_mid", null: "night_dim_off" };
+const COLOR_LABELS: Record<NightTextColor, TranslationKey> = {
+  red: "night_color_red",
+  silver: "night_color_silver",
+  blue: "night_color_blue",
+  rose: "night_color_rose",
+};
+
+/** Pllaka e ngjyrës së shkrimit: ora e vogël në atë ngjyrë, mbi të zezën e natës. */
+function ColorOption({ color, selected, label, now }: { color: NightTextColor; selected: boolean; label: string; now: Date }) {
+  const c = NIGHT_PALETTES[color];
+  return (
+    <Pressable
+      onPress={() => {
+        haptics.select();
+        setNightTextColor(color);
+      }}
+      accessibilityRole="radio"
+      accessibilityState={{ selected }}
+      accessibilityLabel={label}
+      className={`flex-1 rounded-xl2 border-2 p-1.5 ${selected ? "border-olive" : "border-transparent"}`}
+    >
+      <View style={{ backgroundColor: c.bg, borderRadius: 14, height: 64, alignItems: "center", justifyContent: "center", borderWidth: 1, borderColor: c.line }}>
+        <Text style={{ color: c.text, fontSize: 17, fontFamily: "Inter_600SemiBold" }}>{formatTime(now.toISOString(), "sq")}</Text>
+        <View style={{ marginTop: 6, width: 26, height: 4, borderRadius: 2, backgroundColor: c.soft }} />
+      </View>
+      <View className="mt-1.5 flex-row items-center justify-center" style={{ gap: 4, minHeight: 22 }}>
+        {selected ? <Icon name="check" size={12} color="#6E7452" /> : null}
+        <Text className={`font-bodySemibold text-[12px] ${selected ? "text-olive" : "text-ink-soft"}`} numberOfLines={1}>{label}</Text>
+      </View>
+    </Pressable>
+  );
+}
 
 /** Zgjedhës ore me – / + (pa varësi të re), i njëjtë si te Njoftimet. */
 function HourStepper({ label, value, onChange }: { label: string; value: number; onChange: (h: number) => void }) {
@@ -41,8 +74,8 @@ function HourStepper({ label, value, onChange }: { label: string; value: number;
   );
 }
 
-/** Pllaka e zgjedhjes së orës, me parapamje në ngjyrat e natës. */
-function ClockOption({ style, selected, label, now }: { style: NightClockStyle; selected: boolean; label: string; now: Date }) {
+/** Pllaka e zgjedhjes së orës, me parapamje në ngjyrat e natës (ngjyra e shkrimit e zgjedhur). */
+function ClockOption({ style, selected, label, now, colors: C }: { style: NightClockStyle; selected: boolean; label: string; now: Date; colors: NightPalette }) {
   return (
     <Pressable
       onPress={() => {
@@ -53,11 +86,11 @@ function ClockOption({ style, selected, label, now }: { style: NightClockStyle; 
       accessibilityState={{ selected }}
       className={`flex-1 rounded-xl2 border-2 p-2 ${selected ? "border-olive" : "border-transparent"}`}
     >
-      <View style={{ backgroundColor: NIGHT_COLORS.bg, borderRadius: 18, height: 128, alignItems: "center", justifyContent: "center" }}>
+      <View style={{ backgroundColor: C.bg, borderRadius: 18, height: 128, alignItems: "center", justifyContent: "center" }}>
         {style === "analog" ? (
-          <AnalogNightClock now={now} size={104} />
+          <AnalogNightClock now={now} size={104} colors={C} />
         ) : (
-          <Text style={{ color: NIGHT_COLORS.text, fontSize: 34, fontFamily: "Inter_600SemiBold", letterSpacing: -0.5 }}>{formatTime(now.toISOString(), "sq")}</Text>
+          <Text style={{ color: C.text, fontSize: 34, fontFamily: "Inter_600SemiBold", letterSpacing: -0.5 }}>{formatTime(now.toISOString(), "sq")}</Text>
         )}
       </View>
       <View className="mt-2 flex-row items-center justify-center" style={{ gap: 6, minHeight: 24 }}>
@@ -76,7 +109,8 @@ function ClockOption({ style, selected, label, now }: { style: NightClockStyle; 
 export default function NightModeSettings() {
   const { t } = useTranslation();
   const night = useNightMode();
-  const { auto, fromHour, toHour, clock, dimLevel } = night.prefs;
+  const { auto, fromHour, toHour, clock, dimLevel, textColor } = night.prefs;
+  const palette = nightPalette(textColor);
   const [now, setNow] = useState(() => new Date());
   useEffect(() => {
     const id = setInterval(() => setNow(new Date()), 1000);
@@ -127,8 +161,19 @@ export default function NightModeSettings() {
         {/* 3) Pamja e orës */}
         <Text className="mb-2 mt-6 px-1 font-bodyMedium text-xs uppercase text-ink-faint">{t("night_clock_title")}</Text>
         <View style={shadows.soft} className="flex-row rounded-xl2 bg-surface p-2" accessibilityRole="radiogroup">
-          <ClockOption style="digital" selected={clock === "digital"} label={t("night_clock_digital")} now={now} />
-          <ClockOption style="analog" selected={clock === "analog"} label={t("night_clock_analog")} now={now} />
+          <ClockOption style="digital" selected={clock === "digital"} label={t("night_clock_digital")} now={now} colors={palette} />
+          <ClockOption style="analog" selected={clock === "analog"} label={t("night_clock_analog")} now={now} colors={palette} />
+        </View>
+
+        {/* 3b) Ngjyra e shkrimeve (ora, teksti, butonat) */}
+        <Text className="mb-2 mt-6 px-1 font-bodyMedium text-xs uppercase text-ink-faint">{t("night_color_title")}</Text>
+        <View style={shadows.soft} className="rounded-xl2 bg-surface p-2">
+          <View className="flex-row" style={{ gap: 4 }} accessibilityRole="radiogroup">
+            {NIGHT_TEXT_COLORS.map((color) => (
+              <ColorOption key={color} color={color} selected={textColor === color} label={t(COLOR_LABELS[color])} now={now} />
+            ))}
+          </View>
+          <Text className="mt-2 px-2 pb-1 font-body text-xs leading-5 text-ink-soft">{t("night_color_hint")}</Text>
         </View>
 
         {/* 4) Ndriçimi i ekranit natën */}

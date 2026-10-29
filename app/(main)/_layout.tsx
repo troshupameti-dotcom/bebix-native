@@ -19,7 +19,7 @@ import { useBabyRecordsSync } from "@/lib/hooks/useBabyRecordsSync";
 import { currentPath, noteTabSwitch, sectionOf } from "@/lib/navigation/history";
 import { hardwareBack } from "@/components/ui/BackButton";
 import { useNightMode } from "@/lib/baby/nightMode";
-import { NIGHT_COLORS } from "@/components/baby/NightClock";
+import { nightPalette } from "@/components/baby/NightClock";
 
 // AI-ja rri ne mes: aty ku ishte butoni rrethor, pra duart e mesuara e
 // gjejne ne te njejtin vend, dhe eshte pika me e arritshme me gisht.
@@ -150,8 +150,9 @@ export default function MainLayout() {
   if (loading || !canBrowse) return null;
 
   const nightBar = night.active && role !== "viewer" && (pathname === "/baby" || pathname === "/");
+  const nc = nightPalette(night.prefs.textColor);
   const colors = nightBar
-    ? { background: NIGHT_COLORS.bg, border: NIGHT_COLORS.line, active: NIGHT_COLORS.text, inactive: NIGHT_COLORS.faint }
+    ? { background: nc.bg, border: nc.line, active: nc.text, inactive: nc.faint }
     : { background: theme.surface, border: theme.creamLine, active: theme.ink, inactive: theme.inkFaint };
   const tabBarHeight = 58 + insets.bottom;
   const tabBarPaddingBottom = Math.max(insets.bottom, 10);

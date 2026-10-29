@@ -229,7 +229,7 @@ export default function MoreScreen() {
             icon: CloudMoon,
             color: C.indigo,
             label: t("night_title"),
-            keywords: "nate hene kuqe drite gjume ndricimi night red light",
+            keywords: "nate hene kuqe drite gjume ndricimi ngjyra shkrimi argjend blu roze night red light text colour color",
             badge: night.prefs.auto ? t("night_on") : t("night_off"),
             onPress: () => router.push("/more/night-mode"),
           },
