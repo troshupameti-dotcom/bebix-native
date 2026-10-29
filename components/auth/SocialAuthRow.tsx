@@ -3,7 +3,7 @@ import { MotiView } from "moti";
 import { useEffect, useRef, useState } from "react";
 import * as WebBrowser from "expo-web-browser";
 import * as AppleAuthentication from "expo-apple-authentication";
-import { authCallbackUrl } from "@/lib/auth/callbackUrl";
+import { authCallbackUrl, authRedirectTo } from "@/lib/auth/callbackUrl";
 import Svg, { Path } from "react-native-svg";
 import { supabase } from "@/lib/supabase/client";
 import { parseOAuthRedirect } from "@/lib/auth/oauthRedirect";
@@ -134,7 +134,7 @@ ${redirectTo}` : t("auth_redirect_blocked");
         }
       }
 
-      const redirectTo = authCallbackUrl();
+      const redirectTo = authRedirectTo();
       const { data, error } = await supabase.auth.signInWithOAuth({
         provider,
         options: {
@@ -150,7 +150,8 @@ ${redirectTo}` : t("auth_redirect_blocked");
         return;
       }
 
-      const result = await WebBrowser.openAuthSessionAsync(data.url, redirectTo);
+      // Në Expo Go, Supabase kthehet te faqja e webit, e cila e çon shfletuesin te adresa e app-it: ajo pritet këtu.
+      const result = await WebBrowser.openAuthSessionAsync(data.url, authCallbackUrl());
 
       if (result.type !== "success" || !result.url) {
         // Përdoruesi e anuloi/mbylli browser-in — s'ka nevojë për gabim.

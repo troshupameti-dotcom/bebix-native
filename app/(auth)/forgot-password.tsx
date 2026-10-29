@@ -2,7 +2,7 @@ import { useState } from "react";
 import { View, Text, TextInput, Pressable, ActivityIndicator, ScrollView } from "react-native";
 import { KeyboardSafeView } from "@/lib/ui/keyboard";
 import { SafeAreaView } from "react-native-safe-area-context";
-import { authCallbackUrl } from "@/lib/auth/callbackUrl";
+import { authRedirectTo } from "@/lib/auth/callbackUrl";
 import { supabase } from "@/lib/supabase/client";
 import { Icon } from "@/components/ui/Icon";
 import { shadows } from "@/lib/shadows";
@@ -40,7 +40,7 @@ export default function ForgotPasswordScreen() {
       // Linku i email-it pranohet vetëm në telefonin që e kërkoi (shih callback).
       await markRecoveryRequested();
       const { error: resetError } = await supabase.auth.resetPasswordForEmail(email.trim(), {
-        redirectTo: authCallbackUrl(),
+        redirectTo: authRedirectTo(),
       });
       if (resetError) throw resetError;
       setSent(true);

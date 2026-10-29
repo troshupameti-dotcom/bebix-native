@@ -74,9 +74,10 @@ describe("kategoritë te Dyqani", () => {
   });
 
   it("renditja ndjek moshën e fëmijës aktiv (8 muaj)", async () => {
-    const dob = new Date();
-    dob.setMonth(dob.getMonth() - 8);
-    dob.setDate(dob.getDate() - 1);
+    // 8 muaj e disa ditë më parë. Dita kufizohet te 28: më 30 tetor, "minus 8 muaj" jepte 30 shkurt = 2 mars,
+    // pra 7 muaj (CI-ja e natës, 29 tetor).
+    const now = new Date();
+    const dob = new Date(now.getFullYear(), now.getMonth() - 8, Math.min(now.getDate(), 28) - 1);
     await AsyncStorage.setItem("bebix_app_state_v3", JSON.stringify({ profile: { babyDob: dob.toISOString() } }));
     await renderScreen(<Shop />);
     await flush();
