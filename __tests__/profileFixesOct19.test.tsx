@@ -89,6 +89,13 @@ describe("komuniteti", () => {
     expect(router().push).toHaveBeenLastCalledWith({ pathname: "/community", params: { topic: "Gjumi" } });
   });
 
+  it("tema e ruajtur me “#” (si nga Postim i ri) del me një “#”, jo “##”", async () => {
+    const r = await renderScreen(<PostCard post={post({ tag: "#gjumiibebit" })} onOpen={() => {}} />);
+    const text = r.root.findAll((n) => typeof n.props.children === "string" && n.props.children.includes("gjumiibebit")).map((n) => n.props.children);
+    expect(text).toContain("#gjumiibebit");
+    expect(text.some((s: string) => s.startsWith("##"))).toBe(false);
+  });
+
   it("“Profili im” përdor emrin publik (si te postimet), me Postime · Ndjekës · Të ndjekur", async () => {
     const fake = fakeSupabase();
     fake.session = { user: { id: "me" } };

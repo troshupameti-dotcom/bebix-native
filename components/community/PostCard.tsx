@@ -213,11 +213,12 @@ export function PostCard({ post, onOpen, onRemoved, interactiveMedia = false, li
             else router.push({ pathname: "/community", params: { topic: tag } });
           }}
           accessibilityRole="button"
-          accessibilityLabel={`#${post.tag}`}
+          accessibilityLabel={`#${post.tag.replace(/^#/, "")}`}
           hitSlop={6}
           className="mt-2.5 self-start rounded-full bg-cream-soft px-3 py-1"
         >
-          <Text className="font-bodyMedium text-[12px] text-ink-soft">{`#${post.tag}`}</Text>
+          {/* Temat ruhen me "#" ("#gjumiibebit"): pa këtë dilte "##gjumiibebit". */}
+          <Text className="font-bodyMedium text-[12px] text-ink-soft">{`#${post.tag.replace(/^#/, "")}`}</Text>
         </Pressable>
       ) : null}
 
