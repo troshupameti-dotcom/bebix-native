@@ -51,7 +51,7 @@ const DOCS: { title: string; body: string }[] = [
       "PSE\n" +
       "Për të ta ofruar shërbimin që kërkon: ruajtja e historikut të bebit, njoftimet që zgjedh, komuniteti dhe dërgimi i porosive. Të dhënat e bebit i përpunojmë me pëlqimin tënd; porositë, sepse na duhen për të përmbushur blerjen.\n\n" +
       "ME KË NDAHEN\n" +
-      "Nuk i shesim të dhënat tua, asnjëherë. I ndajmë vetëm me ata që na ndihmojnë ta ofrojmë shërbimin: Supabase (ruajtja, BE), Vercel (faqja e webit; regjistrat teknikë si adresa IP), Expo (dërgimi i njoftimeve), Sentry (raportet e rrëzimeve), PostHog (statistikat e përdorimit të përshkruara më lart; serverë në SHBA), Resend (email-et e konfirmimit dhe të rikthimit të fjalëkalimit), Anthropic (asistenti AI: vetëm pyetjet që i bën dhe mosha e fëmijës, kur e përdor dhe pasi jep pëlqimin; serverë në SHBA), Stripe (vetëm kur zgjedh të paguash me kartë: pagesa bëhet në faqen e Stripe, ndaj numrin e kartës nuk e shohim as e ruajmë ne), Google ose Apple (vetëm kur zgjedh të hysh me ta), dhe partnerin që të dërgon porosinë — atij i shkojnë emri, telefoni dhe adresa, pa të cilat dërgesa nuk bëhet dot. Asgjë prej të dhënave të bebit nuk u jepet partnerëve. Kur fton një prind tjetër te Familja, ai sheh dhe shton të dhënat e bebit njësoj si ti.\n\n" +
+      "Nuk i shesim të dhënat tua, asnjëherë. I ndajmë vetëm me ata që na ndihmojnë ta ofrojmë shërbimin: Supabase (ruajtja, BE), Vercel (faqja e webit; regjistrat teknikë si adresa IP), Expo (dërgimi i njoftimeve), Sentry (raportet e rrëzimeve), PostHog (statistikat e përdorimit të përshkruara më lart; serverë në SHBA), Resend (email-et e konfirmimit dhe të rikthimit të fjalëkalimit), Anthropic (asistenti AI: vetëm pyetjet që i bën dhe mosha e fëmijës, kur e përdor dhe pasi jep pëlqimin; serverë në SHBA), Stripe (vetëm kur zgjedh të paguash me kartë: pagesa bëhet në faqen e Stripe, ndaj numrin e kartës nuk e shohim as e ruajmë ne), Google ose Apple (vetëm kur zgjedh të hysh me ta), dhe korrierin që ta sjell porosinë — atij i shkojnë emri, telefoni dhe adresa, pa të cilat dërgesa nuk bëhet dot. Asgjë prej të dhënave të bebit nuk i jepet korrierit. Kur fton një prind tjetër te Familja, ai sheh dhe shton të dhënat e bebit njësoj si ti.\n\n" +
       "SA KOHË\n" +
       "Të dhënat e llogarisë dhe të bebit rrinë derisa ta fshish llogarinë. Porositë ruhen edhe pas fshirjes, të anonimizuara, sepse na kërkohen për kontabilitet.\n\n" +
       "TË DREJTAT E TUA\n" +
@@ -68,8 +68,8 @@ const DOCS: { title: string; body: string }[] = [
       "• Lidhja e telefonit me njoftimet.\n" +
       "• Vetë llogaria.\n\n" +
       "MBETET:\n" +
-      "Porositë e bëra te dyqani, si regjistrim tregtar. Emri, telefoni dhe adresa hiqen prej tyre, pra porosia nuk lidhet më me ty; mbetet vetëm çfarë u shit, për sa dhe kur. Kjo na kërkohet nga kontabiliteti dhe nga partnerët që i dërguan.\n\n" +
-      "Nëse llogaria jote është e lidhur me panelin e adminit ose me një partner, fshirja bllokohet për siguri — shkruajna te " + SUPPORT_EMAIL + ". Nëse s'ke akses te app-i, po ashtu shkruajna dhe e bëjmë ne.",
+      "Porositë e bëra te dyqani, si regjistrim tregtar. Emri, telefoni dhe adresa hiqen prej tyre, pra porosia nuk lidhet më me ty; mbetet vetëm çfarë u shit, për sa dhe kur. Kjo na kërkohet nga kontabiliteti.\n\n" +
+      "Nëse llogaria jote është e lidhur me panelin e adminit, fshirja bllokohet për siguri — shkruajna te " + SUPPORT_EMAIL + ". Nëse s'ke akses te app-i, po ashtu shkruajna dhe e bëjmë ne.",
   },
   {
     title: "Të dhënat e fëmijës",
@@ -115,7 +115,7 @@ const DOCS: { title: string; body: string }[] = [
     title: "Dyqani, dërgesa dhe kthimet",
     body:
       "Porositë paguhen në dorëzim. Kostoja e dërgesës konfirmohet kur të kontaktojmë për porosinë, përpara se ajo të nisë.\n\n" +
-      "Produktet shiten nga Bebix ose nga partnerë të listuar; partneri që e dërgon merr emrin, telefonin dhe adresën tënde, vetëm për dërgesën.\n\n" +
+      "Produktet i shet Bebix, me mallra nga distributorë të autorizuar; korrieri që e sjell porosinë merr emrin, telefonin dhe adresën tënde, vetëm për dërgesën.\n\n" +
       "Nëse produkti arrin i dëmtuar, i gabuar ose nuk përputhet me përshkrimin, shkruajna te " + SUPPORT_EMAIL + " brenda 14 ditëve nga marrja dhe e zgjidhim — zëvendësim ose kthim parash.\n\n" +
       "Statusin e porosisë e ndjek te Dyqani → Porositë e mia.",
   },

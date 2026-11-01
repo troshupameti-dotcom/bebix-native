@@ -13,7 +13,6 @@ const FILTERS: { key: ProductFilter; label: string }[] = [
   { key: "", label: "Të gjitha" },
   { key: "active", label: "Aktive" },
   { key: "hidden", label: "Të fshehura" },
-  { key: "partner", label: "Nga partnerët" },
   { key: "low", label: "Stok i ulët" },
 ];
 

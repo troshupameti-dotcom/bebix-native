@@ -44,15 +44,6 @@ export const REVIEW_STATUS: Option[] = [
   { key: "rejected", label: "Refuzuar", tone: TONES.red },
 ];
 
-export const PARTNER_STATUS: Option[] = [...REVIEW_STATUS, { key: "suspended", label: "Pezulluar", tone: TONES.orange }];
-
-export const PAYOUT_STATUS: Option[] = [
-  { key: "pending", label: "Në pritje", tone: TONES.gray },
-  { key: "processing", label: "Në proces", tone: TONES.orange },
-  { key: "paid", label: "Paguar", tone: TONES.green },
-  { key: "failed", label: "Dështuar", tone: TONES.red },
-];
-
 export const REPORT_REASON: Record<string, string> = {
   spam: "Spam",
   harassment: "Ngacmim",

@@ -358,7 +358,7 @@ export default function MoreScreen() {
               <Pressable
                 onPress={() => router.push("/more/admin")}
                 accessibilityRole="button"
-                accessibilityLabel="Paneli i adminit: porositë, produktet, ekspertët, raportimet dhe partnerët"
+                accessibilityLabel="Paneli i adminit: porositë, produktet, ekspertët, raportimet dhe përrallat"
                 style={({ pressed }) => [shadows.soft, { opacity: pressed ? 0.9 : 1 }]}
                 className="mx-4 mb-5 flex-row items-center rounded-2xl bg-surface p-4"
               >
@@ -367,7 +367,7 @@ export default function MoreScreen() {
                 </View>
                 <View className="flex-1">
                   <Text className="font-bodySemibold text-sm text-ink">Paneli i adminit</Text>
-                  <Text className="mt-0.5 font-body text-xs text-ink-soft">Porositë, produktet, ekspertët, raportimet, partnerët</Text>
+                  <Text className="mt-0.5 font-body text-xs text-ink-soft">Porositë, produktet, ekspertët, raportimet, përrallat</Text>
                 </View>
                 <ChevronRight size={18} color={theme.inkFaint} strokeWidth={2} />
               </Pressable>

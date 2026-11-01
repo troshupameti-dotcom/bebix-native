@@ -27,8 +27,6 @@ export type Dashboard = {
   cancelled30: number;
   cancelledPct30: number;
   pendingOrders: number;
-  pendingProducts: number;
-  pendingPartners: number;
   pendingExperts: number;
   openReports: number;
   /** Përralla nga Claude që presin aprovimin. */
@@ -37,11 +35,9 @@ export type Dashboard = {
 };
 
 export async function fetchDashboard(): Promise<Dashboard> {
-  const [summary, top, products, partners, experts, reports, aiReports, drafts] = await Promise.all([
+  const [summary, top, experts, reports, aiReports, drafts] = await Promise.all([
     supabase.from("admin_sales_summary").select("*").maybeSingle(),
     supabase.from("admin_top_products").select("*").order("revenue", { ascending: false }).limit(8),
-    supabase.from("products").select("id", { count: "exact", head: true }).eq("approval_status", "pending").not("created_by_partner", "is", null),
-    supabase.from("partners").select("id", { count: "exact", head: true }).eq("status", "pending"),
     supabase.from("expert_applications").select("id", { count: "exact", head: true }).eq("status", "pending"),
     supabase.from("community_reports").select("id", { count: "exact", head: true }).eq("status", "open"),
     // Pa migrimin e AI-së tabela mungon: numri del 0.
@@ -60,8 +56,6 @@ export async function fetchDashboard(): Promise<Dashboard> {
     cancelled30: num(s.cancelled_30d),
     cancelledPct30: num(s.cancelled_pct_30d),
     pendingOrders: num(s.pending_now),
-    pendingProducts: products.count ?? 0,
-    pendingPartners: partners.count ?? 0,
     pendingExperts: experts.count ?? 0,
     openReports: (reports.count ?? 0) + (aiReports.error ? 0 : aiReports.count ?? 0),
     storyDrafts: drafts.error ? 0 : drafts.count ?? 0,
@@ -158,64 +152,10 @@ export async function setPaymentStatus(id: string, status: string): Promise<void
   fail(error);
 }
 
-// ---- Produktet për aprovim ----
-
-export type ProductRequest = {
-  id: string;
-  name: string;
-  description: string | null;
-  price: number;
-  compareAt: number | null;
-  images: string[];
-  createdAt: string;
-  freeDelivery: boolean;
-  brand: string | null;
-  category: string | null;
-  partner: string | null;
-  stock: number | null;
-  sku: string | null;
-};
-
-export async function fetchProductRequests(): Promise<ProductRequest[]> {
-  const { data, error } = await supabase
-    .from("products")
-    .select(
-      "id, name, description, price, compare_at_price, image_url, gallery_urls, created_at, free_delivery, brands(name), categories(label), partners:created_by_partner(company_name), partner_products(stock, sku)"
-    )
-    .eq("approval_status", "pending")
-    .not("created_by_partner", "is", null)
-    .order("created_at", { ascending: true });
-  fail(error);
-  return ((data ?? []) as Record<string, any>[]).map((p) => {
-    const pp = Array.isArray(p.partner_products) ? p.partner_products[0] : null;
-    return {
-      id: p.id,
-      name: p.name,
-      description: p.description ?? null,
-      price: num(p.price),
-      compareAt: p.compare_at_price == null ? null : num(p.compare_at_price),
-      images: [p.image_url, ...(p.gallery_urls ?? [])].filter((u): u is string => !!u).slice(0, 4),
-      createdAt: p.created_at,
-      freeDelivery: !!p.free_delivery,
-      brand: p.brands?.name ?? null,
-      category: p.categories?.label ?? null,
-      partner: p.partners?.company_name ?? null,
-      stock: pp?.stock ?? null,
-      sku: pp?.sku ?? null,
-    };
-  });
-}
-
-/** Aprovon (shfaqet menjëherë në dyqan) ose refuzon me arsye që e sheh partneri. */
-export async function reviewProduct(id: string, approve: boolean, reason: string | null): Promise<void> {
-  const { error } = await supabase.rpc("admin_review_product", { p_product_id: id, p_approve: approve, p_reason: approve ? null : reason });
-  fail(error);
-}
-
 // ---- Produktet ----
 
 export const PRODUCTS_PAGE = 25;
-export type ProductFilter = "" | "active" | "hidden" | "partner" | "low";
+export type ProductFilter = "" | "active" | "hidden" | "low";
 
 export type AdminProduct = {
   id: string;
@@ -236,7 +176,6 @@ export async function fetchProducts(opts: { filter: ProductFilter; q: string; li
     .select("id, name, price, stock, is_active, image_url, approval_status, created_by_partner, brands(name), categories(label)", { count: "exact" });
   if (opts.filter === "active") query = query.eq("is_active", true);
   if (opts.filter === "hidden") query = query.eq("is_active", false);
-  if (opts.filter === "partner") query = query.not("created_by_partner", "is", null);
   if (opts.filter === "low") query = query.lte("stock", 5).eq("is_active", true);
   const term = opts.q.trim().replace(/[%,()]/g, " ");
   if (term) query = query.ilike("name", `%${term}%`);
@@ -537,119 +476,6 @@ export async function fetchAiReports(tab: ReportTab): Promise<AiReport[] | null>
 
 export async function markAiReportReviewed(id: string): Promise<void> {
   const { error } = await supabase.from("ai_reports").update({ status: "reviewed" }).eq("id", id);
-  fail(error);
-}
-
-// ---- Partnerët ----
-
-export type Partner = {
-  id: string;
-  company: string;
-  contact: string | null;
-  email: string | null;
-  phone: string | null;
-  place: string;
-  website: string | null;
-  category: string | null;
-  description: string | null;
-  status: string;
-  appliedAt: string;
-  direct: boolean;
-  productCount: number;
-};
-
-export async function fetchPartners(status: string): Promise<Partner[]> {
-  let query = supabase
-    .from("partners")
-    .select("id, company_name, contact_person, email, phone, city, country, website, business_category, description, status, applied_at, can_publish_directly, partner_products(id)")
-    .order("applied_at", { ascending: false });
-  if (status) query = query.eq("status", status);
-  const { data, error } = await query;
-  fail(error);
-  return ((data ?? []) as Record<string, any>[]).map((p) => ({
-    id: p.id,
-    company: p.company_name ?? "—",
-    contact: p.contact_person ?? null,
-    email: p.email ?? null,
-    phone: p.phone ?? null,
-    place: [p.city, p.country].filter(Boolean).join(", "),
-    website: p.website ?? null,
-    category: p.business_category ?? null,
-    description: p.description ?? null,
-    status: p.status ?? "pending",
-    appliedAt: p.applied_at,
-    direct: !!p.can_publish_directly,
-    productCount: Array.isArray(p.partner_products) ? p.partner_products.length : 0,
-  }));
-}
-
-export async function updatePartner(id: string, values: { status?: string; can_publish_directly?: boolean }): Promise<void> {
-  const body: Record<string, unknown> = { ...values };
-  if (values.status === "approved") {
-    const { data: auth } = await supabase.auth.getUser();
-    body.approved_at = new Date().toISOString();
-    body.approved_by = auth.user?.id ?? null;
-  }
-  const { error } = await supabase.from("partners").update(body).eq("id", id);
-  fail(error);
-}
-
-// ---- Pagesat për partnerët ----
-
-export type Payout = {
-  id: string;
-  amount: number;
-  status: string;
-  periodStart: string | null;
-  periodEnd: string | null;
-  reference: string | null;
-  paidAt: string | null;
-  createdAt: string;
-  partner: string | null;
-};
-
-export async function fetchPayouts(): Promise<{ payouts: Payout[]; partners: Choice[]; owed: number }> {
-  const [payoutsRes, partnersRes] = await Promise.all([
-    supabase
-      .from("partner_payouts")
-      .select("id, amount, status, period_start, period_end, reference, paid_at, created_at, partners(company_name)")
-      .order("created_at", { ascending: false })
-      .limit(200),
-    supabase.from("partners").select("id, company_name").eq("status", "approved").order("company_name"),
-  ]);
-  fail(payoutsRes.error);
-  const payouts = ((payoutsRes.data ?? []) as Record<string, any>[]).map((p) => ({
-    id: p.id,
-    amount: num(p.amount),
-    status: p.status ?? "pending",
-    periodStart: p.period_start ?? null,
-    periodEnd: p.period_end ?? null,
-    reference: p.reference ?? null,
-    paidAt: p.paid_at ?? null,
-    createdAt: p.created_at,
-    partner: p.partners?.company_name ?? null,
-  }));
-  const owed = payouts.filter((p) => p.status !== "paid" && p.status !== "failed").reduce((s, p) => s + p.amount, 0);
-  const partners = ((partnersRes.data ?? []) as { id: string; company_name: string }[]).map((p) => ({ id: p.id, label: p.company_name }));
-  return { payouts, partners, owed };
-}
-
-export async function createPayout(input: { partnerId: string; amount: number; start: string | null; end: string | null; reference: string }): Promise<void> {
-  const { error } = await supabase.from("partner_payouts").insert({
-    partner_id: input.partnerId,
-    amount: input.amount,
-    period_start: input.start,
-    period_end: input.end,
-    reference: input.reference.trim() || null,
-    status: "pending",
-  });
-  fail(error);
-}
-
-export async function setPayoutStatus(id: string, status: string): Promise<void> {
-  const patch: Record<string, unknown> = { status };
-  if (status === "paid") patch.paid_at = new Date().toISOString();
-  const { error } = await supabase.from("partner_payouts").update(patch).eq("id", id);
   fail(error);
 }
 

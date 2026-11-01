@@ -1,19 +1,17 @@
 /**
- * Paneli i adminit në app: shfaqet vetëm për llogaritë te tabela `admins`, ekranet mbrohen, porositë dhe produktet
- * për aprovim punojnë me të njëjtat veprime si paneli i webit.
+ * Paneli i adminit në app: shfaqet vetëm për llogaritë te tabela `admins`, ekranet mbrohen, porositë punojnë me
+ * të njëjtat veprime si paneli i webit. Bebix punon vetëm me distributorë: s'ka më partnerë, pagesa partnerësh
+ * apo produkte për aprovim.
  */
 import { fakeSupabase, renderScreen, visibleText } from "./helpers/screen";
 import { act, type ReactTestInstance } from "react-test-renderer";
 import More from "@/app/(main)/more/index";
 import AdminOrders from "@/app/(main)/more/admin/orders";
-import AdminRequests from "@/app/(main)/more/admin/requests";
 import AdminHome from "@/app/(main)/more/admin/index";
 import AdminProducts from "@/app/(main)/more/admin/products";
 import AdminProductEdit from "@/app/(main)/more/admin/product/[id]";
 import AdminExperts from "@/app/(main)/more/admin/experts";
 import AdminReports from "@/app/(main)/more/admin/reports";
-import AdminPartners from "@/app/(main)/more/admin/partners";
-import AdminPayouts from "@/app/(main)/more/admin/payouts";
 import { setParams } from "./helpers/screen";
 import { __resetAdminCacheForTests } from "@/lib/admin/access";
 import { dayLabel, periodRange } from "@/lib/admin/labels";
@@ -111,21 +109,6 @@ describe("fotoja e produktit te porosia", () => {
   });
 });
 
-describe("produktet për aprovim", () => {
-  it("“Aprovo” thërret admin_review_product si paneli i webit", async () => {
-    const fake = fakeSupabase();
-    fake.tables.admins = { user_id: "me" };
-    fake.tables.products = [{ id: "x1", name: "Biberon", price: 9.9, image_url: null, gallery_urls: [], created_at: ORDER.created_at, partners: { company_name: "Baby Shop" }, partner_products: [{ stock: 4, sku: "B1" }] }];
-    fake.rpc.admin_review_product = () => null;
-    const r = await renderScreen(<AdminRequests />);
-    await settle();
-    expect(visibleText(r.root).join(" ")).toContain("nga Baby Shop");
-    await press(r.root, "Aprovo");
-    await settle();
-    expect(fake.calls.find((c) => c.name === "admin_review_product")?.args).toEqual({ p_product_id: "x1", p_approve: true, p_reason: null });
-  });
-});
-
 describe("periudhat", () => {
   it("Sot dhe Dje sipas ditës së telefonit", () => {
     const now = new Date(2026, 9, 19, 2, 0);
@@ -139,12 +122,11 @@ describe("periudhat", () => {
 });
 
 describe("çdo ekran i panelit hapet me të dhëna", () => {
-  it("pasqyra, produktet, ndryshimi, ekspertët, raportimet, partnerët dhe pagesat", async () => {
+  it("pasqyra, produktet, ndryshimi, ekspertët dhe raportimet", async () => {
     const fake = fakeSupabase();
     fake.tables.admins = { user_id: "me" };
     fake.tables.admin_sales_summary = { revenue_30d: 1200, revenue_prev_30d: 1000, orders_30d: 40, orders_prev_30d: 32, avg_order_value_30d: 30, cancelled_30d: 2, cancelled_pct_30d: 5, pending_now: 3 };
     fake.tables.admin_top_products = [{ product_id: "p1", product_name: "Pelena", units: 12, revenue: 120 }];
-    fake.tables.partners = [{ id: "pa1", company_name: "Baby Shop", status: "pending", applied_at: ORDER.created_at, can_publish_directly: false, partner_products: [] }];
     fake.tables.expert_applications = [{ id: "e1", user_id: "u1", full_name: "Dr. Arta", specialization: "Pediatër", experience_years: 8, status: "pending", created_at: ORDER.created_at }];
     fake.tables.community_experts = [{ id: "ce1", name: "Dr. Besa", kind: "Pediatër", user_id: "u2" }];
     fake.tables.community_specialties = [{ key: "pediatri", label: "Pediatri", emoji: "" }];
@@ -152,11 +134,12 @@ describe("çdo ekran i panelit hapet me të dhëna", () => {
     fake.tables.products = [{ id: "p1", name: "Pelena", price: 10, stock: 3, is_active: true, image_url: null, created_by_partner: null }];
     fake.tables.brands = [{ id: "b1", name: "Pampers" }];
     fake.tables.categories = [{ id: "c1", label: "Kujdesi" }];
-    fake.tables.partner_payouts = [{ id: "pp1", amount: 50, status: "pending", created_at: ORDER.created_at, partners: { company_name: "Baby Shop" } }];
 
     const home = await renderScreen(<AdminHome />);
     await settle();
     expect(visibleText(home.root)).toEqual(expect.arrayContaining(["€1200.00", "+20% kundrejt 30 ditëve para", "Porositë", "Pelena"]));
+    // Vetëm distributorë: paneli s'ka më partnerë, pagesat e tyre apo produkte për aprovim.
+    for (const gone of ["Partnerët", "Pagesat e partnerëve", "Produkte për aprovim"]) expect(visibleText(home.root)).not.toContain(gone);
 
     const products = await renderScreen(<AdminProducts />);
     await settle();
@@ -182,14 +165,5 @@ describe("çdo ekran i panelit hapet me të dhëna", () => {
     expect(reportsText).toContain("Asistenti AI");
     expect(reportsText).toContain("E rrezikshme për shëndetin");
     expect(reportsText).toContain("Rreth 14 orë.");
-
-    const partners = await renderScreen(<AdminPartners />);
-    await settle();
-    expect(visibleText(partners.root).join(" ")).toContain("Baby Shop");
-
-    fake.tables.partners = [{ id: "pa1", company_name: "Baby Shop" }];
-    const payouts = await renderScreen(<AdminPayouts />);
-    await settle();
-    expect(visibleText(payouts.root).join(" ")).toContain("Mbetet për t'u paguar: €50.00");
   });
 });
