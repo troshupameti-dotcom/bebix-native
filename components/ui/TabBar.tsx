@@ -5,7 +5,6 @@ import Animated, {
   useAnimatedStyle,
   useReducedMotion,
   useSharedValue,
-  withDelay,
   withSequence,
   withSpring,
   withTiming,
@@ -27,10 +26,9 @@ type Props = BottomTabBarProps & {
 const ICON = 22;
 // Rrethi që mbush ikonën rritet nga qendra deri sa mbulon edhe qoshet e katrorit (diagonalja ≈ 31).
 const FILL_MAX = 32;
-const DOT = 4;
 
 /**
- * Shiriti poshtë. Ikona e prekur mbushet me ngjyrë nga qendra, "kërcen" pak dhe merr një pikë poshtë saj.
+ * Shiriti poshtë. Ikona e prekur mbushet me ngjyrë nga qendra, "kërcen" pak.
  * Shiriti i gatshëm i React Navigation e vizaton çdo ikonë dy herë (aktive/joaktive) dhe i ndërron me
  * opacitet, ndaj ikona s'e di kur preket; prandaj shiriti është i yni. Prekja kalon nga e njëjta ngjarje
  * `tabPress`, kështu që mbrojtja e mysafirit te layout-i dhe "mbrapa" punojnë si më parë.
@@ -105,7 +103,6 @@ function TabItem({
   const reduceMotion = useReducedMotion();
   const fill = useSharedValue(focused ? 1 : 0);
   const pop = useSharedValue(1);
-  const dot = useSharedValue(focused ? 1 : 0);
 
   // Në hapjen e parë skeda aktive shfaqet gati e mbushur, pa animacion; animacioni vjen vetëm me ndërrimin.
   const first = useRef(true);
@@ -117,7 +114,6 @@ function TabItem({
     const to = focused ? 1 : 0;
     if (reduceMotion) {
       fill.value = to;
-      dot.value = to;
       pop.value = 1;
       return;
     }
@@ -127,13 +123,11 @@ function TabItem({
         withTiming(1.2, { duration: 130, easing: Easing.out(Easing.quad) }),
         withSpring(1, { damping: 8, stiffness: 260, mass: 0.6 })
       );
-      dot.value = withDelay(140, withSpring(1, { damping: 10, stiffness: 240 }));
     } else {
       fill.value = withTiming(0, { duration: 180, easing: Easing.in(Easing.quad) });
-      dot.value = withTiming(0, { duration: 140 });
       pop.value = withTiming(1, { duration: 120 });
     }
-  }, [focused, reduceMotion, fill, dot, pop]);
+  }, [focused, reduceMotion, fill, pop]);
 
   const popStyle = useAnimatedStyle(() => ({ transform: [{ scale: pop.value }] }));
   // Rrethi prerës rritet nga qendra e ikonës; ikona e mbushur brenda tij rri në vend (zhvendoset sa rrethi).
@@ -145,7 +139,6 @@ function TabItem({
     const d = fill.value * FILL_MAX;
     return { left: (d - ICON) / 2, top: (d - ICON) / 2 };
   });
-  const dotStyle = useAnimatedStyle(() => ({ opacity: dot.value, transform: [{ scale: dot.value }] }));
 
   const tint = focused ? colors.active : colors.inactive;
 
@@ -170,13 +163,10 @@ function TabItem({
           </Animated.View>
         </View>
       </Animated.View>
-      <Animated.View
-        style={[{ width: DOT, height: DOT, borderRadius: DOT / 2, marginTop: 2, backgroundColor: colors.active }, dotStyle]}
-      />
       <Text
         numberOfLines={1}
         maxFontSizeMultiplier={1.2}
-        style={{ marginTop: 3, fontSize: 10.5, lineHeight: 13, fontFamily: "Inter_500Medium", includeFontPadding: false, color: tint }}
+        style={{ marginTop: 4, fontSize: 10.5, lineHeight: 13, fontFamily: "Inter_500Medium", includeFontPadding: false, color: tint }}
       >
         {label}
       </Text>

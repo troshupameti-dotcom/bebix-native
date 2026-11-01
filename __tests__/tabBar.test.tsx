@@ -1,5 +1,5 @@
 /**
- * Shiriti poshtë (components/ui/TabBar.tsx): ikona e prekur mbushet nga qendra, kërcen dhe merr një pikë.
+ * Shiriti poshtë (components/ui/TabBar.tsx): ikona e prekur mbushet nga qendra dhe kërcen pak.
  * Këtu provohet sjellja: radha e skedave, skeda e zgjedhur për lexuesin e ekranit, dhe që prekja kalon nga
  * ngjarja `tabPress` (mbrojtja e mysafirit te layout-i mund ta ndalë).
  */

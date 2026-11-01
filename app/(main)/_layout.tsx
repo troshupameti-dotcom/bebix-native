@@ -174,7 +174,7 @@ export default function MainLayout() {
         // Mysafiri s'ka tab-e të tjera: "prapa" nga Dyqani s'duhet ta çojë te Bebi.
         backBehavior={isAuthenticated ? "firstRoute" : "none"}
         screenOptions={{ headerShown: false }}
-        // Shiriti ynë: ikona e prekur mbushet nga qendra, kërcen dhe merr një pikë (components/ui/TabBar.tsx).
+        // Shiriti ynë: ikona e prekur mbushet nga qendra dhe kërcen pak (components/ui/TabBar.tsx).
         tabBar={(props) => <TabBar {...props} items={TABS} colors={colors} />}
       >
         {TABS.map((tab) => (
