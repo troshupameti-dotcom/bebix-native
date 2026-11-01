@@ -120,7 +120,6 @@ export function ShopSuggestionCard({ placement = "home" }: { placement?: "home" 
     }
     // Një prekje: të njëjtat pelena, e njëjta sasi, drejt te përfundimi i porosisë.
     addToCart({ id: lastItem.id, name: lastItem.name, price: lastItem.price, imageUrl: lastItem.imageUrl ?? null, icon: lastItem.icon ?? "cube" }, lastItem.qty);
-    showToast(t("diaper_stock_added"));
     router.push("/shop/checkout", { withAnchor: true });
   }
 

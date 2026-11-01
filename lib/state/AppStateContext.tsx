@@ -19,6 +19,7 @@ import {
 import { supabase } from "@/lib/supabase/client";
 import { applyProfileToMedical, type ProfileMedical } from "@/lib/baby/medicalSync";
 import { cleanupSeedBabyData } from "@/lib/state/seedCleanup";
+import { announceCartAdded } from "@/lib/shop/cartAdded";
 import { clampGap, migrateNotificationPrefs, type NotificationKey } from "@/lib/notifications/catalog";
 import {
   AppState,
@@ -615,7 +616,11 @@ function buildValue(state: AppState, dispatch: React.Dispatch<Action>) {
     addMemory: (memory: MemoryPhoto) => dispatch({ type: "ADD_MEMORY", memory }),
     removeMemory: (id: string) => dispatch({ type: "REMOVE_MEMORY", id }),
     bumpCart: (delta = 1) => dispatch({ type: "BUMP_CART", delta }),
-    addToCart: (item: Omit<CartItem, "qty">, qty = 1) => dispatch({ type: "ADD_TO_CART", item: { ...item, qty } }),
+    // Çdo shtim në shportë luan animacionin e karrocës (components/shop/CartAddedHost.tsx).
+    addToCart: (item: Omit<CartItem, "qty">, qty = 1) => {
+      dispatch({ type: "ADD_TO_CART", item: { ...item, qty } });
+      announceCartAdded();
+    },
     removeFromCart: (id: string) => dispatch({ type: "REMOVE_FROM_CART", id }),
     updateCartQty: (id: string, qty: number) => dispatch({ type: "UPDATE_CART_QTY", id, qty }),
     /** Çmimet/emrat e rifreskuar nga serveri para arkëtimit. */

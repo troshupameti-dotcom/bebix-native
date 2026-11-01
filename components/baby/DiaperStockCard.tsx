@@ -6,7 +6,6 @@ import { shadows } from "@/lib/shadows";
 import { useTones } from "@/lib/theme/tone";
 import { haptics } from "@/lib/haptics";
 import { useAppState } from "@/lib/state/AppStateContext";
-import { useToast } from "@/lib/toast/ToastContext";
 import { useTranslation } from "@/lib/i18n/LanguageContext";
 import { estimateDiaperStock, loadDiaperStock, saveDiaperStock, type DiaperStock } from "@/lib/baby/diaperStock";
 import { fetchAllOrders, lastDiaperItem } from "@/lib/shop/reorder";
@@ -23,7 +22,6 @@ export function DiaperStockCard({ entries }: { entries: { at: string }[] }) {
   const { t } = useTranslation();
   const router = useRouter();
   const { addToCart } = useAppState();
-  const { showToast } = useToast();
   const [stock, setStock] = useState<DiaperStock | null>(null);
   const [loaded, setLoaded] = useState(false);
   const [editing, setEditing] = useState(false);
@@ -69,7 +67,6 @@ export function DiaperStockCard({ entries }: { entries: { at: string }[] }) {
     haptics.select();
     if (lastItem) {
       addToCart({ id: lastItem.id, name: lastItem.name, price: lastItem.price, imageUrl: lastItem.imageUrl ?? null, icon: lastItem.icon ?? "cube" }, lastItem.qty);
-      showToast(t("diaper_stock_added"));
       // Një prekje: drejt te përfundimi i porosisë, jo te shporta.
       router.push("/shop/checkout", { withAnchor: true });
     } else {

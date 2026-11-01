@@ -276,7 +276,6 @@ export default function ProductDetailsScreen() {
               icon: product.icon,
             });
             track("added_to_cart", { product_id: product.id, price: product.price });
-            showToast(t("prod_added_to_cart", { name: product.name }));
           }}
           className="flex-1 bg-surface border border-olive rounded-xl2 py-3.5 items-center mr-3"
         >

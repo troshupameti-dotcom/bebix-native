@@ -17,6 +17,7 @@ import { Poppins_700Bold } from "@expo-google-fonts/poppins/700Bold";
 import { LanguageProvider } from "@/lib/i18n/LanguageContext";
 import { AppStateProvider } from "@/lib/state/AppStateContext";
 import { ToastProvider } from "@/lib/toast/ToastContext";
+import { CartAddedHost } from "@/components/shop/CartAddedHost";
 import { useThemeColors } from "@/lib/theme/useThemeColors";
 import { recordPath } from "@/lib/navigation/history";
 import { registerNavigation } from "@/components/ui/BackButton";
@@ -82,6 +83,7 @@ function RootLayout() {
           <WidgetBridge />
           <ToastProvider>
             <ThemedStack />
+            <CartAddedHost />
           </ToastProvider>
         </AppStateProvider>
       </LanguageProvider>
