@@ -2,8 +2,7 @@ import { log } from "@/lib/log";
 import { useEffect, useRef, useState } from "react";
 import { Tabs, router, usePathname } from "expo-router";
 import { BackHandler, View } from "react-native";
-import { useSafeAreaInsets } from "react-native-safe-area-context";
-import { Icon, IconName } from "@/components/ui/Icon";
+import { TabBar, type TabGlyph } from "@/components/ui/TabBar";
 import { useTranslation } from "@/lib/i18n/LanguageContext";
 import { TranslationKey } from "@/lib/i18n/translations";
 import { useOnboardingStatus } from "@/lib/hooks/useOnboardingStatus";
@@ -23,7 +22,7 @@ import { nightPalette } from "@/components/baby/NightClock";
 
 // AI-ja rri ne mes: aty ku ishte butoni rrethor, pra duart e mesuara e
 // gjejne ne te njejtin vend, dhe eshte pika me e arritshme me gisht.
-const TABS: { name: string; icon: IconName; labelKey: TranslationKey }[] = [
+const TABS: { name: string; icon: TabGlyph; labelKey: TranslationKey }[] = [
   { name: "baby", icon: "baby", labelKey: "nav_baby" },
   { name: "shop", icon: "shop", labelKey: "nav_shop" },
   { name: "ai-chat", icon: "sparkle", labelKey: "nav_ai" },
@@ -52,7 +51,6 @@ export default function MainLayout() {
   const { t, lang } = useTranslation();
   const { loading, isAuthenticated, isGuest } = useOnboardingStatus();
   const theme = useThemeColors();
-  const insets = useSafeAreaInsets();
 
   const canBrowse = isAuthenticated || isGuest;
 
@@ -154,8 +152,6 @@ export default function MainLayout() {
   const colors = nightBar
     ? { background: nc.bg, border: nc.line, active: nc.text, inactive: nc.faint }
     : { background: theme.surface, border: theme.creamLine, active: theme.ink, inactive: theme.inkFaint };
-  const tabBarHeight = 58 + insets.bottom;
-  const tabBarPaddingBottom = Math.max(insets.bottom, 10);
 
   function guardTabPress(tabName: string, e: { preventDefault: () => void }) {
     if (isAuthenticated || GUEST_ALLOWED_TABS.has(tabName)) {
@@ -177,33 +173,15 @@ export default function MainLayout() {
         // Tab-i i parë hapet nga app/index.tsx (Bebi ose Dyqani sipas llogarisë); "firstRoute" është Bebi, i pari në listë.
         // Mysafiri s'ka tab-e të tjera: "prapa" nga Dyqani s'duhet ta çojë te Bebi.
         backBehavior={isAuthenticated ? "firstRoute" : "none"}
-        screenOptions={{
-          headerShown: false,
-          tabBarActiveTintColor: colors.active,
-          tabBarInactiveTintColor: colors.inactive,
-          tabBarStyle: {
-            backgroundColor: colors.background,
-            borderTopColor: colors.border,
-            borderTopWidth: 1,
-            height: tabBarHeight,
-            paddingTop: 8,
-            paddingBottom: tabBarPaddingBottom,
-          },
-          tabBarLabelStyle: { fontSize: 10.5, fontFamily: "Inter_500Medium", includeFontPadding: false },
-        }}
+        screenOptions={{ headerShown: false }}
+        // Shiriti ynë: ikona e prekur mbushet nga qendra, kërcen dhe merr një pikë (components/ui/TabBar.tsx).
+        tabBar={(props) => <TabBar {...props} items={TABS} colors={colors} />}
       >
         {TABS.map((tab) => (
           <Tabs.Screen
             key={tab.name}
             name={tab.name}
-            options={{
-              title: t(tab.labelKey),
-              tabBarIcon: ({ color, focused }) => (
-                // react-navigation e tipizon color si ColorValue; ne praktike
-                // vjen nga paleta, pra string hex.
-                <Icon name={tab.icon} size={22} color={focused ? colors.active : (color as string)} />
-              ),
-            }}
+            options={{ title: t(tab.labelKey) }}
             listeners={{
               tabPress: (e) => guardTabPress(tab.name, e),
             }}
