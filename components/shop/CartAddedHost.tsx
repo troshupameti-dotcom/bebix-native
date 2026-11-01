@@ -32,7 +32,7 @@ const T_ROLL_IN = 460;
 const T_DROP = 340;
 const T_LAND = T_DROP + 300;
 const T_DRIVE = 900;
-const T_TEXT = 1150;
+const T_TEXT = 1250;
 const T_HIDE = 2350;
 const T_END = 2650;
 
