@@ -56,7 +56,13 @@ describe("mënyra e fotografimit", () => {
     fakeSupabase().calls = [];
     await toggleLike(first.id, false);
     expect(fakeSupabase().calls).toEqual([]);
-    expect(await fetchNewestPostAt()).toBe((await fetchFeed())[0].at);
+    // Kohët e shembullit llogariten nga "tani": ora ngrihet, që dy thirrjet të mos ndryshojnë me 1 ms (CI).
+    const now = jest.spyOn(Date, "now").mockReturnValue(Date.now());
+    try {
+      expect(await fetchNewestPostAt()).toBe((await fetchFeed())[0].at);
+    } finally {
+      now.mockRestore();
+    }
   });
 
   it("në app-in e dyqaneve (pa __DEV__) s'ndizet kurrë", () => {
