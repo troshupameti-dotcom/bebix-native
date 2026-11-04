@@ -43,6 +43,7 @@ export type IconName =
   | "bath"
   | "pill"
   | "play"
+  | "bottle"
   | "syringe"
   | "eye"
   | "eyeOff"
@@ -280,6 +281,15 @@ const GLYPHS: Record<IconName, (p: CommonProps) => React.ReactNode> = {
     <>
       <Circle cx="12" cy="12" r="9" {...p} />
       <Path d="M10 8.3 16 12l-6 3.7V8.3z" {...p} />
+    </>
+  ),
+  // biberoni: thithka, unaza dhe shishja me dy shenja sasie
+  bottle: (p) => (
+    <>
+      <Path d="M10.5 5.6V4.4a1.5 1.5 0 0 1 3 0v1.2" {...p} />
+      <Rect x="8.6" y="5.6" width="6.8" height="2.4" rx="0.8" {...p} />
+      <Path d="M9.4 8 9 10.2c-.3 1.2-.5 2.4-.5 3.6V19a2 2 0 0 0 2 2h3a2 2 0 0 0 2-2v-5.2c0-1.2-.2-2.4-.5-3.6L14.6 8" {...p} />
+      <Path d="M8.6 13.4h2.6M8.6 16.6h2.6" {...p} />
     </>
   ),
   syringe: (p) => (

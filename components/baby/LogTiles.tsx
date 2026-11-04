@@ -172,6 +172,7 @@ export function LogRow({
   onPress,
   onDelete,
   deleteLabel,
+  trailing,
 }: {
   title: string;
   detail: string;
@@ -180,9 +181,11 @@ export function LogRow({
   onPress: () => void;
   onDelete?: () => void;
   deleteLabel?: string;
+  /** Teksti i vogël në të djathtë (p.sh. ora), në vend të shigjetës. */
+  trailing?: string;
 }) {
   const swipeRef = useRef<SwipeableMethods>(null);
-  const row = <LogRowBody title={title} detail={detail} icon={icon} tone={tone} onPress={onPress} />;
+  const row = <LogRowBody title={title} detail={detail} icon={icon} tone={tone} onPress={onPress} trailing={trailing} />;
   if (!onDelete) return <View className="mb-2.5">{row}</View>;
 
   function remove() {
@@ -222,6 +225,8 @@ function DeleteAction({ drag, label, onPress }: { drag: SharedValue<number>; lab
   );
   const style = useAnimatedStyle(() => ({
     width: Math.max(DELETE_WIDTH, -drag.value),
+    // I fshehur derisa rreshti nis të rrëshqasë: përndryshe e kuqja duket te qoshet e rrumbullakëta të rreshtit.
+    opacity: drag.value < -2 ? 1 : 0,
   }));
 
   return (
@@ -246,12 +251,14 @@ function LogRowBody({
   icon,
   tone: rawTone,
   onPress,
+  trailing,
 }: {
   title: string;
   detail: string;
   icon: IconName;
   tone: Tone;
   onPress: () => void;
+  trailing?: string;
 }) {
   const tone = useTone(rawTone);
   return (
@@ -269,7 +276,11 @@ function LogRowBody({
           {detail}
         </Text>
       </View>
-      <Icon name="chevronRight" size={16} color="#A79D8A" />
+      {trailing ? (
+        <Text className="font-bodySemibold text-[13px] text-ink-soft">{trailing}</Text>
+      ) : (
+        <Icon name="chevronRight" size={16} color="#A79D8A" />
+      )}
     </Pressable>
   );
 }

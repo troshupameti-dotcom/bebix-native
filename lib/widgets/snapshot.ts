@@ -1,6 +1,6 @@
 import type { DiaperEntry, DiaperType, FeedingEntry, FeedingType, SleepEntry } from "@/lib/state/babyTypes";
 import type { Language } from "@/lib/i18n/translations";
-import type { BreastTimer } from "@/lib/baby/breastTimer";
+import { runningSince, type BreastTimer } from "@/lib/baby/breastTimer";
 import { predictNextFeeding } from "@/lib/baby/predictions";
 
 /**
@@ -89,7 +89,7 @@ export function buildSnapshot(input: {
     diaper: diaper ? { at: diaper.at, type: diaper.type } : null,
     sleep: running ? { id: running.id, since: running.startAt } : null,
     lastWakeAt: lastEnded?.endAt ?? null,
-    breastSince: input.breastTimer?.startedAt ?? null,
+    breastSince: input.breastTimer ? runningSince(input.breastTimer, input.now) : null,
     nextFeedingAt: predictNextFeeding(input.feedingLog, input.now)?.at ?? null,
     today: todayStats(input),
     updatedAt: input.now.toISOString(),
