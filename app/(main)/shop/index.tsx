@@ -10,6 +10,7 @@ import { categoryPhoto } from "@/lib/shop/categoryPhotos";
 import { useThemeColors } from "@/lib/theme/useThemeColors";
 import { Product, Brand } from "@/lib/homeContent";
 import { BrandMarquee } from "@/components/shop/BrandMarquee";
+import { SubcategoryGrid } from "@/components/shop/SubcategoryGrid";
 import {
   fetchProductPage, fetchBrands, fetchCategories, fetchSubcategories,
   type ProductSort, type ShopCategory, type ShopRanking, type ShopSubcategory, PRODUCT_PAGE_SIZE,
@@ -34,60 +35,6 @@ const SORT_OPTIONS: { value: ProductSort; labelKey: string }[] = [
   { value: "priceDesc", labelKey: "sort_price_desc" },
   { value: "rating", labelKey: "sort_rating" },
 ];
-
-/**
- * Çipi i një nënkategorie: foto e një produkti të vërtetë në rreth të bardhë (fotot e produkteve kanë sfond të
- * bardhë), emri dhe numri. I zgjedhuri merr ngjyrën e errët, si çipat e tjerë të dyqanit.
- */
-function SubChip({
-  label,
-  count,
-  imageUrl,
-  emoji,
-  active,
-  onPress,
-  a11y,
-}: {
-  label: string;
-  count: number;
-  imageUrl?: string | null;
-  emoji?: string | null;
-  active: boolean;
-  onPress: () => void;
-  a11y: string;
-}) {
-  return (
-    <Pressable
-      onPress={onPress}
-      accessibilityRole="button"
-      accessibilityLabel={a11y}
-      accessibilityState={{ selected: active }}
-      className={`flex-row items-center rounded-full border py-1 pl-1 pr-3.5 active:opacity-80 ${active ? "border-ink bg-ink" : "border-cream-line bg-surface"}`}
-      style={{ minHeight: 44, gap: 8 }}
-    >
-      <View className="h-9 w-9 items-center justify-center overflow-hidden rounded-full bg-white">
-        {imageUrl ? (
-          <Image source={{ uri: imageUrl }} style={{ width: 30, height: 30 }} resizeMode="contain" fadeDuration={0} />
-        ) : emoji ? (
-          <Text style={{ fontSize: 18 }}>{emoji}</Text>
-        ) : (
-          // "Të gjitha": katër katrorë
-          <View style={{ width: 16, height: 16, flexDirection: "row", flexWrap: "wrap", gap: 2 }}>
-            {[0, 1, 2, 3].map((i) => (
-              <View key={i} style={{ width: 7, height: 7, borderRadius: 2, backgroundColor: "#1C1A16" }} />
-            ))}
-          </View>
-        )}
-      </View>
-      <Text className={`font-bodySemibold text-[13px] ${active ? "text-on-accent" : "text-ink"}`} numberOfLines={1}>
-        {label}
-      </Text>
-      <Text className={`font-body text-[11.5px] ${active ? "text-on-accent" : "text-ink-faint"}`} style={{ opacity: active ? 0.75 : 1 }}>
-        {count}
-      </Text>
-    </Pressable>
-  );
-}
 
 function Chip({ label, active, onPress }: { label: string; active: boolean; onPress: () => void }) {
   return (
@@ -353,36 +300,18 @@ export default function ShopScreen() {
           })}
         </ScrollView>
       )}
-      {/* Nënkategoritë e kategorisë së hapur (p.sh. Ushqyerja → Biberonë qetësues), me foton e një produkti të vërtetë.
-          Dalin kur janë të paktën dy: një çip i vetëm s'ndan asgjë. */}
+      {/* Nënkategoritë e kategorisë së hapur (p.sh. Ushqyerja → Biberonë qetësues), pa rrëshqitje anash: 3 pllaka +
+          "Të gjitha", që hap dritaren me të gjitha. Dalin kur janë të paktën dy: një pllakë e vetme s'ndan asgjë. */}
       {subcategories.length >= 2 && (
-        <ScrollView
-          horizontal
-          showsHorizontalScrollIndicator={false}
-          contentContainerStyle={{ paddingHorizontal: 20, gap: 8 }}
-          className="mt-3"
-          accessibilityLabel={t("shop_subcategories")}
-        >
-          <SubChip
-            label={t("shop_all_chip")}
-            count={subcategories.reduce((sum, s) => sum + s.count, 0)}
-            active={!subcategory}
-            onPress={() => setSub(null)}
-            a11y={t("shop_all_chip")}
+        <View className="mt-4 mb-2" style={{ paddingHorizontal: PADDING_X }}>
+          <SubcategoryGrid
+            subcategories={subcategories}
+            active={subcategory}
+            categoryLabel={categories.find((c) => c.key === category)?.label ?? ""}
+            width={width - PADDING_X * 2}
+            onSelect={(key) => setSub(key ? { cat: category, key } : null)}
           />
-          {subcategories.map((s) => (
-            <SubChip
-              key={s.id}
-              label={s.label}
-              count={s.count}
-              imageUrl={s.coverUrl}
-              emoji={s.emoji}
-              active={subcategory === s.key}
-              onPress={() => setSub(subcategory === s.key ? null : { cat: category, key: s.key })}
-              a11y={t("shop_sub_a11y", { label: s.label, n: s.count })}
-            />
-          ))}
-        </ScrollView>
+        </View>
       )}
       {/* "Mosha e bebit" menjëherë pas kategorive: produktet e përshtatshme për moshën; me profil, shkurtorja "Për [emri]" e zgjedh vetë grupin e bebit. */}
       <Text className="font-bodySemibold text-base text-ink px-5 mt-2 mb-2">{t("shop_age_title")}</Text>
@@ -453,7 +382,7 @@ export default function ShopScreen() {
         </ScrollView>
       )}
     </View>
-  ), [brands, onSale, categories, category, subcategories, subcategory, isFiltering, showSort, sort, total, router, t, theme, ageKey, babyBand, babyFirstName, language, catScrollX]);
+  ), [brands, onSale, categories, category, subcategories, subcategory, isFiltering, showSort, sort, total, router, t, theme, ageKey, babyBand, babyFirstName, language, catScrollX, width]);
 
   const renderFooter = useCallback(() => {
     if (loadingMore) {
