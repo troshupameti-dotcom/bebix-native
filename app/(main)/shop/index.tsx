@@ -11,8 +11,8 @@ import { useThemeColors } from "@/lib/theme/useThemeColors";
 import { Product, Brand } from "@/lib/homeContent";
 import { BrandMarquee } from "@/components/shop/BrandMarquee";
 import {
-  fetchProductPage, fetchBrands, fetchCategories,
-  type ProductSort, type ShopCategory, type ShopRanking, PRODUCT_PAGE_SIZE,
+  fetchProductPage, fetchBrands, fetchCategories, fetchSubcategories,
+  type ProductSort, type ShopCategory, type ShopRanking, type ShopSubcategory, PRODUCT_PAGE_SIZE,
 } from "@/lib/shopData";
 import { ProductCard, ProductCardSkeleton } from "@/components/ProductCard";
 import { track } from "@/lib/analytics/posthog";
@@ -25,6 +25,8 @@ import { hasFeature } from "@/lib/age/stageConfig";
 const PADDING_X = 20;
 const GRID_GAP = 12;
 const SEARCH_DEBOUNCE_MS = 350;
+/** Një listë bosh e vetme, që shiriti të mos rivizatohet pa nevojë. */
+const NO_SUBS: ShopSubcategory[] = [];
 
 const SORT_OPTIONS: { value: ProductSort; labelKey: string }[] = [
   { value: "newest", labelKey: "sort_relevant" },
@@ -32,6 +34,60 @@ const SORT_OPTIONS: { value: ProductSort; labelKey: string }[] = [
   { value: "priceDesc", labelKey: "sort_price_desc" },
   { value: "rating", labelKey: "sort_rating" },
 ];
+
+/**
+ * Çipi i një nënkategorie: foto e një produkti të vërtetë në rreth të bardhë (fotot e produkteve kanë sfond të
+ * bardhë), emri dhe numri. I zgjedhuri merr ngjyrën e errët, si çipat e tjerë të dyqanit.
+ */
+function SubChip({
+  label,
+  count,
+  imageUrl,
+  emoji,
+  active,
+  onPress,
+  a11y,
+}: {
+  label: string;
+  count: number;
+  imageUrl?: string | null;
+  emoji?: string | null;
+  active: boolean;
+  onPress: () => void;
+  a11y: string;
+}) {
+  return (
+    <Pressable
+      onPress={onPress}
+      accessibilityRole="button"
+      accessibilityLabel={a11y}
+      accessibilityState={{ selected: active }}
+      className={`flex-row items-center rounded-full border py-1 pl-1 pr-3.5 active:opacity-80 ${active ? "border-ink bg-ink" : "border-cream-line bg-surface"}`}
+      style={{ minHeight: 44, gap: 8 }}
+    >
+      <View className="h-9 w-9 items-center justify-center overflow-hidden rounded-full bg-white">
+        {imageUrl ? (
+          <Image source={{ uri: imageUrl }} style={{ width: 30, height: 30 }} resizeMode="contain" fadeDuration={0} />
+        ) : emoji ? (
+          <Text style={{ fontSize: 18 }}>{emoji}</Text>
+        ) : (
+          // "Të gjitha": katër katrorë
+          <View style={{ width: 16, height: 16, flexDirection: "row", flexWrap: "wrap", gap: 2 }}>
+            {[0, 1, 2, 3].map((i) => (
+              <View key={i} style={{ width: 7, height: 7, borderRadius: 2, backgroundColor: "#1C1A16" }} />
+            ))}
+          </View>
+        )}
+      </View>
+      <Text className={`font-bodySemibold text-[13px] ${active ? "text-on-accent" : "text-ink"}`} numberOfLines={1}>
+        {label}
+      </Text>
+      <Text className={`font-body text-[11.5px] ${active ? "text-on-accent" : "text-ink-faint"}`} style={{ opacity: active ? 0.75 : 1 }}>
+        {count}
+      </Text>
+    </Pressable>
+  );
+}
 
 function Chip({ label, active, onPress }: { label: string; active: boolean; onPress: () => void }) {
   return (
@@ -67,6 +123,12 @@ export default function ShopScreen() {
   const [search, setSearch] = useState("");
   // Celesi i kategorise nga baza, ose "all". Kategorite i menaxhon paneli.
   const [category, setCategory] = useState<string>("all");
+  // Nënkategoria ruhet bashkë me kategorinë e saj: kur ndërrohet kategoria (edhe nga "Mbrapa" ose "Shiko të gjitha"),
+  // ajo s'vlen më vetvetiu, pa e pastruar veçmas në çdo vend.
+  const [sub, setSub] = useState<{ cat: string; key: string } | null>(null);
+  const subcategory = sub && sub.cat === category ? sub.key : null;
+  const [subsFor, setSubsFor] = useState<{ cat: string; list: ShopSubcategory[] }>({ cat: "", list: [] });
+  const subcategories = subsFor.cat === category ? subsFor.list : NO_SUBS;
   const [sort, setSort] = useState<ProductSort>("newest");
   const [showSort, setShowSort] = useState(false);
   // Grupmosha e zgjedhur ("0-3", "3-6"...), ose null. Bebi i profilit ka një shkurtore "Për [emri]".
@@ -116,7 +178,7 @@ export default function ShopScreen() {
     return () => clearTimeout(timer);
   }, [query]);
 
-  const filterKey = `${search}|${category}|${sort}|${ageKey ?? ""}|${rankingKey}|${reloadNonce}`;
+  const filterKey = `${search}|${category}|${subcategory ?? ""}|${sort}|${ageKey ?? ""}|${rankingKey}|${reloadNonce}`;
   const loading = loadedKey !== filterKey && error === null;
   // Vetëm hapja e parë tregon skeletin në vend të listës. Ndërrimi i kategorisë/filtrit e mban listën (dhe shiritin
   // e kategorive) në vend: më parë lista rindërtohej nga e para, kategoritë ktheheshin në fillim dhe faqja lart.
@@ -150,7 +212,7 @@ export default function ShopScreen() {
   useEffect(() => {
     const id = ++requestId.current;
     let active = true;
-    fetchProductPage({ search, category, sort, page: 0, age: ageBand, ranking })
+    fetchProductPage({ search, category, subcategory, sort, page: 0, age: ageBand, ranking })
       .then((result) => {
         if (!active || id !== requestId.current) return;
         setItems(result.items);
@@ -165,14 +227,14 @@ export default function ShopScreen() {
         setError(friendlyError(e, t, "shop_load_error_title"));
       });
     return () => { active = false; };
-  }, [filterKey, search, category, sort, ageBand, ranking, t]);
+  }, [filterKey, search, category, subcategory, sort, ageBand, ranking, t]);
   const loadMore = useCallback(async () => {
     if (loadingMore || loading || !hasMore) return;
     const id = requestId.current;
     setLoadingMore(true);
     try {
       const next = page + 1;
-      const result = await fetchProductPage({ search, category, sort, page: next, age: ageBand, ranking });
+      const result = await fetchProductPage({ search, category, subcategory, sort, page: next, age: ageBand, ranking });
       if (id !== requestId.current) return;
       setItems((prev) => [...prev, ...result.items]);
       setHasMore(result.hasMore);
@@ -182,7 +244,17 @@ export default function ShopScreen() {
     } finally {
       if (id === requestId.current) setLoadingMore(false);
     }
-  }, [loadingMore, loading, hasMore, page, search, category, sort, ageBand, ranking]);
+  }, [loadingMore, loading, hasMore, page, search, category, subcategory, sort, ageBand, ranking]);
+
+  // Nënkategoritë e kategorisë së hapur (vetëm ato me produkte). Para migrimit vijnë bosh dhe shiriti s'del.
+  useEffect(() => {
+    if (category === "all") return;
+    let active = true;
+    fetchSubcategories(category, language === "en" ? "en" : "sq")
+      .then((list) => { if (active) setSubsFor({ cat: category, list }); })
+      .catch(() => { if (active) setSubsFor({ cat: category, list: [] }); });
+    return () => { active = false; };
+  }, [category, language]);
 
 
   // Markat dhe ofertat ngarkohen një herë; nuk varen nga filtrat.
@@ -281,6 +353,37 @@ export default function ShopScreen() {
           })}
         </ScrollView>
       )}
+      {/* Nënkategoritë e kategorisë së hapur (p.sh. Ushqyerja → Biberonë qetësues), me foton e një produkti të vërtetë.
+          Dalin kur janë të paktën dy: një çip i vetëm s'ndan asgjë. */}
+      {subcategories.length >= 2 && (
+        <ScrollView
+          horizontal
+          showsHorizontalScrollIndicator={false}
+          contentContainerStyle={{ paddingHorizontal: 20, gap: 8 }}
+          className="mt-3"
+          accessibilityLabel={t("shop_subcategories")}
+        >
+          <SubChip
+            label={t("shop_all_chip")}
+            count={subcategories.reduce((sum, s) => sum + s.count, 0)}
+            active={!subcategory}
+            onPress={() => setSub(null)}
+            a11y={t("shop_all_chip")}
+          />
+          {subcategories.map((s) => (
+            <SubChip
+              key={s.id}
+              label={s.label}
+              count={s.count}
+              imageUrl={s.coverUrl}
+              emoji={s.emoji}
+              active={subcategory === s.key}
+              onPress={() => setSub(subcategory === s.key ? null : { cat: category, key: s.key })}
+              a11y={t("shop_sub_a11y", { label: s.label, n: s.count })}
+            />
+          ))}
+        </ScrollView>
+      )}
       {/* "Mosha e bebit" menjëherë pas kategorive: produktet e përshtatshme për moshën; me profil, shkurtorja "Për [emri]" e zgjedh vetë grupin e bebit. */}
       <Text className="font-bodySemibold text-base text-ink px-5 mt-2 mb-2">{t("shop_age_title")}</Text>
       <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ paddingHorizontal: 20 }}>
@@ -350,7 +453,7 @@ export default function ShopScreen() {
         </ScrollView>
       )}
     </View>
-  ), [brands, onSale, categories, category, isFiltering, showSort, sort, total, router, t, theme, ageKey, babyBand, babyFirstName, language, catScrollX]);
+  ), [brands, onSale, categories, category, subcategories, subcategory, isFiltering, showSort, sort, total, router, t, theme, ageKey, babyBand, babyFirstName, language, catScrollX]);
 
   const renderFooter = useCallback(() => {
     if (loadingMore) {

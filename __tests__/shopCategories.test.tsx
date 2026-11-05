@@ -8,6 +8,7 @@ import { act, type ReactTestInstance, type ReactTestRenderer } from "react-test-
 import { BackHandler, FlatList } from "react-native";
 import Shop from "@/app/(main)/shop/index";
 import AsyncStorage from "@react-native-async-storage/async-storage";
+import { resetShopDataCache } from "@/lib/shopData";
 
 jest.mock("@/components/shop/BrandMarquee", () => ({ BrandMarquee: () => null }));
 
@@ -19,6 +20,7 @@ const product = (id: string, category: string) => ({
 
 let handlers: (() => boolean | null | undefined)[] = [];
 beforeEach(() => {
+  resetShopDataCache();
   handlers = [];
   jest.spyOn(BackHandler, "addEventListener").mockImplementation((_e, h) => {
     handlers.push(h as () => boolean);
@@ -71,6 +73,55 @@ describe("kategoritë te Dyqani", () => {
     expect(handled).toBe(true);
     await flush();
     expect(chip(r.root, "Dhoma e bebit").props.accessibilityState).toEqual({ selected: false });
+  });
+
+  it("nënkategoritë: dalin te kategoria e hapur dhe filtrojnë listën te serveri", async () => {
+    fakeSupabase().rpc.shop_subcategories = (args) =>
+      args.p_category === "feeding"
+        ? [
+            { id: "s1", key: "biberone-qetesues", label: "Biberonë qetësues", label_en: "Pacifiers", icon: "👶", sort_order: 50, product_count: 2, cover_url: null },
+            { id: "s2", key: "gjidhenia", label: "Gjidhënia", label_en: "Breastfeeding", icon: "🤱", sort_order: 30, product_count: 1, cover_url: null },
+          ]
+        : [];
+    const r = await renderScreen(<Shop />);
+    await flush();
+    expect(chip(r.root, "Biberonë qetësues")).toBeUndefined();
+    await act(async () => {
+      chip(r.root, "Ushqyerje").props.onPress();
+    });
+    await flush();
+    const pacifiers = chip(r.root, "Biberonë qetësues");
+    expect(pacifiers).toBeDefined();
+    expect(chip(r.root, "Gjidhënia")).toBeDefined();
+    await act(async () => {
+      pacifiers.props.onPress();
+    });
+    await flush();
+    const orders = () => fakeSupabase().calls.filter((c) => c.kind === "rpc" && c.name === "shop_product_order");
+    expect(orders().at(-1)?.args).toMatchObject({ p_category: "feeding", p_subcategory: "biberone-qetesues" });
+    expect(chip(r.root, "Biberonë qetësues").props.accessibilityState).toEqual({ selected: true });
+
+    // Kategoria tjetër: nënkategoria s'vlen më dhe s'dërgohet.
+    await act(async () => {
+      chip(r.root, "Dhoma e bebit").props.onPress();
+    });
+    await flush();
+    expect(orders().at(-1)?.args).toMatchObject({ p_category: "nursery" });
+    expect(orders().at(-1)?.args).not.toHaveProperty("p_subcategory");
+    expect(chip(r.root, "Biberonë qetësues")).toBeUndefined();
+  });
+
+  it("pa migrimin e nënkategorive: asnjë çip i ri dhe asnjë parametër i ri", async () => {
+    const r = await renderScreen(<Shop />);
+    await flush();
+    await act(async () => {
+      chip(r.root, "Ushqyerje").props.onPress();
+    });
+    await flush();
+    expect(fakeSupabase().calls.some((c) => c.kind === "rpc" && c.name === "shop_subcategories")).toBe(true);
+    const last = fakeSupabase().calls.filter((c) => c.kind === "rpc" && c.name === "shop_product_order").at(-1);
+    expect(last?.args).not.toHaveProperty("p_subcategory");
+    expect(chip(r.root, "Gjidhënia")).toBeUndefined();
   });
 
   it("renditja ndjek moshën e fëmijës aktiv (8 muaj)", async () => {

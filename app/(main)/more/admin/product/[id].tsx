@@ -8,10 +8,10 @@ import { goBackOr } from "@/components/ui/BackButton";
 import { useToast } from "@/lib/toast/ToastContext";
 import { useThemeColors } from "@/lib/theme/useThemeColors";
 import { AdminScreen, Btn, Card, Empty, ErrorNote, Loading, OptionSheet, runAction, useAdminData } from "@/components/admin/AdminUI";
-import { fetchProductForEdit, saveProduct, validateProduct, type EditableProduct } from "@/lib/admin/api";
+import { fetchProductForEdit, saveProduct, validateProduct, type EditableProduct, type SubChoice } from "@/lib/admin/api";
 import { BADGES, optionOf, type Option } from "@/lib/admin/labels";
 
-type Sheet = "brand" | "category" | "badge" | null;
+type Sheet = "brand" | "category" | "subcategory" | "badge" | null;
 
 /** Ndryshimi i një produkti. Fotot ndryshohen te paneli i webit (si edhe atje, te paneli i vjetër). */
 export default function AdminProductEdit() {
@@ -22,12 +22,24 @@ export default function AdminProductEdit() {
       <ErrorNote message={error} />
       {!data && !error ? <Loading /> : null}
       {data && !data.product ? <Empty title="Produkti nuk u gjet." /> : null}
-      {data?.product ? <ProductForm initial={data.product} brands={data.brands} categories={data.categories} /> : null}
+      {data?.product ? (
+        <ProductForm initial={data.product} brands={data.brands} categories={data.categories} subcategories={data.subcategories} />
+      ) : null}
     </AdminScreen>
   );
 }
 
-function ProductForm({ initial, brands, categories }: { initial: EditableProduct; brands: { id: string; label: string }[]; categories: { id: string; label: string }[] }) {
+function ProductForm({
+  initial,
+  brands,
+  categories,
+  subcategories,
+}: {
+  initial: EditableProduct;
+  brands: { id: string; label: string }[];
+  categories: { id: string; label: string }[];
+  subcategories: SubChoice[];
+}) {
   const theme = useThemeColors();
   const { showToast } = useToast();
   const [v, setV] = useState(initial);
@@ -37,6 +49,15 @@ function ProductForm({ initial, brands, categories }: { initial: EditableProduct
 
   const brandOptions: Option[] = [{ key: "", label: "Pa markë" }, ...brands.map((b) => ({ key: b.id, label: b.label }))];
   const categoryOptions: Option[] = [{ key: "", label: "Pa kategori" }, ...categories.map((c) => ({ key: c.id, label: c.label }))];
+  // Vetëm nënkategoritë e kategorisë së zgjedhur; pa asnjë, zgjedhja s'del.
+  const ownSubs = subcategories.filter((s) => s.categoryId === v.categoryId);
+  const subOptions: Option[] = [{ key: "", label: "Pa nënkategori" }, ...ownSubs.map((s) => ({ key: s.id, label: s.label }))];
+  const pickCategory = (key: string) =>
+    setV((s) => ({
+      ...s,
+      categoryId: key,
+      subcategoryId: subcategories.some((x) => x.id === s.subcategoryId && x.categoryId === key) ? s.subcategoryId : "",
+    }));
 
   async function save() {
     const problem = validateProduct(v);
@@ -45,7 +66,7 @@ function ProductForm({ initial, brands, categories }: { initial: EditableProduct
       return;
     }
     setBusy(true);
-    await runAction(() => saveProduct(v), () => {
+    await runAction(() => saveProduct(v, subcategories), () => {
       showToast("Produkti u ruajt.");
       goBackOr("/(main)/more/admin/products");
     });
@@ -71,6 +92,9 @@ function ProductForm({ initial, brands, categories }: { initial: EditableProduct
         />
         <Picker label="Marka" value={optionOf(brandOptions, v.brandId).label} onPress={() => setSheet("brand")} color={theme.inkFaint} />
         <Picker label="Kategoria" value={optionOf(categoryOptions, v.categoryId).label} onPress={() => setSheet("category")} color={theme.inkFaint} />
+        {ownSubs.length > 0 ? (
+          <Picker label="Nënkategoria" value={optionOf(subOptions, v.subcategoryId).label} onPress={() => setSheet("subcategory")} color={theme.inkFaint} />
+        ) : null}
         <Picker label="Etiketa" value={optionOf(BADGES, v.badge).label} onPress={() => setSheet("badge")} color={theme.inkFaint} />
         <View className="flex-row gap-3">
           <View className="flex-1"><FormField label="Mosha nga (muaj)" value={v.minAge} onChangeText={(t) => set("minAge", t)} keyboardType="number-pad" /></View>
@@ -87,10 +111,18 @@ function ProductForm({ initial, brands, categories }: { initial: EditableProduct
 
       <OptionSheet
         visible={sheet !== null}
-        title={sheet === "brand" ? "Marka" : sheet === "category" ? "Kategoria" : "Etiketa"}
-        options={sheet === "brand" ? brandOptions : sheet === "category" ? categoryOptions : BADGES}
-        value={sheet === "brand" ? v.brandId : sheet === "category" ? v.categoryId : v.badge}
-        onPick={(key) => (sheet === "brand" ? set("brandId", key) : sheet === "category" ? set("categoryId", key) : set("badge", key))}
+        title={sheet === "brand" ? "Marka" : sheet === "category" ? "Kategoria" : sheet === "subcategory" ? "Nënkategoria" : "Etiketa"}
+        options={sheet === "brand" ? brandOptions : sheet === "category" ? categoryOptions : sheet === "subcategory" ? subOptions : BADGES}
+        value={sheet === "brand" ? v.brandId : sheet === "category" ? v.categoryId : sheet === "subcategory" ? v.subcategoryId : v.badge}
+        onPick={(key) =>
+          sheet === "brand"
+            ? set("brandId", key)
+            : sheet === "category"
+              ? pickCategory(key)
+              : sheet === "subcategory"
+                ? set("subcategoryId", key)
+                : set("badge", key)
+        }
         onClose={() => setSheet(null)}
       />
     </>

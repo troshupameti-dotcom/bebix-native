@@ -211,6 +211,8 @@ export type EditableProduct = {
   badge: string;
   brandId: string;
   categoryId: string;
+  /** Bosh = pa nënkategori. */
+  subcategoryId: string;
   active: boolean;
   freeDelivery: boolean;
   minAge: string;
@@ -219,17 +221,27 @@ export type EditableProduct = {
 };
 
 export type Choice = { id: string; label: string };
+/** Nënkategoria me kategorinë e saj, që formulari të tregojë vetëm ato të kategorisë së zgjedhur. */
+export type SubChoice = Choice & { categoryId: string };
 
-export async function fetchProductForEdit(id: string): Promise<{ product: EditableProduct | null; brands: Choice[]; categories: Choice[] }> {
-  const [productRes, brandsRes, categoriesRes] = await Promise.all([
-    supabase
-      .from("products")
-      .select("id, name, description, price, compare_at_price, stock, badge, brand_id, category_id, is_active, free_delivery, min_age_months, max_age_months, created_by_partner")
-      .eq("id", id)
-      .maybeSingle(),
+const PRODUCT_EDIT_COLUMNS =
+  "id, name, description, price, compare_at_price, stock, badge, brand_id, category_id, is_active, free_delivery, min_age_months, max_age_months, created_by_partner";
+
+export async function fetchProductForEdit(
+  id: string,
+): Promise<{ product: EditableProduct | null; brands: Choice[]; categories: Choice[]; subcategories: SubChoice[] }> {
+  const [subcategoriesRes, brandsRes, categoriesRes] = await Promise.all([
+    supabase.from("subcategories").select("id, category_id, label").order("sort_order"),
     supabase.from("brands").select("id, name").order("name"),
     supabase.from("categories").select("id, label").order("sort_order"),
   ]);
+  // Para migrimit 20261105090000 s'ka as tabelë, as kolonë: formulari punon si më parë, pa nënkategori.
+  const subcategoriesReady = !subcategoriesRes.error;
+  const productRes = await supabase
+    .from("products")
+    .select(subcategoriesReady ? `${PRODUCT_EDIT_COLUMNS}, subcategory_id` : PRODUCT_EDIT_COLUMNS)
+    .eq("id", id)
+    .maybeSingle();
   fail(productRes.error);
   const p = productRes.data as Record<string, any> | null;
   const str = (v: unknown) => (v == null ? "" : String(v));
@@ -245,6 +257,7 @@ export async function fetchProductForEdit(id: string): Promise<{ product: Editab
           badge: ["new", "sale", "bestseller"].includes(p.badge) ? p.badge : "",
           brandId: p.brand_id ?? "",
           categoryId: p.category_id ?? "",
+          subcategoryId: p.subcategory_id ?? "",
           active: !!p.is_active,
           freeDelivery: !!p.free_delivery,
           minAge: str(p.min_age_months),
@@ -254,6 +267,11 @@ export async function fetchProductForEdit(id: string): Promise<{ product: Editab
       : null,
     brands: ((brandsRes.data ?? []) as { id: string; name: string }[]).map((b) => ({ id: b.id, label: b.name })),
     categories: ((categoriesRes.data ?? []) as { id: string; label: string }[]).map((c) => ({ id: c.id, label: c.label })),
+    subcategories: ((subcategoriesRes.data ?? []) as { id: string; category_id: string; label: string }[]).map((s) => ({
+      id: s.id,
+      categoryId: s.category_id,
+      label: s.label,
+    })),
   };
 }
 
@@ -266,7 +284,11 @@ export function validateProduct(v: EditableProduct): string | null {
   return null;
 }
 
-export async function saveProduct(v: EditableProduct): Promise<void> {
+/**
+ * Ruajtja. `subcategories` bosh = migrimi i nënkategorive s'është ekzekutuar ende, prandaj kolona s'dërgohet.
+ * Nënkategoria ruhet vetëm nëse i përket kategorisë së zgjedhur.
+ */
+export async function saveProduct(v: EditableProduct, subcategories: SubChoice[] = []): Promise<void> {
   const ageOrNull = (s: string) => (s.trim() && Number.isFinite(Number(s)) ? Math.max(0, Math.floor(Number(s))) : null);
   const body: Record<string, unknown> = {
     name: v.name.trim(),
@@ -283,6 +305,10 @@ export async function saveProduct(v: EditableProduct): Promise<void> {
   };
   // Për produktet e partnerëve stoku mbahet te inventari i tyre.
   if (!v.partnerManaged) body.stock = Math.max(0, Math.floor(Number(v.stock) || 0));
+  if (subcategories.length > 0) {
+    const ok = subcategories.some((s) => s.id === v.subcategoryId && s.categoryId === v.categoryId);
+    body.subcategory_id = ok ? v.subcategoryId : null;
+  }
   const { error } = await supabase.from("products").update(body).eq("id", v.id);
   fail(error);
 }

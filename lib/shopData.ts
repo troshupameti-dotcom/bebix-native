@@ -59,6 +59,8 @@ export type ProductQuery = {
   search?: string;
   /** Celesi i kategorise nga baza, ose "all". */
   category?: string;
+  /** Çelësi i nënkategorisë brenda kategorisë (p.sh. "biberone-qetesues"); s'vlen pa `category`. */
+  subcategory?: string | null;
   brandId?: string;
   sort?: ProductSort;
   /** Faqja, duke nisur nga 0. */
@@ -217,6 +219,48 @@ async function categoryIdFor(key: string | undefined): Promise<string | null> {
   return categories.find((c) => c.key === key)?.id ?? null;
 }
 
+/** Nënkategoria e një kategorie (p.sh. Ushqyerja → Biberonë qetësues). Vetëm ato me produkte aktive. */
+export type ShopSubcategory = {
+  id: string;
+  key: string;
+  label: string;
+  emoji: string | null;
+  count: number;
+  /** Fotoja e një produkti të saj, për çipin. */
+  coverUrl: string | null;
+};
+
+const subcategoryCache = new Map<string, { at: number; list: ShopSubcategory[] }>();
+
+/** Fshin kategoritë dhe nënkategoritë e mbajtura në memorie (testet; ose pas një ndryshimi të adminit). */
+export function resetShopDataCache(): void {
+  categoryCache = null;
+  subcategoryCache.clear();
+}
+
+/**
+ * Nënkategoritë e një kategorie (`shop_subcategories`), me numrin e produkteve dhe një foto. Para migrimit
+ * 20261105090000 funksioni s'ekziston: kthehet listë bosh dhe dyqani duket si më parë.
+ */
+export async function fetchSubcategories(categoryKey: string | undefined, language: "sq" | "en" = "sq"): Promise<ShopSubcategory[]> {
+  if (!categoryKey || categoryKey === "all") return [];
+  const cacheKey = `${categoryKey}|${language}`;
+  const hit = subcategoryCache.get(cacheKey);
+  if (hit && Date.now() - hit.at < CATEGORY_TTL_MS) return hit.list;
+  const { data, error } = await supabase.rpc("shop_subcategories", { p_category: categoryKey });
+  if (error || !Array.isArray(data)) return [];
+  const list = (data as { id: string; key: string; label: string; label_en: string | null; icon: string | null; product_count: number; cover_url: string | null }[]).map((s) => ({
+    id: s.id,
+    key: s.key,
+    label: language === "en" ? (s.label_en ?? s.label) : s.label,
+    emoji: emojiForCategory(s.icon),
+    count: Number(s.product_count),
+    coverUrl: s.cover_url,
+  }));
+  subcategoryCache.set(cacheKey, { at: Date.now(), list });
+  return list;
+}
+
 /** Markat që përputhen me tekstin e kërkimit — tabelë e vogël, një kërkesë e shpejtë. */
 async function brandIdsMatching(search: string): Promise<string[]> {
   const { data } = await supabase.from("brands").select("id").ilike("name", `%${search}%`).limit(20);
@@ -252,6 +296,8 @@ async function fetchRankedPage(q: ProductQuery, page: number, pageSize: number):
     p_pregnancy: !!ranking?.pregnancy,
     p_offset: page * pageSize,
     p_limit: pageSize,
+    // Dërgohet vetëm kur është zgjedhur: funksioni i vjetër (para migrimit) s'e njeh këtë parametër.
+    ...(q.subcategory && q.category && q.category !== "all" ? { p_subcategory: q.subcategory } : {}),
   });
   if (error) {
     if (error.code === "PGRST202" || error.code === "42883") {
@@ -289,6 +335,10 @@ export async function fetchProductPage(q: ProductQuery = {}): Promise<ProductPag
 
   const categoryId = await categoryIdFor(q.category);
   if (categoryId) query = query.eq("category_id", categoryId);
+  if (categoryId && q.subcategory) {
+    const sub = (await fetchSubcategories(q.category)).find((s) => s.key === q.subcategory);
+    if (sub) query = query.eq("subcategory_id", sub.id);
+  }
   if (q.brandId) query = query.eq("brand_id", q.brandId);
   if (q.onSaleOnly) query = query.not("compare_at_price", "is", null);
   if (q.age) query = query.or(ageOverlapFilter(q.age));
