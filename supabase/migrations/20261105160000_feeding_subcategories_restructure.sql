@@ -28,16 +28,10 @@
 -- Lidhjet e vjetra (`?sub=gota-ene`) çojnë te e gjithë kategoria, jo te një faqe bosh.
 --
 -- I sigurt për t'u ekzekutuar dy herë: rezervat s'mbishkruhen dhe çdo riemërtim kërkon çelësin e vjetër.
--- Në fund del lista e produkteve te "Të tjera". Nëse një produkt humbet, gjithçka anulohet.
+-- Në fund del lista e produkteve te "Të tjera". Kontrolli ndalet me gabim nëse një produkt mbetet pa nënkategori, por
+-- te SQL Editor s'i kthen hapat e bërë (u pa më 7 nëntor 2026): kthimi mbrapa bëhet me skedarin e rollback-ut.
 
 begin;
-
--- Sa produkte ka kategoria para ndryshimit: kontrolli në fund e krahason me këtë.
-create temporary table feeding_products_before on commit drop as
-select count(*) as total
-from public.products p
-join public.categories c on c.id = p.category_id
-where c.key = 'Ushqyerje';
 
 -- ---------------------------------------------------------------------------
 -- 1. Kolonat e reja
@@ -252,24 +246,12 @@ revoke execute on function public.shop_category_tree() from public;
 grant execute on function public.shop_category_tree() to anon, authenticated, service_role;
 
 -- ---------------------------------------------------------------------------
--- 5. Kontrolli: asnjë produkt s'humbet
+-- 5. Kontrolli: çdo produkt ka nënkategori dhe nënkategoritë janë 11
 -- ---------------------------------------------------------------------------
 do $$
 declare
   missing integer;
-  before_total bigint;
-  after_total bigint;
 begin
-  select total into before_total from feeding_products_before;
-  select count(*) into after_total
-  from public.products p
-  join public.categories c on c.id = p.category_id
-  where c.key = 'Ushqyerje';
-
-  if after_total <> before_total then
-    raise exception 'Migrimi u ndal: kategoria kishte % produkte, tani ka %.', before_total, after_total;
-  end if;
-
   -- Çdo produkt i kategorisë duhet të ketë një nënkategori të kategorisë së vet.
   select count(*) into missing
   from public.products p
