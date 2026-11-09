@@ -1,9 +1,7 @@
 import { Pressable, Text, View } from "react-native";
 import { useRouter } from "expo-router";
 import * as WebBrowser from "expo-web-browser";
-import {
-  BadgeCheck, BookOpen, ChartColumn, ChevronRight, ExternalLink, Flag, Megaphone, Package, Receipt, Tags, type LucideIcon,
-} from "lucide-react-native";
+import { BadgeCheck, BookOpen, ChartColumn, ChevronRight, CookingPot, ExternalLink, Flag, Megaphone, Package, Receipt, Tags, type LucideIcon } from "lucide-react-native";
 import { AdminScreen, ErrorNote, Kpi, Loading, SectionTitle, useAdminData } from "@/components/admin/AdminUI";
 import { IconTile, TILE_COLORS as C } from "@/components/settings/IconTile";
 import { useThemeColors } from "@/lib/theme/useThemeColors";
@@ -32,6 +30,7 @@ export default function AdminHome() {
     { key: "experts", icon: BadgeCheck, color: C.teal, label: "Ekspertët", count: data?.pendingExperts, onPress: () => go("/more/admin/experts") },
     { key: "reports", icon: Flag, color: C.red, label: "Raportimet", count: data?.openReports, onPress: () => go("/more/admin/reports") },
     { key: "stories", icon: BookOpen, color: C.green, label: "Përrallat", count: data?.storyDrafts, onPress: () => go("/more/admin/stories") },
+    { key: "recipes", icon: CookingPot, color: C.orange, label: "Recetat", onPress: () => go("/more/admin/recipes") },
   ];
   const onWeb: Entry[] = [
     { key: "new", icon: Package, color: C.gray, label: "Produkt i ri (me foto)", onPress: () => web("/products/new") },

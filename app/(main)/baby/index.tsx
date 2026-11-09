@@ -26,6 +26,7 @@ import { NowCard } from "@/components/baby/NowCard";
 import { WeeklyRecapCard } from "@/components/baby/WeeklyRecapCard";
 import { MemoriesCard } from "@/components/baby/MemoriesCard";
 import { StoryTonightCard } from "@/components/stories/StoryTonightCard";
+import { RecipeTodayCard } from "@/components/recipes/RecipeTodayCard";
 import { CelebrationModal } from "@/components/baby/CelebrationModal";
 import { useCelebration } from "@/lib/baby/useCelebration";
 import { TeamCard } from "@/components/baby/TeamCard";
@@ -879,6 +880,9 @@ export default function BabyProfileScreen() {
             ) : null}
 
             {/* "Këtë javë" (zhvillimi i bebit) u hoq më 15 tetor. Të dhënat mjekësore rrinë te cilësimet e bebit. */}
+
+            {/* "Ide për sot": një recetë sipas moshës dhe alergjive; në 5 muaj, një herë, shenjat e gatishmërisë. */}
+            {can("recipes") ? <RecipeTodayCard /> : null}
 
             {/* Përralla e mbrëmjes, sipas moshës; biblioteka e plotë hapet prej këtu ose nga Cilësimet. */}
             {can("stories") ? <StoryTonightCard months={ageInfo.months} /> : null}

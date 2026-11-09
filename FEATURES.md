@@ -1,4 +1,4 @@
-# Veçoritë e reja të Bebix (Fazat 0–7)
+# Veçoritë e reja të Bebix (Fazat 0–7 dhe Recetat)
 
 Qëllimi: app-i që prindërit e hapin me qejf çdo ditë. Të ndihen prindër të mirë, të kursejnë kohë dhe të befasohen ("si e di?!"). Pa faj: pa seri ditësh, pa "harrove", pa krahasime me bebe të tjera.
 
@@ -79,6 +79,77 @@ Një **kartë e vetme sugjerimi** te faqja e bebit dhe në krye të Dyqanit, me 
 - Zgjedh foton nga momentet. Logoja e vogël Bebix del poshtë.
 - **"Ndaje"** hap listën e telefonit: Instagram, WhatsApp, ose ruaje te fotot.
 
+## Recetat 🥣, Faza A: Biblioteka e recetave
+- **Qëllimi:** prindi hap app-in dhe brenda 10 sekondash di çfarë t'i gatuajë bebit sot, sipas moshës dhe alergjive.
+- **Ku hapet:**
+  - Faqja e bebit: karta **"Ide për sot 🥣"**, nga 6 muaj deri në 5 vjeç.
+  - Në 5 muaj, në vend të saj del një herë **"Gati për ushqimet e para?"**, me shenjat e gatishmërisë.
+  - Ushqyerja → skeda **Ushqim**: lidhja **"Ide për receta →"**.
+  - **Më shumë → Admin → Recetat**.
+- **Lista:**
+  - Lart: "Për [emri], [mosha]", me moshën e fëmijës aktiv; prindi e ndërron.
+  - Kërkimi sipas emrit ose përbërësit, edhe pa ë/ç ("pule" gjen "pulë").
+  - Çipat: vakti, koha, teksturë, me lugë/BLW, "Pa [alergjen]", "Pa alergjenët e [emri]", për ngrirje, e stinës, gatim shqiptar, të preferuarat.
+  - Seksionet: Receta e ditës, Të preferuarat ❤️, Shpejt e lehtë, Gatuaj një herë e ngrije, Nga kuzhina jonë 🇦🇱, Të pasura me hekur.
+- **Receta:**
+  - Emblemat: mosha, koha, teksturë, ngrirja dhe alergjenët me ngjyrë.
+  - Kur te profili i fëmijës është shënuar një alergji që receta e përmban, del kartë e verdhë. Në listë, këto receta dalin të fundit.
+  - Përbërësit kanë çelësin "Porcion bebe / Me gjithë familjen", që shumëzon sasitë.
+  - Hapat dalin me shkronja të mëdha. **Modaliteti i gatimit** tregon një hap në ekran dhe e mban ekranin ndezur me `expo-keep-awake`, që ishte tashmë në projekt.
+  - Poshtë: si ta servirësh sipas moshës, kujdesi nga mbytja, ruajtja/ngrirja/ringrohja dhe këshilla për familjen.
+- **Butonat:** ❤️ Ruaje, **Shëno si ushqim**, Ndaje.
+  - "Shëno si ushqim" e shënon si ushqim të ngurtë (`type: "solid"`, emri i recetës) me të njëjtën rrugë si karta e ushqyerjes.
+  - Pastaj pyet butë: "Si i pëlqeu?" 😋 / 🙂 / 🙅, dhe përgjigjja ruhet te shënimi.
+  - Gjyshërit (shikuesit) s'e kanë këtë buton.
+- **Pa faj:** pa seri, pa njoftime. "Udhëzim, jo këshillë mjekësore" del një herë te receta, dhe një shënim i butë te alergjenët.
+- **Përmbajtja:** 40 receta: 12 për 6–8 muaj, 12 për 9–11 muaj, 10 për 12–24 muaj dhe 6 për 2–5 vjeç.
+  - 23 janë gatime shqiptare, 18 të pasura me hekur dhe 29 ngrihen.
+  - Vijnë me app-in (`content/recipes/sq.json`): punojnë pa rrjet dhe para migrimit.
+  - Recetat e reja shtohen te tabela `recipes` dhe dalin pa përditësim.
+- **Siguria e përmbajtjes:** testi `__tests__/recipesSafety.test.ts` kontrollon çdo recetë. Kërkon:
+  - pa mjaltë, kripë apo sheqer te përbërësit;
+  - vezë, mish dhe peshk të gatuar plotësisht, dhe pa peshk me shumë merkur;
+  - rrushin në katërsh, kikirikun vetëm si gjalpë i holluar dhe pa kokoshka;
+  - vetëm njësitë g, ml, copë, lugë gjelle, lugë çaji, filxhan;
+  - pa premtime mjekësore.
+- **Receta të reja:** shkruhen në JSON dhe `node scripts/recipes-sql.mjs <recetat.json> <migrimi.sql> "përshkrimi"` nxjerr migrimin (`on conflict (slug) do nothing`).
+
+## Recetat 🥣, Faza B: Ushqimet e para dhe alergjenët
+- **Ku hapet:** te lista e recetave, dy pllaka: **"Ushqimet e para 🥕"** dhe **"Plani i alergjenëve"**. S'ka hyrje të reja jashtë Recetave.
+- **Ushqimet e para:** rrjetë me 80 ushqime, me kategoritë fruta, perime, drithëra, proteina, bulmet dhe alergjenë, dhe me kërkim.
+  - Çdo ushqim i provuar ngjyroset dhe tregon "2 herë 😋".
+  - Numëruesi "32 ushqime të provuara" numëron ushqime, jo prova, dhe vetëm rritet: pa seri, pa "ke mbetur prapa".
+  - Ushqimet që s'janë ende për moshën dalin më të zbehta, me "nga 12 muaj".
+- **Faqja e ushqimit:**
+  - si ta servirësh sipas moshës, me grupin e fëmijës të theksuar;
+  - rreziku i mbytjes, alergjeni, lëndët ushqyese dhe një këshillë;
+  - recetat me këtë ushqim, ato për moshën e para;
+  - "E provoi 5 herë", me datat dhe 😋/🙂/🙅.
+- **Prova shënohet:**
+  - nga "Shëno si ushqim" te receta: çdo ushqim i recetës shënohet si i provuar, me pëlqimin e përgjigjes;
+  - ose me dorë te ushqimi: dita (sot, dje, pardje), 😋/🙂/🙅 dhe "Pati reagim?".
+- **E refuzoi:** del butë "Provoje sërish pas disa ditësh, në formë tjetër", me "Shumë fëmijë e pranojnë pas 8–15 provash" dhe një recetë tjetër me të njëjtin ushqim, për moshën.
+- **Plani i alergjenëve:**
+  - Për 9 alergjenët kryesorë: 3 prova me sasi të vogla që rriten (¼ → ½ → 1 lugë çaji për kikirikun, arrat e susamin; 1 → 2 lugë çaji → 1 lugë gjelle për të tjerët).
+  - Çdo ushqim me atë alergjen vlen si provë.
+  - Pas 3 provave pa reagim: **"I prezantuar ✓"**, me këshillën ta mbash 1–2 herë në javë.
+  - "Një i ri në herë, në mëngjes, në shtëpi", dhe "pyet pediatrin" kur bebja ka ekzemë të rëndë ose alergji të njohur.
+- **Pati reagim:**
+  - Kartë me shenjat (skuqje, të vjella, ënjtje), "Thirr pediatrin; për vështirësi frymëmarrjeje thirr 112" dhe butonin "Thirr 112".
+  - Te receta me alergjen, pas "Si i pëlqeu?", pyetet butë "Pati reagim?".
+  - Reagimi shkruhet te alergjitë e profilit **vetëm pasi prindi e konfirmon** ("Po, shtoje"). Pastaj recetat e paralajmërojnë vetë.
+- **Gjyshërit:**
+  - Shohin recetat (edhe karta "Ide për sot" te pamja e tyre) dhe udhëzuesin e ushqimeve.
+  - Provat dhe reagimet i shohin vetëm kur prindërit ndezin "Gjyshërit shohin edhe kujdesin". S'shënojnë kurrë.
+- **Ku ruhen provat:** në telefon menjëherë (punojnë pa rrjet), pastaj te `food_tries` për familjen, që t'i shohë edhe prindi tjetër. Çdo fëmijë ka provat e veta.
+- **Përmbajtja:** 80 ushqime (`content/recipes/foods.json`, e njëjtë me tabelën `foods`). Çdo `food_key` i recetave është te lista.
+  - Testi `__tests__/firstFoods.test.ts` kontrollon rregullat e sigurisë:
+    - pa mjaltë, kripë a sheqer para kohe;
+    - rrushi dhe qershitë në katërsh, arrat vetëm të bluara, kikiriku i holluar;
+    - qumështi jo si pije para 12 muajsh, karota e molla të gatuara për 6–8 muaj;
+    - vezët, mishi dhe peshku të gatuar plotësisht.
+- **Ushqime të reja:** `node scripts/recipes-sql.mjs --foods content/recipes/foods.json <migrimi.sql> "përshkrimi"` (`on conflict (food_key) do nothing`).
+
 ## "Çfarë ka të re"
 - **Çfarë bën:** pas build-it të ri, faqja e bebit hap një herë listën e veçorive të reja. Prekja e një rreshti të çon te veçoria.
 - **Kush e sheh:** vetëm ata që e kishin përdorur app-in më parë. Përdoruesit e rinj s'e shohin.
@@ -98,9 +169,13 @@ Te **Supabase → SQL Editor**, me këtë radhë (secili skedar ekzekutohet një
 | 1 | `supabase/migrations/20261010090000_time_capsule.sql` | Tabela `time_capsule_letters` (teksti s'lexohet me SELECT); funksionet `seal_capsule_letter`, `open_capsule_letter`; RLS: familja lexon titujt, autori fshin |
 | 2 | `supabase/migrations/20261011090000_household_team.sql` | Rolet `parent`/`viewer` te familja; `can_view_baby_data`; politikat e shikuesve te `baby_records`, `baby_profiles` dhe fotot në Storage; `baby_records.created_by`; tabelat `household_settings`, `household_member_profiles`, `household_thanks`, `household_night_shifts`; funksionet `household_people`, `household_day_summary`, `send_household_thanks`, `set_night_shift`, `my_household_role`; ftesat me rol |
 | 3 | `supabase/migrations/20261012090000_parent_care.sql` | Tabela private `parent_checkins`; tabela `development_weeks` (lexim publik, shkrim vetëm admin) me përmbajtjen fillestare 0–24 muaj |
+| 4 | `supabase/migrations/20261110090000_recipes.sql` | Tabela `recipes` (lexim publik vetëm për `published`, shkrim vetëm admin; njësitë e përbërësve kontrollohen nga baza), `recipe_favorites` (çdo prind të vetat), bucket-i publik `recipe-covers` |
+| 5 | `supabase/migrations/20261110090100_recipes_library_1.sql` | 40 recetat fillestare (të njëjtat si në app) |
+| 6 | `supabase/migrations/20261111090000_foods.sql` | Tabela `foods` (lexim publik, shkrim vetëm admin) dhe `food_tries` (provat e çdo fëmije: i shkruajnë prindërit e familjes; gjyshërit vetëm i lexojnë, dhe vetëm kur ndizet "Gjyshërit shohin edhe kujdesin") |
+| 7 | `supabase/migrations/20261111090100_foods_library_1.sql` | 80 ushqimet e para (të njëjtat si në app) |
 
 - **Edge Functions:** asnjë e re. Njoftimet e reja përdorin radhën ekzistuese (`notification_outbox`, që zbrazet çdo 2 minuta). Përmbledhja e së hënës dhe kujtesat pas lindjes janë njoftime lokale të telefonit.
-- **Testet SQL** (Postgres lokal, PGlite): `supabase/tests/time-capsule.test.mjs` (17/17), `household-team.test.mjs` (42/42), `parent-care.test.mjs` (15/15).
+- **Testet SQL** (Postgres lokal, PGlite): `supabase/tests/time-capsule.test.mjs` (17/17), `household-team.test.mjs` (42/42), `parent-care.test.mjs` (15/15), `recipes.test.mjs` (32/32), `foods.test.mjs` (28/28).
 
 ## Build-i
 Një build i ri përfshin gjithçka. Ka paketa të reja native: `react-native-view-shot`, `expo-widgets`, `@expo/ui`.

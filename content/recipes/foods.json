@@ -1,0 +1,1429 @@
+[
+  {
+    "foodKey": "cornmeal",
+    "name": "Miell misri",
+    "category": "grain",
+    "allergen": null,
+    "ageFromMonths": 6,
+    "chokingRisk": "low",
+    "serveByAge": {
+      "6-8": "Qull i hollë me ujë, ose qull i ftohur e i prerë në shkopinj të butë sa gishti.",
+      "9-11": "Qull më i trashë, ose kulaç misri i butë në shkopinj.",
+      "12+": "Kulaç misri në copa të vogla, ose qull me fruta."
+    },
+    "nutrients": [
+      "fiber"
+    ],
+    "tip": "Mielli i misrit është pa gluten: i mirë për qullin e parë.",
+    "emoji": "🌽"
+  },
+  {
+    "foodKey": "rice",
+    "name": "Oriz",
+    "category": "grain",
+    "allergen": null,
+    "ageFromMonths": 6,
+    "chokingRisk": "low",
+    "serveByAge": {
+      "6-8": "Oriz i zier shumë i butë dhe i shtypur, ose topa orizi që ngjiten mes tyre.",
+      "9-11": "Oriz i zier i butë, i përzier me perime ose me mish të grirë.",
+      "12+": "Oriz si te familja, me lugë ose me dorë."
+    },
+    "nutrients": [],
+    "tip": "Ndërroje me drithëra të tjera (tërshërë, misër, kinoa), që orizi të mos jetë çdo ditë.",
+    "emoji": "🍚"
+  },
+  {
+    "foodKey": "oats",
+    "name": "Tërshërë",
+    "category": "grain",
+    "allergen": null,
+    "ageFromMonths": 6,
+    "chokingRisk": "low",
+    "serveByAge": {
+      "6-8": "Qull tërshëre i butë, ose petulla të buta tërshëre me banane, në shirita.",
+      "9-11": "Qull më i trashë, ose petulla të vogla me fruta të grira.",
+      "12+": "Qull, petulla ose biskota tërshëre pa sheqer."
+    },
+    "nutrients": [
+      "fiber",
+      "iron"
+    ],
+    "tip": "Bluaje tërshërën për bebet e vogla: qulli del më i lëmuar.",
+    "emoji": "🥣"
+  },
+  {
+    "foodKey": "wheat_flour",
+    "name": "Miell gruri",
+    "category": "grain",
+    "allergen": "wheat",
+    "ageFromMonths": 6,
+    "chokingRisk": "low",
+    "serveByAge": {
+      "6-8": "Në petulla ose bukë të butë të bërë në shtëpi; fillo me pak, se është alergjen.",
+      "9-11": "Petulla, byrek i butë ose qofte ku mielli lidh masën.",
+      "12+": "Si te familja: petulla, bukë, byrek."
+    },
+    "nutrients": [],
+    "tip": "Gruri është alergjen kryesor: provoje herët, një alergjen i ri në herë.",
+    "emoji": "🌾"
+  },
+  {
+    "foodKey": "pasta",
+    "name": "Makarona",
+    "category": "grain",
+    "allergen": "wheat",
+    "ageFromMonths": 6,
+    "chokingRisk": "low",
+    "serveByAge": {
+      "6-8": "Makarona të mëdha (penne, fusilli) të ziera më gjatë se zakonisht, që t'i mbajë në dorë.",
+      "9-11": "Makarona të vogla të ziera butë, me salcë perimesh.",
+      "12+": "Makarona si te familja; të gjatat prit në copa."
+    },
+    "nutrients": [],
+    "tip": "Ziej pa kripë dhe merr porcionin e bebit para se të shtosh kripë për të rriturit.",
+    "emoji": "🍝"
+  },
+  {
+    "foodKey": "vermicelli",
+    "name": "Fide",
+    "category": "grain",
+    "allergen": "wheat",
+    "ageFromMonths": 6,
+    "chokingRisk": "low",
+    "serveByAge": {
+      "6-8": "Fide të ziera mirë në supë, me gjithë supën të bluar ose të shtypur.",
+      "9-11": "Supë me fide dhe perime të grira imët.",
+      "12+": "Supë me fide si te familja, e vakët."
+    },
+    "nutrients": [],
+    "tip": "Fidet e imëta janë të mira për bebet që po mësojnë të përtypin.",
+    "emoji": "🍜"
+  },
+  {
+    "foodKey": "bread",
+    "name": "Bukë",
+    "category": "grain",
+    "allergen": "wheat",
+    "ageFromMonths": 6,
+    "chokingRisk": "medium",
+    "serveByAge": {
+      "6-8": "Shirita buke të thekur lehtë, me një shtresë të hollë avokado ose gjize.",
+      "9-11": "Copa të vogla buke të thekur, të lyera hollë.",
+      "12+": "Bukë në copa të vogla; zgjidh bukë me pak kripë."
+    },
+    "nutrients": [],
+    "tip": "Buka e butë e freskët bëhet top në gojë; e thekur lehtë përtypet më mirë.",
+    "emoji": "🍞"
+  },
+  {
+    "foodKey": "filo",
+    "name": "Petë byreku",
+    "category": "grain",
+    "allergen": "wheat",
+    "ageFromMonths": 12,
+    "chokingRisk": "medium",
+    "serveByAge": {
+      "6-8": "Prit deri në 12 muaj.",
+      "9-11": "Prit deri në 12 muaj.",
+      "12+": "Byrek i pjekur mirë, i prerë në katrorë të vegjël; skajet e forta të thata hiqi."
+    },
+    "nutrients": [],
+    "tip": "Byreku i bebit me gjizë ose spinaq, me pak kripë, piqet bashkë me atë të familjes.",
+    "emoji": "🥧"
+  },
+  {
+    "foodKey": "apple",
+    "name": "Mollë",
+    "category": "fruit",
+    "allergen": null,
+    "ageFromMonths": 6,
+    "chokingRisk": "high",
+    "serveByAge": {
+      "6-8": "E pjekur ose e zier derisa shtypet lehtë: purè ose feta të buta sa gishti. Jo e gjallë.",
+      "9-11": "E zier në copa të vogla të buta, ose e gjallë vetëm e grirë hollë.",
+      "12+": "E gjallë vetëm e grirë ose në feta shumë të holla; copat e forta mbeten rrezik."
+    },
+    "nutrients": [
+      "fiber",
+      "vitamin_c"
+    ],
+    "tip": "Molla e gjallë e fortë është nga ushqimet që zënë më shpesh fytin e të vegjëlve.",
+    "emoji": "🍎"
+  },
+  {
+    "foodKey": "pear",
+    "name": "Dardhë",
+    "category": "fruit",
+    "allergen": null,
+    "ageFromMonths": 6,
+    "chokingRisk": "medium",
+    "serveByAge": {
+      "6-8": "Dardhë shumë e pjekur, pa lëkurë, në feta të gjata; nëse është e fortë, piqe ose ziej.",
+      "9-11": "Copa të vogla dardhe të pjekur e të butë.",
+      "12+": "Feta ose copa të vogla; e forta vetëm e grirë."
+    },
+    "nutrients": [
+      "fiber"
+    ],
+    "tip": "Dardha gati shtypet mes gishtit të madh dhe treguesit: kjo është prova e butësisë.",
+    "emoji": "🍐"
+  },
+  {
+    "foodKey": "quince",
+    "name": "Ftua",
+    "category": "fruit",
+    "allergen": null,
+    "ageFromMonths": 6,
+    "chokingRisk": "high",
+    "serveByAge": {
+      "6-8": "Vetëm i pjekur ose i zier derisa shtypet: purè ose feta të buta.",
+      "9-11": "I pjekur me kanellë, në copa të vogla.",
+      "12+": "I pjekur ose komposto pa sheqer; i gjallë është shumë i fortë."
+    },
+    "nutrients": [
+      "fiber",
+      "vitamin_c"
+    ],
+    "tip": "Ftoi i gjallë është i fortë si guri: për bebin vetëm i gatuar."
+  },
+  {
+    "foodKey": "banana",
+    "name": "Banane",
+    "category": "fruit",
+    "allergen": null,
+    "ageFromMonths": 6,
+    "chokingRisk": "low",
+    "serveByAge": {
+      "6-8": "Gjysmë banane me pak lëkurë të lënë si dorezë, ose e shtypur me pirun.",
+      "9-11": "Copa të vogla, ose e shtypur në qull.",
+      "12+": "E plotë në dorë ose në copa, me kos ose qull."
+    },
+    "nutrients": [
+      "fiber"
+    ],
+    "tip": "Banania e pjekur ëmbëlson qullin dhe petullat pa pasur nevojë për sheqer.",
+    "emoji": "🍌"
+  },
+  {
+    "foodKey": "avocado",
+    "name": "Avokado",
+    "category": "fruit",
+    "allergen": null,
+    "ageFromMonths": 6,
+    "chokingRisk": "low",
+    "serveByAge": {
+      "6-8": "Feta të trasha avokadoje të pjekur, të rrotulluara në tërshërë të bluar që të mos rrëshqasin, ose e shtypur.",
+      "9-11": "Kubikë të vegjël, ose e lyer në bukë të thekur.",
+      "12+": "Kubikë, feta ose e shtypur si salcë."
+    },
+    "nutrients": [
+      "fiber"
+    ],
+    "tip": "Avokadoja e pjekur lëshon pak kur e shtyp lehtë me gisht.",
+    "emoji": "🥑"
+  },
+  {
+    "foodKey": "lemon",
+    "name": "Limon",
+    "category": "fruit",
+    "allergen": null,
+    "ageFromMonths": 6,
+    "chokingRisk": "low",
+    "serveByAge": {
+      "6-8": "Vetëm pak lëng në gatim, për shije; jo copa limoni.",
+      "9-11": "Pak lëng mbi perime ose mish, për shije.",
+      "12+": "Pak lëng në gatime dhe në ujë."
+    },
+    "nutrients": [
+      "vitamin_c"
+    ],
+    "tip": "Pak lëng limoni bashkë me spinaqin ose thjerrëzat ndihmon që hekuri të përthithet më mirë.",
+    "emoji": "🍋"
+  },
+  {
+    "foodKey": "grapes",
+    "name": "Rrush",
+    "category": "fruit",
+    "allergen": null,
+    "ageFromMonths": 6,
+    "chokingRisk": "high",
+    "serveByAge": {
+      "6-8": "Kokrra të mëdha pa fara, të prera për së gjati në katërsh, ose të shtypura.",
+      "9-11": "Të prera për së gjati në katërsh, gjithmonë.",
+      "12+": "Të prera për së gjati në katërsh deri në 4 vjeç; asnjëherë kokërr e plotë."
+    },
+    "nutrients": [
+      "vitamin_c"
+    ],
+    "tip": "Kokrra e plotë e rrushit ka madhësinë e fytit të një fëmije: prije gjithmonë në katërsh.",
+    "emoji": "🍇"
+  },
+  {
+    "foodKey": "strawberry",
+    "name": "Luleshtrydhe",
+    "category": "fruit",
+    "allergen": null,
+    "ageFromMonths": 6,
+    "chokingRisk": "medium",
+    "serveByAge": {
+      "6-8": "Të shtypura, ose të prera për së gjati në feta të holla.",
+      "9-11": "Copa të vogla, ose të prera në katërsh.",
+      "12+": "Të prera në katërsh ose në feta."
+    },
+    "nutrients": [
+      "vitamin_c"
+    ],
+    "tip": "Luleshtrydhet kanë shumë vitaminë C: shkojnë mirë me qullin.",
+    "emoji": "🍓"
+  },
+  {
+    "foodKey": "pumpkin",
+    "name": "Kungull",
+    "category": "vegetable",
+    "allergen": null,
+    "ageFromMonths": 6,
+    "chokingRisk": "low",
+    "serveByAge": {
+      "6-8": "I pjekur ose i zier: purè, ose feta të buta pa lëkurë.",
+      "9-11": "Kubikë të butë të pjekur.",
+      "12+": "I pjekur, në supë ose në byrek."
+    },
+    "nutrients": [
+      "fiber"
+    ],
+    "tip": "Piqe në furrë me pak vaj ulliri: del i ëmbël vetë.",
+    "emoji": "🎃"
+  },
+  {
+    "foodKey": "zucchini",
+    "name": "Kungull i njomë",
+    "category": "vegetable",
+    "allergen": null,
+    "ageFromMonths": 6,
+    "chokingRisk": "low",
+    "serveByAge": {
+      "6-8": "I zier në avull, në shkopinj të trashë me lëkurë që të mos shkërmoqet, ose purè.",
+      "9-11": "Copa të vogla të ziera, ose i grirë në qofte dhe petulla.",
+      "12+": "Si te familja: i pjekur, në tavë ose në petulla."
+    },
+    "nutrients": [],
+    "tip": "Lëkura e mban shkopin të plotë në dorën e bebit.",
+    "emoji": "🥒"
+  },
+  {
+    "foodKey": "carrot",
+    "name": "Karotë",
+    "category": "vegetable",
+    "allergen": null,
+    "ageFromMonths": 6,
+    "chokingRisk": "high",
+    "serveByAge": {
+      "6-8": "E zier ose e pjekur derisa shtypet: shkopinj të butë sa gishti ose purè. Asnjëherë e gjallë.",
+      "9-11": "E zier në copa të vogla, ose e gjallë vetëm e grirë hollë.",
+      "12+": "E zier në copa, ose e gjallë vetëm e grirë; shkopinjtë e gjallë mbeten rrezik."
+    },
+    "nutrients": [
+      "fiber"
+    ],
+    "tip": "Karota e gjallë e fortë është rrezik mbytjeje deri në 4 vjeç; e grirë hollë është në rregull.",
+    "emoji": "🥕"
+  },
+  {
+    "foodKey": "potato",
+    "name": "Patate",
+    "category": "vegetable",
+    "allergen": null,
+    "ageFromMonths": 6,
+    "chokingRisk": "low",
+    "serveByAge": {
+      "6-8": "E zier ose e pjekur: purè ose shkopinj të butë.",
+      "9-11": "Copa të vogla të ziera, ose purè me perime.",
+      "12+": "Si te familja: e zier, e pjekur ose në tavë."
+    },
+    "nutrients": [],
+    "tip": "Patatja e bën purènë e perimeve më të butë për bebet e vogla.",
+    "emoji": "🥔"
+  },
+  {
+    "foodKey": "onion",
+    "name": "Qepë",
+    "category": "vegetable",
+    "allergen": null,
+    "ageFromMonths": 6,
+    "chokingRisk": "low",
+    "serveByAge": {
+      "6-8": "E gatuar mirë në supë ose purè, për shije.",
+      "9-11": "E grirë imët dhe e zier në gatime.",
+      "12+": "Në gatime si te familja."
+    },
+    "nutrients": [],
+    "tip": "Qepa e zier jep shije pa pasur nevojë për kripë."
+  },
+  {
+    "foodKey": "leek",
+    "name": "Presh",
+    "category": "vegetable",
+    "allergen": null,
+    "ageFromMonths": 6,
+    "chokingRisk": "low",
+    "serveByAge": {
+      "6-8": "I zier mirë dhe i bluar në supë ose purè.",
+      "9-11": "I grirë imët në supë, byrek ose qofte.",
+      "12+": "Në gatime si te familja; fijet e gjata prit imët."
+    },
+    "nutrients": [],
+    "tip": "Laje mirë mes shtresave: aty mbetet dhe."
+  },
+  {
+    "foodKey": "celery",
+    "name": "Selino",
+    "category": "vegetable",
+    "allergen": null,
+    "ageFromMonths": 6,
+    "chokingRisk": "high",
+    "serveByAge": {
+      "6-8": "Vetëm i zier mirë dhe i bluar në supë; fijet e forta janë rrezik.",
+      "9-11": "I zier dhe i grirë imët në supë.",
+      "12+": "I gatuar në supë; i gjallë vetëm i grirë hollë."
+    },
+    "nutrients": [],
+    "tip": "Kërcelli i gjallë ka fije të forta: për të vegjlit vetëm i gatuar."
+  },
+  {
+    "foodKey": "spinach",
+    "name": "Spinaq",
+    "category": "vegetable",
+    "allergen": null,
+    "ageFromMonths": 6,
+    "chokingRisk": "low",
+    "serveByAge": {
+      "6-8": "I zier dhe i bluar në purè, qull ose petulla.",
+      "9-11": "I grirë imët në petulla, në omëletë të gatuar mirë ose në oriz.",
+      "12+": "Në byrek, në jani ose në petulla."
+    },
+    "nutrients": [
+      "iron",
+      "fiber"
+    ],
+    "tip": "Bashkë me një ushqim me vitaminë C (domate, spec, limon), hekuri i spinaqit përthithet më mirë.",
+    "emoji": "🥬"
+  },
+  {
+    "foodKey": "tomato",
+    "name": "Domate",
+    "category": "vegetable",
+    "allergen": null,
+    "ageFromMonths": 6,
+    "chokingRisk": "medium",
+    "serveByAge": {
+      "6-8": "E pjekur dhe e shtypur pa lëkurë, ose feta të mëdha të pjekura; domatet qershi vetëm në katërsh.",
+      "9-11": "Copa të vogla pa lëkurë; domatet qershi të prera për së gjati në katërsh.",
+      "12+": "Në sallatë ose në gatime; domatet qershi në katërsh deri në 4 vjeç."
+    },
+    "nutrients": [
+      "vitamin_c"
+    ],
+    "tip": "Domatja qershi e plotë është rrezik mbytjeje: prije për së gjati në katërsh.",
+    "emoji": "🍅"
+  },
+  {
+    "foodKey": "pepper",
+    "name": "Spec",
+    "category": "vegetable",
+    "allergen": null,
+    "ageFromMonths": 6,
+    "chokingRisk": "medium",
+    "serveByAge": {
+      "6-8": "I pjekur, pa lëkurë, në shirita të butë ose i bluar në purè.",
+      "9-11": "I pjekur, në copa të vogla.",
+      "12+": "I pjekur, ose i gjallë në shirita të hollë."
+    },
+    "nutrients": [
+      "vitamin_c"
+    ],
+    "tip": "Speci i kuq ka shumë vitaminë C: shkon mirë me thjerrëzat."
+  },
+  {
+    "foodKey": "peas",
+    "name": "Bizele",
+    "category": "vegetable",
+    "allergen": null,
+    "ageFromMonths": 6,
+    "chokingRisk": "high",
+    "serveByAge": {
+      "6-8": "Të ziera dhe të shtypura ose të bluara; jo kokrra të plota.",
+      "9-11": "Të ziera dhe të shtypura pak me pirun.",
+      "12+": "Kokrra të ziera të buta, me fëmijën ulur."
+    },
+    "nutrients": [
+      "protein",
+      "fiber"
+    ],
+    "tip": "Shtypja e lehtë me pirun i bën bizelet më të sigurta për të vegjlit."
+  },
+  {
+    "foodKey": "eggplant",
+    "name": "Patëllxhan",
+    "category": "vegetable",
+    "allergen": null,
+    "ageFromMonths": 6,
+    "chokingRisk": "low",
+    "serveByAge": {
+      "6-8": "I pjekur shumë i butë, pa lëkurë: purè ose shirita.",
+      "9-11": "I pjekur, në copa të vogla ose në tavë.",
+      "12+": "Si te familja: i pjekur ose në tavë."
+    },
+    "nutrients": [],
+    "tip": "Piqe derisa të bëhet si krem: lëkura hiqet vetë.",
+    "emoji": "🍆"
+  },
+  {
+    "foodKey": "mushroom",
+    "name": "Kërpudha",
+    "category": "vegetable",
+    "allergen": null,
+    "ageFromMonths": 6,
+    "chokingRisk": "medium",
+    "serveByAge": {
+      "6-8": "Të gatuara mirë dhe të grira imët ose të bluara në salcë.",
+      "9-11": "Të gatuara mirë, të prera imët.",
+      "12+": "Të gatuara, në copa të vogla."
+    },
+    "nutrients": [],
+    "tip": "Kërpudhat për fëmijë gjithmonë të gatuara, kurrë të gjalla.",
+    "emoji": "🍄"
+  },
+  {
+    "foodKey": "garlic",
+    "name": "Hudhër",
+    "category": "vegetable",
+    "allergen": null,
+    "ageFromMonths": 6,
+    "chokingRisk": "low",
+    "serveByAge": {
+      "6-8": "Pak hudhër e gatuar në supë ose purè, për shije.",
+      "9-11": "E gatuar në gatime.",
+      "12+": "Në gatime si te familja."
+    },
+    "nutrients": [],
+    "tip": "Hudhra dhe barishtet zëvendësojnë kripën te gatimet e bebit."
+  },
+  {
+    "foodKey": "red_lentils",
+    "name": "Thjerrëza të kuqe",
+    "category": "protein",
+    "allergen": null,
+    "ageFromMonths": 6,
+    "chokingRisk": "low",
+    "serveByAge": {
+      "6-8": "Të ziera derisa shkrihen: purè ose supë e trashë.",
+      "9-11": "Supë, qofte ose petulla me thjerrëza.",
+      "12+": "Supë ose gjellë si te familja."
+    },
+    "nutrients": [
+      "iron",
+      "protein",
+      "fiber"
+    ],
+    "tip": "Thjerrëzat e kuqe shkrihen vetë për 15 minuta, pa i njomur."
+  },
+  {
+    "foodKey": "lentils",
+    "name": "Thjerrëza",
+    "category": "protein",
+    "allergen": null,
+    "ageFromMonths": 6,
+    "chokingRisk": "low",
+    "serveByAge": {
+      "6-8": "Të ziera mirë dhe të bluara ose të shtypura.",
+      "9-11": "Të ziera të buta, të shtypura pak, në gjellë.",
+      "12+": "Gjellë me thjerrëza si te familja."
+    },
+    "nutrients": [
+      "iron",
+      "protein",
+      "fiber"
+    ],
+    "tip": "Bashkë me një ushqim me vitaminë C, hekuri i thjerrëzave përthithet më mirë."
+  },
+  {
+    "foodKey": "white_beans",
+    "name": "Fasule të bardha",
+    "category": "protein",
+    "allergen": null,
+    "ageFromMonths": 6,
+    "chokingRisk": "medium",
+    "serveByAge": {
+      "6-8": "Të ziera shumë të buta: të shtypura ose purè, jo kokrra të plota.",
+      "9-11": "Kokrra që shtypen lehtë me gisht, ose në gjellë të butë.",
+      "12+": "Fasule të ziera të buta, si te familja."
+    },
+    "nutrients": [
+      "iron",
+      "protein",
+      "fiber"
+    ],
+    "tip": "Njomi një natë dhe ziej mirë: fasulet bëhen të buta."
+  },
+  {
+    "foodKey": "chickpeas",
+    "name": "Qiqra",
+    "category": "protein",
+    "allergen": null,
+    "ageFromMonths": 6,
+    "chokingRisk": "high",
+    "serveByAge": {
+      "6-8": "Vetëm të bluara: humus pa kripë ose purè.",
+      "9-11": "Të shtypura me pirun ose humus; jo kokrra të plota.",
+      "12+": "Kokrra të ziera të buta, të shtypura pak, me fëmijën ulur."
+    },
+    "nutrients": [
+      "protein",
+      "fiber",
+      "iron"
+    ],
+    "tip": "Kokrra e plotë e qiqrës është e rrumbullakët dhe e fortë: shtype për të vegjlit."
+  },
+  {
+    "foodKey": "chicken",
+    "name": "Pulë",
+    "category": "protein",
+    "allergen": null,
+    "ageFromMonths": 6,
+    "chokingRisk": "medium",
+    "serveByAge": {
+      "6-8": "E gatuar plotësisht: shirita të butë nga kofsha, ose e grirë në qofte të buta dhe purè.",
+      "9-11": "E grirë ose në copa shumë të vogla e të buta.",
+      "12+": "Copa të vogla, pa lëkurë e pa kocka."
+    },
+    "nutrients": [
+      "protein",
+      "iron"
+    ],
+    "tip": "Kofsha mbetet më e butë se gjoksi dhe ka më shumë hekur.",
+    "emoji": "🍗"
+  },
+  {
+    "foodKey": "beef",
+    "name": "Mish viçi",
+    "category": "protein",
+    "allergen": null,
+    "ageFromMonths": 6,
+    "chokingRisk": "medium",
+    "serveByAge": {
+      "6-8": "I gatuar plotësisht: i grirë në qofte të buta, ose shirita të mëdhenj shumë të zier për ta thithur.",
+      "9-11": "I grirë, ose copa të vogla shumë të buta.",
+      "12+": "Copa të vogla, të prera kundër fijeve."
+    },
+    "nutrients": [
+      "iron",
+      "protein"
+    ],
+    "tip": "Mishi i kuq është ndër burimet më të mira të hekurit për bebet.",
+    "emoji": "🥩"
+  },
+  {
+    "foodKey": "egg",
+    "name": "Vezë",
+    "category": "protein",
+    "allergen": "egg",
+    "ageFromMonths": 6,
+    "chokingRisk": "low",
+    "serveByAge": {
+      "6-8": "Gjithmonë e gatuar plotësisht: vezë e zier fort e shtypur, ose omëletë e gatuar mirë në shirita.",
+      "9-11": "Omëletë e gatuar mirë, ose vezë e zier fort në copa të vogla.",
+      "12+": "E zier fort, omëletë ose në gatime; e verdha jo e lëngshme."
+    },
+    "nutrients": [
+      "protein",
+      "iron"
+    ],
+    "tip": "Veza është alergjen kryesor: provoje herët, në mëngjes, një alergjen i ri në herë.",
+    "emoji": "🥚"
+  },
+  {
+    "foodKey": "salmon",
+    "name": "Salmon",
+    "category": "protein",
+    "allergen": "fish",
+    "ageFromMonths": 6,
+    "chokingRisk": "low",
+    "serveByAge": {
+      "6-8": "I gatuar plotësisht, pa kocka, i shtypur me pirun ose në qofte të buta.",
+      "9-11": "Copa të vogla pa kocka, të ndara me gisht.",
+      "12+": "Si te familja, pasi i kontrollon kockat."
+    },
+    "nutrients": [
+      "omega3",
+      "protein"
+    ],
+    "tip": "Kontrollo me gishta për kocka të vogla para se t'ia japësh.",
+    "emoji": "🐟"
+  },
+  {
+    "foodKey": "sea_bass",
+    "name": "Levrek",
+    "category": "protein",
+    "allergen": "fish",
+    "ageFromMonths": 6,
+    "chokingRisk": "low",
+    "serveByAge": {
+      "6-8": "I pjekur plotësisht, pa kocka e pa lëkurë, i shtypur me pirun.",
+      "9-11": "Copa të vogla pa kocka.",
+      "12+": "Si te familja, pa kocka."
+    },
+    "nutrients": [
+      "protein",
+      "omega3"
+    ],
+    "tip": "Levreku ka pak merkur: peshk i mirë 1–2 herë në javë.",
+    "emoji": "🐟"
+  },
+  {
+    "foodKey": "yogurt",
+    "name": "Kos",
+    "category": "dairy",
+    "allergen": "milk",
+    "ageFromMonths": 6,
+    "chokingRisk": "low",
+    "serveByAge": {
+      "6-8": "Kos i plotë pa sheqer, me lugë, vetëm ose me fruta të shtypura.",
+      "9-11": "Kos i plotë me fruta, ose si salcë për perimet.",
+      "12+": "Kos i plotë si te familja, edhe në tavë."
+    },
+    "nutrients": [
+      "calcium",
+      "protein"
+    ],
+    "tip": "Zgjidh kos të plotë pa sheqer dhe ëmbëlsoje me banane ose dardhë.",
+    "emoji": "🥛"
+  },
+  {
+    "foodKey": "milk",
+    "name": "Qumësht lope",
+    "category": "dairy",
+    "allergen": "milk",
+    "ageFromMonths": 6,
+    "chokingRisk": "low",
+    "serveByAge": {
+      "6-8": "Vetëm në gatim (qull, purè); jo si pije para 12 muajsh.",
+      "9-11": "Vetëm në gatim; jo si pije para 12 muajsh.",
+      "12+": "Si pije në gotë të hapur, dhe në gatim."
+    },
+    "nutrients": [
+      "calcium",
+      "protein"
+    ],
+    "tip": "Para 12 muajsh, pija kryesore mbetet qumështi i gjirit ose formula.",
+    "emoji": "🥛"
+  },
+  {
+    "foodKey": "gjize",
+    "name": "Gjizë",
+    "category": "dairy",
+    "allergen": "milk",
+    "ageFromMonths": 6,
+    "chokingRisk": "low",
+    "serveByAge": {
+      "6-8": "Gjizë e freskët pa kripë, e lyer në bukë të thekur ose e përzier në purè.",
+      "9-11": "Në petulla, në byrek të butë ose me fruta.",
+      "12+": "Në byrek, në petulla ose në bukë."
+    },
+    "nutrients": [
+      "calcium",
+      "protein"
+    ],
+    "tip": "Kërko gjizë të freskët pa kripë.",
+    "emoji": "🧀"
+  },
+  {
+    "foodKey": "butter",
+    "name": "Gjalpë",
+    "category": "dairy",
+    "allergen": "milk",
+    "ageFromMonths": 6,
+    "chokingRisk": "low",
+    "serveByAge": {
+      "6-8": "Pak në gatim, në purè ose qull.",
+      "9-11": "Pak në gatim, ose i lyer hollë.",
+      "12+": "Si te familja, me masë."
+    },
+    "nutrients": [],
+    "tip": "Pak gjalpë ose vaj ulliri e bën purènë më të butë."
+  },
+  {
+    "foodKey": "cheese",
+    "name": "Djathë",
+    "category": "dairy",
+    "allergen": "milk",
+    "ageFromMonths": 6,
+    "chokingRisk": "medium",
+    "serveByAge": {
+      "6-8": "Djathë i butë me pak kripë, i grirë hollë ose i shkrirë në gatim.",
+      "9-11": "I grirë, ose në feta të holla; jo kubikë të fortë.",
+      "12+": "Feta të holla ose shkopinj; djathë me pak kripë."
+    },
+    "nutrients": [
+      "calcium",
+      "protein"
+    ],
+    "tip": "Djathi i bardhë i zakonshëm ka shumë kripë: për bebin zgjidh atë me pak kripë dhe jepi pak.",
+    "emoji": "🧀"
+  },
+  {
+    "foodKey": "peanut_butter",
+    "name": "Gjalpë kikiriku",
+    "category": "allergen",
+    "allergen": "peanut",
+    "ageFromMonths": 6,
+    "chokingRisk": "high",
+    "serveByAge": {
+      "6-8": "Gjalpë kikiriku i lëmuar, i holluar me ujë të ngrohtë ose me purè frutash; asnjëherë kikirikë të plotë.",
+      "9-11": "I lyer hollë në bukë të thekur, ose i përzier në qull.",
+      "12+": "I lyer hollë; kikirikët e plotë jo para 5 vjeç."
+    },
+    "nutrients": [
+      "protein"
+    ],
+    "tip": "Gjalpi i trashë ngjitet në qiellzë: holloje gjithmonë dhe lyeje hollë.",
+    "emoji": "🥜"
+  },
+  {
+    "foodKey": "tahini",
+    "name": "Tahini (susam)",
+    "category": "allergen",
+    "allergen": "sesame",
+    "ageFromMonths": 6,
+    "chokingRisk": "low",
+    "serveByAge": {
+      "6-8": "Pak tahini i përzier në purè ose në qull.",
+      "9-11": "I lyer hollë në bukë, ose në humus pa kripë.",
+      "12+": "Në humus, në salca ose i lyer hollë."
+    },
+    "nutrients": [
+      "calcium"
+    ],
+    "tip": "Susami është alergjen kryesor: provoje si tahini, një alergjen i ri në herë."
+  },
+  {
+    "foodKey": "semolina",
+    "name": "Griz",
+    "category": "grain",
+    "allergen": "wheat",
+    "ageFromMonths": 6,
+    "chokingRisk": "low",
+    "serveByAge": {
+      "6-8": "Qull grizi i butë me ujë, ose me qumësht në gatim.",
+      "9-11": "Qull më i trashë, ose topa të butë grizi.",
+      "12+": "Qull grizi pa sheqer, me fruta."
+    },
+    "nutrients": [],
+    "tip": "Grizi është prej gruri: mund të jetë hapi i parë i grurit."
+  },
+  {
+    "foodKey": "quinoa",
+    "name": "Kinoa",
+    "category": "grain",
+    "allergen": null,
+    "ageFromMonths": 6,
+    "chokingRisk": "low",
+    "serveByAge": {
+      "6-8": "E zier mirë dhe e përzier në purè, ose në topa të butë me perime.",
+      "9-11": "E zier, me perime ose në petulla.",
+      "12+": "Si orizi, në gjellë ose në sallata."
+    },
+    "nutrients": [
+      "protein",
+      "iron",
+      "fiber"
+    ],
+    "tip": "Shpëlaje mirë para se ta ziesh: hiqet shija e hidhur."
+  },
+  {
+    "foodKey": "bulgur",
+    "name": "Bullgur",
+    "category": "grain",
+    "allergen": "wheat",
+    "ageFromMonths": 6,
+    "chokingRisk": "low",
+    "serveByAge": {
+      "6-8": "I zier shumë i butë, i përzier në purè ose në qofte.",
+      "9-11": "I zier, në gjellë ose në qofte.",
+      "12+": "Si pilaf ose në sallata."
+    },
+    "nutrients": [
+      "fiber"
+    ],
+    "tip": "Bullguri është prej gruri: provoje pasi gruri të jetë prezantuar."
+  },
+  {
+    "foodKey": "barley",
+    "name": "Elb",
+    "category": "grain",
+    "allergen": null,
+    "ageFromMonths": 6,
+    "chokingRisk": "low",
+    "serveByAge": {
+      "6-8": "Elb i zier gjatë dhe i bluar në supë.",
+      "9-11": "Kokrra të ziera të buta në supë.",
+      "12+": "Në supë ose gjellë si te familja."
+    },
+    "nutrients": [
+      "fiber"
+    ],
+    "tip": "Elbi ka gluten, edhe pse s'është grurë.",
+    "emoji": "🌾"
+  },
+  {
+    "foodKey": "plum",
+    "name": "Kumbull",
+    "category": "fruit",
+    "allergen": null,
+    "ageFromMonths": 6,
+    "chokingRisk": "medium",
+    "serveByAge": {
+      "6-8": "Kumbull shumë e pjekur, pa bërthamë e pa lëkurë, në gjysma ose e shtypur; e forta vetëm e zier.",
+      "9-11": "Copa të vogla pa bërthamë.",
+      "12+": "Copa ose feta pa bërthamë."
+    },
+    "nutrients": [
+      "fiber",
+      "vitamin_c"
+    ],
+    "tip": "Kumbullat kanë shumë fibra."
+  },
+  {
+    "foodKey": "peach",
+    "name": "Pjeshkë",
+    "category": "fruit",
+    "allergen": null,
+    "ageFromMonths": 6,
+    "chokingRisk": "low",
+    "serveByAge": {
+      "6-8": "Pjeshkë e pjekur, pa lëkurë e pa bërthamë, në feta të gjata ose e shtypur.",
+      "9-11": "Copa të vogla të buta.",
+      "12+": "Feta ose copa."
+    },
+    "nutrients": [
+      "vitamin_c",
+      "fiber"
+    ],
+    "tip": "Nëse pjeshka është e fortë, ziej pak në avull.",
+    "emoji": "🍑"
+  },
+  {
+    "foodKey": "apricot",
+    "name": "Kajsi",
+    "category": "fruit",
+    "allergen": null,
+    "ageFromMonths": 6,
+    "chokingRisk": "medium",
+    "serveByAge": {
+      "6-8": "Kajsi e pjekur e butë, pa bërthamë, në gjysma ose e shtypur.",
+      "9-11": "Copa të vogla pa bërthamë.",
+      "12+": "Copa; kajsitë e thata vetëm të njomura dhe të prera imët."
+    },
+    "nutrients": [
+      "fiber"
+    ],
+    "tip": "Kajsitë e thata ngjiten në gojë: njomi në ujë të ngrohtë dhe prit imët.",
+    "emoji": "🍑"
+  },
+  {
+    "foodKey": "watermelon",
+    "name": "Shalqi",
+    "category": "fruit",
+    "allergen": null,
+    "ageFromMonths": 6,
+    "chokingRisk": "low",
+    "serveByAge": {
+      "6-8": "Shkopinj të trashë pa fara, sa gishti i një të rrituri.",
+      "9-11": "Copa të vogla pa fara.",
+      "12+": "Copa ose feta pa fara."
+    },
+    "nutrients": [
+      "vitamin_c"
+    ],
+    "tip": "Shalqiri ka shumë ujë: freskues në verë.",
+    "emoji": "🍉"
+  },
+  {
+    "foodKey": "melon",
+    "name": "Pjepër",
+    "category": "fruit",
+    "allergen": null,
+    "ageFromMonths": 6,
+    "chokingRisk": "medium",
+    "serveByAge": {
+      "6-8": "Pjepër shumë i pjekur, pa lëkurë, në shirita të trashë ose i shtypur.",
+      "9-11": "Copa të vogla të pjekura.",
+      "12+": "Copa ose feta."
+    },
+    "nutrients": [
+      "vitamin_c"
+    ],
+    "tip": "Zgjidh pjepër shumë të pjekur: i forti rrëshqet dhe s'shtypet.",
+    "emoji": "🍈"
+  },
+  {
+    "foodKey": "blueberries",
+    "name": "Boronica",
+    "category": "fruit",
+    "allergen": null,
+    "ageFromMonths": 6,
+    "chokingRisk": "high",
+    "serveByAge": {
+      "6-8": "Të shtypura me gisht (të sheshta) ose të gatuara në qull; jo kokrra të plota.",
+      "9-11": "Të shtypura ose të përgjysmuara.",
+      "12+": "Të përgjysmuara ose të shtypura deri në 2 vjeç."
+    },
+    "nutrients": [
+      "vitamin_c",
+      "fiber"
+    ],
+    "tip": "Shtypi boronicat mes gishtave: bëhen të sheshta dhe më të sigurta."
+  },
+  {
+    "foodKey": "cherries",
+    "name": "Qershi",
+    "category": "fruit",
+    "allergen": null,
+    "ageFromMonths": 6,
+    "chokingRisk": "high",
+    "serveByAge": {
+      "6-8": "Pa bërthamë, të pjekura e të buta, të prera për së gjati në katërsh.",
+      "9-11": "Pa bërthamë, në katërsh.",
+      "12+": "Pa bërthamë, në katërsh deri në 4 vjeç."
+    },
+    "nutrients": [
+      "vitamin_c"
+    ],
+    "tip": "Hiqi bërthamat gjithmonë: janë rrezik mbytjeje.",
+    "emoji": "🍒"
+  },
+  {
+    "foodKey": "orange",
+    "name": "Portokall",
+    "category": "fruit",
+    "allergen": null,
+    "ageFromMonths": 6,
+    "chokingRisk": "medium",
+    "serveByAge": {
+      "6-8": "Pa fara dhe pa cipë, në copa të vogla ose të shtypura.",
+      "9-11": "Copa të vogla pa cipë e pa fara.",
+      "12+": "Feta ose copa pa fara."
+    },
+    "nutrients": [
+      "vitamin_c"
+    ],
+    "tip": "Vitamina C e portokallit ndihmon përthithjen e hekurit nga thjerrëzat dhe fasulet.",
+    "emoji": "🍊"
+  },
+  {
+    "foodKey": "mandarin",
+    "name": "Mandarinë",
+    "category": "fruit",
+    "allergen": null,
+    "ageFromMonths": 6,
+    "chokingRisk": "medium",
+    "serveByAge": {
+      "6-8": "Feta pa fara, të prera në copa të vogla ose të shtypura.",
+      "9-11": "Feta të prera më dysh, pa fara.",
+      "12+": "Feta pa fara; kur cipa është e fortë, prije."
+    },
+    "nutrients": [
+      "vitamin_c"
+    ],
+    "tip": "Mandarina e dimrit sjell vitaminë C kur frutat e tjera janë të pakta.",
+    "emoji": "🍊"
+  },
+  {
+    "foodKey": "kiwi",
+    "name": "Kivi",
+    "category": "fruit",
+    "allergen": null,
+    "ageFromMonths": 6,
+    "chokingRisk": "low",
+    "serveByAge": {
+      "6-8": "Kivi i pjekur, pa lëkurë, në gjysma ose shirita.",
+      "9-11": "Copa të vogla.",
+      "12+": "Feta ose copa."
+    },
+    "nutrients": [
+      "vitamin_c",
+      "fiber"
+    ],
+    "tip": "Kivi është i thartë: përzieje me banane nëse bebi rrudh fytyrën.",
+    "emoji": "🥝"
+  },
+  {
+    "foodKey": "mango",
+    "name": "Mango",
+    "category": "fruit",
+    "allergen": null,
+    "ageFromMonths": 6,
+    "chokingRisk": "low",
+    "serveByAge": {
+      "6-8": "E pjekur, pa lëkurë, në shirita të trashë ose e shtypur.",
+      "9-11": "Copa të vogla.",
+      "12+": "Copa ose feta."
+    },
+    "nutrients": [
+      "vitamin_c",
+      "fiber"
+    ],
+    "tip": "Mango e pjekur rrëshqet: rrotulloje në tërshërë të bluar që ta kapë më lehtë.",
+    "emoji": "🥭"
+  },
+  {
+    "foodKey": "fig",
+    "name": "Fik",
+    "category": "fruit",
+    "allergen": null,
+    "ageFromMonths": 6,
+    "chokingRisk": "low",
+    "serveByAge": {
+      "6-8": "Fik i freskët shumë i pjekur, i prerë në katërsh; fiqtë e thatë vetëm të njomur dhe të grirë.",
+      "9-11": "Copa të vogla fiku të freskët.",
+      "12+": "I freskët në copa; i thati i prerë imët."
+    },
+    "nutrients": [
+      "fiber",
+      "calcium"
+    ],
+    "tip": "Fiqtë në fund të verës janë të ëmbël vetë: s'kanë nevojë për asgjë."
+  },
+  {
+    "foodKey": "raspberry",
+    "name": "Mjedër",
+    "category": "fruit",
+    "allergen": null,
+    "ageFromMonths": 6,
+    "chokingRisk": "low",
+    "serveByAge": {
+      "6-8": "Të shtypura pak me gisht, ose në qull.",
+      "9-11": "Të plota të buta, ose të shtypura pak.",
+      "12+": "Të plota."
+    },
+    "nutrients": [
+      "vitamin_c",
+      "fiber"
+    ],
+    "tip": "Mjedrat shtypen lehtë: frut i mirë për gishtat e vegjël."
+  },
+  {
+    "foodKey": "sweet_potato",
+    "name": "Patate e ëmbël",
+    "category": "vegetable",
+    "allergen": null,
+    "ageFromMonths": 6,
+    "chokingRisk": "low",
+    "serveByAge": {
+      "6-8": "E pjekur: purè, ose shkopinj të butë me lëkurë.",
+      "9-11": "Kubikë të butë të pjekur.",
+      "12+": "E pjekur ose në supë."
+    },
+    "nutrients": [
+      "fiber",
+      "vitamin_c"
+    ],
+    "tip": "E pjekur në furrë del e ëmbël vetë.",
+    "emoji": "🍠"
+  },
+  {
+    "foodKey": "broccoli",
+    "name": "Brokoli",
+    "category": "vegetable",
+    "allergen": null,
+    "ageFromMonths": 6,
+    "chokingRisk": "low",
+    "serveByAge": {
+      "6-8": "Lule të mëdha të ziera në avull derisa të buta, me kërcellin si dorezë.",
+      "9-11": "Lule të vogla të buta, ose të grira.",
+      "12+": "Si te familja, të gatuara."
+    },
+    "nutrients": [
+      "vitamin_c",
+      "fiber",
+      "calcium"
+    ],
+    "tip": "Kërcelli i lë bebit një dorezë të natyrshme.",
+    "emoji": "🥦"
+  },
+  {
+    "foodKey": "cauliflower",
+    "name": "Lulelakër",
+    "category": "vegetable",
+    "allergen": null,
+    "ageFromMonths": 6,
+    "chokingRisk": "low",
+    "serveByAge": {
+      "6-8": "Lule të mëdha të ziera derisa të buta, ose purè.",
+      "9-11": "Copa të vogla të buta.",
+      "12+": "E pjekur ose në tavë."
+    },
+    "nutrients": [
+      "vitamin_c",
+      "fiber"
+    ],
+    "tip": "E pjekur me pak vaj ulliri merr shije të ëmbël."
+  },
+  {
+    "foodKey": "cucumber",
+    "name": "Kastravec",
+    "category": "vegetable",
+    "allergen": null,
+    "ageFromMonths": 6,
+    "chokingRisk": "medium",
+    "serveByAge": {
+      "6-8": "I grirë hollë, pa lëkurë e pa fara.",
+      "9-11": "I grirë, ose në feta shumë të holla pa lëkurë.",
+      "12+": "Shkopinj të hollë pa fara, me fëmijën ulur."
+    },
+    "nutrients": [],
+    "tip": "I grirë në kos të plotë bëhet salcë e freskët për perimet.",
+    "emoji": "🥒"
+  },
+  {
+    "foodKey": "beetroot",
+    "name": "Panxhar",
+    "category": "vegetable",
+    "allergen": null,
+    "ageFromMonths": 6,
+    "chokingRisk": "medium",
+    "serveByAge": {
+      "6-8": "I zier ose i pjekur derisa të zbutet: purè ose feta të buta.",
+      "9-11": "Kubikë të vegjël të butë.",
+      "12+": "I zier në copa ose në sallatë."
+    },
+    "nutrients": [
+      "fiber"
+    ],
+    "tip": "Panxhari mund ta ngjyrosë të kuqe jashtëqitjen ose urinën: është normale."
+  },
+  {
+    "foodKey": "green_beans",
+    "name": "Bishtaja",
+    "category": "vegetable",
+    "allergen": null,
+    "ageFromMonths": 6,
+    "chokingRisk": "medium",
+    "serveByAge": {
+      "6-8": "Bishtaja të plota, të ziera aq të buta sa shtypen, për t'i mbajtur në dorë.",
+      "9-11": "Copa të vogla të ziera.",
+      "12+": "Si te familja, në gjellë."
+    },
+    "nutrients": [
+      "fiber",
+      "vitamin_c"
+    ],
+    "tip": "Bishtaja e zier mirë shtypet mes gishtave: kjo është prova e butësisë."
+  },
+  {
+    "foodKey": "cabbage",
+    "name": "Lakër",
+    "category": "vegetable",
+    "allergen": null,
+    "ageFromMonths": 6,
+    "chokingRisk": "low",
+    "serveByAge": {
+      "6-8": "E zier mirë dhe e bluar në supë ose purè.",
+      "9-11": "E zier dhe e prerë imët.",
+      "12+": "E gatuar në gjellë; e gjallë vetëm e grirë hollë."
+    },
+    "nutrients": [
+      "vitamin_c",
+      "fiber"
+    ],
+    "tip": "Pak lakër në supë jep shije pa pasur nevojë për kripë.",
+    "emoji": "🥬"
+  },
+  {
+    "foodKey": "corn",
+    "name": "Misër (kokrra)",
+    "category": "vegetable",
+    "allergen": null,
+    "ageFromMonths": 6,
+    "chokingRisk": "high",
+    "serveByAge": {
+      "6-8": "Kokrrat vetëm të bluara, në purè ose supë.",
+      "9-11": "Kokrra të ziera të shtypura pak, ose në petulla.",
+      "12+": "Kokrra të ziera, me fëmijën ulur."
+    },
+    "nutrients": [
+      "fiber"
+    ],
+    "tip": "Kokrrat e plota rrëshqasin lehtë në fyt te të vegjlit: shtypi.",
+    "emoji": "🌽"
+  },
+  {
+    "foodKey": "okra",
+    "name": "Bamje",
+    "category": "vegetable",
+    "allergen": null,
+    "ageFromMonths": 6,
+    "chokingRisk": "low",
+    "serveByAge": {
+      "6-8": "Bamje të plota të gatuara shumë të buta, ose purè.",
+      "9-11": "Copa të vogla të buta.",
+      "12+": "Në gjellë si te familja."
+    },
+    "nutrients": [
+      "fiber",
+      "vitamin_c"
+    ],
+    "tip": "Bamjet e vogla e të njoma gatuhen më mirë."
+  },
+  {
+    "foodKey": "turkey",
+    "name": "Mish gjeldeti",
+    "category": "protein",
+    "allergen": null,
+    "ageFromMonths": 6,
+    "chokingRisk": "medium",
+    "serveByAge": {
+      "6-8": "I gatuar plotësisht: i grirë në qofte të buta, ose shirita të butë.",
+      "9-11": "I grirë, ose copa të vogla të buta.",
+      "12+": "Copa të vogla, pa lëkurë."
+    },
+    "nutrients": [
+      "protein",
+      "iron"
+    ],
+    "tip": "Kofsha e gjeldetit ka më shumë hekur se gjoksi.",
+    "emoji": "🍗"
+  },
+  {
+    "foodKey": "lamb",
+    "name": "Mish qengji",
+    "category": "protein",
+    "allergen": null,
+    "ageFromMonths": 6,
+    "chokingRisk": "medium",
+    "serveByAge": {
+      "6-8": "I gatuar plotësisht: shirita të mëdhenj shumë të butë për ta thithur, ose i grirë.",
+      "9-11": "I grirë, ose copa të vogla shumë të buta.",
+      "12+": "Copa të vogla pa kocka; hiq dhjamin e fortë."
+    },
+    "nutrients": [
+      "iron",
+      "protein"
+    ],
+    "tip": "Qengji i pjekur ngadalë bëhet aq i butë sa shkrihet.",
+    "emoji": "🥩"
+  },
+  {
+    "foodKey": "cod",
+    "name": "Merluc",
+    "category": "protein",
+    "allergen": "fish",
+    "ageFromMonths": 6,
+    "chokingRisk": "low",
+    "serveByAge": {
+      "6-8": "I gatuar plotësisht, pa kocka, i ndarë në fije ose në qofte të buta.",
+      "9-11": "Copa të vogla pa kocka.",
+      "12+": "Si te familja, pa kocka."
+    },
+    "nutrients": [
+      "protein"
+    ],
+    "tip": "Merluci i kripur (bakalao) ka shumë kripë: për bebin zgjidh të freskët ose të ngrirë.",
+    "emoji": "🐟"
+  },
+  {
+    "foodKey": "sardines",
+    "name": "Sardele",
+    "category": "protein",
+    "allergen": "fish",
+    "ageFromMonths": 6,
+    "chokingRisk": "low",
+    "serveByAge": {
+      "6-8": "Të freskëta, të gatuara plotësisht, pa kocka, të shtypura me pirun.",
+      "9-11": "Të shtypura, ose në copa të vogla.",
+      "12+": "Në bukë ose me oriz; ato të konservuara zgjidhi në ujë ose vaj ulliri, pa kripë të shtuar."
+    },
+    "nutrients": [
+      "omega3",
+      "calcium",
+      "protein"
+    ],
+    "tip": "Sardelet janë peshk i vogël me pak merkur.",
+    "emoji": "🐟"
+  },
+  {
+    "foodKey": "tofu",
+    "name": "Tofu",
+    "category": "protein",
+    "allergen": "soy",
+    "ageFromMonths": 6,
+    "chokingRisk": "low",
+    "serveByAge": {
+      "6-8": "Tofu i fortë, i pjekur ose i zier pak, në shirita sa gishti.",
+      "9-11": "Kubikë të vegjël.",
+      "12+": "Kubikë në gjellë, ose i pjekur."
+    },
+    "nutrients": [
+      "protein",
+      "calcium",
+      "iron"
+    ],
+    "tip": "Tofu është prej soje, një alergjen kryesor: provoje si alergjen i ri, në mëngjes."
+  },
+  {
+    "foodKey": "shrimp",
+    "name": "Karkaleca",
+    "category": "protein",
+    "allergen": "shellfish",
+    "ageFromMonths": 6,
+    "chokingRisk": "medium",
+    "serveByAge": {
+      "6-8": "Të gatuar plotësisht dhe të grirë imët, ose të bluar në qofte.",
+      "9-11": "Të gatuar plotësisht, në copa shumë të vogla.",
+      "12+": "Të gatuar plotësisht, në copa të vogla."
+    },
+    "nutrients": [
+      "protein"
+    ],
+    "tip": "Frutat e detit janë alergjen kryesor: provoji në mëngjes, në shtëpi.",
+    "emoji": "🦐"
+  },
+  {
+    "foodKey": "ground_walnuts",
+    "name": "Arra (të bluara)",
+    "category": "allergen",
+    "allergen": "tree_nut",
+    "ageFromMonths": 6,
+    "chokingRisk": "high",
+    "serveByAge": {
+      "6-8": "Vetëm të bluara imët, të përziera në qull ose purè; asnjëherë arra të plota.",
+      "9-11": "Të bluara imët, në qull ose në petulla.",
+      "12+": "Të bluara, ose krem i lyer hollë; arrat e plota jo para 5 vjeç."
+    },
+    "nutrients": [
+      "omega3",
+      "protein"
+    ],
+    "tip": "Arrat janë alergjen kryesor: provoji të bluara, një alergjen i ri në herë.",
+    "emoji": "🌰"
+  },
+  {
+    "foodKey": "ground_almonds",
+    "name": "Bajame (të bluara)",
+    "category": "allergen",
+    "allergen": "tree_nut",
+    "ageFromMonths": 6,
+    "chokingRisk": "high",
+    "serveByAge": {
+      "6-8": "Vetëm të bluara imët (miell bajamesh), të përziera në qull ose purè; asnjëherë të plota.",
+      "9-11": "Bajame të bluara imët (miell bajamesh), në petulla ose në qull.",
+      "12+": "Të bluara, ose krem bajamesh i lyer hollë; të plota jo para 5 vjeç."
+    },
+    "nutrients": [
+      "calcium",
+      "protein"
+    ],
+    "tip": "Edhe kur arrat janë provuar pa reagim, bajamet provoji veçmas: çdo arrë është alergjen më vete.",
+    "emoji": "🌰"
+  }
+]

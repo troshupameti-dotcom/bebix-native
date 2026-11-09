@@ -5,6 +5,7 @@ import { MotiView } from "moti";
 import { Icon } from "@/components/ui/Icon";
 import { useTones } from "@/lib/theme/tone";
 import { MemoriesCard } from "@/components/baby/MemoriesCard";
+import { RecipeTodayCard } from "@/components/recipes/RecipeTodayCard";
 import { shadows } from "@/lib/shadows";
 import { useTranslation } from "@/lib/i18n/LanguageContext";
 import { useMomentUri } from "@/lib/baby/useMomentUri";
@@ -123,6 +124,11 @@ export function FamilyView({ profile, baby, babyName, ageText }: { profile: Baby
 
 
         <MemoriesCard baby={baby} profile={profile} babyName={babyName} viewer />
+
+        {/* Gjyshërit shohin edhe recetat (Ide për sot); provat e ushqimeve vetëm kur prindërit ndajnë kujdesin. */}
+        <View className="mt-5">
+          <RecipeTodayCard />
+        </View>
 
         <View style={shadows.soft} className="mt-5 rounded-xl3 bg-surface p-4">
           <Text className="mb-3 font-bodySemibold text-base text-ink">{t("viewer_photos")}</Text>

@@ -3,6 +3,8 @@ import { supabase } from "@/lib/supabase/client";
 import { mapOrder, type MyOrder } from "@/lib/shop/orders";
 import { periodRange, type PeriodKey } from "@/lib/admin/labels";
 import { readingMinutes } from "@/lib/stories/catalog";
+import { toRecipe } from "@/lib/recipes/api";
+import type { Recipe } from "@/lib/recipes/types";
 
 /**
  * Të dhënat e panelit të adminit. Të njëjtat kërkesa si paneli i webit (bebix-web/app/admin): çdo gjë kalon me
@@ -626,4 +628,76 @@ export async function requestStoryDraft(idea: string): Promise<void> {
   }
   if (error instanceof FunctionsFetchError) throw new Error("S'ka lidhje me internetin.");
   throw new Error("Përralla s'u nis. Provoni përsëri pas pak.");
+}
+
+// ---- Recetat ----
+
+export type RecipeTab = "draft" | "published" | "archived";
+export type AdminRecipe = Recipe & { id: string; status: RecipeTab; createdAt: string; publishedAt: string | null };
+
+const RECIPE_COLUMNS =
+  "id, status, created_at, published_at, slug, title, summary, age_min_months, age_max_months, stage, feeding_style, meal_types, " +
+  "prep_minutes, cook_minutes, yield_note, family_factor, ingredients, steps, serve_by_age, allergens, diet_tags, nutrients, " +
+  "freezer_friendly, storage_note, freezer_note, reheat_note, choking_note, family_tip, season, is_albanian, cover_key, cover_url, " +
+  "cover_svg, featured, sort_order, updated_at";
+
+function mapRecipe(r: Record<string, unknown>): AdminRecipe {
+  return {
+    ...toRecipe(r as unknown as Parameters<typeof toRecipe>[0]),
+    id: String(r.id),
+    status: r.status as RecipeTab,
+    createdAt: String(r.created_at),
+    publishedAt: (r.published_at as string | null) ?? null,
+  };
+}
+
+/** Recetat sipas gjendjes: draftet e reja të parat; të publikuarat sipas radhës së bibliotekës. */
+export async function fetchAdminRecipes(tab: RecipeTab): Promise<AdminRecipe[]> {
+  const { data, error } = await supabase
+    .from("recipes")
+    .select(RECIPE_COLUMNS)
+    .eq("status", tab)
+    .order(tab === "published" ? "sort_order" : "created_at", { ascending: tab === "published", nullsFirst: false })
+    .limit(200);
+  fail(error);
+  return ((data ?? []) as unknown as Record<string, unknown>[]).map(mapRecipe);
+}
+
+export async function fetchAdminRecipe(id: string): Promise<AdminRecipe | null> {
+  const { data, error } = await supabase.from("recipes").select(RECIPE_COLUMNS).eq("id", id).maybeSingle();
+  fail(error);
+  return data ? mapRecipe(data as unknown as Record<string, unknown>) : null;
+}
+
+/** Publikimi e nxjerr menjëherë te prindërit; arkivimi e heq pa e fshirë. */
+export async function setRecipeStatus(id: string, status: RecipeTab): Promise<void> {
+  const { error } = await supabase.from("recipes").update({ status }).eq("id", id);
+  fail(error);
+}
+
+export async function setRecipeFeatured(id: string, featured: boolean): Promise<void> {
+  const { error } = await supabase.from("recipes").update({ featured }).eq("id", id);
+  fail(error);
+}
+
+export type RecipeText = { title: string; summary: string; steps: string[]; chokingNote: string; familyTip: string };
+
+export function validateRecipeText(v: RecipeText): string | null {
+  if (v.title.trim().length < 3 || v.title.trim().length > 120) return "Titulli duhet të ketë 3 deri në 120 shkronja.";
+  if (v.summary.trim().length > 400) return "Përshkrimi duhet të ketë deri në 400 shkronja.";
+  if (v.steps.length < 1 || v.steps.length > 40) return "Receta duhet të ketë të paktën një hap.";
+  if (!v.chokingNote.trim()) return "Kujdesi ndaj mbytjes s'mund të mbetet bosh.";
+  if (v.chokingNote.length > 600 || v.familyTip.length > 600) return "Shënimet duhet të kenë deri në 600 shkronja.";
+  return null;
+}
+
+/** Titulli, përshkrimi, hapat (një për paragraf), kujdesi ndaj mbytjes dhe këshilla për familjen. */
+export async function saveRecipeText(id: string, v: RecipeText): Promise<void> {
+  const problem = validateRecipeText(v);
+  if (problem) throw new Error(problem);
+  const { error } = await supabase
+    .from("recipes")
+    .update({ title: v.title.trim(), summary: v.summary.trim(), steps: v.steps, choking_note: v.chokingNote.trim(), family_tip: v.familyTip.trim() })
+    .eq("id", id);
+  fail(error);
 }

@@ -22,7 +22,9 @@ export type Feature =
   | "moments"
   | "medical"
   /** Përrallat: karta "Përrallë për sonte" te kreu (biblioteka hapet edhe nga Cilësimet). */
-  | "stories";
+  | "stories"
+  /** Recetat: karta "Ide për sot" te faqja e bebit (nga 5–6 muaj; karta vetë e kontrollon muajin). */
+  | "recipes";
 
 /** "none" = pa fëmijë aktiv ose pa datë: kreu neutral dhe dyqani i plotë, pa e hequr asgjë që prindi përdor sot. */
 export type StageOrNone = Stage | "none";
@@ -40,6 +42,7 @@ export const STAGE_FEATURES: Record<StageOrNone, Record<Feature, boolean>> = {
     moments: true,
     medical: true,
     stories: false,
+    recipes: false,
   },
   infant: {
     trackers: true,
@@ -53,6 +56,7 @@ export const STAGE_FEATURES: Record<StageOrNone, Record<Feature, boolean>> = {
     moments: true,
     medical: true,
     stories: true,
+    recipes: true,
   },
   toddler: {
     trackers: true,
@@ -66,6 +70,7 @@ export const STAGE_FEATURES: Record<StageOrNone, Record<Feature, boolean>> = {
     moments: true,
     medical: true,
     stories: true,
+    recipes: true,
   },
   child: {
     trackers: false,
@@ -79,6 +84,7 @@ export const STAGE_FEATURES: Record<StageOrNone, Record<Feature, boolean>> = {
     moments: true,
     medical: true,
     stories: true,
+    recipes: true,
   },
   archive: {
     trackers: false,
@@ -92,6 +98,7 @@ export const STAGE_FEATURES: Record<StageOrNone, Record<Feature, boolean>> = {
     moments: true,
     medical: true,
     stories: false,
+    recipes: false,
   },
   none: {
     trackers: true,
@@ -105,6 +112,7 @@ export const STAGE_FEATURES: Record<StageOrNone, Record<Feature, boolean>> = {
     moments: true,
     medical: true,
     stories: true,
+    recipes: false,
   },
 };
 

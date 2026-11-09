@@ -7,7 +7,7 @@ import type { TranslationKey } from "@/lib/i18n/translations";
  * përdorur app-in më parë. Kur shtohen veçori të reja, ndrysho
  * WHATS_NEW_VERSION dhe listën — del sërish një herë.
  */
-export const WHATS_NEW_VERSION = "2026-10-features";
+export const WHATS_NEW_VERSION = "2026-11-first-foods";
 export const WHATS_NEW_KEY = "bebix_whats_new_seen_v1";
 
 export type WhatsNewItem = {
@@ -21,6 +21,8 @@ export type WhatsNewItem = {
 };
 
 export const WHATS_NEW_ITEMS: WhatsNewItem[] = [
+  { key: "recipes", icon: "bowl", titleKey: "wn_recipes_title", bodyKey: "wn_recipes_body", route: "/(main)/baby/recipes" },
+  { key: "foods", icon: "spoon", titleKey: "wn_foods_title", bodyKey: "wn_foods_body", route: "/(main)/baby/recipes/foods" },
   { key: "night", icon: "moon", titleKey: "wn_night_title", bodyKey: "wn_night_body", route: "/more/night-mode" },
   { key: "team", icon: "family", titleKey: "wn_team_title", bodyKey: "wn_team_body", route: "/more/family" },
   { key: "celebrate", icon: "star", titleKey: "wn_celebrate_title", bodyKey: "wn_celebrate_body", route: "/(main)/baby/moments" },

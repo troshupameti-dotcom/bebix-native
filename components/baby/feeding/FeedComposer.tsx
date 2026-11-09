@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { View, Text, Pressable, TextInput, Alert, DeviceEventEmitter } from "react-native";
 import { MotiView } from "moti";
+import { router } from "expo-router";
 import { Check, Minus, Pause, Play, Plus } from "lucide-react-native";
 import { Icon } from "@/components/ui/Icon";
 import { shadows } from "@/lib/shadows";
@@ -446,6 +447,21 @@ export function FeedComposer({
                 style={{ minHeight: 48 }}
               />
             )}
+            {/* Recetat sipas moshës, kur prindi s'di çfarë t'i gatuajë sot. */}
+            <Pressable
+              onPress={() => {
+                haptics.tap();
+                router.push("/(main)/baby/recipes");
+              }}
+              accessibilityRole="link"
+              hitSlop={6}
+              className="mt-3 self-start"
+              style={{ minHeight: 32, justifyContent: "center" }}
+            >
+              <Text className="font-bodySemibold text-[13.5px]" style={{ color: tone.tint }}>
+                {t("recipes_feeding_link")}
+              </Text>
+            </Pressable>
           </MotiView>
         )}
 
