@@ -4,8 +4,8 @@ import { useTranslation } from "@/lib/i18n/LanguageContext";
 import { haptics } from "@/lib/haptics";
 
 /**
- * Numrat e profilit: Postime · Ndjekës · Të ndjekur. Ndjekësit dhe të ndjekurit hapin listat (që i sheh vetë personi
- * dhe miqtë e tij; të tjerët shohin një shënim).
+ * Numrat e profilit: Postime · Ndjekës · Të ndjekur. Ndjekësit dhe të ndjekurit hapin listat, që i sheh çdo prind
+ * (përveç kur njëri e ka bllokuar tjetrin).
  */
 export function ProfileStats({ userId, name, posts, followers, following }: {
   userId: string;

@@ -4,7 +4,8 @@ import { SafeAreaView } from "react-native-safe-area-context";
 import { useLocalSearchParams, useRouter, useFocusEffect } from "expo-router";
 import { Icon } from "@/components/ui/Icon";
 import { PostCard } from "@/components/community/PostCard";
-import { fetchExpertById, fetchPostsByAuthor, getCurrentUserId, toggleFollowExpert, CommunityExpert, CommunityPost } from "@/lib/communityData";
+import { fetchExpertById, getCurrentUserId, toggleFollowExpert, CommunityExpert } from "@/lib/communityData";
+import { nearEnd, useAuthorPosts } from "@/lib/community/useAuthorPosts";
 import { fetchInbox, messageErrorKey, startConversation } from "@/lib/community/messages";
 import { BackButton, goBackOr } from "@/components/ui/BackButton";
 import { useTranslation } from "@/lib/i18n/LanguageContext";
@@ -22,7 +23,8 @@ export default function ExpertProfileScreen() {
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [expert, setExpert] = useState<CommunityExpert | null>(null);
-  const [posts, setPosts] = useState<CommunityPost[]>([]);
+  // Postimet pa kufi: numri vjen nga serveri, më shumë lexohen kur zbret në fund.
+  const { posts, total, loadingMore, reset, loadMore, remove } = useAuthorPosts();
   // Inbox-i ekziston në server (migrimi) dhe s'jam vetë ky ekspert.
   const [inboxReady, setInboxReady] = useState(false);
 
@@ -33,13 +35,13 @@ export default function ExpertProfileScreen() {
       const [e, me, inbox] = await Promise.all([fetchExpertById(id), getCurrentUserId(), fetchInbox().catch(() => ({ available: false }))]);
       setExpert(e);
       setInboxReady(inbox.available && !!e?.userId && e.userId !== me);
-      setPosts(e?.userId ? await fetchPostsByAuthor(e.userId) : []);
+      await reset(e?.userId ?? null);
     } catch (err) {
       logWarn("Expert profile load error:", err);
     } finally {
       setLoading(false);
     }
-  }, [id]);
+  }, [id, reset]);
 
   useFocusEffect(useCallback(() => { load(); }, [load]));
 
@@ -102,6 +104,10 @@ export default function ExpertProfileScreen() {
       <ScrollView
         showsVerticalScrollIndicator={false}
         contentContainerStyle={{ paddingBottom: 40 }}
+        onScroll={({ nativeEvent }) => {
+          if (nearEnd(nativeEvent)) void loadMore();
+        }}
+        scrollEventThrottle={200}
         refreshControl={
           <RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={theme.olive} colors={[theme.olive]} progressBackgroundColor={theme.surface} />
         }
@@ -160,13 +166,14 @@ export default function ExpertProfileScreen() {
         </View>
 
         <View className="px-5 mb-3">
-          <Text className="font-bodySemibold text-sm text-ink">{t("cexp_posts", { n: posts.length })}</Text>
+          <Text className="font-bodySemibold text-sm text-ink">{t("cexp_posts", { n: total })}</Text>
         </View>
         {posts.length === 0 ? (
           <Text className="font-body text-xs text-ink-faint px-5">{t("cexp_no_posts")}</Text>
         ) : (
-          posts.map((p) => <PostCard key={p.id} post={p} linkAuthor={false} onOpen={() => router.push(`/community/post/${p.id}`)} onRemoved={(id, reason) => (reason === "blocked" ? load() : setPosts((prev) => prev.filter((x) => x.id !== id)))} />)
+          posts.map((p) => <PostCard key={p.id} post={p} linkAuthor={false} onOpen={() => router.push(`/community/post/${p.id}`)} onRemoved={(id, reason) => (reason === "blocked" ? load() : remove(id))} />)
         )}
+        {loadingMore ? <ActivityIndicator className="my-4" color={theme.olive} /> : null}
       </ScrollView>
     </SafeAreaView>
   );

@@ -13,8 +13,8 @@ import { haptics } from "@/lib/haptics";
 type Kind = "followers" | "following";
 
 /**
- * Ndjekësit / të ndjekurit e një personi, me dy skeda. Listat i sheh vetë personi dhe miqtë e tij (ndiqni
- * njëri-tjetrin); të tjerët shohin vetëm një shënim (numrat janë te profili).
+ * Ndjekësit / të ndjekurit e një personi, me dy skeda. Listat i sheh çdo prind; kur njëri e ka bllokuar tjetrin,
+ * del vetëm një shënim (numrat janë te profili).
  */
 export default function FollowsScreen() {
   const params = useLocalSearchParams<{ user: string; kind?: string; name?: string }>();

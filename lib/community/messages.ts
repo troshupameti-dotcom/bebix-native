@@ -99,8 +99,8 @@ export async function fetchPublicProfile(userId: string): Promise<PublicProfile 
 export type FollowPerson = { userId: string; name: string };
 
 /**
- * Ndjekësit ose të ndjekurit e një personi. I sheh vetë personi dhe miqtë e tij (ndiqni njëri-tjetrin);
- * `allowed: false` për të tjerët (shohin vetëm numrat). Pa migrimin e profileve: `allowed: false`.
+ * Ndjekësit ose të ndjekurit e një personi. I sheh çdo prind (migrimi 20261109090000); `allowed: false` kur njëri
+ * e ka bllokuar tjetrin. Para atij migrimi i shohin vetëm miqtë; pa migrimin e profileve: `allowed: false`.
  */
 export async function fetchFollowList(userId: string, kind: "followers" | "following"): Promise<{ allowed: boolean; people: FollowPerson[] }> {
   const [allowed, list] = await Promise.all([

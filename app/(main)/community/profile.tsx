@@ -13,7 +13,8 @@ import { useTones } from "@/lib/theme/tone";
 import { Avatar, PostCard } from "@/components/community/PostCard";
 import { ProfileStats } from "@/components/community/ProfileStats";
 import { BackButton } from "@/components/ui/BackButton";
-import { getCurrentUserId, fetchPostsByAuthor, fetchExpertByUserId, CommunityExpert, CommunityPost } from "@/lib/communityData";
+import { getCurrentUserId, fetchExpertByUserId, CommunityExpert } from "@/lib/communityData";
+import { nearEnd, useAuthorPosts } from "@/lib/community/useAuthorPosts";
 import { fetchPublicProfile, type PublicProfile } from "@/lib/community/messages";
 import { logWarn } from "@/lib/log";
 import { useSpecialties } from "@/lib/community/useSpecialties";
@@ -32,7 +33,8 @@ export default function MyProfileScreen() {
   const specialties = useSpecialties();
   const [loading, setLoading] = useState(true);
   const [me, setMe] = useState<string | null>(null);
-  const [posts, setPosts] = useState<CommunityPost[]>([]);
+  // Postimet pa kufi: numri vjen nga serveri, më shumë lexohen kur zbret në fund.
+  const { posts, total, loadingMore, reset, loadMore, remove } = useAuthorPosts();
   const [expert, setExpert] = useState<CommunityExpert | null>(null);
   const [publicProfile, setPublicProfile] = useState<PublicProfile | null>(null);
   const [photoBusy, setPhotoBusy] = useState(false);
@@ -43,16 +45,15 @@ export default function MyProfileScreen() {
       const uid = await getCurrentUserId();
       setMe(uid);
       if (!uid) {
-        setPosts([]);
+        await reset(null);
         setExpert(null);
         return;
       }
-      const [p, e, pub] = await Promise.all([
-        fetchPostsByAuthor(uid),
+      const [, e, pub] = await Promise.all([
+        reset(uid),
         fetchExpertByUserId(uid),
         fetchPublicProfile(uid).catch(() => null),
       ]);
-      setPosts(p);
       setExpert(e);
       setPublicProfile(pub);
     } catch (err) {
@@ -60,7 +61,7 @@ export default function MyProfileScreen() {
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [reset]);
 
   useFocusEffect(
     useCallback(() => {
@@ -109,7 +110,14 @@ export default function MyProfileScreen() {
         <Text className="ml-1 font-display text-xl text-ink">{t("community_profile_title")}</Text>
       </View>
 
-      <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={{ paddingBottom: 40 }}>
+      <ScrollView
+        showsVerticalScrollIndicator={false}
+        contentContainerStyle={{ paddingBottom: 40 }}
+        onScroll={({ nativeEvent }) => {
+          if (nearEnd(nativeEvent)) void loadMore();
+        }}
+        scrollEventThrottle={200}
+      >
         <View className="mb-5 mt-2 items-center px-5">
           {/* Fotoja: çdo prind e ndërron; kur ndërrohet, del e reja edhe te postimet e vjetra. */}
           <Pressable
@@ -150,7 +158,7 @@ export default function MyProfileScreen() {
             <ProfileStats
               userId={me}
               name={name}
-              posts={posts.length}
+              posts={total}
               followers={publicProfile?.followers ?? 0}
               following={publicProfile?.following ?? 0}
             />
@@ -175,10 +183,11 @@ export default function MyProfileScreen() {
               post={p}
               linkAuthor={false}
               onOpen={() => router.push(`/community/post/${p.id}`)}
-              onRemoved={(id, reason) => (reason === "blocked" ? load() : setPosts((prev) => prev.filter((x) => x.id !== id)))}
+              onRemoved={(id, reason) => (reason === "blocked" ? load() : remove(id))}
             />
           ))
         )}
+        {loadingMore ? <ActivityIndicator className="my-4" color={theme.inkSoft} /> : null}
       </ScrollView>
     </SafeAreaView>
   );

@@ -300,14 +300,13 @@ export default function ShopScreen() {
           })}
         </ScrollView>
       )}
-      {/* Nënkategoritë e kategorisë së hapur (p.sh. Ushqyerja → Biberonë qetësues), pa rrëshqitje anash: 3 pllaka +
-          "Të gjitha", që hap dritaren me të gjitha. Dalin kur janë të paktën dy: një pllakë e vetme s'ndan asgjë. */}
+      {/* Nënkategoritë e kategorisë së hapur (p.sh. Ushqyerja → Biberon qetësues), si te webi: "Të gjitha" dhe të
+          gjitha pllakat me ikonë në një rrjetë pa rrëshqitje. Dalin kur janë të paktën dy: një e vetme s'ndan asgjë. */}
       {subcategories.length >= 2 && (
         <View className="mt-4 mb-2" style={{ paddingHorizontal: PADDING_X }}>
           <SubcategoryGrid
             subcategories={subcategories}
             active={subcategory}
-            categoryLabel={categories.find((c) => c.key === category)?.label ?? ""}
             width={width - PADDING_X * 2}
             onSelect={(key) => setSub(key ? { cat: category, key } : null)}
           />

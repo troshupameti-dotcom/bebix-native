@@ -461,19 +461,32 @@ export async function fetchSavedPosts(): Promise<CommunityPost[]> {
   return (data ?? []).map((p) => mapFeedRow(p, likedIds, savedIds));
 }
 
-export async function fetchPostsByAuthor(authorId: string): Promise<CommunityPost[]> {
-  if (isDemoId(authorId)) return demoPostsByAuthor(authorId);
+/** Sa postime lexon profili njëherësh; faqja tjetër vjen kur zbret në fund (`useAuthorPosts`). */
+export const AUTHOR_PAGE_SIZE = LIST_LIMIT;
+
+/** Postimet e një autori, faqe pas faqeje (faqja 0 = më të rejat). */
+export async function fetchPostsByAuthor(authorId: string, page = 0): Promise<CommunityPost[]> {
+  if (isDemoId(authorId)) return page === 0 ? demoPostsByAuthor(authorId) : [];
   const uid = await getCurrentUserId();
+  const from = page * AUTHOR_PAGE_SIZE;
   const { data, error } = await supabase
     .from("community_feed")
     .select("*")
     .eq("author_id", authorId)
     .order("created_at", { ascending: false })
-    .limit(LIST_LIMIT);
+    .range(from, from + AUTHOR_PAGE_SIZE - 1);
   if (error) throw error;
 
   const { likedIds, savedIds } = await myReactions(uid, (data ?? []).map((p) => p.id as string));
   return (data ?? []).map((p) => mapFeedRow(p, likedIds, savedIds));
+}
+
+/** Sa postime ka autori gjithsej, për numrin te profili (jo vetëm sa janë lexuar). */
+export async function countPostsByAuthor(authorId: string): Promise<number> {
+  if (isDemoId(authorId)) return demoPostsByAuthor(authorId).length;
+  const { count, error } = await supabase.from("community_feed").select("id", { count: "exact", head: true }).eq("author_id", authorId);
+  if (error) throw error;
+  return count ?? 0;
 }
 
 export async function fetchPostsByGroup(groupId: string): Promise<CommunityPost[]> {

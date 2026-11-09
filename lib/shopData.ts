@@ -219,16 +219,15 @@ async function categoryIdFor(key: string | undefined): Promise<string | null> {
   return categories.find((c) => c.key === key)?.id ?? null;
 }
 
-/** Nënkategoria e një kategorie (p.sh. Ushqyerja → Biberonë qetësues). Vetëm ato me produkte aktive. */
+/** Nënkategoria e një kategorie (p.sh. Ushqyerja → Biberon qetësues). `count` 0 = "Së shpejti". */
 export type ShopSubcategory = {
   id: string;
   key: string;
   label: string;
-  emoji: string | null;
   count: number;
-  /** Fotoja e një produkti të saj, për çipin. */
-  coverUrl: string | null;
 };
+
+type SubcategoryRow = { id: string | null; key: string | null; label: string | null; label_en: string | null; product_count: number };
 
 const subcategoryCache = new Map<string, { at: number; list: ShopSubcategory[] }>();
 
@@ -239,24 +238,32 @@ export function resetShopDataCache(): void {
 }
 
 /**
- * Nënkategoritë e një kategorie (`shop_subcategories`), me numrin e produkteve dhe një foto. Para migrimit
- * 20261105090000 funksioni s'ekziston: kthehet listë bosh dhe dyqani duket si më parë.
+ * Nënkategoritë e një kategorie me numrin e produkteve, edhe ato pa produkte, si te webi (`shop_category_tree`,
+ * migrimi 20261105160000). Kur pema s'është ende në server, bie te `shop_subcategories` (vetëm ato me produkte);
+ * para migrimit 20261105090000 kthehet listë bosh dhe dyqani duket si më parë.
  */
 export async function fetchSubcategories(categoryKey: string | undefined, language: "sq" | "en" = "sq"): Promise<ShopSubcategory[]> {
   if (!categoryKey || categoryKey === "all") return [];
   const cacheKey = `${categoryKey}|${language}`;
   const hit = subcategoryCache.get(cacheKey);
   if (hit && Date.now() - hit.at < CATEGORY_TTL_MS) return hit.list;
-  const { data, error } = await supabase.rpc("shop_subcategories", { p_category: categoryKey });
-  if (error || !Array.isArray(data)) return [];
-  const list = (data as { id: string; key: string; label: string; label_en: string | null; icon: string | null; product_count: number; cover_url: string | null }[]).map((s) => ({
-    id: s.id,
-    key: s.key,
-    label: language === "en" ? (s.label_en ?? s.label) : s.label,
-    emoji: emojiForCategory(s.icon),
-    count: Number(s.product_count),
-    coverUrl: s.cover_url,
-  }));
+  let rows: SubcategoryRow[] | null = null;
+  const tree = await supabase.rpc("shop_category_tree");
+  if (!tree.error && Array.isArray(tree.data)) {
+    // Pema ka të paktën një rresht për çdo kategori; pa të, kategoria s'njihet dhe provohet rruga e vjetër.
+    const own = (tree.data as (SubcategoryRow & { category_key: string })[]).filter((r) => r.category_key === categoryKey);
+    if (own.length > 0) rows = own;
+  }
+  if (!rows) {
+    const { data, error } = await supabase.rpc("shop_subcategories", { p_category: categoryKey });
+    if (error || !Array.isArray(data)) return [];
+    rows = data as SubcategoryRow[];
+  }
+  const list = rows.flatMap((s) =>
+    s.id && s.key && s.label
+      ? [{ id: s.id, key: s.key, label: language === "en" ? (s.label_en ?? s.label) : s.label, count: Number(s.product_count) || 0 }]
+      : []
+  );
   subcategoryCache.set(cacheKey, { at: Date.now(), list });
   return list;
 }

@@ -110,14 +110,15 @@ describe("komuniteti", () => {
     expect(text).toEqual(expect.arrayContaining(["Ndjekës", "Të ndjekur", "4", "2"]));
   });
 
-  it("listat e ndjekjes: jo-miku sheh vetëm shënimin", async () => {
+  // Nga 20261109090000 listat i sheh çdo prind; serveri thotë "jo" vetëm kur njëri e ka bllokuar tjetrin.
+  it("listat e ndjekjes: kur serveri s'i lejon (bllokim), del vetëm shënimi", async () => {
     const fake = fakeSupabase();
     fake.rpc.community_can_see_follows = () => false;
     fake.rpc.community_follow_list = () => [];
     setParams({ user: "x", kind: "followers", name: "Ana" });
     const r = await renderScreen(<Follows />);
     await settle();
-    expect(visibleText(r.root)).toContain("Listat i shohin vetëm miqtë: kur ndiqni njëri-tjetrin.");
+    expect(visibleText(r.root)).toContain("Këto lista s'mund t'i shohësh.");
   });
 
   it("listat e ndjekjes: miku sheh emrat", async () => {

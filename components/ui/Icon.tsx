@@ -1,4 +1,4 @@
-import Svg, { Path, Circle, Rect, Line } from "react-native-svg";
+import Svg, { Path, Circle, Rect, Line, Ellipse, G } from "react-native-svg";
 import { resolveThemeColor, useThemeColors } from "@/lib/theme/useThemeColors";
 
 export type IconName =
@@ -49,7 +49,18 @@ export type IconName =
   | "eyeOff"
   | "star"
   | "starFilled"
-  | "logout";
+  | "logout"
+  | "grid"
+  | "soother"
+  | "gift"
+  | "babyBottle"
+  | "teat"
+  | "cup"
+  | "clip"
+  | "tooth"
+  | "toothbrush"
+  | "nursing"
+  | "bowl";
 
 type IconProps = {
   name: IconName;
@@ -314,6 +325,84 @@ const GLYPHS: Record<IconName, (p: CommonProps) => React.ReactNode> = {
         {...p}
       />
       <Path d="M9.5 9.5a3 3 0 0 0 4.2 4.2" {...p} />
+    </>
+  ),
+
+  // Nënkategoritë e dyqanit: të njëjtat vizatime si te webi (components/Icon.tsx). `babyBottle` është shishja me
+  // thithkë e dyqanit; `bottle` mbetet ajo e ushqyerjes.
+  grid: (p) => (
+    <>
+      <Rect x="4" y="4" width="7" height="7" rx="1.8" {...p} />
+      <Rect x="13" y="4" width="7" height="7" rx="1.8" {...p} />
+      <Rect x="4" y="13" width="7" height="7" rx="1.8" {...p} />
+      <Rect x="13" y="13" width="7" height="7" rx="1.8" {...p} />
+    </>
+  ),
+  soother: (p) => (
+    <>
+      <Path d="M12 3.5c1.7 0 2.7 1.4 2.7 3 0 1-.5 1.7-.9 2.5h-3.6c-.4-.8-.9-1.5-.9-2.5 0-1.6 1-3 2.7-3Z" {...p} />
+      <Rect x="4" y="9" width="16" height="4.6" rx="2.3" {...p} />
+      <Circle cx="12" cy="17.2" r="3.6" {...p} />
+    </>
+  ),
+  gift: (p) => (
+    <>
+      <Rect x="3.5" y="8" width="17" height="4" rx="1.2" {...p} />
+      <Path d="M5 12v7a1.5 1.5 0 0 0 1.5 1.5h11A1.5 1.5 0 0 0 19 19v-7" {...p} />
+      <Path d="M12 8v12.5" {...p} />
+      <Path d="M12 8C11 5.5 9.5 3.5 7.7 3.5a2.25 2.25 0 0 0 0 4.5H12Z" {...p} />
+      <Path d="M12 8c1-2.5 2.5-4.5 4.3-4.5a2.25 2.25 0 0 1 0 4.5H12Z" {...p} />
+    </>
+  ),
+  babyBottle: (p) => (
+    <>
+      <Path d="M10 7c0-1.1.4-1.7.9-2.3.4-.5.6-1.2 1.1-1.2s.7.7 1.1 1.2c.5.6.9 1.2.9 2.3" {...p} />
+      <Rect x="8" y="7" width="8" height="2.6" rx="1" {...p} />
+      <Path d="M8.6 9.6C7.7 10.8 7 12 7 13.6V19a2 2 0 0 0 2 2h6a2 2 0 0 0 2-2v-5.4c0-1.6-.7-2.8-1.6-4" {...p} />
+      <Path d="M7 14h3.5M7 17.5h3.5" {...p} />
+    </>
+  ),
+  teat: (p) => (
+    <>
+      <Path d="M9.8 12.5c0-1.6-.8-2.6-.8-4.4C9 5.5 10.2 3.5 12 3.5s3 2 3 4.6c0 1.8-.8 2.8-.8 4.4" {...p} />
+      <Path d="M6.5 12.5h11a1.5 1.5 0 0 1 1.5 1.5v.5a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V14a1.5 1.5 0 0 1 1.5-1.5Z" {...p} />
+      <Path d="M7.5 16.5V19A1.5 1.5 0 0 0 9 20.5h6a1.5 1.5 0 0 0 1.5-1.5v-2.5" {...p} />
+    </>
+  ),
+  cup: (p) => (
+    <>
+      <Path d="M10 7V5.6A1.6 1.6 0 0 1 11.6 4H14" {...p} />
+      <Rect x="6.5" y="7" width="11" height="2.6" rx="1" {...p} />
+      <Path d="M7.6 9.6l.8 9.4a1.7 1.7 0 0 0 1.7 1.5h3.8a1.7 1.7 0 0 0 1.7-1.5l.8-9.4" {...p} />
+      <Path d="M7.9 12.6H6.4a1.9 1.9 0 0 0 0 3.8h1.8" {...p} />
+      <Path d="M16.1 12.6h1.5a1.9 1.9 0 0 1 0 3.8h-1.8" {...p} />
+    </>
+  ),
+  clip: (p) => <Path d="m20.5 11.5-8.6 8.6a5.6 5.6 0 0 1-7.9-7.9l8.6-8.6a3.7 3.7 0 0 1 5.3 5.3l-8.6 8.5a1.9 1.9 0 0 1-2.6-2.6l8-7.9" {...p} />,
+  tooth: (p) => (
+    <Path
+      d="M12 6.2c-1.4-1-2.6-1.7-4-1.7-2.4 0-4 1.9-4 4.4 0 1.8.7 3 1.1 4.5.5 2 .6 6.6 2.4 6.6 1.7 0 1.3-4.3 2.2-5.6.5-.7 1.1-.9 2.3-.9s1.8.2 2.3.9c.9 1.3.5 5.6 2.2 5.6 1.8 0 1.9-4.6 2.4-6.6.4-1.5 1.1-2.7 1.1-4.5 0-2.5-1.6-4.4-4-4.4-1.4 0-2.6.7-4 1.7Z"
+      {...p}
+    />
+  ),
+  toothbrush: (p) => (
+    <G transform="rotate(40 12 12)">
+      <Path d="M11.5 21.5V11" {...p} />
+      <Rect x="9" y="2.5" width="5" height="8.5" rx="1.8" {...p} />
+      <Path d="M14 4.6h3.5M14 6.8h3.5M14 9h3.5" {...p} />
+    </G>
+  ),
+  nursing: (p) => (
+    <>
+      <Path d="M12 20.5S3.5 15 3.5 9a4.5 4.5 0 0 1 8.5-2 4.5 4.5 0 0 1 8.5 2c0 6-8.5 11.5-8.5 11.5Z" {...p} />
+      <Path d="M12 9.6s-2 2.1-2 3.6a2 2 0 0 0 4 0c0-1.5-2-3.6-2-3.6Z" {...p} />
+    </>
+  ),
+  bowl: (p) => (
+    <>
+      <Path d="M3.5 12h17a8.5 8.5 0 0 1-5.5 7.9v.6H9v-.6A8.5 8.5 0 0 1 3.5 12Z" {...p} />
+      <Path d="M13.8 12l3.8-5" {...p} />
+      <Ellipse cx="18.7" cy="5.2" rx="1.5" ry="2.3" transform="rotate(37 18.7 5.2)" {...p} />
     </>
   ),
 };

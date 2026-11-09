@@ -85,5 +85,33 @@ check("i bllokuari s'del te lista", !(await all(`select display_name from public
 await as(null);
 check("pa llogari: asgjë", !!(await fails(`select * from public.community_follow_list($1, 'followers')`, [ana])));
 
+// --- 20261109090000: listat i sheh çdo prind, përveç kur ka bllokim ------------
+await db.exec("reset role");
+const OPEN = new URL("../migrations/20261109090000_community_open_follows.sql", import.meta.url);
+for (const name of ["i pari", "i dyti"]) {
+  try { await db.exec(fs.readFileSync(OPEN, "utf8")); console.log(`OK  migrimi i listave të hapura (${name})`); }
+  catch (e) { console.log("GABIM te migrimi i listave:", e.message); process.exit(1); }
+}
+const eva = await mk("eva@x");
+await db.query(`insert into public.community_user_profiles (user_id, display_name) values ($1, 'Eva')`, [eva]);
+await as(cen);
+// Cen e ka bllokuar Benin më lart: lista hapet, por Beni s'i del.
+const cenSees = (await all(`select display_name from public.community_follow_list($1, 'followers') order by display_name`, [ana])).map((r) => r.display_name);
+check("ndjekësi që s'është mik tani i sheh listat, pa të bllokuarin", JSON.stringify(cenSees) === JSON.stringify(["Cen"]), JSON.stringify(cenSees));
+await as(eva);
+check("edhe kush s'ndjek askënd i sheh listat", (await one(`select public.community_can_see_follows($1) v`, [ana])).v === true);
+const evaSees = (await all(`select display_name from public.community_follow_list($1, 'following') order by display_name`, [ana])).map((r) => r.display_name);
+check("të ndjekurit e Anës, për Evën", JSON.stringify(evaSees) === JSON.stringify(["Ben", "Dr. Arta"]), JSON.stringify(evaSees));
+await db.exec("reset role");
+await db.query(`insert into public.community_blocks values ($1, $2)`, [ana, eva]);
+await as(eva);
+check("e bllokuara nga Ana s'i sheh listat e saj", (await one(`select public.community_can_see_follows($1) v`, [ana])).v === false);
+check("e bllokuara: lista bosh", (await all(`select 1 from public.community_follow_list($1, 'followers')`, [ana])).length === 0);
+await as(ana);
+check("as Ana s'i sheh listat e së bllokuarës", (await one(`select public.community_can_see_follows($1) v`, [eva])).v === false);
+check("vetja i sheh gjithmonë", (await one(`select public.community_can_see_follows($1) v`, [ana])).v === true);
+await as(null);
+check("pa llogari: ende asgjë", !!(await fails(`select * from public.community_follow_list($1, 'followers')`, [ana])));
+
 console.log(`\n${pass} OK, ${fail} gabime`);
 process.exit(fail ? 1 : 0);
