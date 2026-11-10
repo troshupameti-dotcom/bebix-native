@@ -1,7 +1,7 @@
 import { useEffect } from "react";
 import { Linking } from "react-native";
 import { act, type ReactTestInstance } from "react-test-renderer";
-import { button, fakeSupabase, renderScreen, setParams, visibleText } from "./helpers/screen";
+import { button, fakeSupabase, renderScreen, router, setParams, visibleText } from "./helpers/screen";
 import MealPlanScreen from "@/app/(main)/baby/recipes/plan";
 import ShoppingListScreen from "@/app/(main)/baby/recipes/shopping";
 import FreezerDayScreen from "@/app/(main)/baby/recipes/freezer";
@@ -96,9 +96,9 @@ describe("Plani i javës", () => {
     const other = bySlug.get("supe-perimesh-e-bluar")!;
     const r = await renderScreen(<><MealPlanScreen /><Probe /></>);
     await act(async () => setPlanSlots([{ day: "2026-11-17", meal: "lunch", recipeSlug: first.slug }]));
-    const router = require("expo-router").router;
+    const nav = router();
     await act(async () => byLabel(r.root, `Drekë: ${first.title}`).props.onPress());
-    expect(router.push).toHaveBeenCalledWith({ pathname: "/(main)/baby/recipes/[slug]", params: { slug: first.slug } });
+    expect(nav.push).toHaveBeenCalledWith({ pathname: "/(main)/baby/recipes/[slug]", params: { slug: first.slug } });
 
     await act(async () => byLabel(r.root, `Drekë: ${first.title}`).props.onLongPress());
     expect(text(r)).toMatch(/Drekë · E martë, 17 nëntor/);
@@ -131,7 +131,7 @@ describe("Plani i javës", () => {
 describe("Lista e blerjeve", () => {
   it("bashkon karotat e tri recetave (2 + 2 + 1 = 5 copë), ✓ kur blihet, dhe “Ndaje” i dërgon në WhatsApp vetëm ato që mbeten", async () => {
     setParams({ week: "2026-11-16" });
-    const open = jest.spyOn(Linking, "openURL").mockResolvedValue(true);
+    const open = jest.spyOn(Linking, "openURL").mockResolvedValue(undefined);
     const r = await renderScreen(<ShoppingListScreen />);
     await act(async () =>
       setPlanSlots([
@@ -214,9 +214,9 @@ describe("Te receta", () => {
     expect(shown.indexOf("Blender me avull 4 në 1")).toBeGreaterThan(at);
     expect(shown.indexOf("Lugë silikoni, 2 copë")).toBeGreaterThan(shown.indexOf("Blender me avull 4 në 1"));
     expect(text(r)).not.toMatch(/Përparëse silikoni|Biberon|Tas me thithëse/);
-    const router = require("expo-router").router;
+    const nav = router();
     await act(async () => button(r.root, "Blender me avull 4 në 1").props.onPress());
-    expect(router.push).toHaveBeenCalledWith("/shop/p2", { withAnchor: true });
+    expect(nav.push).toHaveBeenCalledWith("/shop/p2", { withAnchor: true });
   });
 
   it("pa produkte që i përshtaten, pjesa s'del fare", async () => {

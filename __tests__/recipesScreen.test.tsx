@@ -1,3 +1,4 @@
+import { useEffect } from "react";
 import { act } from "react-test-renderer";
 import { button, renderScreen, setParams, visibleText } from "./helpers/screen";
 import RecipeDetail from "@/app/(main)/baby/recipes/[slug]";
@@ -14,12 +15,14 @@ function sevenMonthsAgo(): string {
   return d.toISOString();
 }
 
-let update: ((v: Record<string, unknown>) => void) | null = null;
-let feedings: FeedingEntry[] = [];
+/** Çfarë sheh app-i pas çdo veprimi (i shkruar pas render-it, si te testet e tjera). */
+const seen: { update: ((v: Record<string, unknown>) => void) | null; feedings: FeedingEntry[] } = { update: null, feedings: [] };
 function Probe() {
   const app = useAppState();
-  update = app.updateProfile as unknown as (v: Record<string, unknown>) => void;
-  feedings = app.state.baby.feedingLog;
+  useEffect(() => {
+    seen.update = app.updateProfile as unknown as (v: Record<string, unknown>) => void;
+    seen.feedings = app.state.baby.feedingLog;
+  });
   return null;
 }
 
@@ -31,7 +34,7 @@ describe("faqja e recetës", () => {
   it("paralajmëron kur fëmija ka alergji ndaj një përbërësi", async () => {
     const r = await renderScreen(<><RecipeDetail /><Probe /></>);
     expect(text(r)).not.toMatch(/Kujdes: përmban/);
-    await act(async () => update!({ babyName: "Ana", allergies: "Alergji nga qumështi i lopës" }));
+    await act(async () => seen.update!({ babyName: "Ana", allergies: "Alergji nga qumështi i lopës" }));
     expect(text(r)).toMatch(/Kujdes: përmban qumësht\. Te profili ke shënuar këtë alergji\./);
   });
 
@@ -46,14 +49,14 @@ describe("faqja e recetës", () => {
 
   it("“Shëno si ushqim” e shënon si ushqim të ngurtë dhe ruan si i pëlqeu", async () => {
     const r = await renderScreen(<><RecipeDetail /><Probe /></>);
-    const before = feedings.length;
+    const before = seen.feedings.length;
     await act(async () => button(r.root, "Shëno si ushqim").props.onPress());
-    expect(feedings.length).toBe(before + 1);
-    const entry = feedings.find((f) => f.foodCategory === "Kos me fruta të stinës")!;
+    expect(seen.feedings.length).toBe(before + 1);
+    const entry = seen.feedings.find((f) => f.foodCategory === "Kos me fruta të stinës")!;
     expect(entry.type).toBe("solid");
     expect(text(r)).toMatch(/Si i pëlqeu\?/);
     await act(async () => button(r.root, "E hëngri të gjithë").props.onPress());
-    expect(feedings.find((f) => f.id === entry.id)?.note).toBe("😋 E hëngri të gjithë");
+    expect(seen.feedings.find((f) => f.id === entry.id)?.note).toBe("😋 E hëngri të gjithë");
   });
 
   it("kur e refuzon, del butë që të provohet sërish", async () => {
@@ -73,7 +76,7 @@ describe("faqja e recetës", () => {
 describe("lista e recetave", () => {
   it("mosha vendoset vetë nga fëmija aktiv dhe receta për 12 muaj s'del te 7 muajshi", async () => {
     const r = await renderScreen(<><RecipesLibrary /><Probe /></>);
-    await act(async () => update!({ babyName: "Ana", babyDob: sevenMonthsAgo() }));
+    await act(async () => seen.update!({ babyName: "Ana", babyDob: sevenMonthsAgo() }));
     expect(text(r)).toMatch(/Për Ana, 6–8 muaj/);
     expect(text(r)).toMatch(/Receta e ditës/);
     expect(text(r)).not.toMatch(/Tavë kosi për bebe/);
