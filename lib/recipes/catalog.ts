@@ -188,6 +188,12 @@ export function scaleAmount(amount: number, unit: Unit, factor: number): number 
   return Math.max(step, Math.round(raw / step) * step);
 }
 
+/** Një shumë (p.sh. e listës së blerjeve) e rrumbullakosur si në kuzhinë. Kurrë zero. */
+export function roundAmount(amount: number, unit: Unit): number {
+  const step = STEP[unit] ?? 0.5;
+  return Math.max(step, Math.round(amount / step) * step);
+}
+
 const FRACTIONS: Record<string, string> = { "0.25": "¼", "0.5": "½", "0.75": "¾" };
 
 /** 1.5 → "1½", 0.25 → "¼", 150 → "150". */

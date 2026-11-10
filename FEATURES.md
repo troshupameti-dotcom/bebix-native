@@ -150,6 +150,43 @@ Një **kartë e vetme sugjerimi** te faqja e bebit dhe në krye të Dyqanit, me 
     - vezët, mishi dhe peshku të gatuar plotësisht.
 - **Ushqime të reja:** `node scripts/recipes-sql.mjs --foods content/recipes/foods.json <migrimi.sql> "përshkrimi"` (`on conflict (food_key) do nothing`).
 
+## Recetat 🥣, Faza C: Plani i javës, lista e blerjeve, dita e ngrirjes
+- **Ku hapet:** te lista e recetave, pllaka **"Plani i javës 📅"** (me "12 vakte të planifikuara këtë javë"); te faqja e recetës, **"Shto në plan"**.
+- **Plani i javës:** 7 ditë × mëngjes / drekë / darkë / zemër, me shigjeta për javën e kaluar dhe të ardhshme.
+  - Prekja e një vakti hap recetën; **prekja e gjatë e ndërron** (lista e recetave të vaktit, ato që i përshtaten të parat) ose e heq ("Hiqe nga plani").
+  - Recetat me hekur kanë shenjën "hekur"; ato me një alergji të profilit, "alergji".
+  - Ditët e kaluara dalin më të zbehta; plani i tyre s'preket.
+- **"Plotëso javën për mua":** plotëson vetëm vaktet bosh, nga sot e tutje:
+  - receta të moshës së fëmijës, pa alergjitë e profilit dhe pa alergjenët me reagim;
+  - nën 12 muaj (ose pa moshë), pa alergjenët që s'janë prezantuar ende: ata kanë "Planin e alergjenëve";
+  - ushqimet që i pëlqejnë (😋) dalin më shpesh, ato që i refuzon (🙅) më rrallë, por s'përjashtohen;
+  - asnjë recetë më shumë se 2 herë në javë (numërohen edhe ato që ka vënë prindi), dhe jo dy herë në të njëjtën ditë;
+  - hekur të paktën një herë në ditë. Kur recetat me hekur të moshës s'mjaftojnë pa u përsëritur, del butë "Për 2 ditë s'gjeta…, mund ta shtosh vetë";
+  - nën 9 muaj s'vendos zemër.
+- **"Provo diçka të re ✨":** një recetë me një ushqim që s'e ka provuar ende (jo alergjen), mundësisht me vetëm një të ri. "Shtoje në plan" e vendos te vakti i parë bosh, me drekën dhe mëngjesin përpara. "Një tjetër" jep propozimin tjetër.
+- **Plani i familjes:** ruhet në telefon menjëherë (punon pa rrjet), pastaj te `meal_plan_slots` për familjen. E ndajnë të dy prindërit; s'humbet kur ndërrohet telefoni.
+  - Gjyshërit e shohin (pa butonat dhe pa ndërrim): "Ky është plani i familjes. E ndryshojnë prindërit".
+  - Çdo fëmijë ka planin e vet.
+- **Lista e blerjeve:**
+  - Mbledh përbërësit e planit të javës, nga sot e tutje.
+  - Bashkon të njëjtin ushqim: 2 karota + 2 karota + 1 karotë = **5 copë**; me njësi të ndryshme, "300 g + 1 copë".
+  - I ndan sipas kategorisë: perime, fruta, proteina, bulmet, drithëra, alergjenë, "erëza, vaj dhe të tjera". Uji dhe qumështi i gjirit s'dalin.
+  - Receta me "4 porcione", e vënë 2 herë, llogaritet një gatim.
+  - **✓ kur e blen** (ruhet në atë telefon). **"Ndaje në WhatsApp"** dërgon vetëm ato që mbeten.
+- **Ditë gatimi për ngrirje:** "Gatuaj të dielën, mjafton për 5 ditë".
+  - Deri në 3 receta që ngrijnë mirë, për drekë ose darkë, me të paktën një me hekur; "Tjetër propozim" i ndërron.
+  - Radha e 5 ditëve (A, B, C, A, B), lista e blerjeve për gatimin dhe "Ndaje".
+  - **"Vendosi në plan"** i vendos te java tjetër, pa prekur vaktet e zëna.
+  - Kujdesi: ftohe shpejt, ngrije në porcione me datën, shkriji në frigorifer, ngroheje mirë vetëm një herë.
+- **"Mjetet që të ndihmojnë"** te receta: deri në 2 produkte nga Dyqani (blender, tasa, lugë, përparëse).
+  - Del vetëm kur produktet ekzistojnë, janë në stok dhe i përshtaten moshës. Me purè: blender e lugë përpara; me copa: përparëse e tas.
+  - Pa njoftime nga dyqani.
+  - Sot dyqani s'ka produkte të tilla, ndaj pjesa s'del ende. Del vetë kur shtohen produkte me emra si "Blender…", "Lugë silikoni…", "Tas…", "Përparëse…".
+- **Testet:**
+  - `__tests__/mealPlan.test.ts` (18): java, filtrat e moshës dhe alergjive, 2 herë dhe hekuri, ushqimet që i pëlqejnë, "Provo diçka të re", dita e ngrirjes, bashkimi i listës, porcionet, mjetet.
+  - `__tests__/mealPlanScreen.test.tsx` (9), `mealPlanFamily.test.tsx` (1), `mealPlanViewer.test.tsx` (1).
+  - SQL `supabase/tests/meal-plan.test.mjs` (15/15): plani lexohet vetëm nga familja, shkruhet vetëm nga prindërit.
+
 ## "Çfarë ka të re"
 - **Çfarë bën:** pas build-it të ri, faqja e bebit hap një herë listën e veçorive të reja. Prekja e një rreshti të çon te veçoria.
 - **Kush e sheh:** vetëm ata që e kishin përdorur app-in më parë. Përdoruesit e rinj s'e shohin.
@@ -173,9 +210,10 @@ Te **Supabase → SQL Editor**, me këtë radhë (secili skedar ekzekutohet një
 | 5 | `supabase/migrations/20261110090100_recipes_library_1.sql` | 40 recetat fillestare (të njëjtat si në app) |
 | 6 | `supabase/migrations/20261111090000_foods.sql` | Tabela `foods` (lexim publik, shkrim vetëm admin) dhe `food_tries` (provat e çdo fëmije: i shkruajnë prindërit e familjes; gjyshërit vetëm i lexojnë, dhe vetëm kur ndizet "Gjyshërit shohin edhe kujdesin") |
 | 7 | `supabase/migrations/20261111090100_foods_library_1.sql` | 80 ushqimet e para (të njëjtat si në app) |
+| 8 | `supabase/migrations/20261112090000_meal_plans.sql` | Tabela `meal_plan_slots` ("Plani i javës" i familjes: e shkruajnë prindërit, e lexon gjithë familja, askush tjetër) |
 
 - **Edge Functions:** asnjë e re. Njoftimet e reja përdorin radhën ekzistuese (`notification_outbox`, që zbrazet çdo 2 minuta). Përmbledhja e së hënës dhe kujtesat pas lindjes janë njoftime lokale të telefonit.
-- **Testet SQL** (Postgres lokal, PGlite): `supabase/tests/time-capsule.test.mjs` (17/17), `household-team.test.mjs` (42/42), `parent-care.test.mjs` (15/15), `recipes.test.mjs` (32/32), `foods.test.mjs` (28/28).
+- **Testet SQL** (Postgres lokal, PGlite): `supabase/tests/time-capsule.test.mjs` (17/17), `household-team.test.mjs` (42/42), `parent-care.test.mjs` (15/15), `recipes.test.mjs` (32/32), `foods.test.mjs` (28/28), `meal-plan.test.mjs` (15/15).
 
 ## Build-i
 Një build i ri përfshin gjithçka. Ka paketa të reja native: `react-native-view-shot`, `expo-widgets`, `@expo/ui`.

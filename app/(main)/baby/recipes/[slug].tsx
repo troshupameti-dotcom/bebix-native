@@ -1,8 +1,8 @@
 import { useMemo, useState } from "react";
-import { View, Text, ScrollView, Pressable, Share, useWindowDimensions } from "react-native";
+import { View, Text, ScrollView, Pressable, Share, Image, useWindowDimensions } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { router, useLocalSearchParams } from "expo-router";
-import { ChefHat, Clock, Heart, Info, Share2, ShieldAlert, Snowflake, Users, Utensils } from "lucide-react-native";
+import { CalendarPlus, ChefHat, ChevronRight, Clock, Heart, Info, Share2, ShieldAlert, ShoppingBag, Snowflake, Users, Utensils } from "lucide-react-native";
 import { BackButton } from "@/components/ui/BackButton";
 import { BottomSheet } from "@/components/ui/BottomSheet";
 import { AllergenBadges, AllergyWarning, RecipeCover, STAGE_LABEL, useRecipeText } from "@/components/recipes/RecipeParts";
@@ -23,6 +23,10 @@ import { LIKING_OPTIONS, ReactionCard, SymptomChips } from "@/components/recipes
 import { useFoods } from "@/lib/recipes/foods";
 import { addFoodTry, updateFoodTry } from "@/lib/recipes/foodTries";
 import { recipeFoodKeys } from "@/lib/recipes/firstFoods";
+import { AddToPlanSheet } from "@/components/recipes/PlanParts";
+import { Price } from "@/components/ui/Price";
+import { useMealPlan } from "@/lib/recipes/mealPlan";
+import { useRecipeTools } from "@/lib/recipes/tools";
 import type { FoodLiking, ReactionSymptom, ServeByAge } from "@/lib/recipes/types";
 import type { TranslationKey } from "@/lib/i18n/translations";
 
@@ -60,9 +64,12 @@ export default function RecipeDetail() {
   const [loggedTries, setLoggedTries] = useState<{ id: string; foodKey: string }[]>([]);
   const [reactionStep, setReactionStep] = useState<"ask" | "pick" | "card" | null>(null);
   const [symptoms, setSymptoms] = useState<ReactionSymptom[]>([]);
+  const [planOpen, setPlanOpen] = useState(false);
   const wide = width >= WIDE;
 
   const recipe = useMemo(() => index.recipes.find((r) => r.slug === slug) ?? (slug ? findRecipe(String(slug)) : null), [index.recipes, slug]);
+  const { plan } = useMealPlan();
+  const tools = useRecipeTools(recipe, child.months);
 
   if (!recipe) {
     return (
@@ -202,6 +209,26 @@ export default function RecipeDetail() {
             </View>
           ) : null}
 
+          {canLog ? (
+            <Pressable
+              onPress={() => {
+                haptics.tap();
+                setPlanOpen(true);
+              }}
+              accessibilityRole="button"
+              accessibilityHint={t("plan_add_hint")}
+              className="mt-4 flex-row items-center rounded-2xl border border-cream-line bg-surface px-4 py-3 active:opacity-80"
+              style={{ gap: 10 }}
+            >
+              <CalendarPlus size={18} color={c.olive} />
+              <View className="flex-1">
+                <Text className="font-bodySemibold text-[14.5px] text-ink">{t("plan_add_title")}</Text>
+                <Text className="font-body text-[12.5px] text-ink-soft">{t("plan_add_hint")}</Text>
+              </View>
+              <ChevronRight size={18} color={c.inkFaint} />
+            </Pressable>
+          ) : null}
+
           {/* Përbërësit: për bebin ose për gjithë familjen. */}
           <View className="mt-6 flex-row items-center justify-between">
             <Text className="font-bodySemibold text-[18px] text-ink" accessibilityRole="header">
@@ -315,6 +342,43 @@ export default function RecipeDetail() {
             </View>
           )}
 
+          {tools.length
+            ? box(
+                <ShoppingBag size={17} color={c.olive} />,
+                t("recipes_tools_title"),
+                <View style={{ gap: 10 }}>
+                  {tools.map((p) => (
+                    <Pressable
+                      key={p.id}
+                      onPress={() => {
+                        haptics.tap();
+                        router.push(`/shop/${p.id}`, { withAnchor: true });
+                      }}
+                      accessibilityRole="button"
+                      accessibilityLabel={p.name}
+                      className="flex-row items-center active:opacity-80"
+                      style={{ gap: 12 }}
+                    >
+                      {p.imageUrl ? (
+                        <Image source={{ uri: p.imageUrl }} style={{ width: 52, height: 52, borderRadius: 12, backgroundColor: "#fff" }} />
+                      ) : (
+                        <View className="items-center justify-center rounded-xl bg-cream-soft" style={{ width: 52, height: 52 }}>
+                          <ShoppingBag size={20} color={c.inkSoft} />
+                        </View>
+                      )}
+                      <View className="flex-1">
+                        <Text numberOfLines={2} className="font-bodyMedium text-[14.5px] leading-5 text-ink">
+                          {p.name}
+                        </Text>
+                        <Price price={p.price} compareAt={p.compareAtPrice} size="sm" />
+                      </View>
+                      <ChevronRight size={18} color={c.inkFaint} />
+                    </Pressable>
+                  ))}
+                </View>
+              )
+            : null}
+
           {box(<Users size={17} color={c.olive} />, t("recipes_family_title"), <Text className="font-body text-[15px] leading-[22px] text-ink">{recipe.familyTip}</Text>)}
 
           <View className="mt-6 flex-row" style={{ gap: 8 }}>
@@ -336,6 +400,8 @@ export default function RecipeDetail() {
         {canLog ? <ActionButton primary label={t("recipes_log")} icon={<Utensils size={17} color={c.cream} />} onPress={logAsFood} /> : null}
         <ActionButton label={t("recipes_share")} icon={<Share2 size={17} color={c.ink} />} onPress={share} />
       </View>
+
+      {canLog ? <AddToPlanSheet recipe={recipe} visible={planOpen} onClose={() => setPlanOpen(false)} plan={plan} lookup={(s) => index.recipes.find((r) => r.slug === s)} /> : null}
 
       <BottomSheet visible={!!logged} onClose={closeSheet}>
         <View className="px-5 pb-6 pt-2">

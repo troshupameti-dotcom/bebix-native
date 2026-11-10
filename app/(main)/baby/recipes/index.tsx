@@ -2,7 +2,7 @@ import { useCallback, useMemo, useState } from "react";
 import { View, Text, TextInput, Pressable, FlatList, ScrollView, RefreshControl, useWindowDimensions } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { router } from "expo-router";
-import { Carrot, Clock, Heart, Search, ShieldCheck, Snowflake, X } from "lucide-react-native";
+import { CalendarDays, Carrot, Clock, Heart, Search, ShieldCheck, Snowflake, X } from "lucide-react-native";
 import { BackButton } from "@/components/ui/BackButton";
 import { Chip, SectionTitle } from "@/components/stories/StoryParts";
 import { MEAL_LABEL, RecipeCard, RecipeCover, RecipeRow, STAGE_LABEL, useRecipeText } from "@/components/recipes/RecipeParts";
@@ -14,6 +14,8 @@ import { useRecipeFavorites } from "@/lib/recipes/favorites";
 import { useRecipeChild } from "@/lib/recipes/useRecipeChild";
 import { useCareAccess, useFoodTries } from "@/lib/recipes/foodTries";
 import { triedFoodsCount } from "@/lib/recipes/firstFoods";
+import { useMealPlan } from "@/lib/recipes/mealPlan";
+import { isoDay, slotKey, weekDays, weekStartOf } from "@/lib/recipes/planner";
 import { useTones } from "@/lib/theme/tone";
 import {
   allergyConflicts,
@@ -54,6 +56,9 @@ export default function RecipesLibrary() {
   const { tries } = useFoodTries();
   const access = useCareAccess();
   const tried = access.canSee ? triedFoodsCount(tries) : 0;
+  const { plan } = useMealPlan();
+  const todayKey = isoDay(new Date());
+  const plannedLeft = weekDays(weekStartOf(new Date())).filter((d) => d >= todayKey).flatMap((d) => MEAL_TYPES.map((m) => plan[slotKey(d, m)])).filter(Boolean).length;
   const padH = Math.max(20, Math.round((width - MAX_CONTENT) / 2));
 
   const [query, setQuery] = useState("");
@@ -209,8 +214,20 @@ export default function RecipesLibrary() {
               </Pressable>
             </>
           ) : null}
+          {/* Plani i javës (Faza C). */}
+          <View className="mt-4 flex-row">
+            <GuideTile
+              icon={<CalendarDays size={20} color={tones.green.tint} />}
+              title={t("plan_title")}
+              sub={plannedLeft ? t("plan_tile_count", { n: plannedLeft }) : t("plan_tile_sub")}
+              onPress={() => {
+                haptics.tap();
+                router.push("/(main)/baby/recipes/plan");
+              }}
+            />
+          </View>
           {/* Ushqimet e para dhe plani i alergjenëve (Faza B). */}
-          <View className="mt-4 flex-row" style={{ gap: 10 }}>
+          <View className="mt-2.5 flex-row" style={{ gap: 10 }}>
             <GuideTile
               icon={<Carrot size={20} color={tones.orange.tint} />}
               title={t("foods_title")}

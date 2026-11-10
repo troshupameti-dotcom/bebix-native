@@ -447,6 +447,25 @@ export async function fetchAgeProducts(months: number, limit = 40): Promise<Prod
   return (data as unknown as ProductRow[]).map(mapRow);
 }
 
+/**
+ * Produktet në stok që emri u përputhet me një shprehje (PostgreSQL, pa dallim shkronjash), dhe që i përshtaten
+ * moshës (ose janë për të gjitha moshat). Për "Mjetet që të ndihmojnë" te receta: pak rreshta, pa njoftime.
+ */
+export async function fetchProductsMatching(nameRegex: string, age: { from: number; to: number }, limit = 20): Promise<Product[]> {
+  const { data, error } = await supabase
+    .from("products")
+    .select(LIST_COLUMNS)
+    .eq("is_active", true)
+    .gt("stock", 0)
+    .filter("name", "imatch", nameRegex)
+    .or(ageOverlapFilter({ key: "range", ...age }))
+    .order("rating", { ascending: false })
+    .limit(limit);
+
+  if (error) throw error;
+  return (data as unknown as ProductRow[]).map(mapRow);
+}
+
 export async function fetchBrands(limit = 40): Promise<Brand[]> {
   const { data, error } = await supabase.from("brands").select("*").order("name").limit(limit);
   if (error) throw error;
