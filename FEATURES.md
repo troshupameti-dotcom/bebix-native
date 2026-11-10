@@ -102,7 +102,7 @@ Një **kartë e vetme sugjerimi** te faqja e bebit dhe në krye të Dyqanit, me 
   - Pastaj pyet butë: "Si i pëlqeu?" 😋 / 🙂 / 🙅, dhe përgjigjja ruhet te shënimi.
   - Gjyshërit (shikuesit) s'e kanë këtë buton.
 - **Pa faj:** pa seri, pa njoftime. "Udhëzim, jo këshillë mjekësore" del një herë te receta, dhe një shënim i butë te alergjenët.
-- **Përmbajtja:** 40 receta: 12 për 6–8 muaj, 12 për 9–11 muaj, 10 për 12–24 muaj dhe 6 për 2–5 vjeç.
+- **Përmbajtja:** 60 receta: 18 për 6–8 muaj, 18 për 9–11 muaj, 15 për 12–24 muaj dhe 9 për 2–5 vjeç. 40 fillestare dhe 20 të dimrit (nëntor 2026): supa, qulla dhe tava të ngrohta me perime të stinës.
   - 23 janë gatime shqiptare, 18 të pasura me hekur dhe 29 ngrihen.
   - Vijnë me app-in (`content/recipes/sq.json`): punojnë pa rrjet dhe para migrimit.
   - Recetat e reja shtohen te tabela `recipes` dhe dalin pa përditësim.
@@ -211,6 +211,7 @@ Te **Supabase → SQL Editor**, me këtë radhë (secili skedar ekzekutohet një
 | 6 | `supabase/migrations/20261111090000_foods.sql` | Tabela `foods` (lexim publik, shkrim vetëm admin) dhe `food_tries` (provat e çdo fëmije: i shkruajnë prindërit e familjes; gjyshërit vetëm i lexojnë, dhe vetëm kur ndizet "Gjyshërit shohin edhe kujdesin") |
 | 7 | `supabase/migrations/20261111090100_foods_library_1.sql` | 80 ushqimet e para (të njëjtat si në app) |
 | 8 | `supabase/migrations/20261112090000_meal_plans.sql` | Tabela `meal_plan_slots` ("Plani i javës" i familjes: e shkruajnë prindërit, e lexon gjithë familja, askush tjetër) |
+| 9 | `supabase/migrations/20261112090100_recipes_library_2.sql` | 20 recetat e dimrit (të njëjtat si në app); s'prek recetat ekzistuese |
 
 - **Edge Functions:** asnjë e re. Njoftimet e reja përdorin radhën ekzistuese (`notification_outbox`, që zbrazet çdo 2 minuta). Përmbledhja e së hënës dhe kujtesat pas lindjes janë njoftime lokale të telefonit.
 - **Testet SQL** (Postgres lokal, PGlite): `supabase/tests/time-capsule.test.mjs` (17/17), `household-team.test.mjs` (42/42), `parent-care.test.mjs` (15/15), `recipes.test.mjs` (32/32), `foods.test.mjs` (28/28), `meal-plan.test.mjs` (15/15).

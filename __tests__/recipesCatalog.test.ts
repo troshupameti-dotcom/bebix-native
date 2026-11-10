@@ -30,7 +30,7 @@ describe("recetat: mosha", () => {
 
   it("një bebe 7 muajshe s'sheh receta që nisin nga 9 apo 12 muaj", () => {
     const seven = filterRecipes(list, { band: "6-8" });
-    expect(seven.length).toBe(12);
+    expect(seven.length).toBe(18);
     expect(seven.every((r) => r.ageMinMonths < 9)).toBe(true);
     expect(slugs(seven)).not.toContain("tave-kosi-per-bebe");
   });
@@ -102,7 +102,7 @@ describe("recetat: alergjitë e fëmijës", () => {
 
   it("në listë, recetat me alergjenin e fëmijës dalin të fundit, pa u fshirë", () => {
     const sorted = filterRecipes(list, { band: "6-8", childAllergens: ["egg"] });
-    expect(sorted).toHaveLength(12);
+    expect(sorted).toHaveLength(18);
     expect(sorted[sorted.length - 1].slug).toBe("omelete-e-bute-me-spinaq");
     expect(sorted.slice(0, -1).some((r) => r.allergens.includes("egg"))).toBe(false);
   });

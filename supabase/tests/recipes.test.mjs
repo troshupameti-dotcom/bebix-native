@@ -13,6 +13,7 @@ const AFTER_OCT_30 = "create role service_role bypassrls; alter default privileg
 
 const TABLE = new URL("../migrations/20261110090000_recipes.sql", import.meta.url);
 const LIBRARY = new URL("../migrations/20261110090100_recipes_library_1.sql", import.meta.url);
+const LIBRARY_2 = new URL("../migrations/20261112090100_recipes_library_2.sql", import.meta.url);
 const SEED = JSON.parse(fs.readFileSync(new URL("../../content/recipes/sq.json", import.meta.url), "utf8"));
 const db = new PGlite();
 process.on("uncaughtException", (e) => { console.log("GABIM i papritur:", String(e.message).slice(0, 300)); process.exit(1); });
@@ -37,7 +38,7 @@ grant select, insert, update, delete on storage.objects to authenticated;
 `);
 await db.exec(AFTER_OCT_30);
 await db.exec("grant usage on schema public, auth, storage to service_role;");
-for (const [file, label] of [[TABLE, "tabela"], [LIBRARY, "biblioteka"]]) {
+for (const [file, label] of [[TABLE, "tabela"], [LIBRARY, "biblioteka"], [LIBRARY_2, "receta e dimrit"]]) {
   for (const name of ["i pari", "i dyti"]) {
     try { await db.exec(fs.readFileSync(file, "utf8")); console.log(`OK  migrimi i ${label}s (${name})`); }
     catch (e) { console.log(`GABIM te migrimi i ${label}s:`, e.message); process.exit(1); }

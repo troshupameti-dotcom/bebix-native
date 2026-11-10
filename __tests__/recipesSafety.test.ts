@@ -22,10 +22,10 @@ const stepsText = (r: Recipe) => withoutNegations(r.steps.join(" ; "));
 const has = (r: Recipe, key: string) => r.ingredients.some((i) => i.foodKey === key);
 
 describe("recetat: struktura", () => {
-  it("40 receta me numrat e kërkuar sipas moshës", () => {
+  it("60 receta (40 fillestare + 20 të dimrit) me numrat e kërkuar sipas moshës", () => {
     const at = (from: number, to: number) => list.filter((r) => r.ageMinMonths >= from && r.ageMinMonths < to).length;
-    expect(list).toHaveLength(40);
-    expect([at(6, 9), at(9, 12), at(12, 24), at(24, 61)]).toEqual([12, 12, 10, 6]);
+    expect(list).toHaveLength(60);
+    expect([at(6, 9), at(9, 12), at(12, 24), at(24, 61)]).toEqual([18, 18, 15, 9]);
     expect(list.filter((r) => r.isAlbanian).length).toBeGreaterThanOrEqual(12);
     expect(list.filter((r) => r.nutrients.includes("iron")).length).toBeGreaterThanOrEqual(10);
     expect(list.filter((r) => r.freezerFriendly).length).toBeGreaterThanOrEqual(8);

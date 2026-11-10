@@ -3755,5 +3755,1881 @@
     "cover": "plate-orange",
     "featured": false,
     "sortOrder": 400
+  },
+  {
+    "slug": "pure-patate-e-embel-me-molle",
+    "title": "Purè patate e ëmbël me mollë",
+    "summary": "Patatja e ëmbël dhe molla e zier japin një purè të lëmuar, të ëmbël vetvetiu, pa sheqer.",
+    "ageMinMonths": 6,
+    "ageMaxMonths": 24,
+    "stage": "pure",
+    "feedingStyle": [
+      "puree"
+    ],
+    "mealTypes": [
+      "breakfast",
+      "lunch"
+    ],
+    "prepMinutes": 10,
+    "cookMinutes": 25,
+    "yieldNote": "4 porcione bebe",
+    "familyFactor": 3,
+    "ingredients": [
+      {
+        "name": "patate e ëmbël",
+        "amount": 1,
+        "unit": "copë",
+        "foodKey": "sweet_potato"
+      },
+      {
+        "name": "mollë",
+        "amount": 1,
+        "unit": "copë",
+        "foodKey": "apple"
+      },
+      {
+        "name": "ujë",
+        "amount": 60,
+        "unit": "ml",
+        "foodKey": null
+      },
+      {
+        "name": "kanellë",
+        "amount": 0.25,
+        "unit": "lugë çaji",
+        "foodKey": null,
+        "optional": true
+      }
+    ],
+    "steps": [
+      "Qëroje pataten e ëmbël dhe mollën dhe prit në kubikë të vegjël.",
+      "Zieji në avull ose në pak ujë 20–25 minuta, derisa të shtypen lehtë me pirun.",
+      "Bluaji me pak nga uji i zierjes, derisa purèja të jetë e lëmuar. Shto kanellën nëse e do."
+    ],
+    "serveByAge": {
+      "6-8": "E lëmuar dhe e trashë, me lugë.",
+      "9-11": "E shtypur me pirun, me copëza të buta.",
+      "12+": "Si pjatë anësore, ose e përzier me kos për mëngjes."
+    },
+    "allergens": [],
+    "dietTags": [
+      "vegetarian",
+      "dairy_free",
+      "gluten_free",
+      "egg_free",
+      "nut_free"
+    ],
+    "nutrients": [
+      "vitamin_c",
+      "fiber"
+    ],
+    "freezerFriendly": true,
+    "storageNote": "Në frigorifer deri në 3 ditë, në enë të mbyllur.",
+    "freezerNote": "Në kallëpe akulli ose gota të vogla, deri në 3 muaj.",
+    "reheatNote": "Ngroje mirë, përzieje dhe lëre të ftohet derisa të jetë e vakët.",
+    "chokingNote": "Molla para 12 muajsh jepet gjithmonë e gatuar; bluaje mirë, që të mos mbeten copa të forta.",
+    "familyTip": "Piq më shumë patate të ëmbla: të rriturit i hanë me vaj ulliri dhe erëza.",
+    "season": [
+      "autumn",
+      "winter"
+    ],
+    "isAlbanian": false,
+    "cover": "bowl-orange",
+    "featured": false,
+    "sortOrder": 410
+  },
+  {
+    "slug": "pure-lulelakre-me-thjerreza-te-kuqe",
+    "title": "Purè lulelakre me thjerrëza të kuqe",
+    "summary": "Thjerrëzat e kuqe zihen shpejt dhe i japin hekur kësaj purèje të butë me lulelakër dhe patate.",
+    "ageMinMonths": 6,
+    "ageMaxMonths": 24,
+    "stage": "pure",
+    "feedingStyle": [
+      "puree"
+    ],
+    "mealTypes": [
+      "lunch",
+      "dinner"
+    ],
+    "prepMinutes": 10,
+    "cookMinutes": 25,
+    "yieldNote": "5 porcione bebe",
+    "familyFactor": 3,
+    "ingredients": [
+      {
+        "name": "thjerrëza të kuqe",
+        "amount": 50,
+        "unit": "g",
+        "foodKey": "red_lentils"
+      },
+      {
+        "name": "lulelakër",
+        "amount": 150,
+        "unit": "g",
+        "foodKey": "cauliflower"
+      },
+      {
+        "name": "patate",
+        "amount": 1,
+        "unit": "copë",
+        "foodKey": "potato"
+      },
+      {
+        "name": "vaj ulliri",
+        "amount": 1,
+        "unit": "lugë çaji",
+        "foodKey": null
+      },
+      {
+        "name": "ujë",
+        "amount": 400,
+        "unit": "ml",
+        "foodKey": null
+      }
+    ],
+    "steps": [
+      "Laji thjerrëzat derisa uji të dalë i pastër.",
+      "Hidhi në tenxhere me lulelakrën, pataten e prerë në kubikë dhe ujin. Zieji 20–25 minuta, derisa të gjitha të jenë shumë të buta.",
+      "Bluaji me vajin e ullirit. Shto pak ujë të ngrohtë nëse del shumë e trashë."
+    ],
+    "serveByAge": {
+      "6-8": "E lëmuar, me lugë.",
+      "9-11": "E shtypur, me copëza të buta lulelakre.",
+      "12+": "Si supë e trashë, me bukë anash."
+    },
+    "allergens": [],
+    "dietTags": [
+      "vegetarian",
+      "dairy_free",
+      "gluten_free",
+      "egg_free",
+      "nut_free"
+    ],
+    "nutrients": [
+      "iron",
+      "protein",
+      "fiber",
+      "vitamin_c"
+    ],
+    "freezerFriendly": true,
+    "storageNote": "Në frigorifer deri në 3 ditë.",
+    "freezerNote": "Në porcione të vogla, deri në 3 muaj.",
+    "reheatNote": "Ngroje derisa të avullojë, përzieje mirë dhe lëre të ftohet derisa të jetë e vakët.",
+    "chokingNote": "Bluaje mirë: lulelakra e gatuar përgjysmë mund të mbetet e fortë.",
+    "familyTip": "Me hudhër, qimnon dhe limon, e njëjta tenxhere bëhet supë për të gjithë.",
+    "season": [
+      "autumn",
+      "winter"
+    ],
+    "isAlbanian": false,
+    "cover": "bowl-yellow",
+    "featured": false,
+    "sortOrder": 420
+  },
+  {
+    "slug": "pure-panxhari-me-karote-dhe-patate",
+    "title": "Purè panxhari me karotë dhe patate",
+    "summary": "Një purè me ngjyrë të fortë: panxhar, karotë dhe patate të ziera, me pak vaj ulliri.",
+    "ageMinMonths": 6,
+    "ageMaxMonths": 24,
+    "stage": "pure",
+    "feedingStyle": [
+      "puree"
+    ],
+    "mealTypes": [
+      "lunch",
+      "dinner"
+    ],
+    "prepMinutes": 10,
+    "cookMinutes": 35,
+    "yieldNote": "4 porcione bebe",
+    "familyFactor": 3,
+    "ingredients": [
+      {
+        "name": "panxhar",
+        "amount": 1,
+        "unit": "copë",
+        "foodKey": "beetroot"
+      },
+      {
+        "name": "karotë",
+        "amount": 1,
+        "unit": "copë",
+        "foodKey": "carrot"
+      },
+      {
+        "name": "patate",
+        "amount": 1,
+        "unit": "copë",
+        "foodKey": "potato"
+      },
+      {
+        "name": "vaj ulliri",
+        "amount": 1,
+        "unit": "lugë çaji",
+        "foodKey": null
+      },
+      {
+        "name": "ujë",
+        "amount": 400,
+        "unit": "ml",
+        "foodKey": null
+      }
+    ],
+    "steps": [
+      "Qëroji perimet dhe prit në kubikë të vegjël. Panxhari ngjyros: vish doreza nëse do.",
+      "Zieji 30–35 minuta, derisa panxhari të shtypet lehtë me pirun.",
+      "Bluaji me vajin e ullirit dhe pak ujë nga zierja."
+    ],
+    "serveByAge": {
+      "6-8": "E lëmuar, me lugë.",
+      "9-11": "E shtypur, ose kubikë të butë sa maja e gishtit.",
+      "12+": "Kubikë të butë, si pjatë anësore."
+    },
+    "allergens": [],
+    "dietTags": [
+      "vegetarian",
+      "dairy_free",
+      "gluten_free",
+      "egg_free",
+      "nut_free"
+    ],
+    "nutrients": [
+      "fiber",
+      "vitamin_c"
+    ],
+    "freezerFriendly": true,
+    "storageNote": "Në frigorifer deri në 3 ditë.",
+    "freezerNote": "Në kallëpe akulli, deri në 3 muaj.",
+    "reheatNote": "Ngroje mirë dhe lëre të ftohet derisa të jetë e vakët.",
+    "chokingNote": "Karota dhe panxhari jepen të gatuar mirë, kurrë të papjekur.",
+    "familyTip": "Panxharin e tepërt e hanë të rriturit me kos dhe hudhër. Panxhari mund ta ngjyrosë rozë jashtëqitjen e bebit: kjo ndodh shpesh dhe kalon vetë.",
+    "season": [
+      "autumn",
+      "winter"
+    ],
+    "isAlbanian": false,
+    "cover": "bowl-pink",
+    "featured": false,
+    "sortOrder": 430
+  },
+  {
+    "slug": "qull-tershere-me-dardhe",
+    "title": "Qull tërshëre me dardhë",
+    "summary": "Mëngjes i ngrohtë dimri: tërshërë e zier butë me dardhë të gatuar, pa sheqer.",
+    "ageMinMonths": 6,
+    "ageMaxMonths": 36,
+    "stage": "pure",
+    "feedingStyle": [
+      "puree"
+    ],
+    "mealTypes": [
+      "breakfast"
+    ],
+    "prepMinutes": 5,
+    "cookMinutes": 10,
+    "yieldNote": "2 porcione bebe",
+    "familyFactor": 3,
+    "ingredients": [
+      {
+        "name": "tërshërë e bluar imët",
+        "amount": 30,
+        "unit": "g",
+        "foodKey": "oats"
+      },
+      {
+        "name": "ujë",
+        "amount": 200,
+        "unit": "ml",
+        "foodKey": null
+      },
+      {
+        "name": "dardhë",
+        "amount": 1,
+        "unit": "copë",
+        "foodKey": "pear"
+      },
+      {
+        "name": "qumësht gjiri, formulë ose ujë",
+        "amount": 2,
+        "unit": "lugë gjelle",
+        "foodKey": null,
+        "optional": true
+      },
+      {
+        "name": "kanellë",
+        "amount": 0.25,
+        "unit": "lugë çaji",
+        "foodKey": null,
+        "optional": true
+      }
+    ],
+    "steps": [
+      "Qëroje dardhën, prite në kubikë të vegjël dhe ziej 5 minuta me ujin.",
+      "Shto tërshërën dhe ziej edhe 5 minuta, duke e përzier, derisa të trashet.",
+      "Bluaje ose shtype dhe holloje me qumësht gjiri ose formulë. Lëre të ftohet derisa të jetë i vakët."
+    ],
+    "serveByAge": {
+      "6-8": "I lëmuar, me lugë.",
+      "9-11": "Më i trashë, me copëza dardhe të buta.",
+      "12+": "Me copa dardhe dhe pak kos sipër."
+    },
+    "allergens": [],
+    "dietTags": [
+      "vegetarian",
+      "dairy_free",
+      "egg_free",
+      "nut_free"
+    ],
+    "nutrients": [
+      "fiber"
+    ],
+    "freezerFriendly": false,
+    "storageNote": "Në frigorifer deri në 2 ditë.",
+    "freezerNote": "Nuk ngrihet mirë: tërshëra bëhet e ujshme. Gatuaje të freskët, zgjat vetëm 10 minuta.",
+    "reheatNote": "Ngroje me pak ujë, përzieje mirë dhe provoje që të jetë i vakët.",
+    "chokingNote": "Dardha e fortë jepet e gatuar; dardha e pjekur e butë mund të jepet e shtypur.",
+    "familyTip": "I njëjti qull është mëngjes edhe për të rriturit, me fruta dhe arra të grira në pjatën e tyre.",
+    "season": [
+      "autumn",
+      "winter"
+    ],
+    "isAlbanian": false,
+    "cover": "bowl-white",
+    "featured": false,
+    "sortOrder": 440
+  },
+  {
+    "slug": "pure-gjeldeti-me-brokoli-dhe-patate",
+    "title": "Purè gjeldeti me brokoli dhe patate",
+    "summary": "Mish gjeldeti i zier plotësisht, me brokoli dhe patate: hekur dhe proteina në një purè të butë.",
+    "ageMinMonths": 6,
+    "ageMaxMonths": 24,
+    "stage": "pure",
+    "feedingStyle": [
+      "puree"
+    ],
+    "mealTypes": [
+      "lunch",
+      "dinner"
+    ],
+    "prepMinutes": 10,
+    "cookMinutes": 25,
+    "yieldNote": "5 porcione bebe",
+    "familyFactor": 3,
+    "ingredients": [
+      {
+        "name": "mish gjeldeti pa lëkurë",
+        "amount": 100,
+        "unit": "g",
+        "foodKey": "turkey"
+      },
+      {
+        "name": "brokoli",
+        "amount": 100,
+        "unit": "g",
+        "foodKey": "broccoli"
+      },
+      {
+        "name": "patate",
+        "amount": 1,
+        "unit": "copë",
+        "foodKey": "potato"
+      },
+      {
+        "name": "qepë",
+        "amount": 0.25,
+        "unit": "copë",
+        "foodKey": "onion"
+      },
+      {
+        "name": "vaj ulliri",
+        "amount": 1,
+        "unit": "lugë çaji",
+        "foodKey": null
+      },
+      {
+        "name": "ujë",
+        "amount": 400,
+        "unit": "ml",
+        "foodKey": null
+      }
+    ],
+    "steps": [
+      "Prite mishin në kubikë të vegjël dhe ziej me qepën dhe ujin 15 minuta.",
+      "Shto pataten e prerë dhe brokolin dhe ziej edhe 10 minuta, derisa mishi të jetë gatuar plotësisht dhe perimet shumë të buta.",
+      "Bluaje me vajin e ullirit dhe pak lëng nga zierja, derisa të jetë e lëmuar."
+    ],
+    "serveByAge": {
+      "6-8": "E lëmuar, me lugë.",
+      "9-11": "E shtypur, me mishin e grirë imët.",
+      "12+": "Copa të vogla mishi me perime, si pjatë e familjes."
+    },
+    "allergens": [],
+    "dietTags": [
+      "dairy_free",
+      "gluten_free",
+      "egg_free",
+      "nut_free"
+    ],
+    "nutrients": [
+      "iron",
+      "protein",
+      "vitamin_c"
+    ],
+    "freezerFriendly": true,
+    "storageNote": "Në frigorifer deri në 2 ditë.",
+    "freezerNote": "Në porcione të vogla, deri në 2 muaj.",
+    "reheatNote": "Ngroje derisa të avullojë edhe në mes, përzieje dhe lëre të ftohet derisa të jetë e vakët.",
+    "chokingNote": "Bluaje mirë: copat e mishit janë rrezik para se bebja të mësojë të përtypë.",
+    "familyTip": "Gjeldeti i zier me perime bëhet supë për të gjithë; të rriturit shtojnë erëza në pjatën e tyre.",
+    "season": [
+      "autumn",
+      "winter"
+    ],
+    "isAlbanian": false,
+    "cover": "bowl-green",
+    "featured": false,
+    "sortOrder": 450
+  },
+  {
+    "slug": "merluc-me-patate-te-embel",
+    "title": "Merluc me patate të ëmbël",
+    "summary": "Peshk i bardhë i butë, i gatuar plotësisht në avull, me patate të ëmbël dhe pak limon.",
+    "ageMinMonths": 6,
+    "ageMaxMonths": 24,
+    "stage": "pure",
+    "feedingStyle": [
+      "puree"
+    ],
+    "mealTypes": [
+      "lunch",
+      "dinner"
+    ],
+    "prepMinutes": 10,
+    "cookMinutes": 25,
+    "yieldNote": "4 porcione bebe",
+    "familyFactor": 3,
+    "ingredients": [
+      {
+        "name": "fileto merluci pa kocka",
+        "amount": 100,
+        "unit": "g",
+        "foodKey": "cod"
+      },
+      {
+        "name": "patate e ëmbël",
+        "amount": 1,
+        "unit": "copë",
+        "foodKey": "sweet_potato"
+      },
+      {
+        "name": "vaj ulliri",
+        "amount": 1,
+        "unit": "lugë çaji",
+        "foodKey": null
+      },
+      {
+        "name": "lëng limoni",
+        "amount": 0.5,
+        "unit": "lugë çaji",
+        "foodKey": "lemon",
+        "optional": true
+      },
+      {
+        "name": "ujë",
+        "amount": 50,
+        "unit": "ml",
+        "foodKey": null
+      }
+    ],
+    "steps": [
+      "Gatuaj pataten e ëmbël të prerë në kubikë 15 minuta në avull.",
+      "Vendos peshkun sipër dhe gatuaje në avull 8–10 minuta, derisa të jetë gatuar plotësisht dhe të ndahet lehtë me pirun.",
+      "Kontrolloje me gishta që të mos ketë asnjë kockë, pastaj bluaje me pataten, vajin dhe ujin. Shto limonin nëse e do."
+    ],
+    "serveByAge": {
+      "6-8": "E lëmuar, me lugë.",
+      "9-11": "E shtypur, me peshkun e thërrmuar.",
+      "12+": "Peshk i thërrmuar dhe patate në copa, me pirun."
+    },
+    "allergens": [
+      "fish"
+    ],
+    "dietTags": [
+      "dairy_free",
+      "gluten_free",
+      "egg_free",
+      "nut_free"
+    ],
+    "nutrients": [
+      "protein",
+      "vitamin_c"
+    ],
+    "freezerFriendly": true,
+    "storageNote": "Në frigorifer deri në 1 ditë.",
+    "freezerNote": "Në porcione të vogla, deri në 1 muaj.",
+    "reheatNote": "Ngroje mirë derisa të avullojë, pastaj lëre të ftohet derisa të jetë e vakët. Mos e ringroh më shumë se një herë.",
+    "chokingNote": "Peshku ka kocka të holla: kontrolloje me kujdes me gishta para se ta bluash.",
+    "familyTip": "Merluci në avull me patate të ëmbël është darkë e lehtë edhe për të rriturit, me limon dhe piper.",
+    "season": [
+      "winter"
+    ],
+    "isAlbanian": false,
+    "cover": "bowl-white",
+    "featured": false,
+    "sortOrder": 460
+  },
+  {
+    "slug": "supe-thjerrezash-me-kungull",
+    "title": "Supë thjerrëzash me kungull",
+    "summary": "Supa e thjerrëzave si në shtëpi, me kungull dhe karotë: e trashë, e ngrohtë dhe me hekur, pa kripë.",
+    "ageMinMonths": 9,
+    "ageMaxMonths": 60,
+    "stage": "mashed",
+    "feedingStyle": [
+      "puree"
+    ],
+    "mealTypes": [
+      "lunch",
+      "dinner"
+    ],
+    "prepMinutes": 10,
+    "cookMinutes": 40,
+    "yieldNote": "6 porcione bebe",
+    "familyFactor": 3,
+    "ingredients": [
+      {
+        "name": "thjerrëza",
+        "amount": 100,
+        "unit": "g",
+        "foodKey": "lentils"
+      },
+      {
+        "name": "kungull",
+        "amount": 200,
+        "unit": "g",
+        "foodKey": "pumpkin"
+      },
+      {
+        "name": "karotë",
+        "amount": 1,
+        "unit": "copë",
+        "foodKey": "carrot"
+      },
+      {
+        "name": "qepë",
+        "amount": 0.5,
+        "unit": "copë",
+        "foodKey": "onion"
+      },
+      {
+        "name": "hudhër",
+        "amount": 1,
+        "unit": "copë",
+        "foodKey": "garlic"
+      },
+      {
+        "name": "vaj ulliri",
+        "amount": 1,
+        "unit": "lugë gjelle",
+        "foodKey": null
+      },
+      {
+        "name": "ujë",
+        "amount": 900,
+        "unit": "ml",
+        "foodKey": null
+      },
+      {
+        "name": "qimnon",
+        "amount": 0.25,
+        "unit": "lugë çaji",
+        "foodKey": null,
+        "optional": true
+      }
+    ],
+    "steps": [
+      "Laji thjerrëzat; qëroji dhe prit kungullin, karotën dhe qepën në kubikë.",
+      "Kaurdis qepën dhe hudhrën në vaj 2 minuta, pastaj shto perimet, thjerrëzat dhe ujin.",
+      "Ziej 35–40 minuta, derisa thjerrëzat të shpërbëhen.",
+      "Shtype me pirun ose bluaje pak, që të mbeten copëza të buta."
+    ],
+    "serveByAge": {
+      "9-11": "E trashë dhe e shtypur, me copëza të buta.",
+      "12+": "Si supa e familjes, me bukë të thekur për ta zhytur."
+    },
+    "allergens": [],
+    "dietTags": [
+      "vegetarian",
+      "dairy_free",
+      "gluten_free",
+      "egg_free",
+      "nut_free"
+    ],
+    "nutrients": [
+      "iron",
+      "protein",
+      "fiber"
+    ],
+    "freezerFriendly": true,
+    "storageNote": "Në frigorifer deri në 3 ditë.",
+    "freezerNote": "Në porcione, deri në 3 muaj.",
+    "reheatNote": "Ngroje derisa të avullojë, shto pak ujë nëse është trashur dhe lëre të ftohet derisa të jetë e vakët.",
+    "chokingNote": "Shtypi mirë thjerrëzat dhe perimet; copat e forta të karotës nuk jepen.",
+    "familyTip": "Ndaje pjesën e bebit, pastaj të rriturit shtojnë limon dhe piper djegës në pjatat e tyre.",
+    "season": [
+      "autumn",
+      "winter"
+    ],
+    "isAlbanian": true,
+    "cover": "bowl-orange",
+    "featured": false,
+    "sortOrder": 470
+  },
+  {
+    "slug": "qofte-gjeldeti-me-spinaq",
+    "title": "Qofte gjeldeti me spinaq",
+    "summary": "Qofte të buta në furrë, me gjeldeti, spinaq dhe tërshërë: mbahen lehtë me dorë dhe s'kanë vezë.",
+    "ageMinMonths": 9,
+    "ageMaxMonths": 60,
+    "stage": "finger",
+    "feedingStyle": [
+      "blw"
+    ],
+    "mealTypes": [
+      "lunch",
+      "dinner",
+      "snack"
+    ],
+    "prepMinutes": 15,
+    "cookMinutes": 20,
+    "yieldNote": "12 qofte të vogla",
+    "familyFactor": 2,
+    "ingredients": [
+      {
+        "name": "mish gjeldeti i grirë",
+        "amount": 250,
+        "unit": "g",
+        "foodKey": "turkey"
+      },
+      {
+        "name": "spinaq i freskët",
+        "amount": 50,
+        "unit": "g",
+        "foodKey": "spinach"
+      },
+      {
+        "name": "tërshërë e bluar",
+        "amount": 3,
+        "unit": "lugë gjelle",
+        "foodKey": "oats"
+      },
+      {
+        "name": "qepë e rrendur",
+        "amount": 0.25,
+        "unit": "copë",
+        "foodKey": "onion"
+      },
+      {
+        "name": "hudhër e grirë",
+        "amount": 1,
+        "unit": "copë",
+        "foodKey": "garlic"
+      },
+      {
+        "name": "vaj ulliri",
+        "amount": 1,
+        "unit": "lugë gjelle",
+        "foodKey": null
+      }
+    ],
+    "steps": [
+      "Ndize furrën në 190°C dhe shtro letër pjekjeje në tavë.",
+      "Zbardhe spinaqin 1 minutë në ujë që vlon, shtrydhe mirë dhe grije imët.",
+      "Përzieji të gjitha dhe formo qofte të zgjatura, sa gishti i një të rrituri.",
+      "Piqi 18–20 minuta, duke i kthyer një herë, derisa të jenë gatuar plotësisht përbrenda, pa asnjë pjesë rozë."
+    ],
+    "serveByAge": {
+      "9-11": "Qofte e zgjatur sa gishti, e butë, që shtypet me gishta.",
+      "12+": "Qofte e prerë në copa të vogla, me oriz ose purè."
+    },
+    "allergens": [],
+    "dietTags": [
+      "dairy_free",
+      "egg_free",
+      "nut_free"
+    ],
+    "nutrients": [
+      "iron",
+      "protein"
+    ],
+    "freezerFriendly": true,
+    "storageNote": "Në frigorifer deri në 2 ditë.",
+    "freezerNote": "Të pjekura, deri në 2 muaj, të ndara me letër.",
+    "reheatNote": "Ngrohi në furrë ose në tigan me kapak derisa të nxehen mirë në mes; lëri të ftohen para se t'i japësh.",
+    "chokingNote": "Forma e zgjatur mbahet më lehtë dhe është më e sigurt se topat e vegjël. Rri pranë fëmijës kur ha.",
+    "familyTip": "Me salcë domateje dhe makarona, të njëjtat qofte janë darkë për të gjithë.",
+    "season": [
+      "winter",
+      "spring"
+    ],
+    "isAlbanian": false,
+    "cover": "plate-green",
+    "featured": false,
+    "sortOrder": 480
+  },
+  {
+    "slug": "shirita-patate-te-embel-ne-furre",
+    "title": "Shirita patate të ëmbël në furrë",
+    "summary": "Patate të ëmbla të pjekura butë, në shirita sa gishti: ushqim i mirë për t'u ngrënë me dorë.",
+    "ageMinMonths": 9,
+    "ageMaxMonths": 60,
+    "stage": "finger",
+    "feedingStyle": [
+      "blw"
+    ],
+    "mealTypes": [
+      "lunch",
+      "snack"
+    ],
+    "prepMinutes": 10,
+    "cookMinutes": 30,
+    "yieldNote": "4 porcione bebe",
+    "familyFactor": 3,
+    "ingredients": [
+      {
+        "name": "patate e ëmbël",
+        "amount": 2,
+        "unit": "copë",
+        "foodKey": "sweet_potato"
+      },
+      {
+        "name": "vaj ulliri",
+        "amount": 1,
+        "unit": "lugë gjelle",
+        "foodKey": null
+      },
+      {
+        "name": "paprika e ëmbël",
+        "amount": 0.25,
+        "unit": "lugë çaji",
+        "foodKey": null,
+        "optional": true
+      }
+    ],
+    "steps": [
+      "Ndize furrën në 200°C.",
+      "Qëroji patatet dhe prit në shirita sa gishti i një të rrituri.",
+      "Përzieji me vajin dhe paprikën, shtroji në tavë pa i mbivendosur dhe piqi 25–30 minuta, derisa të shtypen lehtë mes dy gishtave."
+    ],
+    "serveByAge": {
+      "9-11": "Shirita të butë sa gishti, që shtypen me gishta.",
+      "12+": "Copa ose kubikë, si pjatë anësore."
+    },
+    "allergens": [],
+    "dietTags": [
+      "vegetarian",
+      "dairy_free",
+      "gluten_free",
+      "egg_free",
+      "nut_free"
+    ],
+    "nutrients": [
+      "fiber",
+      "vitamin_c"
+    ],
+    "freezerFriendly": false,
+    "storageNote": "Në frigorifer deri në 2 ditë.",
+    "freezerNote": "Nuk ngrihen mirë: zbuten shumë dhe humbin formën.",
+    "reheatNote": "Ngrohi në furrë 5 minuta dhe provoji që të mos jenë shumë të nxehta përbrenda.",
+    "chokingNote": "Duhet të shtypen lehtë mes gishtave; kur skajet janë të forta, piqi më gjatë me letër sipër.",
+    "familyTip": "Bëj një tavë të madhe: patatet e ëmbla në furrë shkojnë me çdo darkë.",
+    "season": [
+      "autumn",
+      "winter"
+    ],
+    "isAlbanian": false,
+    "cover": "plate-orange",
+    "featured": false,
+    "sortOrder": 490
+  },
+  {
+    "slug": "oriz-me-presh-dhe-karote",
+    "title": "Oriz me presh dhe karotë",
+    "summary": "Preshi me oriz i shtëpisë, i butë dhe pa kripë: preshi i gatuar ngadalë i jep shije të ëmbël.",
+    "ageMinMonths": 9,
+    "ageMaxMonths": 60,
+    "stage": "mashed",
+    "feedingStyle": [
+      "puree"
+    ],
+    "mealTypes": [
+      "lunch",
+      "dinner"
+    ],
+    "prepMinutes": 10,
+    "cookMinutes": 35,
+    "yieldNote": "5 porcione bebe",
+    "familyFactor": 3,
+    "ingredients": [
+      {
+        "name": "presh",
+        "amount": 1,
+        "unit": "copë",
+        "foodKey": "leek"
+      },
+      {
+        "name": "karotë",
+        "amount": 1,
+        "unit": "copë",
+        "foodKey": "carrot"
+      },
+      {
+        "name": "oriz",
+        "amount": 60,
+        "unit": "g",
+        "foodKey": "rice"
+      },
+      {
+        "name": "vaj ulliri",
+        "amount": 1,
+        "unit": "lugë gjelle",
+        "foodKey": null
+      },
+      {
+        "name": "ujë",
+        "amount": 500,
+        "unit": "ml",
+        "foodKey": null
+      },
+      {
+        "name": "majdanoz i grirë",
+        "amount": 1,
+        "unit": "lugë çaji",
+        "foodKey": null,
+        "optional": true
+      }
+    ],
+    "steps": [
+      "Laje mirë preshin, prite në rrathë të hollë dhe karotën në kubikë të vegjël.",
+      "Kaurdisi në vaj 5 minuta në zjarr të ulët, pa i skuqur.",
+      "Shto orizin dhe ujin dhe ziej 25–30 minuta, derisa orizi të jetë shumë i butë dhe uji të jetë thithur.",
+      "Shtype pak me pirun për bebet më të vogla."
+    ],
+    "serveByAge": {
+      "9-11": "I butë dhe pak i shtypur, me lugë.",
+      "12+": "Si gjellë e familjes, me kos anash."
+    },
+    "allergens": [],
+    "dietTags": [
+      "vegetarian",
+      "dairy_free",
+      "gluten_free",
+      "egg_free",
+      "nut_free"
+    ],
+    "nutrients": [
+      "fiber",
+      "vitamin_c"
+    ],
+    "freezerFriendly": true,
+    "storageNote": "Në frigorifer deri në 2 ditë; ftohe shpejt pas gatimit.",
+    "freezerNote": "Në porcione, deri në 1 muaj.",
+    "reheatNote": "Ngroje me një lugë ujë derisa të avullojë mirë; orizin mos e ringroh më shumë se një herë.",
+    "chokingNote": "Karota duhet të jetë shumë e butë; rrathët e preshit priti imët.",
+    "familyTip": "Të rriturit e hanë me limon dhe piper; me pak kos sipër bëhet edhe më e mirë.",
+    "season": [
+      "autumn",
+      "winter"
+    ],
+    "isAlbanian": true,
+    "cover": "bowl-green",
+    "featured": false,
+    "sortOrder": 500
+  },
+  {
+    "slug": "molle-dhe-dardhe-te-pjekura-me-tershere",
+    "title": "Mollë dhe dardhë të pjekura me tërshërë",
+    "summary": "Fruta të pjekura në furrë me një shtresë tërshëre dhe gjalpi: ëmbëlsirë dimri pa sheqer.",
+    "ageMinMonths": 9,
+    "ageMaxMonths": 60,
+    "stage": "mashed",
+    "feedingStyle": [
+      "puree",
+      "blw"
+    ],
+    "mealTypes": [
+      "breakfast",
+      "snack"
+    ],
+    "prepMinutes": 10,
+    "cookMinutes": 30,
+    "yieldNote": "4 porcione bebe",
+    "familyFactor": 2,
+    "ingredients": [
+      {
+        "name": "mollë",
+        "amount": 2,
+        "unit": "copë",
+        "foodKey": "apple"
+      },
+      {
+        "name": "dardhë",
+        "amount": 1,
+        "unit": "copë",
+        "foodKey": "pear"
+      },
+      {
+        "name": "ujë",
+        "amount": 30,
+        "unit": "ml",
+        "foodKey": null
+      },
+      {
+        "name": "tërshërë",
+        "amount": 40,
+        "unit": "g",
+        "foodKey": "oats"
+      },
+      {
+        "name": "gjalpë",
+        "amount": 15,
+        "unit": "g",
+        "foodKey": "butter"
+      },
+      {
+        "name": "kanellë",
+        "amount": 0.5,
+        "unit": "lugë çaji",
+        "foodKey": null
+      }
+    ],
+    "steps": [
+      "Ndize furrën në 180°C.",
+      "Qëroji frutat, prit në kubikë të vegjël dhe vendosi në një enë të vogël furre me ujin.",
+      "Fërkoje tërshërën me gjalpin e butë dhe kanellën dhe hidhe sipër frutave.",
+      "Piqe 25–30 minuta, derisa frutat të jenë shumë të buta."
+    ],
+    "serveByAge": {
+      "9-11": "E shtypur me pirun, frutat dhe tërshëra bashkë.",
+      "12+": "Me lugë, e vakët, me pak kos."
+    },
+    "allergens": [
+      "milk"
+    ],
+    "dietTags": [
+      "vegetarian",
+      "egg_free",
+      "nut_free"
+    ],
+    "nutrients": [
+      "fiber",
+      "vitamin_c"
+    ],
+    "freezerFriendly": true,
+    "storageNote": "Në frigorifer deri në 3 ditë.",
+    "freezerNote": "Në porcione, deri në 2 muaj.",
+    "reheatNote": "Ngroje pak dhe provoje: frutat mbajnë nxehtësinë më gjatë se tërshëra.",
+    "chokingNote": "Molla para 12 muajsh jepet vetëm e gatuar mirë, aq sa të shtypet me gishta.",
+    "familyTip": "Për të rriturit, sipër me arra të grira dhe kos.",
+    "season": [
+      "autumn",
+      "winter"
+    ],
+    "isAlbanian": false,
+    "cover": "plate-yellow",
+    "featured": false,
+    "sortOrder": 510
+  },
+  {
+    "slug": "petulla-kungulli-me-tershere",
+    "title": "Petulla kungulli me tërshërë",
+    "summary": "Petulla të buta me kungull, tërshërë dhe vezë, pa sheqer: mëngjes që hahet me dorë.",
+    "ageMinMonths": 9,
+    "ageMaxMonths": 60,
+    "stage": "finger",
+    "feedingStyle": [
+      "blw"
+    ],
+    "mealTypes": [
+      "breakfast",
+      "snack"
+    ],
+    "prepMinutes": 10,
+    "cookMinutes": 30,
+    "yieldNote": "10 petulla të vogla",
+    "familyFactor": 2,
+    "ingredients": [
+      {
+        "name": "kungull",
+        "amount": 200,
+        "unit": "g",
+        "foodKey": "pumpkin"
+      },
+      {
+        "name": "vezë",
+        "amount": 1,
+        "unit": "copë",
+        "foodKey": "egg"
+      },
+      {
+        "name": "tërshërë e bluar",
+        "amount": 60,
+        "unit": "g",
+        "foodKey": "oats"
+      },
+      {
+        "name": "kanellë",
+        "amount": 0.25,
+        "unit": "lugë çaji",
+        "foodKey": null,
+        "optional": true
+      },
+      {
+        "name": "vaj ulliri",
+        "amount": 1,
+        "unit": "lugë çaji",
+        "foodKey": null
+      }
+    ],
+    "steps": [
+      "Prite kungullin në kubikë, ziej 15 minuta derisa të jetë shumë i butë, kulloje dhe shtype.",
+      "Përziej purènë e kungullit me vezën, tërshërën dhe kanellën; lëre 5 minuta të trashet.",
+      "Ngroh një tigan që nuk ngjit, me pak vaj, në zjarr mesatar.",
+      "Hidh nga një lugë gjelle brumë dhe gatuaj 3 minuta nga çdo anë, derisa veza të jetë gatuar plotësisht edhe në mes."
+    ],
+    "serveByAge": {
+      "9-11": "Petull e prerë në shirita, e butë.",
+      "12+": "Petull e plotë, me kos ose fruta të shtypura."
+    },
+    "allergens": [
+      "egg"
+    ],
+    "dietTags": [
+      "vegetarian",
+      "dairy_free",
+      "nut_free"
+    ],
+    "nutrients": [
+      "protein",
+      "fiber"
+    ],
+    "freezerFriendly": true,
+    "storageNote": "Në frigorifer deri në 2 ditë.",
+    "freezerNote": "Të ndara me letër, deri në 2 muaj.",
+    "reheatNote": "Ngrohi në tigan ose në furrë derisa të nxehen mirë; lëri të ftohen para se t'i japësh.",
+    "chokingNote": "Shiritat e butë mbahen lehtë; kungulli duhet të jetë i zier mirë, pa copa të forta.",
+    "familyTip": "Dyfisho sasinë: të rriturit i hanë me kos dhe fruta.",
+    "season": [
+      "autumn",
+      "winter"
+    ],
+    "isAlbanian": false,
+    "cover": "plate-orange",
+    "featured": false,
+    "sortOrder": 520
+  },
+  {
+    "slug": "laker-me-oriz-dhe-mish-vici",
+    "title": "Lakër me oriz dhe mish viçi",
+    "summary": "Gjella e dimrit si e gjyshes, e përshtatur për fëmijë: lakër e zier butë me mish viçi dhe oriz.",
+    "ageMinMonths": 12,
+    "ageMaxMonths": 60,
+    "stage": "family",
+    "feedingStyle": [
+      "puree",
+      "blw"
+    ],
+    "mealTypes": [
+      "lunch",
+      "dinner"
+    ],
+    "prepMinutes": 15,
+    "cookMinutes": 60,
+    "yieldNote": "1 fëmijë + 2 të rritur",
+    "familyFactor": 1,
+    "ingredients": [
+      {
+        "name": "mish viçi i grirë",
+        "amount": 250,
+        "unit": "g",
+        "foodKey": "beef"
+      },
+      {
+        "name": "lakër e bardhë",
+        "amount": 400,
+        "unit": "g",
+        "foodKey": "cabbage"
+      },
+      {
+        "name": "oriz",
+        "amount": 60,
+        "unit": "g",
+        "foodKey": "rice"
+      },
+      {
+        "name": "qepë",
+        "amount": 1,
+        "unit": "copë",
+        "foodKey": "onion"
+      },
+      {
+        "name": "domate e grirë",
+        "amount": 200,
+        "unit": "g",
+        "foodKey": "tomato"
+      },
+      {
+        "name": "vaj ulliri",
+        "amount": 2,
+        "unit": "lugë gjelle",
+        "foodKey": null
+      },
+      {
+        "name": "paprika e ëmbël",
+        "amount": 0.5,
+        "unit": "lugë çaji",
+        "foodKey": null
+      },
+      {
+        "name": "ujë",
+        "amount": 500,
+        "unit": "ml",
+        "foodKey": null
+      }
+    ],
+    "steps": [
+      "Kaurdis qepën e grirë në vaj, shto mishin dhe gatuaje 8–10 minuta duke e thërrmuar, derisa të jetë gatuar plotësisht.",
+      "Shto lakrën e prerë hollë, domaten, paprikën dhe ujin dhe ziej me kapak 30 minuta.",
+      "Shto orizin dhe ziej edhe 20 minuta, derisa orizi dhe lakra të jenë shumë të butë.",
+      "Ndaje pjesën e fëmijës para se të rriturit ta kripin gjellën në pjatat e tyre."
+    ],
+    "serveByAge": {
+      "12+": "Copa të vogla lakre dhe mishi me oriz, me pirun ose me lugë."
+    },
+    "allergens": [],
+    "dietTags": [
+      "dairy_free",
+      "gluten_free",
+      "egg_free",
+      "nut_free"
+    ],
+    "nutrients": [
+      "iron",
+      "protein",
+      "vitamin_c",
+      "fiber"
+    ],
+    "freezerFriendly": true,
+    "storageNote": "Në frigorifer deri në 2 ditë.",
+    "freezerNote": "Në porcione, deri në 2 muaj.",
+    "reheatNote": "Ngroje derisa të avullojë mirë në mes dhe lëre të ftohet pak para se ta japësh.",
+    "chokingNote": "Lakrën priti hollë dhe ziej derisa të jetë shumë e butë; fijet e gjata priti me thikë.",
+    "familyTip": "Gatuhet për të gjithë: pjesa e fëmijës ndahet para kripës.",
+    "season": [
+      "winter"
+    ],
+    "isAlbanian": true,
+    "cover": "plate-green",
+    "featured": false,
+    "sortOrder": 530
+  },
+  {
+    "slug": "supe-me-qiqra-dhe-spinaq",
+    "title": "Supë me qiqra dhe spinaq",
+    "summary": "Supë e trashë me qiqra, spinaq dhe domate, me pak qimnon: e ngrohtë dhe me hekur.",
+    "ageMinMonths": 12,
+    "ageMaxMonths": 60,
+    "stage": "family",
+    "feedingStyle": [
+      "puree"
+    ],
+    "mealTypes": [
+      "lunch",
+      "dinner"
+    ],
+    "prepMinutes": 10,
+    "cookMinutes": 30,
+    "yieldNote": "6 porcione fëmije",
+    "familyFactor": 2,
+    "ingredients": [
+      {
+        "name": "qiqra të ziera",
+        "amount": 250,
+        "unit": "g",
+        "foodKey": "chickpeas"
+      },
+      {
+        "name": "spinaq",
+        "amount": 100,
+        "unit": "g",
+        "foodKey": "spinach"
+      },
+      {
+        "name": "domate e grirë",
+        "amount": 200,
+        "unit": "g",
+        "foodKey": "tomato"
+      },
+      {
+        "name": "qepë",
+        "amount": 1,
+        "unit": "copë",
+        "foodKey": "onion"
+      },
+      {
+        "name": "hudhër",
+        "amount": 1,
+        "unit": "copë",
+        "foodKey": "garlic"
+      },
+      {
+        "name": "karotë",
+        "amount": 1,
+        "unit": "copë",
+        "foodKey": "carrot"
+      },
+      {
+        "name": "vaj ulliri",
+        "amount": 1,
+        "unit": "lugë gjelle",
+        "foodKey": null
+      },
+      {
+        "name": "ujë",
+        "amount": 700,
+        "unit": "ml",
+        "foodKey": null
+      },
+      {
+        "name": "qimnon",
+        "amount": 0.5,
+        "unit": "lugë çaji",
+        "foodKey": null,
+        "optional": true
+      }
+    ],
+    "steps": [
+      "Kaurdis qepën, hudhrën dhe karotën e grirë në vaj 5 minuta.",
+      "Shto qiqrat, domaten, qimnonin dhe ujin dhe ziej 20 minuta.",
+      "Shto spinaqin e prerë dhe ziej edhe 3 minuta.",
+      "Bluaje pjesërisht, që qiqrat e plota të mos mbeten në pjatën e fëmijës."
+    ],
+    "serveByAge": {
+      "12+": "E bluar pjesërisht, me qiqra të shtypura dhe bukë anash."
+    },
+    "allergens": [],
+    "dietTags": [
+      "vegetarian",
+      "dairy_free",
+      "gluten_free",
+      "egg_free",
+      "nut_free"
+    ],
+    "nutrients": [
+      "iron",
+      "protein",
+      "fiber",
+      "vitamin_c"
+    ],
+    "freezerFriendly": true,
+    "storageNote": "Në frigorifer deri në 3 ditë.",
+    "freezerNote": "Në porcione, deri në 3 muaj.",
+    "reheatNote": "Ngroje derisa të avullojë dhe lëre të ftohet derisa të jetë e vakët.",
+    "chokingNote": "Qiqrat e plota janë rrezik mbytjeje: shtypi ose bluaji gjithmonë për fëmijët e vegjël.",
+    "familyTip": "Të rriturit e hanë me limon, piper djegës dhe bukë të thekur.",
+    "season": [
+      "winter",
+      "spring"
+    ],
+    "isAlbanian": false,
+    "cover": "bowl-red",
+    "featured": false,
+    "sortOrder": 540
+  },
+  {
+    "slug": "tave-qengji-me-patate",
+    "title": "Tavë qengji me patate",
+    "summary": "Tava e festave, e butë për fëmijët: mish qengji i pjekur ngadalë me patate dhe rozmarinë.",
+    "ageMinMonths": 12,
+    "ageMaxMonths": 60,
+    "stage": "family",
+    "feedingStyle": [
+      "blw"
+    ],
+    "mealTypes": [
+      "lunch",
+      "dinner"
+    ],
+    "prepMinutes": 15,
+    "cookMinutes": 90,
+    "yieldNote": "1 fëmijë + 2 të rritur",
+    "familyFactor": 1,
+    "ingredients": [
+      {
+        "name": "mish qengji pa kocka",
+        "amount": 400,
+        "unit": "g",
+        "foodKey": "lamb"
+      },
+      {
+        "name": "patate",
+        "amount": 4,
+        "unit": "copë",
+        "foodKey": "potato"
+      },
+      {
+        "name": "qepë",
+        "amount": 1,
+        "unit": "copë",
+        "foodKey": "onion"
+      },
+      {
+        "name": "hudhër",
+        "amount": 2,
+        "unit": "copë",
+        "foodKey": "garlic"
+      },
+      {
+        "name": "vaj ulliri",
+        "amount": 2,
+        "unit": "lugë gjelle",
+        "foodKey": null
+      },
+      {
+        "name": "rozmarinë e thatë",
+        "amount": 0.5,
+        "unit": "lugë çaji",
+        "foodKey": null
+      },
+      {
+        "name": "ujë",
+        "amount": 250,
+        "unit": "ml",
+        "foodKey": null
+      }
+    ],
+    "steps": [
+      "Ndize furrën në 180°C.",
+      "Prite mishin në kubikë, patatet në copa dhe qepën në rrathë; përzieji në tavë me vajin, hudhrën dhe rozmarinën.",
+      "Shto ujin, mbuloje me letër alumini dhe piqe 60 minuta.",
+      "Zbuloje dhe piqe edhe 30 minuta, derisa mishi të jetë gatuar plotësisht dhe të ndahet me pirun."
+    ],
+    "serveByAge": {
+      "12+": "Mish i grirë në fije të vogla, me patate të shtypura."
+    },
+    "allergens": [],
+    "dietTags": [
+      "dairy_free",
+      "gluten_free",
+      "egg_free",
+      "nut_free"
+    ],
+    "nutrients": [
+      "iron",
+      "protein"
+    ],
+    "freezerFriendly": true,
+    "storageNote": "Në frigorifer deri në 2 ditë.",
+    "freezerNote": "Mishi me lëngun e vet, deri në 2 muaj.",
+    "reheatNote": "Ngroje me pak ujë, të mbuluar, derisa të nxehet mirë në mes.",
+    "chokingNote": "Hiq çdo kockë, dhjamë dhe fije të forta; prite mishin në copa shumë të vogla.",
+    "familyTip": "Pjesa e fëmijës ndahet para se të rriturit të shtojnë kripë; tava shkon me sallatë lakre.",
+    "season": [
+      "winter",
+      "spring"
+    ],
+    "isAlbanian": true,
+    "cover": "plate-brown",
+    "featured": false,
+    "sortOrder": 550
+  },
+  {
+    "slug": "salmon-me-brokoli-dhe-oriz",
+    "title": "Salmon me brokoli dhe oriz",
+    "summary": "Salmon i pjekur plotësisht në furrë, me brokoli në avull dhe oriz të butë: omega-3 në një pjatë.",
+    "ageMinMonths": 12,
+    "ageMaxMonths": 60,
+    "stage": "family",
+    "feedingStyle": [
+      "blw"
+    ],
+    "mealTypes": [
+      "lunch",
+      "dinner"
+    ],
+    "prepMinutes": 10,
+    "cookMinutes": 25,
+    "yieldNote": "1 fëmijë + 2 të rritur",
+    "familyFactor": 1,
+    "ingredients": [
+      {
+        "name": "fileto salmoni pa kocka",
+        "amount": 300,
+        "unit": "g",
+        "foodKey": "salmon"
+      },
+      {
+        "name": "brokoli",
+        "amount": 300,
+        "unit": "g",
+        "foodKey": "broccoli"
+      },
+      {
+        "name": "oriz",
+        "amount": 150,
+        "unit": "g",
+        "foodKey": "rice"
+      },
+      {
+        "name": "vaj ulliri",
+        "amount": 1,
+        "unit": "lugë gjelle",
+        "foodKey": null
+      },
+      {
+        "name": "lëng limoni",
+        "amount": 1,
+        "unit": "lugë gjelle",
+        "foodKey": "lemon"
+      },
+      {
+        "name": "kopër e grirë",
+        "amount": 1,
+        "unit": "lugë gjelle",
+        "foodKey": null,
+        "optional": true
+      },
+      {
+        "name": "ujë",
+        "amount": 400,
+        "unit": "ml",
+        "foodKey": null
+      }
+    ],
+    "steps": [
+      "Ziej orizin me ujin 18–20 minuta, derisa të jetë i butë.",
+      "Vendos salmonin në tavë, lyeje me vaj dhe limon dhe piqe në 200°C 15 minuta, derisa të jetë gatuar plotësisht dhe të ndahet me pirun.",
+      "Gatuaj brokolin në avull 6–8 minuta, derisa të jetë i butë.",
+      "Kontrolloje peshkun me gishta për kocka dhe thërrmoje për fëmijën."
+    ],
+    "serveByAge": {
+      "12+": "Peshk i thërrmuar, lule brokoli të buta dhe oriz, me dorë ose me pirun."
+    },
+    "allergens": [
+      "fish"
+    ],
+    "dietTags": [
+      "dairy_free",
+      "gluten_free",
+      "egg_free",
+      "nut_free"
+    ],
+    "nutrients": [
+      "omega3",
+      "protein",
+      "vitamin_c"
+    ],
+    "freezerFriendly": false,
+    "storageNote": "Në frigorifer deri në 1 ditë.",
+    "freezerNote": "Më mirë i freskët: peshku i pjekur nuk ngrihet mirë.",
+    "reheatNote": "Ngroje mirë një herë të vetme dhe lëre të ftohet pak para se ta japësh.",
+    "chokingNote": "Kontrollo me kujdes kockat e holla të salmonit; lulet e brokolit jepen të buta.",
+    "familyTip": "E njëjta tavë për të gjithë; të rriturit shtojnë kripë dhe piper në pjatë.",
+    "season": [
+      "winter"
+    ],
+    "isAlbanian": false,
+    "cover": "plate-pink",
+    "featured": false,
+    "sortOrder": 560
+  },
+  {
+    "slug": "makarona-me-lulelaker-dhe-djathe",
+    "title": "Makarona me lulelakër dhe djathë",
+    "summary": "Makarona të vogla me salcë të butë lulelakre dhe djathi: e kremtë, e ngrohtë dhe me kalcium.",
+    "ageMinMonths": 12,
+    "ageMaxMonths": 60,
+    "stage": "family",
+    "feedingStyle": [
+      "puree",
+      "blw"
+    ],
+    "mealTypes": [
+      "lunch",
+      "dinner"
+    ],
+    "prepMinutes": 10,
+    "cookMinutes": 25,
+    "yieldNote": "4 porcione fëmije",
+    "familyFactor": 2,
+    "ingredients": [
+      {
+        "name": "makarona të vogla",
+        "amount": 150,
+        "unit": "g",
+        "foodKey": "pasta"
+      },
+      {
+        "name": "lulelakër",
+        "amount": 250,
+        "unit": "g",
+        "foodKey": "cauliflower"
+      },
+      {
+        "name": "qumësht",
+        "amount": 200,
+        "unit": "ml",
+        "foodKey": "milk"
+      },
+      {
+        "name": "djathë i butë me pak kripë",
+        "amount": 50,
+        "unit": "g",
+        "foodKey": "cheese"
+      },
+      {
+        "name": "gjalpë",
+        "amount": 10,
+        "unit": "g",
+        "foodKey": "butter"
+      },
+      {
+        "name": "miell gruri",
+        "amount": 1,
+        "unit": "lugë gjelle",
+        "foodKey": "wheat_flour"
+      }
+    ],
+    "steps": [
+      "Ziej makaronat sipas paketimit, derisa të jenë shumë të buta; në 5 minutat e fundit shto lulelakrën e prerë imët.",
+      "Në një tenxhere tjetër shkrij gjalpin, shto miellin dhe pastaj qumështin pak nga pak, duke e përzier derisa të trashet.",
+      "Hiqe nga zjarri dhe shto djathin e grirë.",
+      "Kulloji makaronat dhe lulelakrën dhe përzieji me salcën."
+    ],
+    "serveByAge": {
+      "12+": "Makarona të vogla e të buta, me lugë ose me dorë; lulelakra e shtypur në salcë."
+    },
+    "allergens": [
+      "wheat",
+      "milk"
+    ],
+    "dietTags": [
+      "vegetarian",
+      "egg_free",
+      "nut_free"
+    ],
+    "nutrients": [
+      "calcium",
+      "protein",
+      "vitamin_c"
+    ],
+    "freezerFriendly": true,
+    "storageNote": "Në frigorifer deri në 2 ditë.",
+    "freezerNote": "Në porcione, deri në 1 muaj.",
+    "reheatNote": "Ngroje me pak qumësht, duke e përzier, derisa të nxehet mirë.",
+    "chokingNote": "Zgjidh makarona të vogla dhe gatuaji më gjatë se zakonisht, që të shtypen lehtë.",
+    "familyTip": "Për të rriturit, sipër me piper të zi dhe pak djathë të fortë, të gratinuar në furrë.",
+    "season": [
+      "autumn",
+      "winter"
+    ],
+    "isAlbanian": false,
+    "cover": "plate-yellow",
+    "featured": false,
+    "sortOrder": 570
+  },
+  {
+    "slug": "byrek-me-kungull-dhe-arra-te-bluara",
+    "title": "Byrek me kungull dhe arra të bluara",
+    "summary": "Byreku i ëmbël i dimrit, pa sheqer: kungull i rrendur, arra të bluara dhe kanellë mes petëve.",
+    "ageMinMonths": 24,
+    "ageMaxMonths": 60,
+    "stage": "family",
+    "feedingStyle": [
+      "blw"
+    ],
+    "mealTypes": [
+      "breakfast",
+      "snack"
+    ],
+    "prepMinutes": 25,
+    "cookMinutes": 40,
+    "yieldNote": "1 tavë e vogël, 8 copa",
+    "familyFactor": 1,
+    "ingredients": [
+      {
+        "name": "petë byreku",
+        "amount": 6,
+        "unit": "copë",
+        "foodKey": "filo"
+      },
+      {
+        "name": "kungull i rrendur",
+        "amount": 400,
+        "unit": "g",
+        "foodKey": "pumpkin"
+      },
+      {
+        "name": "arra të bluara imët",
+        "amount": 40,
+        "unit": "g",
+        "foodKey": "ground_walnuts"
+      },
+      {
+        "name": "kanellë",
+        "amount": 1,
+        "unit": "lugë çaji",
+        "foodKey": null
+      },
+      {
+        "name": "vaj ulliri",
+        "amount": 4,
+        "unit": "lugë gjelle",
+        "foodKey": null
+      }
+    ],
+    "steps": [
+      "Ndize furrën në 180°C dhe lyej me vaj një tavë të vogël.",
+      "Përziej kungullin e rrendur me arrat e bluara dhe kanellën.",
+      "Shtro petët një nga një, duke e lyer secilën me vaj, dhe shpërndaje mbushjen mes tyre.",
+      "Prije në copa para pjekjes dhe piqe 35–40 minuta, derisa të marrë ngjyrë dhe kungulli të jetë i butë."
+    ],
+    "serveByAge": {
+      "12+": "Copa të vogla, pasi të jenë ftohur pak; skajet e forta të petës hiqi për fëmijët më të vegjël."
+    },
+    "allergens": [
+      "wheat",
+      "tree_nut"
+    ],
+    "dietTags": [
+      "vegetarian",
+      "dairy_free",
+      "egg_free"
+    ],
+    "nutrients": [
+      "fiber"
+    ],
+    "freezerFriendly": true,
+    "storageNote": "Në temperaturë dhome 1 ditë, në frigorifer deri në 3 ditë.",
+    "freezerNote": "Copat e pjekura, deri në 2 muaj.",
+    "reheatNote": "Ngrohe në furrë 10 minuta, që peta të bëhet sërish krokante; lëre të ftohet pak.",
+    "chokingNote": "Arrat jepen vetëm të bluara imët. Petët e forta të skajeve thërrmohen në gojë: rri pranë fëmijës kur ha.",
+    "familyTip": "Është byreku i së dielës për gjithë familjen; të rriturit e hanë me kos ose çaj.",
+    "season": [
+      "autumn",
+      "winter"
+    ],
+    "isAlbanian": true,
+    "cover": "plate-orange",
+    "featured": false,
+    "sortOrder": 580
+  },
+  {
+    "slug": "supe-elbi-me-vic-dhe-perime",
+    "title": "Supë elbi me viç dhe perime",
+    "summary": "Supë e ngrohtë dimri me elb, mish viçi dhe perime: ushqim i plotë në një tenxhere.",
+    "ageMinMonths": 24,
+    "ageMaxMonths": 60,
+    "stage": "family",
+    "feedingStyle": [
+      "puree"
+    ],
+    "mealTypes": [
+      "lunch",
+      "dinner"
+    ],
+    "prepMinutes": 15,
+    "cookMinutes": 75,
+    "yieldNote": "6 porcione fëmije",
+    "familyFactor": 2,
+    "ingredients": [
+      {
+        "name": "mish viçi pa kocka",
+        "amount": 250,
+        "unit": "g",
+        "foodKey": "beef"
+      },
+      {
+        "name": "elb",
+        "amount": 80,
+        "unit": "g",
+        "foodKey": "barley"
+      },
+      {
+        "name": "karotë",
+        "amount": 2,
+        "unit": "copë",
+        "foodKey": "carrot"
+      },
+      {
+        "name": "patate",
+        "amount": 1,
+        "unit": "copë",
+        "foodKey": "potato"
+      },
+      {
+        "name": "kërcell selinoje",
+        "amount": 1,
+        "unit": "copë",
+        "foodKey": "celery"
+      },
+      {
+        "name": "qepë",
+        "amount": 1,
+        "unit": "copë",
+        "foodKey": "onion"
+      },
+      {
+        "name": "vaj ulliri",
+        "amount": 1,
+        "unit": "lugë gjelle",
+        "foodKey": null
+      },
+      {
+        "name": "ujë",
+        "amount": 1200,
+        "unit": "ml",
+        "foodKey": null
+      },
+      {
+        "name": "majdanoz i grirë",
+        "amount": 1,
+        "unit": "lugë gjelle",
+        "foodKey": null,
+        "optional": true
+      }
+    ],
+    "steps": [
+      "Prite mishin në kubikë të vegjël dhe kaurdise me qepën në vaj 5 minuta.",
+      "Shto elbin e larë dhe ujin; ziej me kapak 45 minuta.",
+      "Shto perimet e prera në kubikë dhe ziej edhe 25–30 minuta, derisa mishi të jetë gatuar plotësisht dhe elbi të jetë i butë.",
+      "Për fëmijën, grije mishin imët dhe shtype pak supën."
+    ],
+    "serveByAge": {
+      "12+": "Me copa të vogla mishi të grirë dhe perime të buta, me lugë."
+    },
+    "allergens": [],
+    "dietTags": [
+      "dairy_free",
+      "egg_free",
+      "nut_free"
+    ],
+    "nutrients": [
+      "iron",
+      "protein",
+      "fiber"
+    ],
+    "freezerFriendly": true,
+    "storageNote": "Në frigorifer deri në 3 ditë.",
+    "freezerNote": "Në porcione, deri në 3 muaj.",
+    "reheatNote": "Ngroje derisa të avullojë; shto ujë nëse elbi e ka trashur.",
+    "chokingNote": "Elbi duhet të jetë shumë i butë; mishin grije imët ose shtype me pirun.",
+    "familyTip": "Të rriturit e kripin në pjatë dhe e hanë me bukë të thekur.",
+    "season": [
+      "winter"
+    ],
+    "isAlbanian": false,
+    "cover": "bowl-brown",
+    "featured": false,
+    "sortOrder": 590
+  },
+  {
+    "slug": "pule-me-portokall-dhe-patate-te-embel",
+    "title": "Pulë me portokall dhe patate të ëmbël",
+    "summary": "Kofsha pule të pjekura plotësisht me lëng portokalli dhe patate të ëmbël: shije dimri, pa sheqer.",
+    "ageMinMonths": 24,
+    "ageMaxMonths": 60,
+    "stage": "family",
+    "feedingStyle": [
+      "blw"
+    ],
+    "mealTypes": [
+      "lunch",
+      "dinner"
+    ],
+    "prepMinutes": 15,
+    "cookMinutes": 45,
+    "yieldNote": "1 fëmijë + 2 të rritur",
+    "familyFactor": 1,
+    "ingredients": [
+      {
+        "name": "kofsha pule pa lëkurë dhe pa kocka",
+        "amount": 500,
+        "unit": "g",
+        "foodKey": "chicken"
+      },
+      {
+        "name": "patate e ëmbël",
+        "amount": 2,
+        "unit": "copë",
+        "foodKey": "sweet_potato"
+      },
+      {
+        "name": "lëng portokalli i shtrydhur",
+        "amount": 100,
+        "unit": "ml",
+        "foodKey": "orange"
+      },
+      {
+        "name": "qepë",
+        "amount": 1,
+        "unit": "copë",
+        "foodKey": "onion"
+      },
+      {
+        "name": "hudhër",
+        "amount": 2,
+        "unit": "copë",
+        "foodKey": "garlic"
+      },
+      {
+        "name": "vaj ulliri",
+        "amount": 2,
+        "unit": "lugë gjelle",
+        "foodKey": null
+      },
+      {
+        "name": "rigon i thatë",
+        "amount": 0.5,
+        "unit": "lugë çaji",
+        "foodKey": null
+      }
+    ],
+    "steps": [
+      "Ndize furrën në 200°C.",
+      "Prit patatet e ëmbla në kubikë dhe qepën në rrathë; vendosi në tavë me pulën.",
+      "Përziej lëngun e portokallit me vajin, hudhrën e grirë dhe rigonin dhe hidhe sipër.",
+      "Piqe 40–45 minuta, duke e përzier një herë, derisa pula të jetë gatuar plotësisht dhe të mos ketë lëng rozë në mes."
+    ],
+    "serveByAge": {
+      "12+": "Pulë e grirë në fije të vogla dhe patate e ëmbël e shtypur ose në kubikë të butë."
+    },
+    "allergens": [],
+    "dietTags": [
+      "dairy_free",
+      "gluten_free",
+      "egg_free",
+      "nut_free"
+    ],
+    "nutrients": [
+      "protein",
+      "vitamin_c"
+    ],
+    "freezerFriendly": true,
+    "storageNote": "Në frigorifer deri në 2 ditë.",
+    "freezerNote": "Në porcione me lëngun, deri në 2 muaj.",
+    "reheatNote": "Ngroje mirë derisa të nxehet në mes; lëre të ftohet pak para se ta japësh.",
+    "chokingNote": "Prite pulën në fije të vogla dhe hiq çdo kockë ose kërc.",
+    "familyTip": "Të rriturit e hanë me oriz ose me sallatë jeshile.",
+    "season": [
+      "winter"
+    ],
+    "isAlbanian": false,
+    "cover": "plate-yellow",
+    "featured": false,
+    "sortOrder": 600
   }
 ]
