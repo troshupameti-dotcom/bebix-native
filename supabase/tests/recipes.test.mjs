@@ -14,6 +14,8 @@ const AFTER_OCT_30 = "create role service_role bypassrls; alter default privileg
 const TABLE = new URL("../migrations/20261110090000_recipes.sql", import.meta.url);
 const LIBRARY = new URL("../migrations/20261110090100_recipes_library_1.sql", import.meta.url);
 const LIBRARY_2 = new URL("../migrations/20261112090100_recipes_library_2.sql", import.meta.url);
+const FIXES = new URL("../migrations/20261113090000_recipes_language_fixes.sql", import.meta.url);
+const LIBRARY_3 = new URL("../migrations/20261114090100_recipes_library_3.sql", import.meta.url);
 const SEED = JSON.parse(fs.readFileSync(new URL("../../content/recipes/sq.json", import.meta.url), "utf8"));
 const db = new PGlite();
 process.on("uncaughtException", (e) => { console.log("GABIM i papritur:", String(e.message).slice(0, 300)); process.exit(1); });
@@ -38,7 +40,7 @@ grant select, insert, update, delete on storage.objects to authenticated;
 `);
 await db.exec(AFTER_OCT_30);
 await db.exec("grant usage on schema public, auth, storage to service_role;");
-for (const [file, label] of [[TABLE, "tabela"], [LIBRARY, "biblioteka"], [LIBRARY_2, "receta e dimrit"]]) {
+for (const [file, label] of [[TABLE, "tabela"], [LIBRARY, "biblioteka"], [LIBRARY_2, "receta e dimrit"], [FIXES, "gjuha e njësuar"], [LIBRARY_3, "20 recetat e reja"]]) {
   for (const name of ["i pari", "i dyti"]) {
     try { await db.exec(fs.readFileSync(file, "utf8")); console.log(`OK  migrimi i ${label}s (${name})`); }
     catch (e) { console.log(`GABIM te migrimi i ${label}s:`, e.message); process.exit(1); }
@@ -47,6 +49,19 @@ for (const [file, label] of [[TABLE, "tabela"], [LIBRARY, "biblioteka"], [LIBRAR
 
 let pass = 0, fail = 0;
 const check = (name, ok, extra = "") => { (ok ? pass++ : fail++); console.log((ok ? "OK  " : "GABIM ") + name + (extra ? "  -> " + extra : "")); };
+
+// --- Ndreqja e gjuhës s'prek tekstin që admini e ka ndryshuar ----------------
+{
+  const slug = "muffina-veze-me-perime";
+  const want = SEED.find((r) => r.slug === slug).title;
+  check("ndreqja e gjuhës e vendos titullin e ri", (await db.query(`select title from public.recipes where slug = $1`, [slug])).rows[0].title === want, want);
+  await db.query(`update public.recipes set title = 'Titull nga admini', summary = $2 where slug = $1`, [slug, SEED.find((r) => r.slug === slug).summary.replace("mafinash", "muffinash")]);
+  await db.exec(fs.readFileSync(FIXES, "utf8"));
+  const row = (await db.query(`select title, summary from public.recipes where slug = $1`, [slug])).rows[0];
+  check("ndreqja e gjuhës s'prek titullin që ndryshoi admini", row.title === "Titull nga admini", row.title);
+  check("ndreqja e gjuhës ndreq fushën që ka ende tekstin e vjetër", row.summary === SEED.find((r) => r.slug === slug).summary);
+  await db.query(`update public.recipes set title = $2 where slug = $1`, [slug, want]);
+}
 const fails = async (q) => { try { await db.query(q); return false; } catch { return true; } };
 const n = async (q) => (await db.query(q)).rows[0].n;
 

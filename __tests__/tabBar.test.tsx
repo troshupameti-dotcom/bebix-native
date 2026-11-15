@@ -10,16 +10,16 @@ import { TabBar, type TabGlyph } from "@/components/ui/TabBar";
 const ITEMS: { name: string; icon: TabGlyph }[] = [
   { name: "baby", icon: "baby" },
   { name: "shop", icon: "shop" },
-  { name: "ai-chat", icon: "sparkle" },
+  { name: "recipes", icon: "bowl" },
   { name: "community", icon: "community" },
   { name: "more", icon: "settings" },
 ];
-const TITLES: Record<string, string> = { baby: "Bebi", shop: "Dyqani", "ai-chat": "AI", community: "Komuniteti", more: "Më shumë", notifications: "Njoftimet" };
+const TITLES: Record<string, string> = { baby: "Bebi", shop: "Dyqani", recipes: "Ushqim", community: "Komuniteti", more: "Më shumë", notifications: "Njoftimet", "ai-chat": "AI" };
 const COLORS = { background: "#FFFFFF", border: "#EEEEEE", active: "#111111", inactive: "#999999" };
 
 function setup(focus: string, prevent = false) {
-  // Njoftimet janë skedë pa buton: s'duhet të dalin në shirit.
-  const names = ["baby", "shop", "ai-chat", "community", "more", "notifications"];
+  // Njoftimet dhe AI-ja janë skeda pa buton: s'duhet të dalin në shirit.
+  const names = ["baby", "shop", "recipes", "community", "more", "notifications", "ai-chat"];
   const routes = names.map((name) => ({ key: `${name}-key`, name }));
   const descriptors = Object.fromEntries(routes.map((r) => [r.key, { options: { title: TITLES[r.name] } }]));
   const emitter = { emit: jest.fn(() => ({ defaultPrevented: prevent })) };
@@ -41,14 +41,27 @@ const tabs = (root: ReactTestInstance) =>
 const tab = (root: ReactTestInstance, label: string) => tabs(root).find((n) => n.props.accessibilityLabel === label)!;
 
 describe("shiriti poshtë", () => {
-  it("pesë skeda me radhë, pa njoftimet; e zgjedhura shënohet për lexuesin e ekranit", async () => {
+  it("pesë skeda me radhë, Ushqim në mes, pa njoftimet dhe pa AI-në; e zgjedhura shënohet për lexuesin e ekranit", async () => {
     const { props } = setup("shop");
     const r = await renderScreen(<TabBar {...props} />);
-    expect(tabs(r.root).map((n) => n.props.accessibilityLabel)).toEqual(["Bebi", "Dyqani", "AI", "Komuniteti", "Më shumë"]);
+    expect(tabs(r.root).map((n) => n.props.accessibilityLabel)).toEqual(["Bebi", "Dyqani", "Ushqim", "Komuniteti", "Më shumë"]);
     expect(visibleText(r.root)).not.toContain("Njoftimet");
+    expect(visibleText(r.root)).not.toContain("AI");
     expect(tab(r.root, "Dyqani").props.accessibilityState).toEqual({ selected: true });
     expect(tab(r.root, "Bebi").props.accessibilityState).toEqual({ selected: false });
     expect(r.root.findAll((n) => n.props.accessibilityRole === "tablist")).not.toHaveLength(0);
+  });
+
+  it("Ushqim në mes, si skedat e tjera: prekja e hap dhe shënohet si e zgjedhur", async () => {
+    const { props, emitter, navigateToTab } = setup("baby");
+    const r = await renderScreen(<TabBar {...props} />);
+    expect(tab(r.root, "Ushqim").props.accessibilityState).toEqual({ selected: false });
+    await act(async () => tab(r.root, "Ushqim").props.onPress());
+    expect(emitter.emit).toHaveBeenCalledWith({ type: "tabPress", target: "recipes-key", canPreventDefault: true });
+    expect(navigateToTab).toHaveBeenCalledWith("recipes-key");
+    const next = setup("recipes");
+    await act(async () => r.update(<TabBar {...next.props} />));
+    expect(tab(r.root, "Ushqim").props.accessibilityState).toEqual({ selected: true });
   });
 
   it("prekja e një skede tjetër: ngjarja tabPress, pastaj ndërrimi", async () => {

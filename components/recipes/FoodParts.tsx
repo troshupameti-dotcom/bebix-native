@@ -1,4 +1,6 @@
 import { useState } from "react";
+import { Image } from "expo-image";
+import { foodPhoto } from "@/lib/recipes/photos";
 import { Linking, Pressable, ScrollView, Text, View } from "react-native";
 import { AlertTriangle, Check, Phone } from "lucide-react-native";
 import { BottomSheet } from "@/components/ui/BottomSheet";
@@ -68,18 +70,45 @@ export function useFoodDate() {
 
 // ---- Shenja e ushqimit -----------------------------------------------------------------
 
-/** Rrethi i ushqimit: shenja e vogël, ose germa e parë me ngjyrën e kategorisë. */
+/** Rrethi i ushqimit: fotoja reale; pa të, shenja e vogël ose germa e parë me ngjyrën e kategorisë. */
 export function FoodAvatar({ food, size = 44 }: { food: Food; size?: number }) {
   const tones = useTones();
   const tone = tones[CATEGORY_TONE[food.category]];
+  const photo = foodPhoto(food.foodKey);
   return (
-    <View className="items-center justify-center rounded-full" style={{ width: size, height: size, backgroundColor: tone.tintBg }}>
-      {food.emoji ? (
+    <View className="items-center justify-center overflow-hidden rounded-full" style={{ width: size, height: size, backgroundColor: tone.tintBg }}>
+      {photo ? (
+        <Image source={photo} style={{ width: size, height: size }} contentFit="cover" accessible={false} />
+      ) : food.emoji ? (
         <Text style={{ fontSize: size * 0.5 }} accessibilityElementsHidden importantForAccessibility="no">
           {food.emoji}
         </Text>
       ) : (
         <Text className="font-bodySemibold" style={{ fontSize: size * 0.42, color: tone.ink }} accessibilityElementsHidden importantForAccessibility="no">
+          {food.name.slice(0, 1).toLocaleUpperCase("sq")}
+        </Text>
+      )}
+    </View>
+  );
+}
+
+/**
+ * Fotoja e ushqimit që mbush krejt kornizën, deri në skaj (rrjeta e ushqimeve, krye e faqes së ushqimit). Pa foto
+ * (një ushqim i shtuar nga paneli): ngjyra e kategorisë me shenjën ose germën e parë në mes.
+ */
+export function FoodPhoto({ food, width, height }: { food: Food; width: number | `${number}%`; height: number }) {
+  const tones = useTones();
+  const tone = tones[CATEGORY_TONE[food.category]];
+  const photo = foodPhoto(food.foodKey);
+  if (photo) return <Image source={photo} style={{ width, height }} contentFit="cover" accessible={false} transition={120} />;
+  return (
+    <View className="items-center justify-center" style={{ width, height, backgroundColor: tone.tintBg }}>
+      {food.emoji ? (
+        <Text style={{ fontSize: Math.round(height * 0.36) }} accessibilityElementsHidden importantForAccessibility="no">
+          {food.emoji}
+        </Text>
+      ) : (
+        <Text className="font-bodySemibold" style={{ fontSize: Math.round(height * 0.32), color: tone.ink }} accessibilityElementsHidden importantForAccessibility="no">
           {food.name.slice(0, 1).toLocaleUpperCase("sq")}
         </Text>
       )}

@@ -1,7 +1,9 @@
 import { useMemo, useState } from "react";
-import { Image, Pressable, Text, View, type StyleProp, type ViewStyle } from "react-native";
+import { Linking, Pressable, Text, View, type StyleProp, type ViewStyle } from "react-native";
+import { Image } from "expo-image";
 import Svg, { Circle, Ellipse, Path, Rect, SvgXml } from "react-native-svg";
 import { AlertTriangle, Clock, Heart, Snowflake } from "lucide-react-native";
+import { photoCredit, recipePhoto } from "@/lib/recipes/photos";
 import { sanitizeSvg } from "@/supabase/functions/story-draft/svg";
 import { useTranslation } from "@/lib/i18n/LanguageContext";
 import { useThemeColors } from "@/lib/theme/useThemeColors";
@@ -105,9 +107,21 @@ function DrawnDish({ cover }: { cover: string | null }) {
   );
 }
 
-export function RecipeCover({ recipe, style, radius = 18 }: { recipe: Pick<Recipe, "cover" | "coverUrl" | "coverSvg">; style?: StyleProp<ViewStyle>; radius?: number }) {
+/**
+ * Kopertina e recetës: foto nga paneli (`cover_url`), pastaj fotoja reale që vjen me app-in, pastaj vizatimi.
+ */
+export function RecipeCover({
+  recipe,
+  style,
+  radius = 18,
+}: {
+  recipe: Pick<Recipe, "cover" | "coverUrl" | "coverSvg"> & { slug?: string };
+  style?: StyleProp<ViewStyle>;
+  radius?: number;
+}) {
   const [photoFailed, setPhotoFailed] = useState(false);
   const photo = recipe.coverUrl && !photoFailed ? recipe.coverUrl : null;
+  const local = recipePhoto(recipe.slug);
   const drawn = useMemo(() => (recipe.coverSvg ? sanitizeSvg(recipe.coverSvg) : null), [recipe.coverSvg]);
   return (
     <View
@@ -117,7 +131,9 @@ export function RecipeCover({ recipe, style, radius = 18 }: { recipe: Pick<Recip
       accessibilityElementsHidden
     >
       {photo ? (
-        <Image source={{ uri: photo }} style={{ width: "100%", height: "100%" }} resizeMode="cover" onError={() => setPhotoFailed(true)} />
+        <Image source={{ uri: photo }} style={{ width: "100%", height: "100%" }} contentFit="cover" transition={150} onError={() => setPhotoFailed(true)} />
+      ) : local ? (
+        <Image source={local} style={{ width: "100%", height: "100%" }} contentFit="cover" />
       ) : drawn ? (
         <SvgXml xml={drawn.replace("<svg ", '<svg preserveAspectRatio="xMidYMid slice" ')} width="100%" height="100%" />
       ) : (
@@ -208,6 +224,29 @@ export function RecipeCard({ recipe, width, favorite, conflict, onPress }: { rec
         {recipe.title}
       </Text>
       <Meta recipe={recipe} conflict={conflict} />
+    </Pressable>
+  );
+}
+
+/**
+ * Autori dhe licenca e fotos, vetëm kur licenca e kërkon (CC BY / CC BY-SA). Fotot me licencën e Pixabay, CC0 ose
+ * domen publik s'kanë nevojë për të, ndaj s'del asgjë. Prekja hap faqen burim.
+ */
+export function PhotoCredit({ kind, id, style }: { kind: "recipe" | "food"; id: string; style?: StyleProp<ViewStyle> }) {
+  const { t } = useTranslation();
+  const credit = photoCredit(kind, id);
+  if (!credit || !/^CC BY/i.test(credit.license)) return null;
+  return (
+    <Pressable
+      onPress={() => void Linking.openURL(credit.source).catch(() => {})}
+      accessibilityRole="link"
+      accessibilityLabel={t("recipes_photo_source")}
+      hitSlop={8}
+      style={style}
+    >
+      <Text className="font-body text-[11px] text-ink-faint" numberOfLines={1}>
+        {t("recipes_photo_credit", { author: credit.author, license: credit.license })}
+      </Text>
     </Pressable>
   );
 }

@@ -7,7 +7,7 @@ import type { TranslationKey } from "@/lib/i18n/translations";
  * përdorur app-in më parë. Kur shtohen veçori të reja, ndrysho
  * WHATS_NEW_VERSION dhe listën — del sërish një herë.
  */
-export const WHATS_NEW_VERSION = "2026-11-meal-plan";
+export const WHATS_NEW_VERSION = "2026-11-formula-nutrition";
 export const WHATS_NEW_KEY = "bebix_whats_new_seen_v1";
 
 export type WhatsNewItem = {
@@ -21,9 +21,13 @@ export type WhatsNewItem = {
 };
 
 export const WHATS_NEW_ITEMS: WhatsNewItem[] = [
-  { key: "recipes", icon: "bowl", titleKey: "wn_recipes_title", bodyKey: "wn_recipes_body", route: "/(main)/baby/recipes" },
-  { key: "foods", icon: "spoon", titleKey: "wn_foods_title", bodyKey: "wn_foods_body", route: "/(main)/baby/recipes/foods" },
-  { key: "plan", icon: "cart", titleKey: "wn_plan_title", bodyKey: "wn_plan_body", route: "/(main)/baby/recipes/plan" },
+  { key: "formula", icon: "bottle", titleKey: "wn_formula_title", bodyKey: "wn_formula_body", route: "/(main)/baby/feeding" },
+  { key: "nutrition", icon: "bowl", titleKey: "wn_nutrition_title", bodyKey: "wn_nutrition_body", route: "/(main)/recipes/foods" },
+  { key: "ai-home", icon: "sparkle", titleKey: "wn_ai_home_title", bodyKey: "wn_ai_home_body", route: "/(main)/ai-chat" },
+  { key: "units", icon: "bottle", titleKey: "wn_units_title", bodyKey: "wn_units_body", route: "/(main)/baby/feeding" },
+  { key: "recipes", icon: "bowl", titleKey: "wn_recipes_title", bodyKey: "wn_recipes_body", route: "/(main)/recipes" },
+  { key: "foods", icon: "spoon", titleKey: "wn_foods_title", bodyKey: "wn_foods_body", route: "/(main)/recipes/foods" },
+  { key: "plan", icon: "cart", titleKey: "wn_plan_title", bodyKey: "wn_plan_body", route: "/(main)/recipes/plan" },
   { key: "night", icon: "moon", titleKey: "wn_night_title", bodyKey: "wn_night_body", route: "/more/night-mode" },
   { key: "team", icon: "family", titleKey: "wn_team_title", bodyKey: "wn_team_body", route: "/more/family" },
   { key: "celebrate", icon: "star", titleKey: "wn_celebrate_title", bodyKey: "wn_celebrate_body", route: "/(main)/baby/moments" },

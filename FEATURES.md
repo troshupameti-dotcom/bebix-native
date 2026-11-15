@@ -187,6 +187,65 @@ Një **kartë e vetme sugjerimi** te faqja e bebit dhe në krye të Dyqanit, me 
   - `__tests__/mealPlanScreen.test.tsx` (9), `mealPlanFamily.test.tsx` (1), `mealPlanViewer.test.tsx` (1).
   - SQL `supabase/tests/meal-plan.test.mjs` (15/15): plani lexohet vetëm nga familja, shkruhet vetëm nga prindërit.
 
+## Recetat 🥣: foto reale, faqja kryesore dhe sasia te ushqyerja (nëntor 2026)
+- **Recetat në faqen kryesore, për çdo moshë:** rresht kartash të mëdha me foto që rrëshqet anash, plus "Të gjitha", "Plani i javës" dhe "Ushqimet e para".
+  - 6 muaj – 5 vjeç: "Ide për sot 🥣" (receta e ditës me shenjën "Sot"), pastaj receta të moshës.
+  - Nën 6 muaj: recetat e para, me "Ushqimet e para nisin rreth 6 muajve. Ruaji për më vonë." Asgjë s'thotë "jepja sot".
+  - Shtatzëni, pa fëmijë ose mbi 5 vjeç: gatimet e familjes.
+  - Alergjitë e fëmijës s'dalin kurrë. Radha ndryshon çdo ditë. Brenda Recetave, lista mbetet sipas moshës.
+  - Kodi: `lib/recipes/home.ts`, `components/recipes/RecipeTodayCard.tsx`.
+- **Foto reale për 60 recetat dhe 80 ushqimet:** foto profesionale nga Pixabay (licenca e Pixabay: falas, edhe për përdorim tregtar, pa detyrim për emrin e autorit). Zëvendësuan fotot e Wikimedia (10 nëntor), që dukeshin amatore.
+  - Të zgjedhura një nga një: dritë e ndritshme, pjata në qendër, pa duar dhe pa tekst; te recetat e bebeve pa arra ose fruta të vogla të plota në pamje.
+  - Vijnë me app-in (punojnë pa rrjet): `assets/recipes/photos` (4:3, ~3,8 MB) dhe `assets/recipes/foods` (katror, ~1,6 MB); harta te `content/recipes/photos.ts`.
+  - Autori dhe faqja burim ruhen te `PHOTO_CREDITS`; rreshti "Foto: …" del vetëm për licencat CC BY që e kërkojnë.
+  - Kufizim: Pixabay s'ka foto për disa gatime shqiptare (fërgesë, tavë kosi, pispili, lakror) ose për qull me dardhë; për to është zgjedhur gatimi më i ngjashëm.
+  - Një recetë e re nga paneli përdor `cover_url` ose vizatimin, derisa t'i shtohet foto.
+- **Faqja kryesore (10 nëntor):** pas kartave të sotme, renditja është: Recetat (kartë e madhe me foto + karta katrore që rrëshqasin) → Përralla për sonte → Rritja → Kujtimet → Vaksinat dhe Mjekësore (në fund, pllaka më të mëdha).
+- **Sasia te ushqyerja:** ushqimi i ngurtë me g, oz ose lugë (s'është e detyrueshme); shishja me ml ose oz.
+  - Shishja ruhet gjithmonë në ml, që totalet të mbeten të sakta; oz është vetëm mënyra si shfaqet. Ilaçi mbetet gjithmonë në ml.
+  - Njësia e zgjedhur mbetet për herën tjetër (në telefon). Pa migrim: fushat `solidAmount` dhe `solidUnit` shkojnë te `baby_records.payload`.
+  - Kodi: `lib/baby/feedUnits.ts`, `FeedComposer`, formulari me detaje te `app/(main)/baby/feeding.tsx`.
+- **Gjuha e njësuar:**
+  - Shqip: "pure" pa theks (drejtshkrimi s'ka "è"), "Vakt i lehtë" në vend të "Zemër", "mafina", "sojë", "Ushqim familjar", "mbytin". Në app dhe në bazë (migrimet 10 dhe 11 më poshtë).
+  - Anglisht: drejtshkrim amerikan kudo (pediatrician, favorites, yogurt, color, canceled), si "diapers" që e përdor tashmë app-i.
+- **Testet:** `__tests__/recipesHome.test.tsx` (10: zgjedhja sipas moshës, alergjitë, fotot me licencë për çdo recetë dhe ushqim), `__tests__/feedUnits.test.tsx` (8: kthimet, hapat, ruajtja me g, lugë dhe oz). SQL: `recipes.test.mjs` (35/35) dhe `foods.test.mjs` (28/28) provojnë që ndreqja s'prek tekstin e ndryshuar nga admini.
+
+## Shiriti poshtë: "Ushqim" në mes, AI te faqja kryesore (12 nëntor 2026)
+- **Shiriti:** Bebi · Dyqani · **Ushqim** · Komuniteti · Cilësimet. "Ushqim" (anglisht "Food") është skedë si të tjerat, me ikonën e tasit (14 nëntor: pa rrethin e veçantë, me kërkesë të përdoruesit).
+- **Recetat u bënë skedë më vete:** `app/(main)/baby/recipes/*` → `app/(main)/recipes/*`, me stivën e vet (`recipes/_layout.tsx`). Rrugët e reja janë `/recipes`, `/recipes/[slug]`, `/recipes/foods`, `/recipes/plan`… Faqja kryesore e Recetave s'ka më butonin "mbrapa", si skedat e tjera.
+- **AI-ja:** doli nga shiriti dhe hapet nga butoni i bisedës poshtë djathtas te faqja kryesore (`components/baby/AskAiButton.tsx`), si ikona e bisedës te Huckleberry.
+  - E kanë edhe gjyshërit, te pamja e familjes.
+  - Faqja `/ai-chat` mbeti e njëjtë, si skedë pa buton (si njoftimet). Kodi i AI-së (`ai-chat`, `lib/ai`) s'u prek.
+- **"Çfarë ka të re"** e lajmëron ndryshimin (`2026-11-food-tab`).
+- **Testet:** `tabBar.test.tsx` (Ushqim në mes, pa AI në shirit), `mainLayout.test.tsx`, `backNavigation.test.tsx` (kthimi brenda skedës Ushqim), `askAiButton.test.tsx`.
+
+## Formula e mbetur, si pelenat (14 nëntor 2026)
+- **Te Ushqyerja:** karta "Formula e mbetur". Prindi shkruan sa servime ka (një servim = një shishe; kutia zakonisht e shkruan). Çdo shishe formule e shënuar heq një; qumështi i gjirit në shishe s'llogaritet.
+- **Kur del:** vetëm kur bebi ka pirë formulë në 30 ditët e fundit, ose kur prindi e ka vendosur një herë. Nënat që ushqejnë me gji s'e shohin.
+- **Kujtesa:** kur mjafton për 4 ditë ose më pak (pelenat: 3), ose kur mbeten 8 servime.
+  - Karta bëhet qelibar dhe ofron "Porosit përsëri: <formula e fundit e blerë te dyqani>", me një prekje drejt te përfundimi i porosisë.
+  - Kur s'ka blerë ende formulë te dyqani: "Shiko formulat te Dyqani" (kërkimi "formula").
+  - E njëjta kujtesë del edhe te faqja kryesore, te karta e sugjerimeve të dyqanit, para pelenave. "Jo tani" e fsheh për një ditë.
+- **Kujdes:** më 14 nëntor dyqani s'kishte asnjë formulë. Sapo të shtohet një produkt me "formul…" ose me markë (Aptamil, NAN, Humana, HiPP Combiotik, Bebelac…) në emër, porosia e përsëritur funksionon vetë.
+- **Kodi:** logjika e përbashkët me pelenat te `lib/baby/supply.ts`; `lib/baby/formulaStock.ts`; karta e përbashkët `components/baby/SupplyCard.tsx` (pelenat dhe formula); `FORMULA_PATTERN` + `lastFormulaItem` te `lib/shop/reorder.ts`. Ruhet vetëm në telefon, pa migrim.
+- **Testet:** `__tests__/formulaStock.test.tsx` (7).
+
+## Ushqimet: vlerat ushqyese, gramët sipas moshës, 20 ushqime dhe 20 receta të reja (14 nëntor 2026)
+- **Te çdo ushqim:**
+  - **Gramët për vakt** te çdo moshë (6–8 muaj, 9–11, 12+), p.sh. "≈ 15–45 g për vakt". Sipas grupit (fruta, perime, drithëra, bishtajore, mish, peshk, vezë, bulmet), me disa përjashtime (buka, avokadoja, djathi). Qumështi në ml dhe vetëm pas 12 muajsh. Mielli, peta, limoni dhe hudhra pa gramë.
+  - Shënimi "Sasitë janë orientuese: bebi vendos sa ha".
+  - **Sa shpesh:** p.sh. peshku 1–2 herë në javë; qumështi si pije vetëm pas 12 muajsh, jo më shumë se rreth 500 ml në ditë.
+  - **Vlerat ushqyese** për 100 g dhe për një vakt të moshës së fëmijës: energjia, proteinat, karbohidratet, yndyrnat, fibrat, hekuri, kalciumi, vitamina C.
+- **Burimi i vlerave:** USDA FoodData Central (SR Legacy). Çdo ushqim lidhet me një `fdcId`, në formën si i jepet fëmijës (i gatuar, i freskët ose para gatimit).
+  - Tabela gjenerohet nga skedari i USDA te `content/recipes/nutrition.ts`; vjen me app-in, pa migrim.
+  - Një ushqim i shtuar nga paneli s'ka vlera, dhe pjesa s'del.
+- **20 ushqime të reja (100):** troftë, fasule të kuqe, mel, kuskus, hikërror, kefir, rikotë, mocarelë, lajthi të bluara, manaferra, nektarinë, ananas, hurmë kaki, vishnje, kumbulla të thata, shpargull, rrepë, pazi, lakër Brukseli, pastinakë.
+- **20 receta të reja (80):** 5 për 6 muaj, 5 për 9 muaj, 6 për 12 muaj, 4 për 2 vjeç. Shumica me ushqimet e reja, p.sh. byrek me pazi, troftë në tavë, qull meli me dardhë, kuskus me pulë.
+  - Alergjenët dhe etiketat e dietës dalin nga përbërësit.
+  - I kalojnë të gjitha rregullat e sigurisë (`recipesSafety`; tani kontrollohen edhe gjeldeti, merluci dhe trofta për "gatuar plotësisht").
+- **Kodi:** `lib/recipes/nutrition.ts` (grupet, gramët, shkallëzimi), `components/recipes/FoodNutrition.tsx` (tabela, "sa shpesh"), faqja `app/(main)/recipes/food/[key].tsx`.
+- **Testet:** `__tests__/foodNutrition.test.tsx` (8); SQL `foods.test.mjs` (28/28, 100 ushqime) dhe `recipes.test.mjs` (35/35, 80 receta).
+
 ## "Çfarë ka të re"
 - **Çfarë bën:** pas build-it të ri, faqja e bebit hap një herë listën e veçorive të reja. Prekja e një rreshti të çon te veçoria.
 - **Kush e sheh:** vetëm ata që e kishin përdorur app-in më parë. Përdoruesit e rinj s'e shohin.
@@ -212,9 +271,13 @@ Te **Supabase → SQL Editor**, me këtë radhë (secili skedar ekzekutohet një
 | 7 | `supabase/migrations/20261111090100_foods_library_1.sql` | 80 ushqimet e para (të njëjtat si në app) |
 | 8 | `supabase/migrations/20261112090000_meal_plans.sql` | Tabela `meal_plan_slots` ("Plani i javës" i familjes: e shkruajnë prindërit, e lexon gjithë familja, askush tjetër) |
 | 9 | `supabase/migrations/20261112090100_recipes_library_2.sql` | 20 recetat e dimrit (të njëjtat si në app); s'prek recetat ekzistuese |
+| 10 | `supabase/migrations/20261113090000_recipes_language_fixes.sql` | Shqipja e njësuar te 18 receta (pure, vakt i lehtë, mafina…); ndryshon vetëm tekstet që s'i ka prekur admini |
+| 11 | `supabase/migrations/20261113090100_foods_language_fixes.sql` | E njëjta ndreqje te 31 ushqime të para |
+| 12 | `supabase/migrations/20261114090000_foods_library_2.sql` | 20 ushqimet e reja (100 gjithsej); s'prek ushqimet ekzistuese |
+| 13 | `supabase/migrations/20261114090100_recipes_library_3.sql` | 20 recetat e reja (80 gjithsej); s'prek recetat ekzistuese |
 
 - **Edge Functions:** asnjë e re. Njoftimet e reja përdorin radhën ekzistuese (`notification_outbox`, që zbrazet çdo 2 minuta). Përmbledhja e së hënës dhe kujtesat pas lindjes janë njoftime lokale të telefonit.
-- **Testet SQL** (Postgres lokal, PGlite): `supabase/tests/time-capsule.test.mjs` (17/17), `household-team.test.mjs` (42/42), `parent-care.test.mjs` (15/15), `recipes.test.mjs` (32/32), `foods.test.mjs` (28/28), `meal-plan.test.mjs` (15/15).
+- **Testet SQL** (Postgres lokal, PGlite): `supabase/tests/time-capsule.test.mjs` (17/17), `household-team.test.mjs` (42/42), `parent-care.test.mjs` (15/15), `recipes.test.mjs` (35/35), `foods.test.mjs` (28/28), `meal-plan.test.mjs` (15/15).
 
 ## Build-i
 Një build i ri përfshin gjithçka. Ka paketa të reja native: `react-native-view-shot`, `expo-widgets`, `@expo/ui`.

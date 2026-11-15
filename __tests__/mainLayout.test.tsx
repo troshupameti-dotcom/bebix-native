@@ -63,16 +63,18 @@ describe("layout-i kryesor", () => {
     expect(router().replace).not.toHaveBeenCalled();
   });
 
-  it("shiriti poshtë: pesë skeda; njoftimet pa buton dhe pa zënë vend, por të hapshme (jo `href: null`)", async () => {
+  it("shiriti poshtë: pesë skeda me Ushqim në mes; njoftimet dhe AI-ja pa buton dhe pa zënë vend, por të hapshme (jo `href: null`)", async () => {
     fakeSupabase().session = { user: { id: "u1" } };
     setPathname("/baby");
     const r = await renderScreen(<MainLayout />);
     const screens = r.root.findAll((n) => typeof n.props.name === "string" && n.props.options !== undefined, { deep: false });
-    expect(screens.map((s) => s.props.name)).toEqual(["baby", "shop", "ai-chat", "community", "more", "notifications"]);
-    const notifications = screens.at(-1)!.props.options;
-    expect(notifications.href).toBeUndefined();
-    expect(notifications.tabBarItemStyle).toEqual({ display: "none" });
-    expect(notifications.tabBarButton()).toBeNull();
+    expect(screens.map((s) => s.props.name)).toEqual(["baby", "shop", "recipes", "community", "more", "notifications", "ai-chat"]);
+    for (const hidden of screens.slice(-2)) {
+      const options = hidden.props.options;
+      expect(options.href).toBeUndefined();
+      expect(options.tabBarItemStyle).toEqual({ display: "none" });
+      expect(options.tabBarButton()).toBeNull();
+    }
   });
 });
 

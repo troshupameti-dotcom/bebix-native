@@ -4,6 +4,7 @@ import { LogRow } from "@/components/baby/LogTiles";
 import { shadows } from "@/lib/shadows";
 import { haptics } from "@/lib/haptics";
 import { useTranslation } from "@/lib/i18n/LanguageContext";
+import { useFeedUnits, volumeText } from "@/lib/baby/feedUnits";
 import { useToneTheme } from "@/lib/theme/tone";
 import { useThemeColors } from "@/lib/theme/useThemeColors";
 import { NIGHT_FROM, NIGHT_TO } from "@/lib/baby/dayStats";
@@ -19,7 +20,8 @@ const STRIP_H = 44;
 
 /** Karta "Dita e sotme": vija 24-orëshe me çdo ushqyerje në vendin e vet, dhe totalet e ditës. */
 export function TodayCard({ log, onOpen }: { log: FeedingEntry[]; onOpen: (e: FeedingEntry) => void }) {
-  const { t } = useTranslation();
+  const { t, lang } = useTranslation();
+  const units = useFeedUnits();
   const [now, setNow] = useState(() => new Date());
   useEffect(() => {
     const id = setInterval(() => setNow(new Date()), 60_000);
@@ -32,7 +34,7 @@ export function TodayCard({ log, onOpen }: { log: FeedingEntry[]; onOpen: (e: Fe
 
   const stats = [
     { value: String(sum.feeds), label: t("feeding_stat_feeds") },
-    sum.ml > 0 ? { value: `${sum.ml} ml`, label: t("feeding_stat_ml") } : null,
+    sum.ml > 0 ? { value: volumeText(sum.ml, units.volume, lang), label: t("feeding_stat_ml") } : null,
     sum.breastMin > 0 ? { value: `${sum.breastMin} min`, label: t("feeding_stat_breast") } : null,
     interval != null ? { value: compactDuration(interval), label: t("feeding_stats_avg_interval") } : null,
   ].filter((s): s is { value: string; label: string } => s !== null);
@@ -72,6 +74,7 @@ export function TodayCard({ log, onOpen }: { log: FeedingEntry[]; onOpen: (e: Fe
  */
 function DayStrip({ entries, now, onOpen }: { entries: FeedingEntry[]; now: Date; onOpen: (e: FeedingEntry) => void }) {
   const { t, lang } = useTranslation();
+  const units = useFeedUnits();
   const themed = useToneTheme();
   const colors = useThemeColors();
   const [w, setW] = useState(0);
@@ -122,7 +125,7 @@ function DayStrip({ entries, now, onOpen }: { entries: FeedingEntry[]; now: Date
                 }}
                 hitSlop={{ top: 14, bottom: 14, left: 6, right: 6 }}
                 accessibilityRole="button"
-                accessibilityLabel={`${entryHeadline(e, t)}, ${formatTime(e.at, lang)}`}
+                accessibilityLabel={`${entryHeadline(e, t, { volume: units.volume, lang })}, ${formatTime(e.at, lang)}`}
                 style={{
                   position: "absolute",
                   left: Math.min(Math.max(2, start), w - width - 2),
@@ -167,6 +170,7 @@ export function FeedHistory({
   onDelete: (e: FeedingEntry) => void;
 }) {
   const { t, lang } = useTranslation();
+  const units = useFeedUnits();
   const days = useMemo(() => groupByDay(log), [log]);
   const gaps = useMemo(() => gapsById(log), [log]);
   const [shown, setShown] = useState(5);
@@ -177,7 +181,7 @@ export function FeedHistory({
     const { feeds, ml, breastMin } = day.totals;
     return [
       feeds === 1 ? t("feeding_day_count_one") : t("feeding_day_count", { n: feeds }),
-      ml > 0 ? `${ml} ml` : null,
+      ml > 0 ? volumeText(ml, units.volume, lang) : null,
       breastMin > 0 ? t("feeding_day_breast", { n: breastMin }) : null,
     ]
       .filter(Boolean)
@@ -205,7 +209,7 @@ export function FeedHistory({
                 deleteLabel={t("delete_action")}
                 icon={TYPE_ICON[entry.type]}
                 tone={TYPE_TONE[entry.type]}
-                title={entryHeadline(entry, t)}
+                title={entryHeadline(entry, t, { volume: units.volume, lang })}
                 detail={[
                   entry.type === "breast" && entry.durationMin ? `${entry.durationMin} min` : null,
                   entry.foodCategory,

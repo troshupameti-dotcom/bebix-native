@@ -116,7 +116,7 @@ export function decideBack(previous: string | null, current: string | null): Bac
 }
 
 /** Rrënjët e tab-eve: aty "mbrapa" i Android-it ndjek sjelljen e tab-eve (firstRoute / dalje). */
-const TAB_ROOTS = new Set(["/", "/baby", "/shop", "/ai-chat", "/community", "/more"]);
+const TAB_ROOTS = new Set(["/", "/baby", "/shop", "/recipes", "/ai-chat", "/community", "/more"]);
 /** Ekranet jashtë (main): stiva e rrënjës i kthen vetë saktë. */
 const OUTSIDE_MAIN = new Set(["log", "sleep", "auth"]);
 

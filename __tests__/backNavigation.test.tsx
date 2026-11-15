@@ -27,7 +27,7 @@ declare const __dirname: string;
 jest.mock("@/components/ui/Icon", () => ({ Icon: () => null }));
 jest.mock("@react-native-async-storage/async-storage", () => require("@react-native-async-storage/async-storage/jest/async-storage-mock"));
 
-const TABS = ["baby", "shop", "ai-chat", "community", "more"];
+const TABS = ["baby", "shop", "recipes", "community", "more"];
 const MAIN = path.join(__dirname, "..", "app", "(main)");
 
 // Ekranet e vërteta: "(main)/more/night-mode", "(main)/shop/[id]"...
@@ -50,6 +50,7 @@ function Main() {
     <Tabs backBehavior="firstRoute" screenOptions={{ headerShown: false }}>
       {TABS.map((n) => <Tabs.Screen key={n} name={n} />)}
       <Tabs.Screen name="notifications" options={{ tabBarButton: () => null }} />
+      <Tabs.Screen name="ai-chat" options={{ tabBarButton: () => null }} />
     </Tabs>
   );
 }
@@ -57,7 +58,7 @@ const stub = (name: string): ComponentType => function Screen() { return <Text>{
 
 // Layout-et e pjesëve si module të plota: me `unstable_settings` (stiva nis nga faqja kryesore), si në app.
 const context: Record<string, unknown> = { _layout: Root, "(main)/_layout": Main };
-for (const s of ["baby", "shop", "community", "more"]) context[`(main)/${s}/_layout`] = require(`@/app/(main)/${s}/_layout`);
+for (const s of ["baby", "shop", "recipes", "community", "more"]) context[`(main)/${s}/_layout`] = require(`@/app/(main)/${s}/_layout`);
 for (const f of screenFiles) context[`(main)/${f}`] = stub(f);
 // Lidhjet e widget-it (bebix://log/feeding, …): ekranet e vërteta, që ridrejtojnë te ekrani përkatës.
 context["log/feeding"] = require("@/app/log/feeding");

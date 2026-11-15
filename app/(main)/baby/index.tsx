@@ -1,5 +1,5 @@
 import { useMemo, useRef, useState } from "react";
-import { View, Text, ScrollView, Pressable, Image, TextInput, Alert, Share, type ScrollViewInstance } from "react-native";
+import { View, Text, ScrollView, Pressable, TextInput, Alert, Share, type ScrollViewInstance } from "react-native";
 import { KeyboardScrollView } from "@/lib/ui/keyboard";
 import { router, useScrollToTop } from "expo-router";
 import { MotiView } from "moti";
@@ -26,7 +26,10 @@ import { NowCard } from "@/components/baby/NowCard";
 import { WeeklyRecapCard } from "@/components/baby/WeeklyRecapCard";
 import { MemoriesCard } from "@/components/baby/MemoriesCard";
 import { StoryTonightCard } from "@/components/stories/StoryTonightCard";
-import { RecipeTodayCard } from "@/components/recipes/RecipeTodayCard";
+import { BabyHeroPhoto } from "@/components/baby/BabyHeroPhoto";
+import { BabyPhotoSheet } from "@/components/baby/BabyPhotoSheet";
+import { AskAiButton } from "@/components/baby/AskAiButton";
+import { useBabyPhotoPicker } from "@/lib/baby/babyPhoto";
 import { CelebrationModal } from "@/components/baby/CelebrationModal";
 import { useCelebration } from "@/lib/baby/useCelebration";
 import { TeamCard } from "@/components/baby/TeamCard";
@@ -219,6 +222,9 @@ export default function BabyProfileScreen() {
   }
   const [editGrowth, setEditGrowth] = useState(false);
   const [sheet, setSheet] = useState<SheetContext>(null);
+  // Fotoja e bebit: mbaje të shtypur te fotoja e madhe → galeria ose kamera.
+  const [photoSheet, setPhotoSheet] = useState(false);
+  const chooseBabyPhoto = useBabyPhotoPicker();
   const [timelineSheetPurpose, setTimelineSheetPurpose] = useState<"milestone" | "event">("event");
   const [editingStatKey, setEditingStatKey] = useState<string | null>(null);
   const [statValue, setStatValue] = useState("");
@@ -627,6 +633,7 @@ export default function BabyProfileScreen() {
     return (
       <>
         <FamilyView profile={profile} baby={b} babyName={babyName} ageText={ageText} />
+        <AskAiButton />
         <CelebrationModal celebration={celebration.current} babyName={babyName} onClose={celebration.dismiss} canAddPhoto={false} />
       </>
     );
@@ -722,16 +729,7 @@ export default function BabyProfileScreen() {
             {/* Hero — foto e madhe, jo ikonë e vogël. Kjo âsht qendra
                 emocionale e app-it, duhet me u ndje si e tillë. */}
             <View className="mt-2 items-center">
-              {profile.babyPhoto ? (
-                <Image source={{ uri: profile.babyPhoto }} style={{ width: "100%", aspectRatio: 1.3, borderRadius: 28 }} />
-              ) : (
-                <View
-                  style={{ width: "100%", aspectRatio: 1.3, borderRadius: 28 }}
-                  className="items-center justify-center bg-cream-soft"
-                >
-                  <Icon name="baby" size={44} color="#A79D8A" />
-                </View>
-              )}
+              <BabyHeroPhoto uri={profile.babyPhoto} onChange={() => setPhotoSheet(true)} />
               <Text className="mt-4 font-display text-[26px] text-ink">{babyName}</Text>
               {ageText ? <Text className="mt-0.5 font-body text-[14px] text-ink-soft">{ageText}</Text> : null}
               {profile.babyDob && (
@@ -807,41 +805,10 @@ export default function BabyProfileScreen() {
               </Pressable>
             )}
 
-            {/* Lidhje të shpejta minimale — vetëm 2, jo 8 */}
-            <View className="mt-5 flex-row gap-3">
-              {can("vaccines") ? (
-              <Pressable
-                onPress={() => router.push("/(main)/baby/vaccinations")}
-                style={shadows.soft}
-                className="flex-1 flex-row items-center gap-2.5 rounded-xl2 border border-ink/10 bg-surface p-3.5"
-              >
-                <View className="h-9 w-9 items-center justify-center rounded-xl bg-olive-bg">
-                  <Icon name="syringe" size={16} color="#6E7452" />
-                </View>
-                <View className="flex-1">
-                  <Text className="font-bodySemibold text-[13px] text-ink">{t("vaccine_screen_title")}</Text>
-                  <Text className="font-body text-[10.5px] text-ink-soft">
-                    {upcomingVaccineCount} {t("vaccine_status_upcoming").toLowerCase()}
-                  </Text>
-                </View>
-              </Pressable>
-              ) : null}
-              {can("medical") ? (
-              <Pressable
-                onPress={() => router.push("/(main)/baby/medical")}
-                style={shadows.soft}
-                className="flex-1 flex-row items-center gap-2.5 rounded-xl2 border border-ink/10 bg-surface p-3.5"
-              >
-                <View className="h-9 w-9 items-center justify-center rounded-xl bg-orange-bg">
-                  <Icon name="shield" size={16} color="#C9702E" />
-                </View>
-                <View className="flex-1">
-                  <Text className="font-bodySemibold text-[13px] text-ink">{t("medical_screen_title")}</Text>
-                  <Text className="font-body text-[10.5px] text-ink-soft">{active(b.medicalRecords).length}</Text>
-                </View>
-              </Pressable>
-              ) : null}
-            </View>
+            {/* Renditja e poshtme: përralla e sontme → rritja → kujtimet → vaksinat dhe mjekësore. Recetat s'dalin më këtu
+                (14 nëntor): kanë skedën e vet "Ushqim" në shirit, dhe dy vende për të njëjtën gjë ishin tepër. */}
+            {/* Përralla e mbrëmjes, sipas moshës; biblioteka e plotë hapet prej këtu ose nga Cilësimet. */}
+            {can("stories") ? <StoryTonightCard months={ageInfo.months} /> : null}
 
             {/* Growth summary */}
             {can("growth") ? (
@@ -879,16 +846,44 @@ export default function BabyProfileScreen() {
             </>
             ) : null}
 
-            {/* "Këtë javë" (zhvillimi i bebit) u hoq më 15 tetor. Të dhënat mjekësore rrinë te cilësimet e bebit. */}
-
-            {/* "Ide për sot": një recetë sipas moshës dhe alergjive; në 5 muaj, një herë, shenjat e gatishmërisë. */}
-            {can("recipes") ? <RecipeTodayCard /> : null}
-
-            {/* Përralla e mbrëmjes, sipas moshës; biblioteka e plotë hapet prej këtu ose nga Cilësimet. */}
-            {can("stories") ? <StoryTonightCard months={ageInfo.months} /> : null}
-
-            {/* Kujtimet në fund: sot para 1 muaji / 1 viti, filmi i muajit, kapsula, libri. */}
+            {/* E parafundit: kujtimet: sot para 1 muaji / 1 viti, filmi i muajit, kapsula, libri. */}
             {can("moments") ? <MemoriesCard baby={b} profile={profile} babyName={babyName} /> : null}
+
+            {/* Në fund: vaksinat dhe të dhënat mjekësore (kërkesa e 10 nëntorit). */}
+            <View className="mt-7 flex-row gap-3">
+              {can("vaccines") ? (
+              <Pressable
+                onPress={() => router.push("/(main)/baby/vaccinations")}
+                className="flex-1 flex-row items-center gap-3 rounded-2xl border border-ink/10 bg-surface p-4"
+                style={[shadows.soft, { minHeight: 76 }]}
+              >
+                <View className="h-11 w-11 items-center justify-center rounded-2xl bg-olive-bg">
+                  <Icon name="syringe" size={20} color="#6E7452" />
+                </View>
+                <View className="flex-1">
+                  <Text className="font-bodySemibold text-[15px] text-ink">{t("vaccine_screen_title")}</Text>
+                  <Text className="mt-0.5 font-body text-[12.5px] text-ink-soft">
+                    {upcomingVaccineCount} {t("vaccine_status_upcoming").toLowerCase()}
+                  </Text>
+                </View>
+              </Pressable>
+              ) : null}
+              {can("medical") ? (
+              <Pressable
+                onPress={() => router.push("/(main)/baby/medical")}
+                className="flex-1 flex-row items-center gap-3 rounded-2xl border border-ink/10 bg-surface p-4"
+                style={[shadows.soft, { minHeight: 76 }]}
+              >
+                <View className="h-11 w-11 items-center justify-center rounded-2xl bg-orange-bg">
+                  <Icon name="shield" size={20} color="#C9702E" />
+                </View>
+                <View className="flex-1">
+                  <Text className="font-bodySemibold text-[15px] text-ink">{t("medical_screen_title")}</Text>
+                  <Text className="mt-0.5 font-body text-[12.5px] text-ink-soft">{active(b.medicalRecords).length}</Text>
+                </View>
+              </Pressable>
+              ) : null}
+            </View>
           </MotiView>
         )}
 
@@ -1159,7 +1154,11 @@ export default function BabyProfileScreen() {
         )}
       </KeyboardScrollView>
 
+      {/* Biseda me AI-në: doli nga shiriti poshtë dhe rri këtu, gati për një pyetje. */}
+      <AskAiButton />
+
       {/* ---- Sheets ---- */}
+      <BabyPhotoSheet visible={photoSheet} onClose={() => setPhotoSheet(false)} onPick={(source) => void chooseBabyPhoto(source)} />
       <BottomSheet visible={sheet === "growth"} onClose={closeSheet}>
         <PickerSheetContent
           title={t("baby_growth_summary")}

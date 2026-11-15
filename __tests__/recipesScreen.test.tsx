@@ -1,8 +1,8 @@
 import { useEffect } from "react";
 import { act } from "react-test-renderer";
 import { button, renderScreen, setParams, visibleText } from "./helpers/screen";
-import RecipeDetail from "@/app/(main)/baby/recipes/[slug]";
-import RecipesLibrary from "@/app/(main)/baby/recipes/index";
+import RecipeDetail from "@/app/(main)/recipes/[slug]";
+import RecipesLibrary from "@/app/(main)/recipes/index";
 import { useAppState } from "@/lib/state/AppStateContext";
 import type { FeedingEntry } from "@/lib/state/types";
 

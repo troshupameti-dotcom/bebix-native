@@ -26,9 +26,9 @@ const tryOf = (foodKey: string, extra: Partial<FoodTry> = {}): FoodTry => {
 };
 
 describe("ushqimet e para: përmbajtja", () => {
-  it("80 ushqime, pa përsëritje, me të gjitha fushat e vlefshme", () => {
-    expect(FOODS).toHaveLength(80);
-    expect(new Set(FOODS.map((f) => f.foodKey)).size).toBe(80);
+  it("129 ushqime (100 + 29 të reja), pa përsëritje, me të gjitha fushat e vlefshme", () => {
+    expect(FOODS).toHaveLength(129);
+    expect(new Set(FOODS.map((f) => f.foodKey)).size).toBe(129);
     for (const f of FOODS) {
       expect(f.foodKey).toMatch(/^[a-z0-9]+(_[a-z0-9]+)*$/);
       expect(FOOD_CATEGORIES).toContain(f.category);
@@ -71,12 +71,21 @@ describe("ushqimet e para: përmbajtja", () => {
     expect(byKey.get("peanut_butter")!.serveByAge["6-8"]).toMatch(/holluar/);
     expect(byKey.get("milk")!.serveByAge["6-8"]).toMatch(/jo si pije para 12 muajsh/);
     expect(byKey.get("milk")!.serveByAge["9-11"]).toMatch(/jo si pije para 12 muajsh/);
+    // Ushqimet e reja (14 nëntor): farat dhe arrat vetëm të bluara; chia vetëm e njomur; frutat e thata të njomura e të
+    // bluara për bebet; ullinjtë pas 12 muajsh, pa bërthamë; mëlçia dhe toni jo më shumë se një herë në javë.
+    for (const key of ["ground_cashews", "ground_pistachios", "pumpkin_seeds"]) for (const s of Object.values(byKey.get(key)!.serveByAge)) expect(s).toMatch(/bluar|krem/);
+    for (const s of Object.values(byKey.get("chia_seeds")!.serveByAge)) expect(s).toMatch(/njomura/);
+    for (const key of ["raisins", "dates", "dried_apricots"]) expect(byKey.get(key)!.serveByAge["6-8"]).toMatch(/njomura.*bluara/);
+    expect(byKey.get("olives")!.ageFromMonths).toBe(12);
+    expect(byKey.get("olives")!.serveByAge["12+"]).toMatch(/pa bërthamë.*katërsh/i);
+    expect(byKey.get("chicken_liver")!.tip).toMatch(/një herë në javë/);
+    expect(byKey.get("tuna")!.tip).toMatch(/një herë në javë/);
   });
 
   it("karota dhe molla për 6–8 muaj vetëm të gatuara; vezët, mishi e peshku të gatuar plotësisht", () => {
     for (const key of ["carrot", "apple", "quince"]) expect(byKey.get(key)!.serveByAge["6-8"]).toMatch(/zier|pjekur/);
     for (const key of ["carrot", "apple"]) expect(byKey.get(key)!.serveByAge["12+"]).toMatch(/grirë/);
-    for (const key of ["egg", "chicken", "beef", "salmon", "cod", "turkey", "lamb", "shrimp", "sardines", "sea_bass"]) {
+    for (const key of ["egg", "chicken", "beef", "salmon", "cod", "turkey", "lamb", "shrimp", "sardines", "sea_bass", "chicken_liver", "mackerel", "tuna"]) {
       expect(byKey.get(key)!.serveByAge["6-8"]).toMatch(/plotësisht|zier fort/);
     }
   });

@@ -9,16 +9,16 @@ import Animated, {
   withSpring,
   withTiming,
 } from "react-native-reanimated";
-import Svg, { Circle, Line, Path } from "react-native-svg";
+import Svg, { Circle, Ellipse, Line, Path } from "react-native-svg";
 import type { BottomTabBarProps } from "expo-router/tabs";
 import { Icon } from "@/components/ui/Icon";
 import { haptics } from "@/lib/haptics";
 
-export type TabGlyph = "baby" | "shop" | "sparkle" | "community" | "settings";
+export type TabGlyph = "baby" | "shop" | "bowl" | "community" | "settings";
 export type TabBarColors = { background: string; border: string; active: string; inactive: string };
 
 type Props = BottomTabBarProps & {
-  /** Vetëm këto skeda dalin në shirit, me këtë radhë; të tjerat (p.sh. njoftimet) hapen nga diku tjetër. */
+  /** Vetëm këto skeda dalin në shirit, me këtë radhë; të tjerat (p.sh. njoftimet, AI-ja) hapen nga diku tjetër. */
   items: { name: string; icon: TabGlyph }[];
   colors: TabBarColors;
 };
@@ -153,8 +153,7 @@ function TabItem({
       style={{ flex: 1, alignItems: "center", justifyContent: "center" }}
     >
       <Animated.View style={[{ width: ICON, height: ICON }, popStyle]}>
-        {/* Ylli i AI-së zë vetëm pjesën e sipërme të katrorit (y 3–15): zbritet sa të rrijë në qendër si të tjerat. */}
-        <View style={{ width: ICON, height: ICON, transform: [{ translateY: icon === "sparkle" ? 2.75 : 0 }] }}>
+        <View style={{ width: ICON, height: ICON }}>
           <Icon name={icon} size={ICON} color={tint} />
           <Animated.View style={[{ position: "absolute", overflow: "hidden" }, clipStyle]}>
             <Animated.View style={[{ position: "absolute", width: ICON, height: ICON }, innerStyle]}>
@@ -195,8 +194,12 @@ function FilledGlyph({ name, color, cut }: { name: TabGlyph; color: string; cut:
           <Line x1="4.8" y1="8" x2="19.2" y2="8" {...line(cut, 1.2)} />
           <Path d="M9 12a3 3 0 0 0 6 0" {...line(cut)} />
         </>
-      ) : name === "sparkle" ? (
-        <Path d="M12 3l1.6 4.8L18 9l-4.4 1.6L12 15l-1.6-4.4L6 9l4.4-1.2L12 3Z" {...solid} />
+      ) : name === "bowl" ? (
+        <>
+          <Path d="M3.5 12h17a8.5 8.5 0 0 1-5.5 7.9v.6H9v-.6A8.5 8.5 0 0 1 3.5 12Z" {...solid} />
+          <Path d="M13.8 12l3.8-5" {...line(color)} />
+          <Ellipse cx="18.7" cy="5.2" rx="1.5" ry="2.3" transform="rotate(37 18.7 5.2)" {...solid} />
+        </>
       ) : name === "community" ? (
         <>
           <Circle cx="8" cy="9" r="3" {...solid} />

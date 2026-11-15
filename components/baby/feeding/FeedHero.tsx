@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
+import { useFeedUnits } from "@/lib/baby/feedUnits";
 import { View, Text } from "react-native";
 import Svg, { Circle } from "react-native-svg";
 import { MotiView } from "moti";
@@ -25,6 +26,7 @@ const CIRC = 2 * Math.PI * R;
  */
 export function FeedHero({ log }: { log: FeedingEntry[] }) {
   const { t, lang } = useTranslation();
+  const units = useFeedUnits();
   const [now, setNow] = useState(() => new Date());
   useEffect(() => {
     const id = setInterval(() => setNow(new Date()), 30_000);
@@ -64,7 +66,7 @@ export function FeedHero({ log }: { log: FeedingEntry[] }) {
                 {since}
               </Text>
               <Text className="mt-1 font-body text-[13px]" style={{ color: tone.inkSoft }} numberOfLines={2}>
-                {entryHeadline(last, t)} · {t("feeding_last_at", { time: formatTime(last.at, lang) })}
+                {entryHeadline(last, t, { volume: units.volume, lang })} · {t("feeding_last_at", { time: formatTime(last.at, lang) })}
               </Text>
             </>
           ) : (

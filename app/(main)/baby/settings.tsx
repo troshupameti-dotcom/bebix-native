@@ -3,7 +3,6 @@ import { View, Text, Pressable, Image, Alert, Modal, Platform } from "react-nati
 import { KeyboardScrollView } from "@/lib/ui/keyboard";
 import { router } from "expo-router";
 import { SafeAreaView } from "react-native-safe-area-context";
-import { pickMedia } from "@/lib/media/imagePicker";
 import DateTimePicker, { DateTimePickerAndroid } from "@react-native-community/datetimepicker";
 import { Icon } from "@/components/ui/Icon";
 import { FormField } from "@/components/baby/FormField";
@@ -12,14 +11,13 @@ import { useTranslation } from "@/lib/i18n/LanguageContext";
 import { haptics } from "@/lib/haptics";
 import { shadows } from "@/lib/shadows";
 import { BabyGender, BloodType } from "@/lib/state/types";
-import { saveBabyProfileRemote, syncProfilePhotoToSupabase } from "@/lib/babySync";
+import { saveBabyProfileRemote } from "@/lib/babySync";
 import { localDateKey } from "@/lib/babyProfile";
 import { resetBabyRecordsSyncState } from "@/lib/baby/babyRecordsSync";
 import { retrySync } from "@/lib/baby/syncStatus";
 import { BackButton, goBackOr } from "@/components/ui/BackButton";
-import { uploadProfilePhoto } from "@/lib/baby/profilePhotos";
-import { useCurrentUserId } from "@/lib/hooks/useCurrentUserId";
-import { supabase } from "@/lib/supabase/client";
+import { useBabyPhotoPicker } from "@/lib/baby/babyPhoto";
+import { BabyPhotoSheet } from "@/components/baby/BabyPhotoSheet";
 
 const GENDERS: BabyGender[] = ["girl", "boy", "other"];
 const BLOOD_TYPES: BloodType[] = ["0+", "0-", "A+", "A-", "B+", "B-", "AB+", "AB-"];
@@ -47,7 +45,6 @@ function formatDobDisplay(d: Date, lang: "sq" | "en"): string {
 
 export default function BabySettingsScreen() {
   const { t, lang } = useTranslation();
-  const userId = useCurrentUserId();
   const { state, updateProfile, baby, resetBabyData } = useAppState();
   const { profile } = state;
 
@@ -83,32 +80,12 @@ export default function BabySettingsScreen() {
   const [contactRelation, setContactRelation] = useState("");
   const [contactPhone, setContactPhone] = useState("");
 
-  async function pickPhoto() {
+  // Fotoja: galeria ose kamera (e njëjta si te faqja kryesore; ngarkimi te `useBabyPhotoPicker`).
+  const [photoSheet, setPhotoSheet] = useState(false);
+  const chooseBabyPhoto = useBabyPhotoPicker();
+  function pickPhoto() {
     haptics.tap();
-    const result = await pickMedia("library", { mediaTypes: ["images"], quality: 0.8, allowsEditing: true, aspect: [1, 1] }, t);
-    if (!result?.assets[0]) return;
-
-    // URI-ja e ImagePicker rri në dosjen `cache` të app-it, që sistemi e
-    // pastron kur do. Shfaqet menjëherë prej andej, por fotoja ngarkohet
-    // sakaq — përndryshe zhduket pa asnjë shenjë kur cache-i pastrohet.
-    const localUri = result.assets[0].uri;
-    updateProfile({ babyPhoto: localUri });
-
-    // Llogaria merret drejt nga sesioni: hook-u mund të mos jetë gati ende, dhe
-    // atëherë fotoja mbetej vetëm në cache-in e telefonit, pa u ngarkuar kurrë.
-    const uid = userId ?? (await supabase.auth.getSession()).data.session?.user.id ?? null;
-    if (!uid) return;
-    const path = await uploadProfilePhoto(uid, "baby", localUri);
-    if (!path) {
-      Alert.alert(t("baby_photo_upload_failed_title"), t("baby_photo_upload_failed_body"));
-      return;
-    }
-    if (path) {
-      updateProfile({ babyPhotoPath: path });
-      // Qe fotoja te mos jetoje vetem ne kete pajisje: nese ri-instalohet
-      // app-i ose hyhet ne nje telefon tjeter, e rikthen kete rruge.
-      void syncProfilePhotoToSupabase("baby", path);
-    }
+    setPhotoSheet(true);
   }
 
   function openDobPicker() {
@@ -197,6 +174,7 @@ export default function BabySettingsScreen() {
         <View style={{ width: 36 }} />
       </View>
 
+      <BabyPhotoSheet visible={photoSheet} onClose={() => setPhotoSheet(false)} onPick={(source) => void chooseBabyPhoto(source)} />
       <KeyboardScrollView className="flex-1 px-5" contentContainerStyle={{ paddingBottom: 40 }}>
         <Pressable onPress={pickPhoto} className="mb-6 items-center gap-2 pt-2">
           {profile.babyPhoto ? (

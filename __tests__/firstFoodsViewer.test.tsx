@@ -1,7 +1,7 @@
 import { act } from "react-test-renderer";
 import { fakeSupabase, renderScreen, setParams, visibleText } from "./helpers/screen";
-import FirstFoods from "@/app/(main)/baby/recipes/foods";
-import FoodDetail from "@/app/(main)/baby/recipes/food/[key]";
+import FirstFoods from "@/app/(main)/recipes/foods";
+import FoodDetail from "@/app/(main)/recipes/food/[key]";
 import { __resetFoodTriesForTests } from "@/lib/recipes/foodTries";
 import { __resetFoodsForTests } from "@/lib/recipes/foods";
 import { clearHouseholdCache } from "@/lib/baby/household";

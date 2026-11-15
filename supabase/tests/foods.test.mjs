@@ -16,6 +16,9 @@ const AFTER_OCT_30 = "create role service_role bypassrls; alter default privileg
 
 const TABLE = new URL("../migrations/20261111090000_foods.sql", import.meta.url);
 const LIBRARY = new URL("../migrations/20261111090100_foods_library_1.sql", import.meta.url);
+const FIXES = new URL("../migrations/20261113090100_foods_language_fixes.sql", import.meta.url);
+const LIBRARY_2 = new URL("../migrations/20261114090000_foods_library_2.sql", import.meta.url);
+const LIBRARY_3 = new URL("../migrations/20261114100000_foods_library_3.sql", import.meta.url);
 const FOODS = JSON.parse(fs.readFileSync(new URL("../../content/recipes/foods.json", import.meta.url), "utf8"));
 const RECIPES = JSON.parse(fs.readFileSync(new URL("../../content/recipes/sq.json", import.meta.url), "utf8"));
 const db = new PGlite();
@@ -69,7 +72,7 @@ end; $$;
 `);
 await db.exec(AFTER_OCT_30);
 await db.exec("grant usage on schema public, auth to service_role;");
-for (const [file, label] of [[TABLE, "tabelave"], [LIBRARY, "ushqimeve"]]) {
+for (const [file, label] of [[TABLE, "tabelave"], [LIBRARY, "ushqimeve"], [FIXES, "gjuhës së njësuar"], [LIBRARY_2, "20 ushqimeve të reja"], [LIBRARY_3, "29 ushqimeve të tjera"]]) {
   for (const name of ["i pari", "i dyti"]) {
     try { await db.exec(fs.readFileSync(file, "utf8")); console.log(`OK  migrimi i ${label} (${name})`); }
     catch (e) { console.log(`GABIM te migrimi i ${label}:`, e.message); process.exit(1); }
@@ -89,7 +92,7 @@ await db.query(`insert into public.baby_household_members (owner_id, member_id, 
 const as = async (uid) => { await db.exec(`reset role; select set_config('test.uid', '${uid ?? ""}', false); ${uid ? "set role authenticated;" : "set role anon;"}`); };
 
 // --- Ushqimet = kopja e app-it ---------------------------------------------------
-check(`ushqimet fillestare: ${FOODS.length} (80), pa dyfishim pas dy ekzekutimeve`, FOODS.length === 80 && (await n(`select count(*)::int n from public.foods`)) === FOODS.length);
+check(`ushqimet: ${FOODS.length} (80 + 20 + 29 të reja), pa dyfishim pas dy ekzekutimeve`, FOODS.length === 129 && (await n(`select count(*)::int n from public.foods`)) === FOODS.length);
 const rows = new Map((await db.query(`select * from public.foods`)).rows.map((r) => [r.food_key, r]));
 const canon = (v) => (Array.isArray(v) ? v.map(canon) : v && typeof v === "object" ? Object.fromEntries(Object.keys(v).sort().map((k) => [k, canon(v[k])])) : v);
 const diffs = [];
@@ -109,10 +112,10 @@ check("baza refuzon rrezik mbytjeje të panjohur", await fails(`insert into publ
 
 // --- RLS e ushqimeve -------------------------------------------------------------
 await as(null);
-check("anon lexon ushqimet", (await n(`select count(*)::int n from public.foods`)) === 80);
+check("anon lexon ushqimet", (await n(`select count(*)::int n from public.foods`)) === 129);
 check("anon s'shton ushqim", await fails(`insert into public.foods (food_key, name, category) values ('x_anon', 'X', 'fruit')`));
 await as(mom);
-check("prindi lexon ushqimet", (await n(`select count(*)::int n from public.foods`)) === 80);
+check("prindi lexon ushqimet", (await n(`select count(*)::int n from public.foods`)) === 129);
 check("prindi s'shton ushqim", await fails(`insert into public.foods (food_key, name, category) values ('x_mom', 'X', 'fruit')`));
 await db.query(`update public.foods set tip = 'ndryshuar' where food_key = 'apple'`);
 await db.query(`delete from public.foods where food_key = 'apple'`);

@@ -14,10 +14,15 @@ import { useToast } from "@/lib/toast/ToastContext";
 import { useTranslation } from "@/lib/i18n/LanguageContext";
 import { haptics } from "@/lib/haptics";
 import { formatTime } from "@/lib/dateUtils";
+import {
+  SOLID_MAX, SOLID_UNITS, formatNumber, isSolidUnit, mlToOz, ozToMl, parseAmount, setFeedUnits, solidAmountText, useFeedUnits, volumeText,
+  type FeedUnits, type SolidUnit, type VolumeUnit,
+} from "@/lib/baby/feedUnits";
 import { FeedingEntry, FeedingType, BreastSide } from "@/lib/state/types";
 import { BackButton } from "@/components/ui/BackButton";
 import { FeedHero } from "@/components/baby/feeding/FeedHero";
 import { FeedComposer, type FeedPrefill } from "@/components/baby/feeding/FeedComposer";
+import { FormulaStockCard } from "@/components/baby/FormulaStockCard";
 import { FeedHistory, TodayCard } from "@/components/baby/feeding/FeedDay";
 import { TYPE_ICON, entryHeadline, typeLabel } from "@/components/baby/feeding/feedingStyle";
 
@@ -25,32 +30,61 @@ const TYPES: FeedingType[] = ["breast", "bottle", "formula", "solid", "water", "
 
 type FormShape = {
   type: FeedingType;
-  amountMl: string;
+  /** Sasia si tekst, në njësinë `amountUnit` (ilaçi gjithmonë në ml). */
+  amount: string;
+  amountUnit: VolumeUnit;
+  /** Vlera e ruajtur kur hapet formulari: s'ndryshohet nga rrumbullakimi i oz nëse prindi s'e prek fushën. */
+  amountMlOrig: number | null;
+  amountTouched: boolean;
   durationMin: string;
   side: BreastSide;
   foodCategory: string;
+  solidAmount: string;
+  solidUnit: SolidUnit;
+  solidTouched: boolean;
   at: string;
   note: string;
 };
 
-function emptyForm(prefill: FeedPrefill = {}): FormShape {
+/** Ilaçi s'shkruhet kurrë në oz: doza mbetet në ml. */
+const usesOz = (type: FeedingType, unit: VolumeUnit) => unit === "oz" && type !== "medicine";
+
+function amountShown(ml: number | null | undefined, type: FeedingType, unit: VolumeUnit, lang: string): string {
+  if (ml == null) return "";
+  return usesOz(type, unit) ? formatNumber(mlToOz(ml), lang) : String(ml);
+}
+
+function emptyForm(prefill: FeedPrefill = {}, units: FeedUnits = { volume: "ml", solid: "g" }, lang = "sq"): FormShape {
+  const type = prefill.type ?? "bottle";
   return {
-    type: prefill.type ?? "bottle",
-    amountMl: prefill.amountMl != null ? String(prefill.amountMl) : "",
+    type,
+    amount: amountShown(prefill.amountMl, type, units.volume, lang),
+    amountUnit: units.volume,
+    amountMlOrig: prefill.amountMl ?? null,
+    amountTouched: prefill.amountMl != null,
     durationMin: "",
     side: prefill.side ?? null,
     foodCategory: prefill.foodCategory ?? "",
+    solidAmount: prefill.solidAmount ? formatNumber(prefill.solidAmount, lang) : "",
+    solidUnit: isSolidUnit(prefill.solidUnit) ? prefill.solidUnit : units.solid,
+    solidTouched: !!prefill.solidAmount,
     at: new Date().toISOString(),
     note: "",
   };
 }
-function formFromEntry(e: FeedingEntry): FormShape {
+function formFromEntry(e: FeedingEntry, units: FeedUnits, lang: string): FormShape {
   return {
     type: e.type,
-    amountMl: e.amountMl != null ? String(e.amountMl) : "",
+    amount: amountShown(e.amountMl, e.type, units.volume, lang),
+    amountUnit: units.volume,
+    amountMlOrig: e.amountMl,
+    amountTouched: false,
     durationMin: e.durationMin != null ? String(e.durationMin) : "",
     side: e.side,
     foodCategory: e.foodCategory ?? "",
+    solidAmount: e.solidAmount ? formatNumber(e.solidAmount, lang) : "",
+    solidUnit: isSolidUnit(e.solidUnit) ? e.solidUnit : units.solid,
+    solidTouched: false,
     at: e.at,
     note: e.note,
   };
@@ -63,6 +97,7 @@ function formFromEntry(e: FeedingEntry): FormShape {
  */
 export default function FeedingScreen() {
   const { t, lang } = useTranslation();
+  const units = useFeedUnits();
   const { state, baby } = useAppState();
   const { showToast } = useToast();
   const log = useMemo(
@@ -82,9 +117,10 @@ export default function FeedingScreen() {
     return [
       typeLabel(entry.type ?? "bottle", t),
       entry.side ? t(`feeding_side_${entry.side}` as never) : null,
-      entry.amountMl ? `${entry.amountMl} ml` : null,
+      entry.amountMl ? volumeText(entry.amountMl, entry.type === "medicine" ? "ml" : units.volume, lang) : null,
       entry.durationMin ? `${entry.durationMin} min` : null,
       entry.foodCategory || null,
+      entry.type === "solid" && entry.solidAmount && isSolidUnit(entry.solidUnit) ? solidAmountText(entry.solidAmount, entry.solidUnit, lang, t) : null,
     ]
       .filter(Boolean)
       .join(" · ");
@@ -99,13 +135,13 @@ export default function FeedingScreen() {
 
   function openNew(prefill: FeedPrefill = {}) {
     haptics.tap();
-    setForm(emptyForm(prefill));
+    setForm(emptyForm(prefill, units, lang));
     setEditingId(null);
     setSheetOpen(true);
   }
   function openEdit(entry: FeedingEntry) {
     haptics.select();
-    setForm(formFromEntry(entry));
+    setForm(formFromEntry(entry, units, lang));
     setEditingId(entry.id);
     setSheetOpen(true);
   }
@@ -114,13 +150,28 @@ export default function FeedingScreen() {
     setSheetOpen(false);
   }
 
-  function computePatch() {
+  function computePatch(): Partial<FeedingEntry> {
+    const typed = parseAmount(form.amount);
+    const amountMl = !form.amountTouched
+      ? form.amountMlOrig
+      : typed == null || typed <= 0
+        ? null
+        : usesOz(form.type, form.amountUnit)
+          ? ozToMl(typed)
+          : Math.round(typed);
+    const solid = parseAmount(form.solidAmount);
     return {
       type: form.type,
-      amountMl: form.amountMl ? Number(form.amountMl) : null,
+      amountMl,
       durationMin: form.durationMin ? Number(form.durationMin) : null,
       side: form.side,
       foodCategory: form.foodCategory || null,
+      // Sasia e ushqimit shkon vetëm kur prindi e ndryshoi (përndryshe shënimet e vjetra s'marrin ndryshime boshe).
+      ...(form.solidTouched
+        ? solid && solid > 0
+          ? { solidAmount: Math.min(SOLID_MAX[form.solidUnit], solid), solidUnit: form.solidUnit }
+          : { solidAmount: null, solidUnit: null }
+        : {}),
       at: form.at,
       note: form.note,
     };
@@ -203,6 +254,9 @@ export default function FeedingScreen() {
           />
         )}
 
+        {/* Formula e mbetur, si pelenat: e plotë kur bebi pi formulë, përndryshe një rresht i vogël që hapet. */}
+        <FormulaStockCard log={log} />
+
         {log.length === 0 ? (
           <EmptyState text={t("feeding_empty")} />
         ) : (
@@ -222,7 +276,7 @@ export default function FeedingScreen() {
         onArchive={editingId ? handleArchive : undefined}
         onDelete={handleDelete}
         lifecycle={editingEntry ?? undefined}
-        shareText={editingEntry ? `${entryHeadline(editingEntry, t)} · ${formatTime(editingEntry.at, lang)}` : undefined}
+        shareText={editingEntry ? `${entryHeadline(editingEntry, t, { volume: units.volume, lang })} · ${formatTime(editingEntry.at, lang)}` : undefined}
       >
         <View className="gap-4">
           <SegmentedField
@@ -253,10 +307,27 @@ export default function FeedingScreen() {
           )}
           {needsAmount && (
             <FormField
-              label={t("feeding_amount_ml_ph")}
-              keyboardType="number-pad"
-              value={form.amountMl}
-              onChangeText={(v) => setForm((f) => ({ ...f, amountMl: v }))}
+              label={usesOz(form.type, form.amountUnit) ? t("feeding_amount_oz_ph") : t("feeding_amount_ml_ph")}
+              keyboardType={usesOz(form.type, form.amountUnit) ? "decimal-pad" : "number-pad"}
+              value={form.amount}
+              onChangeText={(v) => setForm((f) => ({ ...f, amount: v, amountTouched: true }))}
+            />
+          )}
+          {needsAmount && form.type !== "medicine" && (
+            <SegmentedField
+              label={t("feeding_unit_label")}
+              options={(["ml", "oz"] as VolumeUnit[]).map((u) => ({ value: u, label: u }))}
+              value={form.amountUnit}
+              onChange={(v) => {
+                const unit = v as VolumeUnit;
+                setFeedUnits({ volume: unit });
+                // E njëjta sasi, e shkruar në njësinë e re.
+                setForm((f) => {
+                  const typed = parseAmount(f.amount);
+                  const ml = typed == null ? null : usesOz(f.type, f.amountUnit) ? ozToMl(typed) : Math.round(typed);
+                  return { ...f, amountUnit: unit, amount: amountShown(ml, f.type, unit, lang) };
+                });
+              }}
             />
           )}
           {needsFood && (
@@ -264,6 +335,25 @@ export default function FeedingScreen() {
               label={t("feeding_food_category_ph")}
               value={form.foodCategory}
               onChangeText={(v) => setForm((f) => ({ ...f, foodCategory: v }))}
+            />
+          )}
+          {needsFood && (
+            <FormField
+              label={t("feeding_solid_amount_title")}
+              keyboardType={form.solidUnit === "g" ? "number-pad" : "decimal-pad"}
+              value={form.solidAmount}
+              onChangeText={(v) => setForm((f) => ({ ...f, solidAmount: v, solidTouched: true }))}
+            />
+          )}
+          {needsFood && (
+            <SegmentedField
+              label={t("feeding_unit_label")}
+              options={SOLID_UNITS.map((u) => ({ value: u, label: u === "spoon" ? t("feeding_unit_spoon_name") : u }))}
+              value={form.solidUnit}
+              onChange={(v) => {
+                setFeedUnits({ solid: v as SolidUnit });
+                setForm((f) => ({ ...f, solidUnit: v as SolidUnit, solidTouched: true }));
+              }}
             />
           )}
 

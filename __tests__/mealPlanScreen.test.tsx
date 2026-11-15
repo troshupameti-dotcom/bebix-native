@@ -2,10 +2,10 @@ import { useEffect } from "react";
 import { Linking } from "react-native";
 import { act, type ReactTestInstance } from "react-test-renderer";
 import { button, fakeSupabase, renderScreen, router, setParams, visibleText } from "./helpers/screen";
-import MealPlanScreen from "@/app/(main)/baby/recipes/plan";
-import ShoppingListScreen from "@/app/(main)/baby/recipes/shopping";
-import FreezerDayScreen from "@/app/(main)/baby/recipes/freezer";
-import RecipeDetail from "@/app/(main)/baby/recipes/[slug]";
+import MealPlanScreen from "@/app/(main)/recipes/plan";
+import ShoppingListScreen from "@/app/(main)/recipes/shopping";
+import FreezerDayScreen from "@/app/(main)/recipes/freezer";
+import RecipeDetail from "@/app/(main)/recipes/[slug]";
 import { useAppState } from "@/lib/state/AppStateContext";
 import { __resetMealPlanForTests, setPlanSlots, useMealPlan } from "@/lib/recipes/mealPlan";
 import { __resetFoodTriesForTests } from "@/lib/recipes/foodTries";
@@ -98,7 +98,7 @@ describe("Plani i javës", () => {
     await act(async () => setPlanSlots([{ day: "2026-11-17", meal: "lunch", recipeSlug: first.slug }]));
     const nav = router();
     await act(async () => byLabel(r.root, `Drekë: ${first.title}`).props.onPress());
-    expect(nav.push).toHaveBeenCalledWith({ pathname: "/(main)/baby/recipes/[slug]", params: { slug: first.slug } });
+    expect(nav.push).toHaveBeenCalledWith({ pathname: "/(main)/recipes/[slug]", params: { slug: first.slug } });
 
     await act(async () => byLabel(r.root, `Drekë: ${first.title}`).props.onLongPress());
     expect(text(r)).toMatch(/Drekë · E martë, 17 nëntor/);

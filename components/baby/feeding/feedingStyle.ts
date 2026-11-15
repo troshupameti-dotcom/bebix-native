@@ -1,4 +1,5 @@
 import type { IconName } from "@/components/ui/Icon";
+import { isSolidUnit, solidAmountText, volumeText, type VolumeUnit } from "@/lib/baby/feedUnits";
 import type { Translate } from "@/lib/baby/dayStats";
 import { TONES, type Tone } from "@/lib/theme/tone";
 import type { FeedingEntry, FeedingType } from "@/lib/state/types";
@@ -26,12 +27,17 @@ export function typeLabel(type: FeedingType, t: Translate): string {
   return t(`feeding_type_${type === "medicine" ? "medicine_short" : type}` as never);
 }
 
-/** Rreshti kryesor i një shënimi: "Biberon · 120 ml", "Gji · Majtas", "Ushqim i ngurtë". */
-export function entryHeadline(e: FeedingEntry, t: Translate): string {
+/**
+ * Rreshti kryesor i një shënimi: "Biberon · 120 ml" (ose "4 oz"), "Gji · Majtas", "Ushqim i ngurtë · 40 g".
+ * Pa `units`, shishja del në ml.
+ */
+export function entryHeadline(e: FeedingEntry, t: Translate, units?: { volume: VolumeUnit; lang: string }): string {
+  const lang = units?.lang ?? "sq";
   return [
     typeLabel(e.type, t),
     e.side ? t(`feeding_side_${e.side}` as never) : null,
-    e.amountMl ? `${e.amountMl} ml` : null,
+    e.amountMl ? volumeText(e.amountMl, units?.volume ?? "ml", lang) : null,
+    e.type === "solid" && e.solidAmount && isSolidUnit(e.solidUnit) ? solidAmountText(e.solidAmount, e.solidUnit, lang, t as never) : null,
   ]
     .filter(Boolean)
     .join(" · ");

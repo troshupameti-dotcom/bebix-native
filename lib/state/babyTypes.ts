@@ -18,6 +18,8 @@
  * data, not app chrome.
  */
 
+import type { SolidUnit } from "@/lib/baby/feedUnits";
+
 export type Lifecycle = {
   createdAt: string;
   updatedAt: string;
@@ -113,6 +115,9 @@ export type FeedingEntry = Lifecycle & {
   durationMin: number | null;
   side: BreastSide;
   foodCategory: string | null;
+  /** Sasia e ushqimit të ngurtë dhe njësia e zgjedhur (g, oz, lugë); mungon te shënimet e vjetra. */
+  solidAmount?: number | null;
+  solidUnit?: SolidUnit | null;
   at: string;
   note: string;
 };

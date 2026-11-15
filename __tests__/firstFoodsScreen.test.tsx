@@ -1,10 +1,10 @@
 import { useEffect } from "react";
 import { act } from "react-test-renderer";
 import { button, renderScreen, setParams, visibleText } from "./helpers/screen";
-import FirstFoods from "@/app/(main)/baby/recipes/foods";
-import FoodDetail from "@/app/(main)/baby/recipes/food/[key]";
-import AllergenPlan from "@/app/(main)/baby/recipes/allergens";
-import RecipeDetail from "@/app/(main)/baby/recipes/[slug]";
+import FirstFoods from "@/app/(main)/recipes/foods";
+import FoodDetail from "@/app/(main)/recipes/food/[key]";
+import AllergenPlan from "@/app/(main)/recipes/allergens";
+import RecipeDetail from "@/app/(main)/recipes/[slug]";
 import { useAppState } from "@/lib/state/AppStateContext";
 import { __resetFoodTriesForTests, addFoodTry, useFoodTries } from "@/lib/recipes/foodTries";
 import { __resetFoodsForTests } from "@/lib/recipes/foods";

@@ -1,8 +1,10 @@
 import { LOW_DAYS, type DiaperStockEstimate } from "@/lib/baby/diaperStock";
+import { FORMULA_LOW_DAYS } from "@/lib/baby/formulaStock";
+import type { SupplyEstimate } from "@/lib/baby/supply";
 
 /**
  * Dyqani që "lexon mendjen": një kartë e vetme sugjerimi, sipas radhës së
- * rëndësisë — pelenat po mbarojnë → koha për madhësinë tjetër → diçka që i
+ * rëndësisë — formula po mbaron → pelenat po mbarojnë → koha për madhësinë tjetër → diçka që i
  * përshtatet moshës. Çdo kartë mbyllet dhe s'del sërish për një kohë.
  * Asnjë njoftim: sugjerimet e dyqanit rrinë vetëm në app.
  */
@@ -65,12 +67,23 @@ export function sizeUpHint(current: DiaperSize | null, weightKg: number | null |
 export const REORDER_DAYS = LOW_DAYS;
 
 export type DiaperPrompt = { daysLeft: number; left: number };
+/** Formula: e njëjta formë si pelenat (servimet që mbeten, sa ditë). */
+export type SupplyPrompt = DiaperPrompt;
 
-export function diaperPrompt(estimate: DiaperStockEstimate | null): DiaperPrompt | null {
+function supplyPrompt(estimate: SupplyEstimate | null, reorderDays: number): SupplyPrompt | null {
   if (!estimate) return null;
-  if (estimate.daysLeft !== null && estimate.daysLeft <= REORDER_DAYS) return { daysLeft: Math.max(0, Math.round(estimate.daysLeft)), left: estimate.left };
+  if (estimate.daysLeft !== null && estimate.daysLeft <= reorderDays) return { daysLeft: Math.max(0, Math.round(estimate.daysLeft)), left: estimate.left };
   if (estimate.daysLeft === null && estimate.low) return { daysLeft: 0, left: estimate.left };
   return null;
+}
+
+export function diaperPrompt(estimate: DiaperStockEstimate | null): DiaperPrompt | null {
+  return supplyPrompt(estimate, REORDER_DAYS);
+}
+
+/** Formula po mbaron: një ditë më herët se pelenat (shih `FORMULA_LOW_DAYS`). */
+export function formulaPrompt(estimate: SupplyEstimate | null): SupplyPrompt | null {
+  return supplyPrompt(estimate, FORMULA_LOW_DAYS);
 }
 
 // --- Sipas moshës ----------------------------------------------------------
@@ -110,12 +123,13 @@ export function pickAgeProduct<T extends AgeProduct>(products: T[], months: numb
 // --- Një kartë e vetme ----------------------------------------------------
 
 export type Suggestion<P> =
+  | { kind: "formula"; key: string; prompt: SupplyPrompt }
   | { kind: "diaper"; key: string; prompt: DiaperPrompt }
   | { kind: "size"; key: string; hint: SizeUpHint }
   | { kind: "product"; key: string; product: P };
 
 /** Sa kohë s'del sërish një kartë e mbyllur. */
-export const SNOOZE_MS = { diaper: 86_400_000, size: 7 * 86_400_000, product: 30 * 86_400_000 } as const;
+export const SNOOZE_MS = { formula: 86_400_000, diaper: 86_400_000, size: 7 * 86_400_000, product: 30 * 86_400_000 } as const;
 
 /** Mbylljet e ruajtura: çelës → deri kur. Të skaduarat hiqen. */
 export function activeDismissals(stored: Record<string, string>, now: Date): Set<string> {
@@ -123,6 +137,10 @@ export function activeDismissals(stored: Record<string, string>, now: Date): Set
 }
 
 export function chooseSuggestion<P extends { id: string }>(input: {
+  /** Formula po mbaron (para pelenave: s'zëvendësohet dot me diçka tjetër në shtëpi). */
+  formula?: SupplyPrompt | null;
+  /** Çelësi i formulës aktuale (data e vendosjes), që mbyllja të vlejë vetëm për këtë kuti. */
+  formulaKey?: string | null;
   diaper: DiaperPrompt | null;
   /** Çelësi i stokut aktual (data e vendosjes), që mbyllja të vlejë vetëm për këtë paketë. */
   stockKey: string | null;
@@ -130,7 +148,11 @@ export function chooseSuggestion<P extends { id: string }>(input: {
   product: P | null;
   dismissed: ReadonlySet<string>;
 }): Suggestion<P> | null {
-  const { diaper, size, product, dismissed } = input;
+  const { formula, diaper, size, product, dismissed } = input;
+  if (formula) {
+    const key = `formula:${input.formulaKey ?? "none"}`;
+    if (!dismissed.has(key)) return { kind: "formula", key, prompt: formula };
+  }
   if (diaper) {
     const key = `diaper:${input.stockKey ?? "none"}`;
     if (!dismissed.has(key)) return { kind: "diaper", key, prompt: diaper };

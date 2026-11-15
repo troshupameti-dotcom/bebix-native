@@ -13,12 +13,13 @@ import { useAppState, active } from "@/lib/state/AppStateContext";
 import { useTranslation } from "@/lib/i18n/LanguageContext";
 import { useToast } from "@/lib/toast/ToastContext";
 import { estimateDiaperStock, loadDiaperStock, type DiaperStock } from "@/lib/baby/diaperStock";
+import { estimateFormulaStock, formulaEntries, loadFormulaStock, type FormulaStock } from "@/lib/baby/formulaStock";
 import { latestGrowth } from "@/lib/baby/growthLatest";
-import { fetchAllOrders, lastDiaperItem } from "@/lib/shop/reorder";
+import { fetchAllOrders, lastDiaperItem, lastFormulaItem } from "@/lib/shop/reorder";
 import { monthsSince } from "@/lib/shop/age";
 import { fetchAgeProducts } from "@/lib/shopData";
 import {
-  activeDismissals, chooseSuggestion, currentDiaperSize, diaperPrompt, pickAgeProduct, sizeUpHint, SNOOZE_MS, type Suggestion,
+  activeDismissals, chooseSuggestion, currentDiaperSize, diaperPrompt, formulaPrompt, pickAgeProduct, sizeUpHint, SNOOZE_MS, type Suggestion,
 } from "@/lib/shop/suggestions";
 import type { Product } from "@/lib/homeContent";
 import type { OrderItem } from "@/lib/shop/orders";
@@ -36,7 +37,7 @@ async function loadDismissals(): Promise<Record<string, string>> {
 }
 
 /**
- * Një kartë e vetme sugjerimi për dyqanin (Home dhe Dyqani): pelenat po
+ * Një kartë e vetme sugjerimi për dyqanin (Home dhe Dyqani): formula po mbaron → pelenat po
  * mbarojnë → madhësia tjetër → diçka për moshën. Mbyllet me "Jo tani".
  */
 export function ShopSuggestionCard({ placement = "home" }: { placement?: "home" | "shop" }) {
@@ -49,6 +50,8 @@ export function ShopSuggestionCard({ placement = "home" }: { placement?: "home" 
 
   const [stock, setStock] = useState<DiaperStock | null>(null);
   const [lastItem, setLastItem] = useState<OrderItem | null>(null);
+  const [formulaStock, setFormulaStock] = useState<FormulaStock | null>(null);
+  const [lastFormula, setLastFormula] = useState<OrderItem | null>(null);
   const [purchased, setPurchased] = useState<Set<string>>(new Set());
   const [products, setProducts] = useState<Product[]>([]);
   const [dismissals, setDismissals] = useState<Record<string, string> | null>(null);
@@ -59,10 +62,12 @@ export function ShopSuggestionCard({ placement = "home" }: { placement?: "home" 
     let alive = true;
     void loadDismissals().then((d) => alive && setDismissals(d));
     void loadDiaperStock().then((s) => alive && setStock(s));
+    void loadFormulaStock().then((s) => alive && setFormulaStock(s));
     void fetchAllOrders()
       .then((orders) => {
         if (!alive) return;
         setLastItem(lastDiaperItem(orders));
+        setLastFormula(lastFormulaItem(orders));
         setPurchased(new Set(orders.flatMap((o) => (o.status === "cancelled" ? [] : o.items.map((i) => i.id)))));
       })
       .catch(() => {});
@@ -87,16 +92,19 @@ export function ShopSuggestionCard({ placement = "home" }: { placement?: "home" 
     const now = new Date();
     const dismissed = activeDismissals(dismissals, now);
     const estimate = stock ? estimateDiaperStock(stock, active(b.diaperLog)) : null;
+    const formula = formulaStock ? estimateFormulaStock(formulaStock, formulaEntries(active(b.feedingLog))) : null;
     const sizeSetting = b.medicalInfo.find((m) => m.key === "diaper_size")?.value ?? null;
     const size = sizeUpHint(currentDiaperSize(sizeSetting, lastItem?.name), latestGrowth(b.growthHistory).weight?.value);
     return chooseSuggestion({
+      formula: formulaPrompt(formula),
+      formulaKey: formulaStock?.setAt ?? null,
       diaper: diaperPrompt(estimate),
       stockKey: stock?.setAt ?? null,
       size,
       product: pickAgeProduct(products, months, purchased, dismissed),
       dismissed,
     });
-  }, [dismissals, stock, b.diaperLog, b.medicalInfo, b.growthHistory, lastItem, products, months, purchased]);
+  }, [dismissals, stock, formulaStock, b.diaperLog, b.feedingLog, b.medicalInfo, b.growthHistory, lastItem, products, months, purchased]);
 
   const dismiss = useCallback(
     (s: Suggestion<Product>) => {
@@ -112,18 +120,22 @@ export function ShopSuggestionCard({ placement = "home" }: { placement?: "home" 
   if (!suggestion) return null;
   const babyName = state.profile.nickname || state.profile.babyName || t("your_baby");
 
+  // Formula ose pelenat: i njëjti produkt si herën e fundit, ose kërkimi te dyqani kur s'ka blerë ende.
+  const isFormula = suggestion.kind === "formula";
+  const supplyItem = isFormula ? lastFormula : lastItem;
+
   function reorder() {
     haptics.success();
-    if (!lastItem) {
-      router.push({ pathname: "/(main)/shop", params: { q: "pelena" } });
+    if (!supplyItem) {
+      router.push({ pathname: "/(main)/shop", params: { q: isFormula ? "formula" : "pelena" } });
       return;
     }
-    // Një prekje: të njëjtat pelena, e njëjta sasi, drejt te përfundimi i porosisë.
-    addToCart({ id: lastItem.id, name: lastItem.name, price: lastItem.price, imageUrl: lastItem.imageUrl ?? null, icon: lastItem.icon ?? "cube" }, lastItem.qty);
+    // Një prekje: i njëjti produkt, e njëjta sasi, drejt te përfundimi i porosisë.
+    addToCart({ id: supplyItem.id, name: supplyItem.name, price: supplyItem.price, imageUrl: supplyItem.imageUrl ?? null, icon: supplyItem.icon ?? "cube" }, supplyItem.qty);
     router.push("/shop/checkout", { withAnchor: true });
   }
 
-  const tone = themed(suggestion.kind === "diaper" ? TONES.amber : suggestion.kind === "size" ? TONES.blue : TONES.green);
+  const tone = themed(suggestion.kind === "diaper" || isFormula ? TONES.amber : suggestion.kind === "size" ? TONES.blue : TONES.green);
 
   return (
     <MotiView
@@ -135,10 +147,19 @@ export function ShopSuggestionCard({ placement = "home" }: { placement?: "home" 
     >
       <View className="flex-row items-start gap-3">
         <View className="h-9 w-9 items-center justify-center rounded-full" style={{ backgroundColor: tone.chip }}>
-          <Icon name={suggestion.kind === "product" ? "sparkle" : "diaper"} size={16} color={tone.tint} />
+          <Icon name={suggestion.kind === "product" ? "sparkle" : isFormula ? "bottle" : "diaper"} size={16} color={tone.tint} />
         </View>
         <View className="flex-1">
-          {suggestion.kind === "diaper" ? (
+          {suggestion.kind === "formula" ? (
+            <>
+              <Text className="font-bodySemibold text-[15px]" style={{ color: tone.ink }}>
+                {suggestion.prompt.daysLeft > 0 ? t("shop_sugg_formula_days", { n: suggestion.prompt.daysLeft }) : t("shop_sugg_formula_now")}
+              </Text>
+              <Text className="mt-0.5 font-body text-[13px]" style={{ color: tone.inkSoft }}>
+                {lastFormula ? t("shop_sugg_formula_same", { name: lastFormula.name, qty: lastFormula.qty }) : t("formula_stock_left", { n: suggestion.prompt.left })}
+              </Text>
+            </>
+          ) : suggestion.kind === "diaper" ? (
             <>
               <Text className="font-bodySemibold text-[15px]" style={{ color: tone.ink }}>
                 {suggestion.prompt.daysLeft > 0 ? t("shop_sugg_diaper_days", { n: suggestion.prompt.daysLeft }) : t("shop_sugg_diaper_now")}
@@ -183,7 +204,13 @@ export function ShopSuggestionCard({ placement = "home" }: { placement?: "home" 
       </View>
 
       <View className="mt-3 flex-row" style={{ gap: 8 }}>
-        {suggestion.kind === "diaper" ? (
+        {suggestion.kind === "formula" ? (
+          <Pressable onPress={reorder} accessibilityRole="button" className="flex-1 items-center justify-center rounded-full bg-ink px-4" style={{ minHeight: 48 }}>
+            <Text className="font-bodySemibold text-[14px] text-cream" numberOfLines={1}>
+              {lastFormula ? t("shop_sugg_formula_yes") : t("formula_stock_find")}
+            </Text>
+          </Pressable>
+        ) : suggestion.kind === "diaper" ? (
           <Pressable onPress={reorder} accessibilityRole="button" className="flex-1 items-center justify-center rounded-full bg-ink px-4" style={{ minHeight: 48 }}>
             <Text className="font-bodySemibold text-[14px] text-cream" numberOfLines={1}>
               {lastItem ? t("shop_sugg_diaper_yes") : t("diaper_stock_find")}

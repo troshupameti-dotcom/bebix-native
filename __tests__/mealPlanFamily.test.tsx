@@ -1,6 +1,6 @@
 import { act } from "react-test-renderer";
 import { fakeSupabase, renderScreen, visibleText } from "./helpers/screen";
-import MealPlanScreen from "@/app/(main)/baby/recipes/plan";
+import MealPlanScreen from "@/app/(main)/recipes/plan";
 import { __resetMealPlanForTests, setPlanSlots } from "@/lib/recipes/mealPlan";
 import { __resetFoodTriesForTests } from "@/lib/recipes/foodTries";
 import { clearHouseholdCache } from "@/lib/baby/household";

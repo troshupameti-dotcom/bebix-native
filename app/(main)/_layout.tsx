@@ -20,12 +20,12 @@ import { hardwareBack } from "@/components/ui/BackButton";
 import { useNightMode } from "@/lib/baby/nightMode";
 import { nightPalette } from "@/components/baby/NightClock";
 
-// AI-ja rri ne mes: aty ku ishte butoni rrethor, pra duart e mesuara e
-// gjejne ne te njejtin vend, dhe eshte pika me e arritshme me gisht.
+// "Ushqim" (recetat, ushqimet e para, plani i javës) rri në mes, si skedat e tjera: pika më e arritshme me gisht.
+// AI-ja doli nga shiriti dhe hapet nga butoni i bisedës te faqja kryesore.
 const TABS: { name: string; icon: TabGlyph; labelKey: TranslationKey }[] = [
   { name: "baby", icon: "baby", labelKey: "nav_baby" },
   { name: "shop", icon: "shop", labelKey: "nav_shop" },
-  { name: "ai-chat", icon: "sparkle", labelKey: "nav_ai" },
+  { name: "recipes", icon: "bowl", labelKey: "nav_food" },
   { name: "community", icon: "community", labelKey: "nav_community" },
   { name: "more", icon: "settings", labelKey: "nav_more" },
 ];
@@ -192,6 +192,9 @@ export default function MainLayout() {
             dhe çdo hapje kthehet te skeda e parë. `display: "none"`: pa të, vendi bosh i butonit mbetej djathtas
             dhe pesë skedat e tjera ngjeshen majtas. */}
         <Tabs.Screen name="notifications" options={{ tabBarButton: () => null, tabBarItemStyle: { display: "none" } }} />
+        {/* Biseda me AI-në: pa buton në shirit, hapet nga butoni i bisedës te faqja kryesore. Si njoftimet, pa `href: null`.
+            Mysafiri s'e arrin dot: faqja kryesore është vetëm për llogaritë. */}
+        <Tabs.Screen name="ai-chat" options={{ title: t("nav_ai"), tabBarButton: () => null, tabBarItemStyle: { display: "none" } }} />
       </Tabs>
 
     </View>

@@ -15,6 +15,10 @@ import {
   saveLastEnd, saveTimer, sideSeconds, startTimer, suggestedSide, switchSide, type BreastTimer,
 } from "@/lib/baby/breastTimer";
 import { MAX_ML, foodChoices, quickAmounts, recentFoods, stepMl } from "@/lib/baby/feedingDays";
+import {
+  OZ_QUICK, SOLID_MAX, SOLID_UNITS, VOLUME_UNITS, formatNumber, mlToOz, ozToMl, parseAmount, setFeedUnits, solidAmountText, stepOz, stepSolid,
+  useFeedUnits, volumeText, type SolidUnit,
+} from "@/lib/baby/feedUnits";
 import type { FeedingEntry, FeedingType } from "@/lib/state/types";
 import { TYPE_ICON, TYPE_TONE, compactDuration } from "./feedingStyle";
 
@@ -39,7 +43,7 @@ function tabOf(type: FeedingType | undefined): Tab {
   return "breast";
 }
 
-export type FeedPrefill = Partial<Pick<FeedingEntry, "type" | "amountMl" | "side" | "foodCategory">>;
+export type FeedPrefill = Partial<Pick<FeedingEntry, "type" | "amountMl" | "side" | "foodCategory" | "solidAmount" | "solidUnit">>;
 
 /**
  * Shënimi i ushqyerjes, në një kartë: Gji / Biberon / Ushqim.
@@ -60,8 +64,10 @@ export function FeedComposer({
   onLog: (entry: Partial<FeedingEntry>) => void;
   onDetails: (prefill: FeedPrefill) => void;
 }) {
-  const { t } = useTranslation();
+  const { t, lang } = useTranslation();
   const themed = useToneTheme();
+  const units = useFeedUnits();
+  const oz = units.volume === "oz";
   // Teksti mbi ngjyrën e theksit: i bardhë në dritë, i errët natën (theksi zbardhet në temën e errët).
   const ON = useThemeColors().onAccent;
 
@@ -130,6 +136,10 @@ export function FeedComposer({
   const [picks, setPicks] = useState<string[]>([]);
   const [adding, setAdding] = useState(false);
   const [draft, setDraft] = useState("");
+  // Sasia e ushqimit (s'është e detyrueshme): numri dhe njësia (g, oz, lugë).
+  const [solidAmount, setSolidAmount] = useState<number | null>(null);
+  const [solidText, setSolidText] = useState<string | null>(null);
+  const solidUnit = units.solid;
 
   const [ago, setAgo] = useState(0);
 
@@ -197,6 +207,25 @@ export function FeedComposer({
     setPickedMl(Math.max(0, Math.min(MAX_ML, Math.round(next))));
     setMlText(null);
   }
+  function pickVolumeUnit(u: "ml" | "oz") {
+    if (u === units.volume) return;
+    haptics.select();
+    setMlText(null);
+    setFeedUnits({ volume: u });
+  }
+  function pickSolidUnit(u: SolidUnit) {
+    if (u === solidUnit) return;
+    haptics.select();
+    // Numri s'kthehet nga një njësi te tjetra (lugët s'kanë peshë të caktuar): nis nga e para.
+    setSolidAmount(null);
+    setSolidText(null);
+    setFeedUnits({ solid: u });
+  }
+  function setSolid(next: number) {
+    setSolidAmount(next > 0 ? next : null);
+    setSolidText(null);
+  }
+  const solidPart = solidAmount ? { solidAmount, solidUnit } : { solidAmount: null, solidUnit: null };
 
   function toggleFood(food: string) {
     haptics.select();
@@ -215,17 +244,19 @@ export function FeedComposer({
   function save() {
     const when = ago ? { at: minutesAgo(ago) } : {};
     if (tab === "bottle") onLog({ type: milk, amountMl: ml > 0 ? ml : null, ...when });
-    else onLog({ type: "solid", foodCategory: picks.length ? picks.join(", ") : null, ...when });
+    else onLog({ type: "solid", foodCategory: picks.length ? picks.join(", ") : null, ...solidPart, ...when });
     setAgo(0);
     setPicks([]);
     setPickedMl(null);
     setMlText(null);
+    setSolidAmount(null);
+    setSolidText(null);
   }
 
   function openDetails() {
     haptics.tap();
     if (tab === "bottle") onDetails({ type: milk, amountMl: ml > 0 ? ml : null });
-    else if (tab === "solid") onDetails({ type: "solid", foodCategory: picks.length ? picks.join(", ") : null });
+    else if (tab === "solid") onDetails({ type: "solid", foodCategory: picks.length ? picks.join(", ") : null, ...solidPart });
     else onDetails({ type: "breast", side });
   }
 
@@ -362,49 +393,76 @@ export function FeedComposer({
             </View>
 
             <View className="mt-4 flex-row items-center justify-center" style={{ gap: 14 }}>
-              <RoundButton label="−10 ml" tone={tone} onPress={() => setAmount(stepMl(ml, -1))} disabled={ml <= 0}>
+              <RoundButton label={oz ? `−${formatNumber(0.5, lang)} oz` : "−10 ml"} tone={tone} onPress={() => setAmount(oz ? stepOz(ml, -1, MAX_ML) : stepMl(ml, -1))} disabled={ml <= 0}>
                 <Minus size={22} color={tone.tint} strokeWidth={2.4} />
               </RoundButton>
               <View className="flex-row items-baseline justify-center">
                 {/* Gjerësi e caktuar (3 shifra): pa të, në web fusha zgjatet dhe i nxjerr − / + jashtë ekranit. */}
                 <TextInput
-                  value={mlText ?? String(ml)}
+                  value={mlText ?? (oz ? formatNumber(mlToOz(ml), lang) : String(ml))}
                   onChangeText={(v) => {
+                    if (oz) {
+                      const text = v.replace(/[^0-9.,]/g, "").slice(0, 4);
+                      setMlText(text);
+                      setPickedMl(Math.min(MAX_ML, ozToMl(parseAmount(text) ?? 0)));
+                      return;
+                    }
                     const digits = v.replace(/[^0-9]/g, "").slice(0, 3);
                     setMlText(digits);
                     setPickedMl(Math.min(MAX_ML, Number(digits) || 0));
                   }}
                   onBlur={() => setMlText(null)}
-                  keyboardType="number-pad"
+                  keyboardType={oz ? "decimal-pad" : "number-pad"}
                   selectTextOnFocus
-                  accessibilityLabel={t("feeding_amount_ml_ph")}
+                  accessibilityLabel={oz ? t("feeding_amount_oz_ph") : t("feeding_amount_ml_ph")}
                   className="font-display text-ink"
                   style={{ fontSize: 52, lineHeight: 62, width: 104, textAlign: "center", padding: 0, fontVariant: ["tabular-nums"] }}
                 />
                 <Text className="ml-1 font-bodySemibold text-[18px]" style={{ color: tone.tint }}>
-                  ml
+                  {units.volume}
                 </Text>
               </View>
-              <RoundButton label="+10 ml" tone={tone} onPress={() => setAmount(stepMl(ml, 1))} disabled={ml >= MAX_ML}>
+              <RoundButton label={oz ? `+${formatNumber(0.5, lang)} oz` : "+10 ml"} tone={tone} onPress={() => setAmount(oz ? stepOz(ml, 1, MAX_ML) : stepMl(ml, 1))} disabled={ml >= MAX_ML}>
                 <Plus size={22} color={tone.tint} strokeWidth={2.4} />
               </RoundButton>
             </View>
 
             <View className="mt-4 flex-row flex-wrap justify-center" style={{ gap: 8 }}>
-              {quickAmounts(lastMl).map((a) => (
-                <Chip
-                  key={a}
-                  label={String(a)}
-                  a11y={`${a} ml`}
-                  on={ml === a}
-                  tone={tone}
-                  onPress={() => {
-                    haptics.select();
-                    setAmount(a);
-                  }}
-                />
-              ))}
+              {oz
+                ? OZ_QUICK.map((a) => (
+                    <Chip
+                      key={a}
+                      label={formatNumber(a, lang)}
+                      a11y={`${formatNumber(a, lang)} oz`}
+                      on={mlToOz(ml) === a}
+                      tone={tone}
+                      onPress={() => {
+                        haptics.select();
+                        setAmount(ozToMl(a));
+                      }}
+                    />
+                  ))
+                : quickAmounts(lastMl).map((a) => (
+                    <Chip
+                      key={a}
+                      label={String(a)}
+                      a11y={`${a} ml`}
+                      on={ml === a}
+                      tone={tone}
+                      onPress={() => {
+                        haptics.select();
+                        setAmount(a);
+                      }}
+                    />
+                  ))}
             </View>
+            <UnitSwitch
+              label={t("feeding_unit_label")}
+              units={VOLUME_UNITS.map((u) => ({ key: u, label: u }))}
+              value={units.volume}
+              tone={tone}
+              onPick={(u) => pickVolumeUnit(u as "ml" | "oz")}
+            />
           </MotiView>
         )}
 
@@ -447,11 +505,51 @@ export function FeedComposer({
                 style={{ minHeight: 48 }}
               />
             )}
+            {/* Sa hëngri: s'është e detyrueshme. Njësia mbetet e zgjedhur për herën tjetër. */}
+            <Text className="mb-2 mt-5 font-bodyMedium text-[12.5px] text-ink-soft">{t("feeding_solid_amount_title")}</Text>
+            <View className="flex-row items-center" style={{ gap: 10 }}>
+              <RoundButton label={t("feeding_amount_less")} tone={tone} onPress={() => setSolid(stepSolid(solidAmount, solidUnit, -1))} disabled={!solidAmount} small>
+                <Minus size={18} color={tone.tint} strokeWidth={2.4} />
+              </RoundButton>
+              <View className="flex-1 flex-row items-baseline justify-center rounded-2xl bg-cream-soft px-3" style={{ minHeight: 48, alignItems: "center" }}>
+                <TextInput
+                  value={solidText ?? (solidAmount ? formatNumber(solidAmount, lang) : "")}
+                  onChangeText={(v) => {
+                    const text = v.replace(/[^0-9.,]/g, "").slice(0, 5);
+                    setSolidText(text);
+                    const n = parseAmount(text);
+                    setSolidAmount(n && n > 0 ? Math.min(SOLID_MAX[solidUnit], n) : null);
+                  }}
+                  onBlur={() => setSolidText(null)}
+                  keyboardType={solidUnit === "g" ? "number-pad" : "decimal-pad"}
+                  selectTextOnFocus
+                  placeholder="0"
+                  placeholderClassName="text-ink-faint"
+                  accessibilityLabel={t("feeding_solid_amount_title")}
+                  className="font-display text-ink"
+                  style={{ fontSize: 26, lineHeight: 32, minWidth: 56, textAlign: "center", padding: 0, fontVariant: ["tabular-nums"] }}
+                />
+                <Text className="ml-1 font-bodySemibold text-[14px]" style={{ color: tone.tint }}>
+                  {solidUnit === "spoon" ? t("feeding_unit_spoon_short") : solidUnit}
+                </Text>
+              </View>
+              <RoundButton label={t("feeding_amount_more")} tone={tone} onPress={() => setSolid(stepSolid(solidAmount, solidUnit, 1))} disabled={(solidAmount ?? 0) >= SOLID_MAX[solidUnit]} small>
+                <Plus size={18} color={tone.tint} strokeWidth={2.4} />
+              </RoundButton>
+            </View>
+            <UnitSwitch
+              label={t("feeding_unit_label")}
+              units={SOLID_UNITS.map((u) => ({ key: u, label: u === "spoon" ? t("feeding_unit_spoon_name") : u }))}
+              value={solidUnit}
+              tone={tone}
+              onPick={(u) => pickSolidUnit(u as SolidUnit)}
+            />
+
             {/* Recetat sipas moshës, kur prindi s'di çfarë t'i gatuajë sot. */}
             <Pressable
               onPress={() => {
                 haptics.tap();
-                router.push("/(main)/baby/recipes");
+                router.push("/(main)/recipes");
               }}
               accessibilityRole="link"
               hitSlop={6}
@@ -508,10 +606,16 @@ export function FeedComposer({
                 label={
                   tab === "bottle"
                     ? ml > 0
-                      ? `${t("save_action")} · ${ml} ml`
+                      ? `${t("save_action")} · ${volumeText(ml, units.volume, lang)}`
                       : t("save_action")
-                    : picks.length
-                      ? `${t("save_action")} · ${picks.slice(0, 2).join(", ")}${picks.length > 2 ? "…" : ""}`
+                    : picks.length || solidAmount
+                      ? [
+                          t("save_action"),
+                          picks.length ? `${picks.slice(0, 2).join(", ")}${picks.length > 2 ? "…" : ""}` : null,
+                          solidAmount ? solidAmountText(solidAmount, solidUnit, lang, t) : null,
+                        ]
+                          .filter(Boolean)
+                          .join(" · ")
                       : t("save_action")
                 }
                 icon={<Check size={19} color={ON} strokeWidth={2.4} />}
@@ -688,19 +792,65 @@ function Chip({
   );
 }
 
+/** Zgjedhja e njësisë: një shirit i vogël, i qetë, poshtë sasisë. */
+function UnitSwitch({
+  label,
+  units,
+  value,
+  tone,
+  onPick,
+}: {
+  label: string;
+  units: { key: string; label: string }[];
+  value: string;
+  tone: ThemedTone;
+  onPick: (key: string) => void;
+}) {
+  const ON = useThemeColors().onAccent;
+  return (
+    <View className="mt-3 flex-row items-center self-center" style={{ gap: 8 }}>
+      <Text className="font-body text-[12px] text-ink-faint">{label}</Text>
+      <View className="flex-row rounded-full bg-cream-soft p-0.5" accessibilityRole="radiogroup" accessibilityLabel={label}>
+        {units.map((u) => {
+          const on = u.key === value;
+          return (
+            <Pressable
+              key={u.key}
+              onPress={() => onPick(u.key)}
+              accessibilityRole="radio"
+              accessibilityState={{ selected: on }}
+              accessibilityLabel={u.label}
+              hitSlop={4}
+              style={{ minHeight: 32, minWidth: 44, backgroundColor: on ? tone.tint : "transparent" }}
+              className="items-center justify-center rounded-full px-3"
+            >
+              <Text className="font-bodySemibold text-[12.5px]" style={{ color: on ? ON : tone.tint }}>
+                {u.label}
+              </Text>
+            </Pressable>
+          );
+        })}
+      </View>
+    </View>
+  );
+}
+
 function RoundButton({
   children,
   label,
   tone,
   onPress,
   disabled,
+  small,
 }: {
   children: React.ReactNode;
   label: string;
   tone: ThemedTone;
   onPress: () => void;
   disabled?: boolean;
+  small?: boolean;
 }) {
+  const d = small ? 44 : 52;
   return (
     <Pressable
       onPress={() => {
@@ -710,7 +860,7 @@ function RoundButton({
       disabled={disabled}
       accessibilityRole="button"
       accessibilityLabel={label}
-      style={{ width: 52, height: 52, borderRadius: 26, backgroundColor: tone.tintBg, opacity: disabled ? 0.4 : 1 }}
+      style={{ width: d, height: d, borderRadius: d / 2, backgroundColor: tone.tintBg, opacity: disabled ? 0.4 : 1 }}
       className="items-center justify-center active:opacity-70"
     >
       {children}
