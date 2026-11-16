@@ -66,7 +66,7 @@ describe("pamja sipas madhësisë", () => {
 
   it("e vogla: vetëm orët, pa butona (s'kanë vend)", () => {
     const r = render(snap(), 150, 150);
-    expect(r.texts).toEqual(expect.arrayContaining(["Bebix · Ana", "Ushqimi", "Pelena", "Gjumi"]));
+    expect(r.texts).toEqual(expect.arrayContaining(["TROA · Ana", "Ushqimi", "Pelena", "Gjumi"]));
     expect(r.actions.some((a) => (a as { action: string }).action === "DIAPER")).toBe(false);
   });
 
@@ -77,7 +77,7 @@ describe("pamja sipas madhësisë", () => {
   });
 
   it("pa të dhëna: kërkon të hapet app-i", () => {
-    expect(render(null, 300, 110).texts).toContain("Hape Bebix një herë që widget-i të marrë të dhënat.");
+    expect(render(null, 300, 110).texts).toContain("Hape TROA një herë që widget-i të marrë të dhënat.");
   });
 
   it("gjumi në ecje: butoni bëhet 'U zgjua'", () => {

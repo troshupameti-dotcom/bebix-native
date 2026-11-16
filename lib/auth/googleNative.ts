@@ -4,7 +4,7 @@ const WEB_CLIENT_ID = process.env.EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID?.trim() || ""
 const IOS_CLIENT_ID = process.env.EXPO_PUBLIC_GOOGLE_IOS_CLIENT_ID?.trim() || "";
 
 /**
- * Hyrja native me Google: dritarja e Google-it në vetë telefonin, me emrin "Bebix", pa kaluar te shfletuesi me
+ * Hyrja native me Google: dritarja e Google-it në vetë telefonin, me emrin "TROA", pa kaluar te shfletuesi me
  * adresën e serverit (…supabase.co). Ndizet vetëm kur build-i ka ID-të e Google-it dhe modulin native; në Expo Go
  * dhe pa ID përdoret hyrja në shfletues si më parë. Kontrolli i modulit bëhet para `require`-it (shih widgets/available).
  */

@@ -730,8 +730,8 @@ export default function BabyProfileScreen() {
                 emocionale e app-it, duhet me u ndje si e tillë. */}
             <View className="mt-2 items-center">
               <BabyHeroPhoto uri={profile.babyPhoto} onChange={() => setPhotoSheet(true)} />
-              <Text className="mt-4 font-display text-[26px] text-ink">{babyName}</Text>
-              {ageText ? <Text className="mt-0.5 font-body text-[14px] text-ink-soft">{ageText}</Text> : null}
+              {/* Emri është tashmë në krye të faqes: këtu mjafton mosha, pa e përsëritur. */}
+              {ageText ? <Text className="mt-3 font-bodySemibold text-[16px] text-ink">{ageText}</Text> : null}
               {profile.babyDob && (
                 <Text className="mt-0.5 font-body text-[12px] text-ink-faint">
                   {t("baby_born")} {formatDate(profile.babyDob, lang)}

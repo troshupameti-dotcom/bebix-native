@@ -8,6 +8,7 @@ import { useAppState } from "@/lib/state/AppStateContext";
 import { Price } from "@/components/ui/Price";
 import { Icon } from "@/components/ui/Icon";
 import { shadows } from "@/lib/shadows";
+import { recordViewed } from "@/lib/shop/recentlyViewed";
 import { Product } from "@/lib/homeContent";
 import { fetchProductById, fetchRelatedProducts } from "@/lib/shopData";
 import { ProductCard } from "@/components/ProductCard";
@@ -44,6 +45,7 @@ export default function ProductDetailsScreen() {
         const p = await fetchProductById(id);
         if (!active) return;
         setProduct(p);
+        if (p) void recordViewed(p);
         if (p) {
           // Me pare shkarkohej gjithe katalogu per te mbushur 4 kartela.
           fetchRelatedProducts(p.category, p.id, 4).then((r) => { if (active) setRelated(r); }).catch(() => {});

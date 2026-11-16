@@ -24,7 +24,7 @@ export function buildIosWidgetProps(s: WidgetSnapshot, now: Date = new Date()): 
   const none = wt(lang, "widget_none");
   const next = s.nextFeedingAt && new Date(s.nextFeedingAt).getTime() > now.getTime() ? s.nextFeedingAt : null;
   return {
-    title: s.babyName ? `Bebix · ${s.babyName}` : "Bebix",
+    title: s.babyName ? `TROA · ${s.babyName}` : "TROA",
     feeding: {
       label: wt(lang, "widget_feeding"),
       value: s.breastSince ? clockLabel(s.breastSince, now) : s.feeding ? clockLabel(s.feeding.at, now) : none,
@@ -84,7 +84,7 @@ export type LiveActivityProps = {
  */
 export function desiredLiveActivity(s: WidgetSnapshot | null): LiveActivityProps | null {
   if (!s) return null;
-  const name = s.babyName ?? "Bebix";
+  const name = s.babyName ?? "TROA";
   if (s.breastSince) {
     return { kind: "breast", title: wt(s.lang, "widget_breast_running"), subtitle: name, startedAt: s.breastSince };
   }

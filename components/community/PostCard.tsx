@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { View, Text, Pressable, Image } from "react-native";
+import { Animated, View, Text, Pressable, Image } from "react-native";
 import { useRouter } from "expo-router";
 import { BadgeCheck, Bookmark, Ellipsis, Heart, Info, MessageCircle, Send } from "lucide-react-native";
 import { haptics } from "@/lib/haptics";
@@ -97,6 +97,8 @@ export function PostCard({ post, onOpen, onRemoved, interactiveMedia = false, li
   const [likeCount, setLikeCount] = useState(post.likeCount);
   const [menu, setMenu] = useState<ModerationTarget | null>(null);
   const isMine = !!myId && myId === post.authorId;
+  // Zemra "kërcen" pak kur pëlqen: prekja merr përgjigje menjëherë, para se të përgjigjet serveri.
+  const [pop] = useState(() => new Animated.Value(1));
 
   // Rifreskimi (tërheqja poshtë) sjell numra të rinj: kartela i ndjek, jo i mban ata që kishte kur u hap.
   const [seen, setSeen] = useState({ liked: post.liked, saved: post.saved, likeCount: post.likeCount });
@@ -112,6 +114,10 @@ export function PostCard({ post, onOpen, onRemoved, interactiveMedia = false, li
     const next = !liked;
     setLiked(next);
     setLikeCount((c) => c + (next ? 1 : -1));
+    if (next) {
+      pop.setValue(0.7);
+      Animated.spring(pop, { toValue: 1, friction: 3, tension: 220, useNativeDriver: true }).start();
+    }
     try {
       await apiToggleLike(post.id, liked);
     } catch {
@@ -245,7 +251,9 @@ export function PostCard({ post, onOpen, onRemoved, interactiveMedia = false, li
           className="-ml-2 h-10 flex-row items-center rounded-full px-2.5"
           style={liked ? { backgroundColor: like.tintBg } : undefined}
         >
-          <Heart size={19} color={liked ? like.tint : iconColor} fill={liked ? like.tint : "transparent"} strokeWidth={2} />
+          <Animated.View style={{ transform: [{ scale: pop }] }}>
+            <Heart size={19} color={liked ? like.tint : iconColor} fill={liked ? like.tint : "transparent"} strokeWidth={2} />
+          </Animated.View>
           <Text className="ml-1.5 font-bodySemibold text-[13px]" style={{ color: liked ? like.tint : iconColor }}>
             {t("pc_helped")}
             {likeCount > 0 ? ` · ${likeCount}` : ""}

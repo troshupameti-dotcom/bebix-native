@@ -10,6 +10,8 @@ const AFTER_OCT_30 = "create role service_role bypassrls; alter default privileg
 
 const AGE = new URL("../migrations/20261021090100_age_system_02_shop.sql", import.meta.url);
 const MIGRATION = new URL("../migrations/20261105090000_shop_subcategories.sql", import.meta.url);
+const FILTERS = new URL("../migrations/20261115090000_shop_order_filters.sql", import.meta.url);
+const FILTERS_ROLLBACK = new URL("../rollbacks/20261115090000_shop_order_filters_rollback.sql", import.meta.url);
 const db = new PGlite();
 process.on("uncaughtException", (e) => { console.log("GABIM i papritur:", String(e.message).slice(0, 300)); process.exit(1); });
 
@@ -146,6 +148,36 @@ try { await db.query(`insert into public.subcategories (category_id, key, label)
 catch { badKey = true; }
 check("çelësi me shkronja të mëdha/hapësira refuzohet", badKey);
 await db.exec("reset role");
+
+// --- Filtrat e 15 nëntorit: në stok, çmimi deri në, më të shiturat ---------------------------------------------
+await db.exec("reset role");
+await db.exec("alter table public.products add column if not exists badge text");
+for (const name of ["i pari", "i dyti"]) {
+  try { await db.exec(fs.readFileSync(FILTERS, "utf8")); console.log(`OK  migrimi i filtrave (${name})`); }
+  catch (e) { console.log("GABIM te migrimi i filtrave:", e.message); fail++; }
+}
+const ids = (await all(`select id from public.products where is_active order by name`)).map((r) => r.id);
+await db.query(`update public.products set stock = 0, price = 100, badge = null`);
+await db.query(`update public.products set stock = 5, price = 8 where id = $1`, [ids[0]]);
+await db.query(`update public.products set stock = 2, price = 30, badge = 'bestseller' where id = $1`, [ids[1]]);
+const count = async (args) => (await all(`select * from public.shop_product_order(${args})`)).length;
+check("pa filtra dalin të gjitha, si më parë", (await count("p_limit => 50")) === ids.length);
+check("vetëm në stok", (await count("p_in_stock => true, p_limit => 50")) === 2);
+check("çmimi deri në €10", (await count("p_price_max => 10, p_limit => 50")) === 1);
+check("në stok dhe deri në €50 bashkë", (await count("p_in_stock => true, p_price_max => 50, p_limit => 50")) === 2);
+check("më të shiturat", (await count("p_bestsellers => true, p_limit => 50")) === 1);
+check("numri total ndjek filtrin", Number((await one(`select total_count from public.shop_product_order(p_in_stock => true, p_limit => 1)`)).total_count) === 2);
+check("thirrja e vjetër me emra punon edhe pas filtrave", (await count("p_category => 'Ushqyerje', p_search => null, p_sort => 'newest', p_offset => 0, p_limit => 50, p_subcategory => null")) > 0);
+await db.exec("set role anon");
+check("vizitori e thërret me filtra", (await count("p_in_stock => true, p_limit => 50")) === 2);
+await db.exec("reset role");
+check("ka vetëm një version të funksionit", Number((await one(`select count(*) n from pg_proc where proname = 'shop_product_order'`)).n) === 1);
+try {
+  await db.exec(fs.readFileSync(FILTERS_ROLLBACK, "utf8"));
+  check("kthimi rikthen funksionin e vjetër", Number((await one(`select pronargs n from pg_proc where proname = 'shop_product_order'`)).n) === 11);
+  await db.exec(fs.readFileSync(FILTERS, "utf8"));
+  check("pas kthimit migrimi ekzekutohet sërish", Number((await one(`select pronargs n from pg_proc where proname = 'shop_product_order'`)).n) === 14);
+} catch (e) { check("kthimi dhe riekzekutimi", false, e.message); }
 
 console.log(`\n${pass} OK, ${fail} gabime`);
 process.exit(fail ? 1 : 0);

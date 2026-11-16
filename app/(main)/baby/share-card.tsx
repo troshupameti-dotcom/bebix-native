@@ -50,7 +50,7 @@ function Chip({ label, active, onPress }: { label: string; active: boolean; onPr
 
 /**
  * Krijo kartë: dita e 100-të, muajt, ditëlindja, arritjet ose një moment,
- * me foton e bebit dhe logon e vogël Bebix → imazh për Instagram/WhatsApp.
+ * me foton e bebit dhe logon e vogël TROA → imazh për Instagram/WhatsApp.
  */
 export default function ShareCardScreen() {
   const raw = useLocalSearchParams<{ kind?: string; n?: string; momentId?: string }>();
@@ -94,7 +94,7 @@ export default function ShareCardScreen() {
     try {
       const size = CARD_SIZE[aspect];
       const uri = await captureRef(cardRef, { format: "jpg", quality: 0.95, result: "tmpfile", width: size.width, height: size.height });
-      if (await Sharing.isAvailableAsync()) await Sharing.shareAsync(uri, { mimeType: "image/jpeg", dialogTitle: "Bebix" });
+      if (await Sharing.isAvailableAsync()) await Sharing.shareAsync(uri, { mimeType: "image/jpeg", dialogTitle: "TROA" });
     } catch {
       showToast(t("month_recap_share_error"));
     } finally {

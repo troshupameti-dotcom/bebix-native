@@ -7,7 +7,7 @@ import type { StoryMeta } from "@/lib/stories/types";
 
 /**
  * Ilustrimet e përrallave, të vizatuara në app (pa skedarë dhe pa lidhje të jashtme): një skenë më vete për çdo
- * përrallë, me ngjyrat e buta të Bebix-it. Janë figura, jo pjesë e temës, ndaj ngjyrat janë fikse dhe duken njësoj
+ * përrallë, me ngjyrat e buta të TROA-s. Janë figura, jo pjesë e temës, ndaj ngjyrat janë fikse dhe duken njësoj
  * në temën e çelët dhe të errët. Përrallat e javës sjellin ilustrimin që vizatoi Claude (`cover_svg`, i pastruar).
  * Përrallat që shtohen më vonë nga baza mund të sjellin edhe foto (`cover_url`, nga
  * bucket-i `story-covers`); pa foto dhe pa skenë të njohur del libri i hapur.

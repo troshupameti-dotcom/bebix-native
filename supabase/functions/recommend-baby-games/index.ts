@@ -92,7 +92,7 @@ function fallbackGames(ageMonths: number): Game[] {
 }
 
 // I njëjti për çdo kërkesë, që të mos ndryshojë nga një thirrje te tjetra.
-const SYSTEM = `You suggest play activities for a baby or young child, for parents using the Bebix app in Kosovo and Albania.
+const SYSTEM = `You suggest play activities for a baby or young child, for parents using the TROA app in Kosovo and Albania.
 
 Write every field in standard literary Albanian (gjuha standarde) with correct ë and ç: warm, simple and concrete, never slang or dialect.
 

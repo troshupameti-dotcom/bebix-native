@@ -1,7 +1,7 @@
 import { estimateSupply, loadSupply, saveSupply, type SupplyEstimate, type SupplyStock } from "@/lib/baby/supply";
 
 /**
- * Pelenat e mbetura. Prindi vendos një herë sa pelena ka; Bebix i heq vetë një
+ * Pelenat e mbetura. Prindi vendos një herë sa pelena ka; TROA i heq vetë një
  * për çdo pelenë të shënuar te ditari dhe e di kur po mbarojnë, para se të
  * mbarojnë vërtet. Ruhet vetëm në telefon (nuk është e dhënë që duhet te serveri).
  * Logjika është e përbashkët me formulën (`lib/baby/supply.ts`).

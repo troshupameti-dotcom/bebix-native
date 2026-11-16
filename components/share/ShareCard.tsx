@@ -19,7 +19,7 @@ type Props = {
 
 /**
  * Karta që bëhet imazh (react-native-view-shot). Ngjyra fikse — jo tema e
- * app-it — që imazhi të dalë njësoj kudo ku ndahet. Logoja e vogël Bebix
+ * app-it — që imazhi të dalë njësoj kudo ku ndahet. Logoja e vogël TROA
  * rri poshtë, e qetë.
  */
 export const ShareCard = forwardRef<ViewInstance, Props>(function ShareCard({ template, aspect, content, photoUri, width, onPhotoLoad }, ref) {

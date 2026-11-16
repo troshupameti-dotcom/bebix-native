@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { View, Text, FlatList, RefreshControl, Pressable, TextInput, ActivityIndicator } from "react-native";
+import { CloudOff, MessagesSquare, SearchX, Sprout, UserPlus } from "lucide-react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useRouter, useFocusEffect, useLocalSearchParams } from "expo-router";
 import { useTabDoubleTap } from "@/lib/navigation/useTabDoubleTap";
@@ -10,6 +11,8 @@ import { useThemeColors } from "@/lib/theme/useThemeColors";
 import { shadows } from "@/lib/shadows";
 import { PostCard } from "@/components/community/PostCard";
 import { SuggestedGroupsCard } from "@/components/community/SuggestedGroupsCard";
+import { ComposerPrompt, FeedEmpty, FeedSkeleton } from "@/components/community/FeedParts";
+import { useCurrentUserId } from "@/lib/hooks/useCurrentUserId";
 import { logWarn } from "@/lib/log";
 import { useSpecialties } from "@/lib/community/useSpecialties";
 import { specialtyLabel } from "@/lib/community/specialties";
@@ -33,6 +36,8 @@ import {
 
 /** Sa shpesh kontrollohet për postime të reja kur ekrani është i hapur. */
 const NEW_POSTS_POLL_MS = 60_000;
+/** Pas kaq pikash rrëshqitjeje fusha "Ndaj diçka…" ka dalë nga ekrani: atëherë del butoni rrethor i shkrimit. */
+const FAB_AFTER = 260;
 /** Pritja pas shkrimit të fundit, para se të nisë kërkimi. */
 const SEARCH_DEBOUNCE_MS = 350;
 
@@ -65,6 +70,8 @@ export default function CommunityScreen() {
   const theme = useThemeColors();
   const specialties = useSpecialties();
   const listRef = useRef<FlatList<CommunityPost>>(null);
+  const myId = useCurrentUserId();
+  const [scrolled, setScrolled] = useState(false);
 
   const [filters, setFiltersState] = useState<Filters>(NO_FILTERS);
   const { tab, topic, specialty, query } = filters;
@@ -271,6 +278,8 @@ export default function CommunityScreen() {
     void reload({ reset: true, spinner: true });
   }, [shots, reload]);
 
+  const myInitial = ((shots ? DEMO_PARENT_NAME : state.profile.parentName) || "T").trim().charAt(0).toUpperCase();
+
   const showNewPosts = useCallback(() => {
     listRef.current?.scrollToOffset({ offset: 0, animated: true });
     setNewPosts(false);
@@ -323,25 +332,19 @@ export default function CommunityScreen() {
     <View>
       {/* Vetëm te "Për ty", pa filtra. */}
       {(tab === "all" || tab === "age") && !filtering ? (
-        <View className="mb-3">
+        <View className="mt-3">
+          {/* Shkrimi nis aty ku nis leximi. */}
+          <ComposerPrompt
+            initial={myInitial}
+            userId={myId}
+            placeholder={t("community_composer_ph")}
+            photoLabel={t("community_composer_photo")}
+            onPress={() => router.push("/community/new")}
+          />
           {/* Grupe për bebin tënd: sugjerim sipas moshës dhe kohës së lindjes. */}
           <SuggestedGroupsCard refreshKey={questionKey} />
         </View>
       ) : null}
-
-      <View className="flex-row mx-5 mt-3 bg-cream-soft rounded-full p-1" accessibilityRole="tablist">
-        {tabs.map((tb) => (
-          <Pressable
-            key={tb.key}
-            onPress={() => pickTab(tb.key)}
-            accessibilityRole="tab"
-            accessibilityState={{ selected: tab === tb.key }}
-            className={`flex-1 py-2 rounded-full items-center ${tab === tb.key ? "bg-ink" : ""}`}
-          >
-            <Text numberOfLines={1} className={`font-bodyMedium text-xs ${tab === tb.key ? "text-on-accent" : "text-ink-soft"}`}>{tb.label}</Text>
-          </Pressable>
-        ))}
-      </View>
 
       {tab === "experts" && departments.length > 0 && (
         <FlatList
@@ -391,45 +394,26 @@ export default function CommunityScreen() {
   );
 
   const empty = feedLoading ? (
-    <ActivityIndicator className="text-olive my-10" />
+    <FeedSkeleton />
   ) : failed ? (
-    <View className="items-center px-10 py-8">
-      <Text className="font-bodySemibold text-sm text-ink mb-1">{t("community_load_failed_title")}</Text>
-      <Text className="font-body text-xs text-ink-soft text-center leading-5 mb-4">{t("community_load_failed_sub")}</Text>
-      <Pressable onPress={() => void reload({ reset: true, spinner: true })} className="bg-olive px-5 py-2.5 rounded-full">
-        <Text className="font-bodySemibold text-xs text-on-accent">{t("community_retry")}</Text>
-      </Pressable>
-    </View>
+    <FeedEmpty icon={CloudOff} title={t("community_load_failed_title")} sub={t("community_load_failed_sub")} action={t("community_retry")} onAction={() => void reload({ reset: true, spinner: true })} />
   ) : filtering ? (
-    <Text className="font-body text-sm text-ink-soft px-5">
-      {t("community_no_results", {
-        query: query.trim() || topic || specialtyLabel(specialty, language, specialties.list) || "",
-      })}
-    </Text>
+    <FeedEmpty
+      icon={SearchX}
+      title={t("community_no_results", { query: query.trim() || topic || specialtyLabel(specialty, language, specialties.list) || "" })}
+      sub={t("community_no_results_sub")}
+      action={t("community_clear_filters")}
+      onAction={() => {
+        setQueryInput("");
+        changeFilters({ query: "", topic: null, specialty: null });
+      }}
+    />
   ) : tab === "age" ? (
-    <View className="items-center px-10 py-8">
-      <Text className="font-bodySemibold text-sm text-ink mb-1">{t("community_age_empty_title")}</Text>
-      <Text className="font-body text-xs text-ink-soft text-center leading-5 mb-4">{t("community_age_empty_sub")}</Text>
-      <Pressable onPress={() => pickTab("all")} accessibilityRole="button" className="bg-olive px-5 py-2.5 rounded-full">
-        <Text className="font-bodySemibold text-xs text-on-accent">{t("community_see_all")}</Text>
-      </Pressable>
-    </View>
+    <FeedEmpty icon={Sprout} title={t("community_age_empty_title")} sub={t("community_age_empty_sub")} action={t("community_see_all")} onAction={() => pickTab("all")} />
   ) : tab === "following" ? (
-    <View className="items-center px-10 py-8">
-      <Text className="font-bodySemibold text-sm text-ink mb-1">{t("community_following_empty_title")}</Text>
-      <Text className="font-body text-xs text-ink-soft text-center leading-5 mb-4">{t("community_following_empty_sub")}</Text>
-      <Pressable onPress={() => router.push("/community/explore")} className="bg-olive px-5 py-2.5 rounded-full">
-        <Text className="font-bodySemibold text-xs text-on-accent">{t("community_find_experts")}</Text>
-      </Pressable>
-    </View>
+    <FeedEmpty icon={UserPlus} title={t("community_following_empty_title")} sub={t("community_following_empty_sub")} action={t("community_find_experts")} onAction={() => router.push("/community/explore")} />
   ) : (
-    <View className="items-center px-10 py-8">
-      <Text className="font-bodySemibold text-sm text-ink mb-1">{t("community_empty_title")}</Text>
-      <Text className="font-body text-xs text-ink-soft text-center leading-5 mb-4">{t("community_empty_sub")}</Text>
-      <Pressable onPress={() => router.push("/community/new")} className="bg-olive px-5 py-2.5 rounded-full">
-        <Text className="font-bodySemibold text-xs text-on-accent">{t("community_post_btn")}</Text>
-      </Pressable>
-    </View>
+    <FeedEmpty icon={MessagesSquare} title={t("community_empty_title")} sub={t("community_empty_sub")} action={t("community_post_btn")} onAction={() => router.push("/community/new")} />
   );
 
   const footer = (
@@ -485,7 +469,7 @@ export default function CommunityScreen() {
             className="w-9 h-9 rounded-full bg-olive-bg items-center justify-center ml-1"
           >
             <Text className="font-bodySemibold text-sm text-olive">
-              {((shots ? DEMO_PARENT_NAME : state.profile.parentName) || "T").trim().charAt(0).toUpperCase()}
+              {myInitial}
             </Text>
           </Pressable>
         </View>
@@ -512,6 +496,21 @@ export default function CommunityScreen() {
             )}
           </View>
         </View>
+      </View>
+
+      {/* Skedat rrinë të ngulura: duken gjithmonë, edhe kur rrjedha ka zbritur poshtë. Vija nën skedën e zgjedhur. */}
+      <View className="flex-row border-b border-cream-line px-3" accessibilityRole="tablist">
+        {tabs.map((tb) => {
+          const on = tab === tb.key;
+          return (
+            <Pressable key={tb.key} onPress={() => pickTab(tb.key)} accessibilityRole="tab" accessibilityState={{ selected: on }} className="flex-1 items-center pt-1" style={{ minHeight: 44 }}>
+              <Text numberOfLines={1} className={`py-2 text-[14px] ${on ? "font-bodySemibold text-ink" : "font-bodyMedium text-ink-faint"}`}>
+                {tb.label}
+              </Text>
+              <View className={`h-[3px] w-8 rounded-full ${on ? "bg-olive" : ""}`} />
+            </Pressable>
+          );
+        })}
       </View>
 
       <FlatList
@@ -543,6 +542,11 @@ export default function CommunityScreen() {
         }
         onEndReached={() => void loadMore()}
         onEndReachedThreshold={0.6}
+        onScroll={(e) => {
+          const past = e.nativeEvent.contentOffset.y > FAB_AFTER;
+          if (past !== scrolled) setScrolled(past);
+        }}
+        scrollEventThrottle={64}
         keyboardShouldPersistTaps="handled"
         showsVerticalScrollIndicator={false}
         contentContainerStyle={{ paddingBottom: 96 }}
@@ -551,7 +555,7 @@ export default function CommunityScreen() {
       />
 
       {newPosts && (
-        <View pointerEvents="box-none" className="absolute top-24 left-0 right-0 items-center">
+        <View pointerEvents="box-none" className="absolute top-40 left-0 right-0 items-center">
           <Pressable
             onPress={showNewPosts}
             style={shadows.softLg}
@@ -563,15 +567,18 @@ export default function CommunityScreen() {
         </View>
       )}
 
-      <Pressable
-        onPress={() => router.push("/community/new")}
-        style={shadows.softLg}
-        accessibilityRole="button"
-        accessibilityLabel={t("community_post_btn")}
-        className="absolute bottom-4 right-5 w-14 h-14 rounded-full bg-olive items-center justify-center"
-      >
-        <Icon name="plus" size={24} color={theme.onAccent} />
-      </Pressable>
+      {/* Butoni rrethor del vetëm kur fusha "Ndaj diçka…" s'duket (ke zbritur poshtë, ose skeda s'e ka). */}
+      {scrolled || filtering || (tab !== "all" && tab !== "age") ? (
+        <Pressable
+          onPress={() => router.push("/community/new")}
+          style={shadows.softLg}
+          accessibilityRole="button"
+          accessibilityLabel={t("community_post_btn")}
+          className="absolute bottom-4 right-5 w-14 h-14 rounded-full bg-olive items-center justify-center"
+        >
+          <Icon name="plus" size={24} color={theme.onAccent} />
+        </Pressable>
+      ) : null}
     </SafeAreaView>
   );
 }

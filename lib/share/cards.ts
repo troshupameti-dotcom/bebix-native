@@ -4,7 +4,7 @@ import type { TranslationKey } from "@/lib/i18n/translations";
 /**
  * Kartat për t'u ndarë (Instagram, WhatsApp): dita e 100-të, muajt,
  * ditëlindja, arritjet dhe momentet — me foton e bebit dhe logon e vogël
- * Bebix. Funksione të pastra: përmbajtja, foto e parazgjedhur, shabllonet.
+ * TROA. Funksione të pastra: përmbajtja, foto e parazgjedhur, shabllonet.
  */
 
 export type CardKind = "day100" | "month" | "half" | "year" | "milestone" | "moment";

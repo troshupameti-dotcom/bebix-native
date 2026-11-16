@@ -46,7 +46,11 @@ module.exports = {
         body: ["Inter_400Regular"], // tekst i zakonshëm
         bodyMedium: ["Inter_500Medium"], // butona, navigim, metadata
         bodySemibold: ["Inter_600SemiBold"], // section headings, card titles
-        wordmark: ["Poppins_700Bold"], // VETËM për fjalën "Bebix" në logo
+        wordmark: ["Poppins_700Bold"], // VETËM për fjalën "TROA" në logo
+      },
+      // Shkronjat më të vogla të app-it: 12 px ishte poshtë kufirit të leximit të rehatshëm në telefon (236 vende).
+      fontSize: {
+        xs: ["13px", { lineHeight: "18px" }],
       },
       borderRadius: {
         xl2: "22px",

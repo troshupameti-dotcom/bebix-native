@@ -13,8 +13,8 @@ export async function sharePost(post: { id: string; authorName: string; text: st
 
   try {
     await Share.share({
-      title: "Bebix · Komuniteti",
-      message: `${body}\n\nShiko në Bebix: ${link}`,
+      title: "TROA · Komuniteti",
+      message: `${body}\n\nShiko në TROA: ${link}`,
     });
   } catch {
     // Përdoruesi e mbylli menunë ose pajisja s'e mbështet — s'ka nevojë për gabim.

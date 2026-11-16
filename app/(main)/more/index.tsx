@@ -441,7 +441,7 @@ export default function MoreScreen() {
 
             <Text className="mt-2 text-center font-body text-[11px] text-ink-faint">
               {/* Nga app.json, që të mos mbetet "1.0.0" pas çdo publikimi. */}
-              Bebix v{Constants.expoConfig?.version ?? "1.0.0"}
+              TROA v{Constants.expoConfig?.version ?? "1.0.0"}
             </Text>
 
             {/* Për fotot e app-it në rrjetet sociale; në app-in e dyqaneve s'shfaqet kurrë. */}

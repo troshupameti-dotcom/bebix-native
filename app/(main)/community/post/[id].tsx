@@ -1,10 +1,10 @@
-import { useCallback, useState } from "react";
+import { useCallback, useRef, useState, type ComponentRef } from "react";
 import { View, Text, ScrollView, Pressable, TextInput, ActivityIndicator, Alert, RefreshControl } from "react-native";
 import { KeyboardSafeView } from "@/lib/ui/keyboard";
 import { SafeAreaView } from "react-native-safe-area-context";
-import { useLocalSearchParams, useFocusEffect } from "expo-router";
+import { useLocalSearchParams, useFocusEffect, useRouter } from "expo-router";
+import { MessageCircle } from "lucide-react-native";
 import { useAppState } from "@/lib/state/AppStateContext";
-import { shadows } from "@/lib/shadows";
 import { haptics } from "@/lib/haptics";
 import { useCurrentUserId } from "@/lib/hooks/useCurrentUserId";
 import { Icon } from "@/components/ui/Icon";
@@ -24,51 +24,55 @@ import { friendlyError } from "@/lib/errors/userMessage";
 
 const MAX_COMMENT = 1000;
 
+/** Përgjigjet e mjekëve dalin të parat; mes tyre dhe mes të tjerave ruhet radha e kohës. */
+export function expertsFirst(list: CommunityComment[]): CommunityComment[] {
+  return [...list.filter((c) => c.expert), ...list.filter((c) => !c.expert)];
+}
+
 function CommentRow({
   comment,
   isReply,
   onReply,
   onMore,
+  onAuthor,
   t,
 }: {
   comment: CommunityComment;
   isReply?: boolean;
   onReply: (comment: CommunityComment) => void;
   onMore: (comment: CommunityComment) => void;
+  onAuthor: (comment: CommunityComment) => void;
   t: (key: any, params?: Record<string, string | number>) => string;
 }) {
   const initial = comment.authorName.trim().charAt(0).toUpperCase() || "?";
   return (
-    <View className={`flex-row mb-4 ${isReply ? "ml-9 mt-3 mb-0" : ""}`}>
-      <Avatar initial={initial} accent="olive" size={isReply ? 30 : 36} userId={comment.authorId} />
-      <View className="flex-1 ml-2.5">
+    <View className={`flex-row ${isReply ? "ml-11 mt-3" : "mt-4"}`}>
+      <Pressable onPress={() => onAuthor(comment)} accessibilityRole="button" accessibilityLabel={comment.authorName}>
+        <Avatar initial={initial} accent="olive" size={isReply ? 30 : 36} userId={comment.authorId} />
+      </Pressable>
+      <View className="ml-2.5 flex-1">
         <Pressable
           onLongPress={() => {
             haptics.select();
             onMore(comment);
           }}
           delayLongPress={350}
-          style={shadows.soft}
-          className={`bg-surface rounded-xl2 px-3 py-2.5 ${comment.expert ? "border-l-[3px] border-olive" : ""}`}
+          className={`rounded-2xl px-3.5 py-2.5 ${comment.expert ? "border border-olive bg-olive-bg" : "bg-surface border border-cream-line"}`}
         >
           {/* Përgjigjet e mjekëve dhe të ekspertëve dallohen me reparte, jo vetëm me emër. */}
           {comment.expert ? <ExpertBadge specialty={comment.expert.specialty} kind={comment.expert.kind} compact /> : null}
-          <Text className="font-bodySemibold text-xs text-ink mb-0.5">{comment.authorName}</Text>
-          <Text className="font-body text-xs text-ink-soft leading-5">{comment.text}</Text>
+          <Text onPress={() => onAuthor(comment)} className="mb-0.5 font-bodySemibold text-[13.5px] text-ink">
+            {comment.authorName}
+          </Text>
+          <Text className="font-body text-[14.5px] leading-[21px] text-ink">{comment.text}</Text>
         </Pressable>
-        <View className="flex-row items-center mt-1.5 ml-1">
-          <Text className="font-body text-[10px] text-ink-faint">{timeAgoLabel(comment.at, t)}</Text>
-          <Pressable onPress={() => onReply(comment)} hitSlop={8} className="ml-3">
-            <Text className="font-bodyMedium text-[10px] text-olive">{t("cpost_reply")}</Text>
+        <View className="ml-1 mt-1 flex-row items-center">
+          <Text className="font-body text-[12px] text-ink-faint">{timeAgoLabel(comment.at, t)}</Text>
+          <Pressable onPress={() => onReply(comment)} hitSlop={10} accessibilityRole="button" className="ml-4 justify-center" style={{ minHeight: 28 }}>
+            <Text className="font-bodySemibold text-[12.5px] text-olive">{t("cpost_reply")}</Text>
           </Pressable>
-          <Pressable
-            onPress={() => onMore(comment)}
-            hitSlop={8}
-            accessibilityRole="button"
-            accessibilityLabel={t("cpost_more_comment")}
-            className="ml-3"
-          >
-            <Text className="font-bodySemibold text-xs leading-3 text-ink-faint">⋯</Text>
+          <Pressable onPress={() => onMore(comment)} hitSlop={10} accessibilityRole="button" accessibilityLabel={t("cpost_more_comment")} className="ml-4 justify-center" style={{ minHeight: 28 }}>
+            <Text className="font-bodySemibold text-[15px] leading-4 text-ink-faint">⋯</Text>
           </Pressable>
         </View>
       </View>
@@ -82,6 +86,9 @@ export default function PostDetailScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const { state } = useAppState();
   const myId = useCurrentUserId();
+  const router = useRouter();
+  const inputRef = useRef<ComponentRef<typeof TextInput>>(null);
+  const scrollRef = useRef<ComponentRef<typeof ScrollView>>(null);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [post, setPost] = useState<CommunityPost | null>(null);
@@ -114,7 +121,7 @@ export default function PostDetailScreen() {
     setRefreshing(false);
   }, [load]);
 
-  const topLevel = comments.filter((c) => c.parentId === null);
+  const topLevel = expertsFirst(comments.filter((c) => c.parentId === null));
   const repliesOf = (commentId: string) => comments.filter((c) => c.parentId === commentId);
   const canSend = draft.trim().length > 0 && !sending;
 
@@ -129,15 +136,25 @@ export default function PostDetailScreen() {
         authorName: state.profile.parentName ?? "",
       });
       haptics.tap();
+      const wasReply = !!replyTo;
       setDraft("");
       setReplyTo(null);
       setComments(await fetchComments(id));
+      // Komenti i ri del në fund: lista zbret aty, që ta shohësh të dërguar.
+      if (!wasReply) setTimeout(() => scrollRef.current?.scrollToEnd({ animated: true }), 150);
     } catch (err) {
       Alert.alert(t("mod_error_title"), friendlyError(err, t, "cpost_comment_failed"));
     } finally {
       setSending(false);
     }
   }
+
+  function startReply(c: CommunityComment) {
+    setReplyTo(c);
+    inputRef.current?.focus();
+  }
+  const openAuthor = (c: CommunityComment) => router.push(`/community/user/${c.authorId}`);
+  const myInitial = (state.profile.parentName || "T").trim().charAt(0).toUpperCase();
 
   function openCommentMenu(c: CommunityComment) {
     setCommentMenu({ kind: "comment", id: c.id, authorId: c.authorId, authorName: c.authorName, isMine: c.authorId === myId });
@@ -172,6 +189,7 @@ export default function PostDetailScreen() {
 
       <KeyboardSafeView>
         <ScrollView
+          ref={scrollRef}
           showsVerticalScrollIndicator={false}
           contentContainerStyle={{ paddingBottom: 24 }}
           keyboardShouldPersistTaps="handled"
@@ -181,24 +199,32 @@ export default function PostDetailScreen() {
         >
           <PostCard
             post={post}
-            onOpen={() => {}}
+            // Te detajet, ikona e komentit hap fushën e shkrimit.
+            onOpen={() => inputRef.current?.focus()}
             interactiveMedia
             // Postimi u fshi ose autori u bllokua: s'ka më çfarë të shihet këtu.
             onRemoved={() => goBackOr("/(main)/community")}
           />
 
-          <View className="px-5">
-            <Text className="font-bodySemibold text-sm text-ink mb-4">
-              {t("cpost_comments")} {comments.length > 0 ? `(${comments.length})` : ""}
+          <View className="px-4">
+            <Text className="mt-1 font-bodySemibold text-[16px] text-ink" accessibilityRole="header">
+              {t("cpost_comments")}
+              {comments.length > 0 ? ` · ${comments.length}` : ""}
             </Text>
             {topLevel.length === 0 ? (
-              <Text className="font-body text-xs text-ink-faint mb-4">{t("cpost_first_comment")}</Text>
+              <Pressable onPress={() => inputRef.current?.focus()} accessibilityRole="button" className="mt-3 items-center rounded-3xl border border-cream-line bg-surface px-6 py-7 active:opacity-80">
+                <View className="mb-3 h-12 w-12 items-center justify-center rounded-full bg-cream-soft">
+                  <MessageCircle size={22} color={theme.olive} strokeWidth={1.8} />
+                </View>
+                <Text className="text-center font-bodySemibold text-[14.5px] text-ink">{t("cpost_first_comment")}</Text>
+                <Text className="mt-1 text-center font-body text-[13px] leading-5 text-ink-soft">{t("cpost_first_comment_sub")}</Text>
+              </Pressable>
             ) : (
               topLevel.map((c) => (
                 <View key={c.id}>
-                  <CommentRow comment={c} onReply={setReplyTo} onMore={openCommentMenu} t={t} />
+                  <CommentRow comment={c} onReply={startReply} onMore={openCommentMenu} onAuthor={openAuthor} t={t} />
                   {repliesOf(c.id).map((r) => (
-                    <CommentRow key={r.id} comment={r} isReply onReply={setReplyTo} onMore={openCommentMenu} t={t} />
+                    <CommentRow key={r.id} comment={r} isReply onReply={startReply} onMore={openCommentMenu} onAuthor={openAuthor} t={t} />
                   ))}
                 </View>
               ))
@@ -206,38 +232,42 @@ export default function PostDetailScreen() {
           </View>
         </ScrollView>
 
-        <View className="px-5 pt-2 pb-3 border-t border-cream-line bg-cream">
+        <View className="border-t border-cream-line bg-cream px-4 pb-3 pt-2">
           {replyTo && (
-            <View className="flex-row items-center justify-between mb-2 px-1">
-              <Text className="font-body text-[11px] text-ink-faint">{t("cpost_reply_to", { name: replyTo.authorName })}</Text>
-              <Pressable onPress={() => setReplyTo(null)} hitSlop={10} accessibilityRole="button" accessibilityLabel={t("cpost_cancel_reply")}>
-                <Icon name="close" size={14} color="#7A7062" />
+            <View className="mb-2 flex-row items-center justify-between rounded-full bg-cream-soft py-1.5 pl-3.5 pr-2">
+              <Text numberOfLines={1} className="flex-1 font-bodyMedium text-[12.5px] text-ink-soft">
+                {t("cpost_reply_to", { name: replyTo.authorName })}
+              </Text>
+              <Pressable onPress={() => setReplyTo(null)} hitSlop={10} accessibilityRole="button" accessibilityLabel={t("cpost_cancel_reply")} className="h-7 w-7 items-center justify-center">
+                <Icon name="close" size={14} color={theme.inkSoft} />
               </Pressable>
             </View>
           )}
-          <View style={shadows.soft} className="flex-row items-end bg-surface rounded-xl2 px-3 py-2">
-            <TextInput
-              value={draft}
-              onChangeText={setDraft}
-              placeholder={replyTo ? t("cpost_ph_reply") : t("cpost_ph_comment")}
-              placeholderClassName="text-ink-faint"
-              multiline
-              maxLength={MAX_COMMENT}
-              className="flex-1 font-body text-sm text-ink max-h-24 py-1.5"
-            />
-            <Pressable
-              onPress={handleSend}
-              disabled={!canSend}
-              accessibilityRole="button"
-              accessibilityLabel={t("cpost_send")}
-              className={`ml-2 w-9 h-9 rounded-full items-center justify-center ${canSend ? "bg-olive" : "bg-cream-line"}`}
-            >
-              {sending ? (
-                <ActivityIndicator className="text-on-accent" size="small" />
-              ) : (
-                <Icon name="send" size={16} color={canSend ? "#FFFFFF" : "#7A7062"} />
-              )}
-            </Pressable>
+          <View className="flex-row items-end" style={{ gap: 8 }}>
+            <View className="mb-1">
+              <Avatar initial={myInitial} accent="olive" size={34} userId={myId} />
+            </View>
+            <View className="flex-1 flex-row items-end rounded-3xl border border-cream-line bg-surface py-1 pl-4 pr-1.5">
+              <TextInput
+                ref={inputRef}
+                value={draft}
+                onChangeText={setDraft}
+                placeholder={replyTo ? t("cpost_ph_reply") : t("cpost_ph_comment")}
+                placeholderTextColor={theme.inkFaint}
+                multiline
+                maxLength={MAX_COMMENT}
+                className="max-h-28 flex-1 py-2 font-body text-[15px] text-ink"
+              />
+              <Pressable
+                onPress={handleSend}
+                disabled={!canSend}
+                accessibilityRole="button"
+                accessibilityLabel={t("cpost_send")}
+                className={`mb-0.5 ml-2 h-9 w-9 items-center justify-center rounded-full ${canSend ? "bg-olive" : "bg-cream-soft"}`}
+              >
+                {sending ? <ActivityIndicator className="text-on-accent" size="small" /> : <Icon name="send" size={16} color={canSend ? theme.onAccent : theme.inkFaint} />}
+              </Pressable>
+            </View>
           </View>
         </View>
       </KeyboardSafeView>

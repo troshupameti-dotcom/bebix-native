@@ -42,7 +42,7 @@ export async function widgetTaskHandler(props: WidgetTaskHandlerProps) {
   renderWidget(renderBebixWidget(snapshot, { lang, widthDp: widgetInfo.width, heightDp: widgetInfo.height }));
 }
 
-/** Nga app-i: rivizato çdo widget Bebix në ekranin kryesor me pamjen e re. */
+/** Nga app-i: rivizato çdo widget TROA në ekranin kryesor me pamjen e re. */
 export async function refreshAndroidWidgets(): Promise<void> {
   const { snapshot, lang } = await currentView();
   for (const widgetName of WIDGET_NAMES) {

@@ -22,7 +22,7 @@ const DIAPERS: SupplyConfig = {
 };
 
 /**
- * "Pelenat e mbetura": prindi vendos sa pelena ka, Bebix i numëron vetë nga
+ * "Pelenat e mbetura": prindi vendos sa pelena ka, TROA i numëron vetë nga
  * ditari dhe, para se të mbarojnë, ofron porosinë me një prekje (të njëjtat pelena
  * që ka blerë herën e fundit, ose kërkimin e pelenave kur s'ka blerë ende).
  */

@@ -2,7 +2,7 @@ import { estimateSupply, loadSupply, saveSupply, type SupplyEstimate, type Suppl
 
 /**
  * Formula e mbetur, si pelenat: prindi vendos sa servime ka (një servim = një shishe; kutia zakonisht e shkruan),
- * Bebix heq një për çdo shishe formule të shënuar te ushqyerja dhe e kujton para se të mbarojë.
+ * TROA heq një për çdo shishe formule të shënuar te ushqyerja dhe e kujton para se të mbarojë.
  */
 export type FormulaStock = SupplyStock;
 export type FormulaStockEstimate = SupplyEstimate;

@@ -27,7 +27,7 @@ const DOCS: { title: string; body: string }[] = [
   {
     title: "Kushtet e Përdorimit",
     body:
-      "Bebix është aplikacion për prindër dhe kujdestarë ligjorë mbi 18 vjeç. Llogaria krijohet dhe kontrollohet nga një i rritur.\n\n" +
+      "TROA është aplikacion për prindër dhe kujdestarë ligjorë mbi 18 vjeç. Llogaria krijohet dhe kontrollohet nga një i rritur.\n\n" +
       "Duke e përdorur, pranon: të mos ngarkosh përmbajtje të paligjshme apo fyese; të respektosh privatësinë e prindërve të tjerë dhe të fëmijëve të tyre; të mos e përdorësh app-in për reklamë ose spam; dhe të mos e trajtosh përmbajtjen e app-it si këshillë mjekësore.\n\n" +
       "Llogaria jote është përgjegjësia jote. Nëse dyshon se dikush ka hyrë në të, ndërro fjalëkalimin dhe na njofto.\n\n" +
       "Mund ta pezullojmë një llogari që shkel këto kushte ose rregullat e Komunitetit.",
@@ -74,34 +74,34 @@ const DOCS: { title: string; body: string }[] = [
   {
     title: "Të dhënat e fëmijës",
     body:
-      "Bebix përpunon të dhëna për një fëmijë, por i fut prindi ose kujdestari ligjor — jo fëmija. App-i nuk u drejtohet fëmijëve dhe nuk mbledh asgjë prej tyre drejtpërdrejt.\n\n" +
+      "TROA përpunon të dhëna për një fëmijë, por i fut prindi ose kujdestari ligjor — jo fëmija. App-i nuk u drejtohet fëmijëve dhe nuk mbledh asgjë prej tyre drejtpërdrejt.\n\n" +
       "Të dhënat shëndetësore të bebit (vaksinat, matjet, shënimet mjekësore) janë kategori e ndjeshme dhe ruhen vetëm sepse ti zgjedh t'i futësh. Nuk përdoren për reklama dhe nuk ndahen me palë të treta.\n\n" +
       "Te Komuniteti, mos publiko të dhëna që e identifikojnë bebin — emër të plotë, adresë, institucion shëndetësor, ose foto ku duket dokumenti i tij.",
   },
   {
     title: "Përjashtimi mjekësor",
     body:
-      "Bebix jep informacion të përgjithshëm edukativ, jo këshillë mjekësore. Kujtesat për vaksinat, kufijtë e rritjes dhe çdo sugjerim brenda app-it nuk zëvendësojnë vlerësimin e një mjeku.\n\n" +
+      "TROA jep informacion të përgjithshëm edukativ, jo këshillë mjekësore. Kujtesat për vaksinat, kufijtë e rritjes dhe çdo sugjerim brenda app-it nuk zëvendësojnë vlerësimin e një mjeku.\n\n" +
       "Për çdo shqetësim shëndetësor, kontakto pediatrin. Në rast urgjence, kontakto shërbimin e urgjencës — mos prit përgjigje nga app-i ose nga Komuniteti.\n\n" +
       "Ekspertët e verifikuar te Komuniteti japin mendim të përgjithshëm publik, jo diagnozë për rastin tënd.",
   },
   {
     title: "Funksionet me AI",
     body:
-      "Bebix AI është asistent me inteligjencë artificiale, jo mjek dhe jo njeri. Përgjigjet i shkruan modeli Claude i kompanisë Anthropic (SHBA).\n\n" +
+      "TROA AI është asistent me inteligjencë artificiale, jo mjek dhe jo njeri. Përgjigjet i shkruan modeli Claude i kompanisë Anthropic (SHBA).\n\n" +
       "KUSH E PËRDOR\n" +
       "Vetëm prindërit dhe kujdestarët mbi 18 vjeç, me llogari. Nuk është për fëmijë. Para përdorimit të parë app-i kërkon pëlqimin tënd, dhe pa të asgjë nuk dërgohet.\n\n" +
       "ÇFARË DËRGOHET\n" +
       "Pyetjet që shkruan te biseda (deri në 20 mesazhet e fundit), gjuha, dhe faza e mosha e fëmijës. Nuk dërgohen emri yt, emri i bebit, email-i apo vendndodhja. Mos shkruaj te biseda të dhëna që të identifikojnë ty ose fëmijën.\n\n" +
       "SI RUHEN\n" +
-      "Bebix nuk i ruan bisedat: zhduken kur mbyll ekranin. Anthropic i përpunon vetëm për të shkruar përgjigjen dhe, sipas kushteve të tij për bizneset, nuk i përdor për të trajnuar modelet. Për kufirin ditor ruajmë vetëm sa pyetje ke bërë sot, pa përmbajtjen. Kur raporton një përgjigje, ruajmë pyetjen, përgjigjen dhe arsyen, që t'i shqyrtojë ekipi i Bebix-it.\n\n" +
+      "TROA nuk i ruan bisedat: zhduken kur mbyll ekranin. Anthropic i përpunon vetëm për të shkruar përgjigjen dhe, sipas kushteve të tij për bizneset, nuk i përdor për të trajnuar modelet. Për kufirin ditor ruajmë vetëm sa pyetje ke bërë sot, pa përmbajtjen. Kur raporton një përgjigje, ruajmë pyetjen, përgjigjen dhe arsyen, që t'i shqyrtojë ekipi i TROA-s.\n\n" +
       "KUFIZIMET\n" +
       "• Informacion i përgjithshëm, jo diagnozë dhe jo këshillë mjekësore. Përgjigjet mund të kenë pasaktësi: përdori si ide, jo si fakt.\n" +
       "• Nuk jep doza ilaçesh dhe nuk thotë kur të nisësh apo të ndalosh një ilaç.\n" +
       "• Në emergjencë thirr 112 ose shko në urgjencë; mos prit përgjigje nga AI-ja.\n" +
       "• Ka kufi pyetjesh në ditë për çdo llogari.\n\n" +
       "RAPORTIMI\n" +
-      "Te çdo përgjigje ka butonin \"Raporto\". Raportimet i shqyrton ekipi i Bebix-it, dhe na ndihmojnë ta përmirësojmë asistentin.",
+      "Te çdo përgjigje ka butonin \"Raporto\". Raportimet i shqyrton ekipi i TROA-s, dhe na ndihmojnë ta përmirësojmë asistentin.",
   },
   {
     title: "Rregullat e Komunitetit",
@@ -115,7 +115,7 @@ const DOCS: { title: string; body: string }[] = [
     title: "Dyqani, dërgesa dhe kthimet",
     body:
       "Porositë paguhen në dorëzim. Kostoja e dërgesës konfirmohet kur të kontaktojmë për porosinë, përpara se ajo të nisë.\n\n" +
-      "Produktet i shet Bebix, me mallra nga distributorë të autorizuar; korrieri që e sjell porosinë merr emrin, telefonin dhe adresën tënde, vetëm për dërgesën.\n\n" +
+      "Produktet i shet TROA, me mallra nga distributorë të autorizuar; korrieri që e sjell porosinë merr emrin, telefonin dhe adresën tënde, vetëm për dërgesën.\n\n" +
       "Nëse produkti arrin i dëmtuar, i gabuar ose nuk përputhet me përshkrimin, shkruajna te " + SUPPORT_EMAIL + " brenda 14 ditëve nga marrja dhe e zgjidhim — zëvendësim ose kthim parash.\n\n" +
       "Statusin e porosisë e ndjek te Dyqani → Porositë e mia.",
   },

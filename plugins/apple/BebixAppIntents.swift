@@ -1,4 +1,4 @@
-// Siri dhe Shortcuts për Bebix (App Intents, iOS 16+).
+// Siri dhe Shortcuts për TROA (App Intents, iOS 16+).
 // E shton plugins/withBebixAppIntents.js gjatë build-it; mos e ndrysho te ios/ (gjenerohet).
 //
 // Çdo veprim hap një lidhje bebix:// — e njëjta rrugë si widget-i dhe
@@ -20,7 +20,7 @@ private enum BebixLink {
 @available(iOS 16.0, *)
 struct BebixWetDiaperIntent: AppIntent {
   static let title: LocalizedStringResource = "Wet diaper"
-  static let description = IntentDescription("Logs a wet diaper in Bebix.")
+  static let description = IntentDescription("Logs a wet diaper in TROA.")
   static let openAppWhenRun: Bool = true
 
   @MainActor
@@ -33,7 +33,7 @@ struct BebixWetDiaperIntent: AppIntent {
 @available(iOS 16.0, *)
 struct BebixDirtyDiaperIntent: AppIntent {
   static let title: LocalizedStringResource = "Dirty diaper"
-  static let description = IntentDescription("Logs a dirty diaper in Bebix.")
+  static let description = IntentDescription("Logs a dirty diaper in TROA.")
   static let openAppWhenRun: Bool = true
 
   @MainActor
@@ -46,7 +46,7 @@ struct BebixDirtyDiaperIntent: AppIntent {
 @available(iOS 16.0, *)
 struct BebixSleepToggleIntent: AppIntent {
   static let title: LocalizedStringResource = "Sleep or wake up"
-  static let description = IntentDescription("Starts or ends the baby's sleep in Bebix.")
+  static let description = IntentDescription("Starts or ends the baby's sleep in TROA.")
   static let openAppWhenRun: Bool = true
 
   @MainActor
@@ -59,7 +59,7 @@ struct BebixSleepToggleIntent: AppIntent {
 @available(iOS 16.0, *)
 struct BebixFeedingIntent: AppIntent {
   static let title: LocalizedStringResource = "Log a feeding"
-  static let description = IntentDescription("Opens feeding in Bebix, ready to log.")
+  static let description = IntentDescription("Opens feeding in TROA, ready to log.")
   static let openAppWhenRun: Bool = true
 
   @MainActor

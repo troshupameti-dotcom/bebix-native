@@ -68,6 +68,12 @@ export type ProductQuery = {
   pageSize?: number;
   /** Vetëm produktet me çmim të vjetër më të lartë — për seksionin "Në ofertë". */
   onSaleOnly?: boolean;
+  /** Vetëm produktet që kanë stok. */
+  inStockOnly?: boolean;
+  /** Çmimi deri në kaq euro (përfshirë). */
+  priceMax?: number | null;
+  /** Vetëm produktet me shenjën "Top" — për rreshtin "Më të shiturat". */
+  bestsellersOnly?: boolean;
   /** Grupmosha: produktet e përshtatshme për këtë interval (ose pa kufi moshe). */
   age?: AgeBand | null;
   /**
@@ -144,7 +150,7 @@ function mapRow(row: ProductRow): Product {
     id: row.id,
     name: row.name,
     description: row.description ?? null,
-    brand: row.brands?.name ?? "Bebix",
+    brand: row.brands?.name ?? "TROA",
     price: Number(row.price),
     compareAtPrice: row.compare_at_price != null ? Number(row.compare_at_price) : null,
     category: row.categories?.key ?? "",
@@ -305,10 +311,16 @@ async function fetchRankedPage(q: ProductQuery, page: number, pageSize: number):
     p_limit: pageSize,
     // Dërgohet vetëm kur është zgjedhur: funksioni i vjetër (para migrimit) s'e njeh këtë parametër.
     ...(q.subcategory && q.category && q.category !== "all" ? { p_subcategory: q.subcategory } : {}),
+    // Filtrat e 15 nëntorit: dërgohen vetëm kur janë zgjedhur, që funksioni para migrimit të vazhdojë të punojë.
+    ...(q.inStockOnly ? { p_in_stock: true } : {}),
+    ...(q.priceMax != null ? { p_price_max: q.priceMax } : {}),
+    ...(q.bestsellersOnly ? { p_bestsellers: true } : {}),
   });
   if (error) {
     if (error.code === "PGRST202" || error.code === "42883") {
-      rankedUnavailable = true;
+      // Me filtrat e rinj, mungesa do të thotë vetëm që migrimi i tyre s'është ekzekutuar: kjo thirrje lexon drejt
+      // nga tabela, por renditja e serverit mbetet në përdorim për të tjerat.
+      if (!(q.inStockOnly || q.priceMax != null || q.bestsellersOnly)) rankedUnavailable = true;
       return null;
     }
     throw error;
@@ -348,6 +360,9 @@ export async function fetchProductPage(q: ProductQuery = {}): Promise<ProductPag
   }
   if (q.brandId) query = query.eq("brand_id", q.brandId);
   if (q.onSaleOnly) query = query.not("compare_at_price", "is", null);
+  if (q.inStockOnly) query = query.gt("stock", 0);
+  if (q.priceMax != null) query = query.lte("price", q.priceMax);
+  if (q.bestsellersOnly) query = query.eq("badge", "bestseller");
   if (q.age) query = query.or(ageOverlapFilter(q.age));
 
   const search = sanitize(q.search ?? "");

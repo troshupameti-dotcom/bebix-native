@@ -5,7 +5,7 @@ import type { WidgetSnapshot } from "@/lib/widgets/snapshot";
 import { clockLabel, diaperLabel, durationShort, feedingLabel, wt } from "@/lib/widgets/texts";
 
 export const WIDGET_NAME = "BebixQuick";
-/** Të dy widget-et e listës: "Bebix" (4×2, zmadhohet deri në tablet) dhe "Bebix i vogël" (2×2). Pamja zgjidhet sipas madhësisë. */
+/** Të dy widget-et e listës: "TROA" (4×2, zmadhohet deri në tablet) dhe "TROA i vogël" (2×2). Pamja zgjidhet sipas madhësisë. */
 export const WIDGET_NAMES = [WIDGET_NAME, "BebixMini"] as const;
 
 type Tone = { tint: ColorProp; bg: ColorProp };
@@ -144,7 +144,7 @@ function Body({ snapshot, p, lang, now, size }: { snapshot: WidgetSnapshot | nul
         {...link("bebix://")}
         style={{ height: "match_parent", width: "match_parent", backgroundColor: p.bg, borderRadius: 24, padding: 16, justifyContent: "center" }}
       >
-        <TextWidget text="Bebix" style={{ fontSize: 17, fontWeight: "700", color: p.ink }} />
+        <TextWidget text="TROA" style={{ fontSize: 17, fontWeight: "700", color: p.ink }} />
         <TextWidget text={wt(lang, "widget_open_app")} style={{ fontSize: 13, color: p.soft, marginTop: 4 }} maxLines={3} />
       </FlexWidget>
     );
@@ -152,7 +152,7 @@ function Body({ snapshot, p, lang, now, size }: { snapshot: WidgetSnapshot | nul
   const s = snapshot;
   const c = cells(s, lang, now);
   const layout = layoutFor(size);
-  const title = s.babyName ? `Bebix · ${s.babyName}` : "Bebix";
+  const title = s.babyName ? `TROA · ${s.babyName}` : "TROA";
 
   // E vogla (2×2): tri rreshta me orët; prekja e secilit hap ekranin e vet.
   if (layout === "small") {

@@ -69,7 +69,7 @@ type IconProps = {
 };
 
 /**
- * Every Bebix icon glyph, ported from the web Icon.tsx. RN can't take raw
+ * Every TROA icon glyph, ported from the web Icon.tsx. RN can't take raw
  * SVG markup strings the way the web build could (no dangerouslySetInnerHTML
  * equivalent for SVG), so each glyph is expressed as JSX elements instead —
  * same visual paths, different plumbing.

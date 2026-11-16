@@ -112,10 +112,10 @@ describe("Plani i javës", () => {
     expect(seen.plan["2026-11-17:lunch"]).toBeUndefined();
   });
 
-  it("“Provo diçka të re ✨”: një recetë me një ushqim të paprovuar, e vendosur te vakti i parë bosh i sotëm", async () => {
+  it("“Provo diçka të re”: një recetë me një ushqim të paprovuar, e vendosur te vakti i parë bosh i sotëm", async () => {
     const r = await renderScreen(<><MealPlanScreen /><Probe /></>);
     await act(async () => seen.update!({ babyName: "Ana", babyDob: monthsAgo(10) }));
-    await act(async () => button(r.root, "Provo diçka të re ✨").props.onPress());
+    await act(async () => button(r.root, "Provo diçka të re").props.onPress());
     expect(text(r)).toMatch(/Ushqim i ri: /);
     await pressStarting(r.root, "Shtoje në plan: Sot · ");
     const entries = Object.entries(seen.plan);

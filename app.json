@@ -1,6 +1,6 @@
 {
   "expo": {
-    "name": "Bebix",
+    "name": "TROA",
     "slug": "bebix",
     "scheme": "bebix",
     "version": "1.0.0",
@@ -15,10 +15,10 @@
       "requireFullScreen": true,
       "bundleIdentifier": "com.bebix.app",
       "infoPlist": {
-        "NSCameraUsageDescription": "Bebix përdor kamerën për të shtuar foto të bebit tënd.",
-        "NSPhotoLibraryUsageDescription": "Bebix përdor galerinë për të zgjedhur foto të bebit tënd.",
+        "NSCameraUsageDescription": "TROA përdor kamerën për të shtuar foto të bebit tënd.",
+        "NSPhotoLibraryUsageDescription": "TROA përdor galerinë për të zgjedhur foto të bebit tënd.",
         "ITSAppUsesNonExemptEncryption": false,
-        "NSMicrophoneUsageDescription": "Bebix përdor mikrofonin kur regjistron një video për Komunitetin."
+        "NSMicrophoneUsageDescription": "TROA përdor mikrofonin kur regjistron një video për Komunitetin."
       },
       "usesAppleSignIn": true
     },
@@ -75,7 +75,7 @@
           "widgets": [
             {
               "name": "BebixQuick",
-              "label": "Bebix",
+              "label": "TROA",
               "description": "Ushqimi, pelena dhe gjumi me një prekje",
               "minWidth": "250dp",
               "minHeight": "110dp",
@@ -89,7 +89,7 @@
             },
             {
               "name": "BebixMini",
-              "label": "Bebix i vogël",
+              "label": "TROA i vogël",
               "description": "Orët e ushqimit, pelenës dhe gjumit",
               "minWidth": "110dp",
               "minHeight": "110dp",
@@ -113,7 +113,7 @@
           "widgets": [
             {
               "name": "BebixQuick",
-              "displayName": "Bebix",
+              "displayName": "TROA",
               "description": "Ushqimi, pelena dhe gjumi me një prekje",
               "ios": {
                 "supportedFamilies": [

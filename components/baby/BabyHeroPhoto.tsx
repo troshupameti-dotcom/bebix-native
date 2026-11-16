@@ -46,11 +46,11 @@ export function BabyHeroPhoto({ uri, onChange }: { uri: string | null | undefine
         onPress={open}
         accessibilityRole="button"
         accessibilityLabel={t("baby_photo_add_hint")}
-        style={{ width: "100%", aspectRatio: 1.3, borderRadius: 28 }}
+        style={{ width: "100%", aspectRatio: 2.3, borderRadius: 28 }}
         className="items-center justify-center bg-cream-soft active:opacity-80"
       >
-        <Icon name="baby" size={44} color={c.inkFaint} />
-        <View className="mt-3 flex-row items-center rounded-full bg-surface px-3.5 py-2" style={{ gap: 6 }}>
+        <Icon name="baby" size={30} color={c.inkFaint} />
+        <View className="mt-2.5 flex-row items-center rounded-full bg-surface px-3.5 py-2" style={{ gap: 6 }}>
           <ImagePlus size={16} color={c.ink} />
           <Text className="font-bodySemibold text-[13.5px] text-ink">{t("baby_photo_add_hint")}</Text>
         </View>

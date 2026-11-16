@@ -99,7 +99,7 @@ describe("ndërrimi i fëmijës", () => {
     await settle();
     await act(async () => { chip(r.root, "Cen").props.onPress(); });
     await settle();
-    expect(visibleText(r.root)).toContain("Bebix Premium");
+    expect(visibleText(r.root)).toContain("TROA Premium");
     expect(mockSetActive).not.toHaveBeenCalledWith("c");
     expect(probe(r.root)).toBe("probe:Ana|1|Mami");
   });
@@ -112,7 +112,7 @@ describe("ndërrimi i fëmijës", () => {
     await settle();
     await act(async () => { chip(r.root, "Ben").props.onPress(); });
     await settle();
-    expect(visibleText(r.root)).toContain("Bebix Premium");
+    expect(visibleText(r.root)).toContain("TROA Premium");
     expect(probe(r.root)).toBe("probe:Ana|1|Mami");
   });
 
@@ -155,6 +155,6 @@ describe("ndërrimi i fëmijës", () => {
     await act(async () => { chip(r.root, "Shto").props.onPress(); });
     await settle();
     expect(mockAdd).toHaveBeenCalledWith({ name: "Ben", birthDate: "2026-05-01" });
-    expect(visibleText(r.root)).toContain("Bebix Premium");
+    expect(visibleText(r.root)).toContain("TROA Premium");
   });
 });

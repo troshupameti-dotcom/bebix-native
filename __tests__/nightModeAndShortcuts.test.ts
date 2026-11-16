@@ -45,7 +45,7 @@ describe("iPhone: widget-i dhe Live Activity", () => {
   it("tekstet gati në gjuhën e prindit", () => {
     const now = at(14);
     const p = buildIosWidgetProps(snap({ feeding: { at: at(12).toISOString(), type: "bottle" }, nextFeedingAt: at(15).toISOString() }), now);
-    expect(p.title).toBe("Bebix · Ana");
+    expect(p.title).toBe("TROA · Ana");
     expect(p.feeding).toMatchObject({ label: "Ushqimi", value: "12:00", detail: "Tjetri ~15:00" });
     expect(p.diaper.value).toBe("Ende asgjë");
     expect(p.actions).toEqual({ feed: "Ushqim", wet: "E lagur", dirty: "Me jashtëqitje", dirtyShort: "Jashtëqitje", sleep: "Fli" });

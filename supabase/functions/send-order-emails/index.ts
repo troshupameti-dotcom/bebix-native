@@ -17,7 +17,7 @@ const supabase = createClient(Deno.env.get("SUPABASE_URL")!, Deno.env.get("SUPAB
 });
 
 const RESEND_KEY = Deno.env.get("RESEND_API_KEY");
-const FROM = Deno.env.get("ORDER_EMAIL_FROM") ?? "Bebix <porosi@bebix.store>";
+const FROM = Deno.env.get("ORDER_EMAIL_FROM") ?? "TROA <porosi@bebix.store>";
 const REPLY_TO = "info.bebix@gmail.com";
 const ADMIN_TO = Deno.env.get("ADMIN_ALERT_EMAIL") ?? "info.bebix@gmail.com";
 const SITE = "https://www.bebix.store";
@@ -103,7 +103,7 @@ const CUSTOMER: Record<Lang, Record<string, Template>> = {
     status_delivered: {
       subject: (r) => `Porosia ${r} u dorëzua`,
       title: "Porosia u dorëzua",
-      lead: "Porosia jote u dorëzua. Faleminderit që zgjodhe Bebix!",
+      lead: "Porosia jote u dorëzua. Faleminderit që zgjodhe TROA!",
     },
     status_cancelled: {
       subject: (r) => `Porosia ${r} u anulua`,
@@ -135,7 +135,7 @@ const CUSTOMER: Record<Lang, Record<string, Template>> = {
     status_delivered: {
       subject: (r) => `Order ${r} delivered`,
       title: "Order delivered",
-      lead: "Your order was delivered. Thank you for choosing Bebix!",
+      lead: "Your order was delivered. Thank you for choosing TROA!",
     },
     status_cancelled: {
       subject: (r) => `Order ${r} cancelled`,
@@ -171,7 +171,7 @@ function shell(title: string, body: string, lang: Lang): string {
   return `<!doctype html><html lang="${lang}"><head><meta charset="utf-8"><meta name="color-scheme" content="light"><meta name="supported-color-schemes" content="light"></head><body style="margin:0;background:#f8f6f2;font-family:Arial,Helvetica,sans-serif;">
   <table role="presentation" width="100%" cellspacing="0" cellpadding="0"><tr><td align="center" style="padding:24px 12px;">
     <table role="presentation" width="100%" cellspacing="0" cellpadding="0" bgcolor="#ffffff" style="max-width:520px;background:#ffffff;border-radius:16px;overflow:hidden;">
-      <tr><td bgcolor="#ffffff" style="background:#ffffff;padding:18px 20px 14px;border-bottom:1px solid #efe9e1;"><img src="${SITE}/email-logo.png" width="169" height="60" alt="Bebix" style="display:block;width:169px;height:60px;border:0;font-size:22px;font-weight:700;color:#1c2b43;"></td></tr>
+      <tr><td bgcolor="#ffffff" style="background:#ffffff;padding:18px 20px 14px;border-bottom:1px solid #efe9e1;"><img src="${SITE}/email-logo.png" width="169" height="60" alt="TROA" style="display:block;width:169px;height:60px;border:0;font-size:22px;font-weight:700;color:#1c2b43;"></td></tr>
       <tr><td style="padding:24px 28px 28px;">
         <table role="presentation" width="100%" cellspacing="0" cellpadding="0">
           <tr><td style="font-size:18px;font-weight:700;color:#1c1a16;padding:0 0 6px;">${esc(title)}</td></tr>
@@ -179,7 +179,7 @@ function shell(title: string, body: string, lang: Lang): string {
         </table>
       </td></tr>
     </table>
-    <p style="font-size:12px;color:#857c71;margin:16px 0 0;">Bebix · ${TX[lang].footer} · <a href="${SITE}" style="color:#857c71;">bebix.store</a></p>
+    <p style="font-size:12px;color:#857c71;margin:16px 0 0;">TROA · ${TX[lang].footer} · <a href="${SITE}" style="color:#857c71;">bebix.store</a></p>
   </td></tr></table></body></html>`;
 }
 

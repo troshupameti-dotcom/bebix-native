@@ -26,7 +26,7 @@ const apiKey = Deno.env.get("ANTHROPIC_API_KEY") ?? "";
 const MODEL = Deno.env.get("STORY_MODEL") ?? "claude-opus-5-5";
 const RESEND_KEY = Deno.env.get("RESEND_API_KEY");
 const REVIEW_EMAIL = Deno.env.get("STORY_REVIEW_EMAIL") ?? "info.bebix@gmail.com";
-const FROM = Deno.env.get("ORDER_EMAIL_FROM") ?? "Bebix <porosi@bebix.store>";
+const FROM = Deno.env.get("ORDER_EMAIL_FROM") ?? "TROA <porosi@bebix.store>";
 const ADMIN_DAILY_LIMIT = 5;
 const WEEK_GAP_MS = 6 * 86_400_000;
 

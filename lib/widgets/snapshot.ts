@@ -96,7 +96,7 @@ export function buildSnapshot(input: {
   };
 }
 
-/** Pamja e ruajtur; e prishur ose e versionit tjetër = asgjë (widget-i tregon "hap Bebix"). */
+/** Pamja e ruajtur; e prishur ose e versionit tjetër = asgjë (widget-i tregon "hap TROA"). */
 export function parseSnapshot(raw: string | null): WidgetSnapshot | null {
   if (!raw) return null;
   try {

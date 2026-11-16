@@ -74,7 +74,7 @@ function csvEscape(v: string): string {
 
 async function shareFile(uri: string, mimeType: string) {
   if (await Sharing.isAvailableAsync()) {
-    await Sharing.shareAsync(uri, { mimeType, dialogTitle: "Bebix" });
+    await Sharing.shareAsync(uri, { mimeType, dialogTitle: "TROA" });
   }
 }
 

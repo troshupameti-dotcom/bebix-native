@@ -15,21 +15,21 @@ export const shadows: Record<"soft" | "softLg" | "press", ViewStyle> = {
   soft: Platform.select({
     ios: {
       shadowColor: SHADOW,
-      shadowOffset: { width: 0, height: 8 },
-      shadowOpacity: 0.12,
-      shadowRadius: 16,
+      shadowOffset: { width: 0, height: 4 },
+      shadowOpacity: 0.07,
+      shadowRadius: 12,
     },
-    android: { elevation: 4 },
+    android: { elevation: 2 },
     default: {},
   }) as ViewStyle,
   softLg: Platform.select({
     ios: {
       shadowColor: SHADOW,
-      shadowOffset: { width: 0, height: 16 },
-      shadowOpacity: 0.16,
-      shadowRadius: 28,
+      shadowOffset: { width: 0, height: 10 },
+      shadowOpacity: 0.12,
+      shadowRadius: 24,
     },
-    android: { elevation: 8 },
+    android: { elevation: 6 },
     default: {},
   }) as ViewStyle,
   press: Platform.select({

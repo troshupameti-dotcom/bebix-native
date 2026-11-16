@@ -20,6 +20,7 @@ import { track } from "@/lib/analytics/posthog";
 import { friendlyError } from "@/lib/errors/userMessage";
 import { AGE_BANDS, bandForMonths, formatAgeRange, monthsSince, parseAgeBand } from "@/lib/shop/age";
 import { ShopSuggestionCard } from "@/components/shop/ShopSuggestionCard";
+import { loadRecentlyViewed } from "@/lib/shop/recentlyViewed";
 import { useActiveChild } from "@/lib/age/useActiveChild";
 import { hasFeature } from "@/lib/age/stageConfig";
 
@@ -28,6 +29,8 @@ const GRID_GAP = 12;
 const SEARCH_DEBOUNCE_MS = 350;
 /** Një listë bosh e vetme, që shiriti të mos rivizatohet pa nevojë. */
 const NO_SUBS: ShopSubcategory[] = [];
+/** Kufijtë e çmimit te filtrat, në euro. */
+const PRICE_CAPS = [10, 25, 50, 100];
 
 const SORT_OPTIONS: { value: ProductSort; labelKey: string }[] = [
   { value: "newest", labelKey: "sort_relevant" },
@@ -78,6 +81,23 @@ export default function ShopScreen() {
   const subcategories = subsFor.cat === category ? subsFor.list : NO_SUBS;
   const [sort, setSort] = useState<ProductSort>("newest");
   const [showSort, setShowSort] = useState(false);
+  // Filtrat si te dyqanet e mëdha online: vetëm në stok, çmimi deri në, marka.
+  const [inStock, setInStock] = useState(false);
+  const [priceMax, setPriceMax] = useState<number | null>(null);
+  const [brandId, setBrandId] = useState<string | null>(null);
+  const activeFilters = (inStock ? 1 : 0) + (priceMax != null ? 1 : 0) + (brandId ? 1 : 0) + (sort !== "newest" ? 1 : 0);
+  const [bestsellers, setBestsellers] = useState<Product[]>([]);
+  const [recent, setRecent] = useState<Product[]>([]);
+  // "Parë së fundmi" rifreskohet sa herë kthehesh te Dyqani (p.sh. pasi hap një produkt).
+  useFocusEffect(
+    useCallback(() => {
+      let alive = true;
+      void loadRecentlyViewed().then((list) => alive && setRecent(list));
+      return () => {
+        alive = false;
+      };
+    }, [])
+  );
   // Grupmosha e zgjedhur ("0-3", "3-6"...), ose null. Bebi i profilit ka një shkurtore "Për [emri]".
   const [ageKey, setAgeKey] = useState<string | null>(null);
   const ageBand = parseAgeBand(ageKey);
@@ -117,7 +137,7 @@ export default function ShopScreen() {
   const listRef = useRef<FlatList<Product>>(null);
   useScrollToTop(listRef);
 
-  const isFiltering = search.trim().length > 0 || category !== "all" || ageBand !== null;
+  const isFiltering = search.trim().length > 0 || category !== "all" || ageBand !== null || inStock || priceMax != null || brandId !== null;
 
   // Kërkimi shkon te serveri, prandaj pritet derisa shkruesi të ndalet.
   useEffect(() => {
@@ -125,7 +145,7 @@ export default function ShopScreen() {
     return () => clearTimeout(timer);
   }, [query]);
 
-  const filterKey = `${search}|${category}|${subcategory ?? ""}|${sort}|${ageKey ?? ""}|${rankingKey}|${reloadNonce}`;
+  const filterKey = `${search}|${category}|${subcategory ?? ""}|${sort}|${ageKey ?? ""}|${rankingKey}|${reloadNonce}|${inStock}|${priceMax ?? ""}|${brandId ?? ""}`;
   const loading = loadedKey !== filterKey && error === null;
   // Vetëm hapja e parë tregon skeletin në vend të listës. Ndërrimi i kategorisë/filtrit e mban listën (dhe shiritin
   // e kategorive) në vend: më parë lista rindërtohej nga e para, kategoritë ktheheshin në fillim dhe faqja lart.
@@ -144,6 +164,9 @@ export default function ShopScreen() {
           setQuery("");
           setCategory("all");
           setAgeKey(null);
+          setInStock(false);
+          setPriceMax(null);
+          setBrandId(null);
           return true;
         });
       }, 0);
@@ -159,7 +182,7 @@ export default function ShopScreen() {
   useEffect(() => {
     const id = ++requestId.current;
     let active = true;
-    fetchProductPage({ search, category, subcategory, sort, page: 0, age: ageBand, ranking })
+    fetchProductPage({ search, category, subcategory, sort, page: 0, age: ageBand, ranking, inStockOnly: inStock, priceMax, brandId: brandId ?? undefined })
       .then((result) => {
         if (!active || id !== requestId.current) return;
         setItems(result.items);
@@ -174,14 +197,14 @@ export default function ShopScreen() {
         setError(friendlyError(e, t, "shop_load_error_title"));
       });
     return () => { active = false; };
-  }, [filterKey, search, category, subcategory, sort, ageBand, ranking, t]);
+  }, [filterKey, search, category, subcategory, sort, ageBand, ranking, t, inStock, priceMax, brandId]);
   const loadMore = useCallback(async () => {
     if (loadingMore || loading || !hasMore) return;
     const id = requestId.current;
     setLoadingMore(true);
     try {
       const next = page + 1;
-      const result = await fetchProductPage({ search, category, subcategory, sort, page: next, age: ageBand, ranking });
+      const result = await fetchProductPage({ search, category, subcategory, sort, page: next, age: ageBand, ranking, inStockOnly: inStock, priceMax, brandId: brandId ?? undefined });
       if (id !== requestId.current) return;
       setItems((prev) => [...prev, ...result.items]);
       setHasMore(result.hasMore);
@@ -191,7 +214,7 @@ export default function ShopScreen() {
     } finally {
       if (id === requestId.current) setLoadingMore(false);
     }
-  }, [loadingMore, loading, hasMore, page, search, category, subcategory, sort, ageBand, ranking]);
+  }, [loadingMore, loading, hasMore, page, search, category, subcategory, sort, ageBand, ranking, inStock, priceMax, brandId]);
 
   // Nënkategoritë e kategorisë së hapur (vetëm ato me produkte). Para migrimit vijnë bosh dhe shiriti s'del.
   useEffect(() => {
@@ -211,12 +234,14 @@ export default function ShopScreen() {
       fetchBrands(),
       fetchProductPage({ onSaleOnly: true, pageSize: 8 }),
       fetchCategories(),
+      fetchProductPage({ bestsellersOnly: true, pageSize: 8 }).catch(() => ({ items: [] as Product[] })),
     ])
-      .then(([brandList, sale, categoryList]) => {
+      .then(([brandList, sale, categoryList, top]) => {
         if (!active) return;
         setBrands(brandList);
         setOnSale(sale.items);
         setCategories(categoryList);
+        setBestsellers(top.items);
       })
       .catch(() => {
         // Seksione dytësore: nëse dështojnë, grid-i kryesor mjafton.
@@ -352,6 +377,32 @@ export default function ShopScreen() {
           <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ paddingHorizontal: 20 }}>
             {onSale.map((p) => (
               <View key={p.id} className="mr-3">
+                <ProductCard product={p} cardWidth={168} onPress={() => router.push(`/shop/${p.id}`)} />
+              </View>
+            ))}
+          </ScrollView>
+        </>
+      )}
+
+      {!isFiltering && bestsellers.length > 0 && (
+        <>
+          <Text className="font-bodySemibold text-base text-ink px-5 mt-5 mb-2">{t("shop_bestsellers")}</Text>
+          <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ paddingHorizontal: 20 }}>
+            {bestsellers.map((p) => (
+              <View key={p.id} className="mr-3">
+                <ProductCard product={p} cardWidth={168} onPress={() => router.push(`/shop/${p.id}`)} />
+              </View>
+            ))}
+          </ScrollView>
+        </>
+      )}
+
+      {!isFiltering && recent.length > 0 && (
+        <>
+          <Text className="font-bodySemibold text-base text-ink px-5 mt-5 mb-2">{t("shop_recently_viewed")}</Text>
+          <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ paddingHorizontal: 20 }}>
+            {recent.map((p) => (
+              <View key={p.id} className="mr-3">
                 <ProductCard product={p} cardWidth={150} onPress={() => router.push(`/shop/${p.id}`)} />
               </View>
             ))}
@@ -363,25 +414,48 @@ export default function ShopScreen() {
         <Text className="font-bodySemibold text-base text-ink">
           {isFiltering ? t("shop_results_count", { n: total }) : t("shop_all_products")}
         </Text>
-        <Pressable onPress={() => setShowSort((v) => !v)} hitSlop={8} accessibilityRole="button">
-          <Text className="font-bodyMedium text-xs text-olive">{t("shop_sort_by")}</Text>
+        <Pressable
+          onPress={() => setShowSort((v) => !v)}
+          hitSlop={8}
+          accessibilityRole="button"
+          accessibilityState={{ expanded: showSort }}
+          className={`rounded-full px-3.5 py-1.5 ${showSort || activeFilters ? "bg-ink" : "bg-cream-soft"}`}
+        >
+          <Text className={`font-bodyMedium text-xs ${showSort || activeFilters ? "text-on-accent" : "text-ink"}`}>
+            {activeFilters ? `${t("shop_filters")} · ${activeFilters}` : t("shop_filters")}
+          </Text>
         </Pressable>
       </View>
 
       {showSort && (
-        <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ paddingHorizontal: 20 }} className="mb-3">
-          {SORT_OPTIONS.map((option) => (
-            <Chip
-              key={option.value}
-              label={t(option.labelKey as any)}
-              active={sort === option.value}
-              onPress={() => setSort(option.value)}
-            />
-          ))}
-        </ScrollView>
+        <View className="mb-3" style={{ gap: 8 }}>
+          <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ paddingHorizontal: 20 }}>
+            <Chip label={t("shop_filter_in_stock")} active={inStock} onPress={() => setInStock((v) => !v)} />
+            {PRICE_CAPS.map((cap) => (
+              <Chip key={cap} label={t("shop_filter_price_to", { n: cap })} active={priceMax === cap} onPress={() => setPriceMax(priceMax === cap ? null : cap)} />
+            ))}
+          </ScrollView>
+          {brands.length > 0 && (
+            <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ paddingHorizontal: 20 }}>
+              {brands.map((b) => (
+                <Chip key={b.id} label={b.name} active={brandId === b.id} onPress={() => setBrandId(brandId === b.id ? null : b.id)} />
+              ))}
+            </ScrollView>
+          )}
+          <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ paddingHorizontal: 20 }}>
+            {SORT_OPTIONS.map((option) => (
+              <Chip
+                key={option.value}
+                label={t(option.labelKey as any)}
+                active={sort === option.value}
+                onPress={() => setSort(option.value)}
+              />
+            ))}
+          </ScrollView>
+        </View>
       )}
     </View>
-  ), [brands, onSale, categories, category, subcategories, subcategory, isFiltering, showSort, sort, total, router, t, theme, ageKey, babyBand, babyFirstName, language, catScrollX, width]);
+  ), [brands, onSale, categories, category, subcategories, subcategory, isFiltering, showSort, sort, total, router, t, theme, ageKey, babyBand, babyFirstName, language, catScrollX, width, bestsellers, recent, inStock, priceMax, brandId, activeFilters]);
 
   const renderFooter = useCallback(() => {
     if (loadingMore) {
@@ -449,8 +523,8 @@ export default function ShopScreen() {
       </View>
 
       <View className="px-5 mb-3">
-        <View className="flex-row items-center bg-surface border border-cream-line rounded-xl2 px-3.5 py-2.5">
-          <Icon name="search" size={18} color={theme.inkFaint} />
+        <View className="flex-row items-center rounded-full border border-ink/10 bg-cream-soft px-4" style={{ minHeight: 46 }}>
+          <Icon name="search" size={18} color={theme.inkSoft} />
           <TextInput
             value={query}
             onChangeText={setQuery}
@@ -518,7 +592,7 @@ export default function ShopScreen() {
               </Text>
               {isFiltering && (
                 <Pressable
-                  onPress={() => { setQuery(""); setCategory("all"); }}
+                  onPress={() => { setQuery(""); setCategory("all"); setAgeKey(null); setInStock(false); setPriceMax(null); setBrandId(null); }}
                   className="mt-4 bg-olive rounded-full px-5 py-2.5"
                 >
                   <Text className="font-bodyMedium text-xs text-on-accent">{t("shop_view_all")}</Text>

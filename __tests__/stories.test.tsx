@@ -265,7 +265,7 @@ describe("lexuesi (libri)", () => {
 
   it("hapet te kopertina; faqet kthehen përpara dhe mbrapa; vendi ruhet dhe “Vazhdo leximin” e hap aty", async () => {
     const r = await openBook({ from: "0" });
-    expect(text(r)).toContain("Përrallat e Bebix-it");
+    expect(text(r)).toContain("Përrallat e TROA-s");
     expect(text(r)).toContain(`Faqja 1 nga ${total}`);
     await pressLabel(r, "Faqja tjetër");
     expect(text(r)).toContain(story.paragraphs[0]);

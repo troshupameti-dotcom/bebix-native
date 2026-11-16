@@ -33,7 +33,7 @@ const BebixQuick = (props: IosWidgetProps, env: WidgetEnvironment) => {
   if (!props || !props.feeding) {
     return (
       <VStack modifiers={[containerBackground(bg, "widget"), widgetURL("bebix://")]}>
-        <Text modifiers={[font({ size: 16, weight: "bold" }), foregroundStyle(ink)]}>Bebix</Text>
+        <Text modifiers={[font({ size: 16, weight: "bold" }), foregroundStyle(ink)]}>TROA</Text>
       </VStack>
     );
   }

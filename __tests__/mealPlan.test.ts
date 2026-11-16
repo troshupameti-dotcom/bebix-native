@@ -151,7 +151,7 @@ describe("plani: \"Plotëso javën për mua\"", () => {
   });
 });
 
-describe("plani: \"Provo diçka të re ✨\"", () => {
+describe("plani: \"Provo diçka të re\"", () => {
   it("një recetë me një ushqim të paprovuar (jo alergjen), të moshës", () => {
     const c = child(10, { tries: [tryOf("carrot"), tryOf("potato")] });
     const summary = summarizeTries(c.tries);

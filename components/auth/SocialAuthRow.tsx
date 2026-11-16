@@ -28,7 +28,7 @@ const buttonClass =
 /**
  * Hyrja me Apple dhe Google.
  *
- * - Google: hyrja native (me emrin "Bebix") kur build-i ka ID-të e Google-it; përndryshe fluksi OAuth i
+ * - Google: hyrja native (me emrin "TROA") kur build-i ka ID-të e Google-it; përndryshe fluksi OAuth i
  *   Supabase-it në shfletuesin e brendshëm, që kthehet në app me skemën `bebix://`.
  * - Apple: në iPhone me hyrjen NATIVE (`expo-apple-authentication` +
  *   `signInWithIdToken`), siç e kërkon App Store (udhëzimi 4.8) kur ofrohet

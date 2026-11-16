@@ -37,7 +37,7 @@ export type SupplyConfig = {
 };
 
 /**
- * "Sa të mbeten": prindi vendos sa ka, Bebix i numëron vetë nga ditari dhe, para se të mbarojnë, ofron porosinë me
+ * "Sa të mbeten": prindi vendos sa ka, TROA i numëron vetë nga ditari dhe, para se të mbarojnë, ofron porosinë me
  * një prekje (i njëjti produkt që ka blerë herën e fundit, ose kërkimi te dyqani kur s'ka blerë ende).
  * `compactUntilSet`: pa numër të vendosur, vetëm një rresht i vogël që hapet me prekje (p.sh. formula për bebet që
  * s'e kanë pirë ende): mbetet e dukshme, por s'zë vend te nënat që ushqejnë me gji.

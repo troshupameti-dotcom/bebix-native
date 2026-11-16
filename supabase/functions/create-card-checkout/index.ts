@@ -4,7 +4,7 @@ import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 /**
  * Krijon një sesion pagese Stripe Checkout (faqja e Stripe) për një porosi me kartë.
  *
- * Karta s'kalon kurrë përmes Bebix-it: klienti paguan te Stripe, dhe `stripe-webhook` e shënon porosinë "paguar".
+ * Karta s'kalon kurrë përmes TROA-s: klienti paguan te Stripe, dhe `stripe-webhook` e shënon porosinë "paguar".
  * Shuma merret NGA BAZA (`orders.total_price`), jo nga klienti; klienti dërgon vetëm porosinë dhe referencën e saj
  * sekrete (`client_ref`, një UUID që e di vetëm ai që e krijoi porosinë).
  *
@@ -79,7 +79,7 @@ export function buildLines(order: OrderRow, lang: Lang) {
   }
   const ref = `#${order.id.slice(0, 8).toUpperCase()}`;
   if (lines.length === 0 || sum !== total) {
-    return [{ name: `Bebix ${ref}`, unit: total, qty: 1 } as (typeof lines)[number]];
+    return [{ name: `TROA ${ref}`, unit: total, qty: 1 } as (typeof lines)[number]];
   }
   if (ship > 0) lines.push({ name: lang === "en" ? "Delivery" : "Dërgesa", unit: ship, qty: 1 });
   return lines;
@@ -96,7 +96,7 @@ export function buildCheckoutParams(order: OrderRow, lang: Lang, nowSec = Math.f
   p.set("expires_at", String(nowSec + SESSION_MINUTES * 60)); // Stripe kërkon të paktën 30 minuta; porosia anulohet vetë pas 2 orësh
   p.set("metadata[order_id]", order.id);
   p.set("payment_intent_data[metadata][order_id]", order.id);
-  p.set("payment_intent_data[description]", `Bebix #${order.id.slice(0, 8).toUpperCase()}`);
+  p.set("payment_intent_data[description]", `TROA #${order.id.slice(0, 8).toUpperCase()}`);
   if (order.email) p.set("customer_email", order.email);
   buildLines(order, lang).forEach((l, idx) => {
     p.set(`line_items[${idx}][quantity]`, String(l.qty));

@@ -25,7 +25,7 @@ const TX = {
     updated: "Përditësuar", empty: "Asnjë e dhënë.",
     years: "vjeç", months: "muajsh", days: "ditësh", and: "dhe",
     types: { symptom: "Simptomë", temperature: "Temperaturë", medication: "Ilaç", doctor_visit: "Vizitë te mjeku", prescription: "Recetë", document: "Dokument" } as Record<string, string>,
-    footer: "Ky raport është përpiluar nga të dhënat që ka shkruar prindi te Bebix. Nuk zëvendëson vlerësimin e mjekut.",
+    footer: "Ky raport është përpiluar nga të dhënat që ka shkruar prindi te TROA. Nuk zëvendëson vlerësimin e mjekut.",
   },
   en: {
     title: "Health report",
@@ -40,7 +40,7 @@ const TX = {
     updated: "Updated", empty: "No entries.",
     years: "years old", months: "months old", days: "days old", and: "and",
     types: { symptom: "Symptom", temperature: "Temperature", medication: "Medication", doctor_visit: "Doctor visit", prescription: "Prescription", document: "Document" } as Record<string, string>,
-    footer: "This report is compiled from what the parent entered in Bebix. It does not replace a doctor's assessment.",
+    footer: "This report is compiled from what the parent entered in TROA. It does not replace a doctor's assessment.",
   },
 } as const;
 
@@ -89,7 +89,7 @@ const val = (v: string | null | undefined, none: string) => (v && v.trim() ? esc
 
 export function buildHealthReportHtml(profile: BabyProfile, baby: BabyModuleState, lang: Lang, now: Date = new Date(), babyLabel = ""): string {
   const t = TX[lang];
-  const name = profile.babyName?.trim() || babyLabel || "Bebix";
+  const name = profile.babyName?.trim() || babyLabel || "TROA";
   const gender = profile.babyGender === "girl" ? t.girl : profile.babyGender === "boy" ? t.boy : profile.babyGender === "other" ? t.other : null;
 
   const growth = live(baby.growthHistory).sort((a, b) => b.date.localeCompare(a.date));
@@ -199,7 +199,7 @@ export function buildHealthReportHtml(profile: BabyProfile, baby: BabyModuleStat
   .muted { color: #8A929A; font-weight: 400; }
   footer { margin-top: 22px; padding-top: 8px; border-top: 1px solid #DDE2E7; color: #8A929A; font-size: 10px; }
 </style></head><body>
-<header><div class="brand">Bebix</div><h1>${escapeHtml(t.title)} · ${escapeHtml(name)}</h1><div class="gen">${t.generated} ${escapeHtml(fmtDate(now.toISOString(), lang))}</div></header>
+<header><div class="brand">TROA</div><h1>${escapeHtml(t.title)} · ${escapeHtml(name)}</h1><div class="gen">${t.generated} ${escapeHtml(fmtDate(now.toISOString(), lang))}</div></header>
 ${sections.join("\n")}
 <footer>${escapeHtml(t.footer)}</footer>
 </body></html>`;

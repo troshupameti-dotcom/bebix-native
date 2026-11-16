@@ -3,7 +3,7 @@ import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import Anthropic from "npm:@anthropic-ai/sdk@0.131.0";
 
 /**
- * Asistenti AI i Bebix-it. App-i dërgon bisedën këtu; funksioni e çon te Claude dhe kthen përgjigjen.
+ * Asistenti AI i TROA-s. App-i dërgon bisedën këtu; funksioni e çon te Claude dhe kthen përgjigjen.
  * Çelësi i Anthropic rri vetëm këtu (sekreti ANTHROPIC_API_KEY te Supabase), kurrë në app.
  *
  * Mbrojtjet: vetëm për llogaritë e kyçura; kufi ditor pyetjesh për llogari (tabela `ai_usage`, migrimi
@@ -34,7 +34,7 @@ function json(body: unknown, status = 200): Response {
 }
 
 // I njëjti për çdo kërkesë (pa data, emra apo numra që ndryshojnë), që të ruhet në cache.
-const SYSTEM = `You are Bebix AI, the assistant inside Bebix, an app for parents in Kosovo and Albania, from pregnancy until the child is 12 years old. You help with everyday parenting: feeding, sleep, development, routines, play, emotions, pregnancy and the parent's own wellbeing.
+const SYSTEM = `You are TROA AI, the assistant inside TROA, an app for parents in Kosovo and Albania, from pregnancy until the child is 12 years old. You help with everyday parenting: feeding, sleep, development, routines, play, emotions, pregnancy and the parent's own wellbeing.
 
 How to answer:
 - Reply in the parent's language. For Albanian use standard literary Albanian (gjuha standarde) with correct ë and ç, warm and clear, never slang. For English use plain English.

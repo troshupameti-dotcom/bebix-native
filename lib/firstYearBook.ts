@@ -36,7 +36,7 @@ function birth(dob: string | null): Date | null {
   return m ? new Date(+m[1], +m[2] - 1, +m[3]) : null;
 }
 
-export function buildFirstYearBook(profile: BabyProfile, baby: BabyModuleState, now: Date = new Date(), fallbackName = "Bebix"): FirstYearBook {
+export function buildFirstYearBook(profile: BabyProfile, baby: BabyModuleState, now: Date = new Date(), fallbackName = "TROA"): FirstYearBook {
   const born = birth(profile.babyDob);
   // Pa datëlindje: 12 muajt e fundit.
   const start = born ?? addMonths(new Date(now.getFullYear(), now.getMonth(), 1), -11);
@@ -91,7 +91,7 @@ const TX = {
     growth: "Si u rrite",
     from: "Nga",
     to: "në",
-    footer: "Bërë me dashuri në Bebix",
+    footer: "Bërë me dashuri në TROA",
   },
   en: {
     title: "The first year",
@@ -102,7 +102,7 @@ const TX = {
     growth: "How you grew",
     from: "From",
     to: "to",
-    footer: "Made with love in Bebix",
+    footer: "Made with love in TROA",
   },
 } as const;
 

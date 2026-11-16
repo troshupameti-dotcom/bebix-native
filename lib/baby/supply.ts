@@ -1,7 +1,7 @@
 import AsyncStorage from "@react-native-async-storage/async-storage";
 
 /**
- * Furnizimi në shtëpi (pelenat, formula): prindi vendos një herë sa ka; Bebix heq vetë një për çdo shënim te
+ * Furnizimi në shtëpi (pelenat, formula): prindi vendos një herë sa ka; TROA heq vetë një për çdo shënim te
  * ditari dhe e di kur po mbaron, para se të mbarojë vërtet. Ruhet vetëm në telefon (s'është e dhënë për serverin).
  */
 export type SupplyStock = { remaining: number; setAt: string };

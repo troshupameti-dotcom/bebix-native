@@ -1,5 +1,5 @@
 /**
- * Shortcuts të Android-it: mbaj gishtin mbi ikonën e Bebix → "Ushqim",
+ * Shortcuts të Android-it: mbaj gishtin mbi ikonën e TROA → "Ushqim",
  * "Pelenë", "Gjumë", "Pelenë e lagur". Ushqimi dhe pelena hapin zgjedhjen e
  * shpejtë (app/quick/*: gji majtas/djathtas, biberon, formulë, ushqim i ngurtë;
  * e lagur, me jashtëqitje, të dyja); gjumi dhe pelena e lagur shënohen me një

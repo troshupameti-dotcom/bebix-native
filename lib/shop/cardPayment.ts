@@ -3,7 +3,7 @@ import { supabase } from "@/lib/supabase/client";
 
 /**
  * Pagesa me kartë përmes Stripe Checkout: funksioni `create-card-checkout` kthen adresën e faqes së Stripe
- * (karta s'kalon kurrë përmes Bebix-it) dhe `stripe-webhook` e shënon porosinë "paguar" kur Stripe konfirmon.
+ * (karta s'kalon kurrë përmes TROA-s) dhe `stripe-webhook` e shënon porosinë "paguar" kur Stripe konfirmon.
  */
 
 /** Krijon sesionin e pagesës dhe kthen adresën e saj, ose null kur s'u hap (çelësat mungojnë, rrjeti, etj.). */

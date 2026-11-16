@@ -109,7 +109,7 @@ export default function MonthRecapScreen() {
     setPaused(true);
     try {
       const uri = await captureRef(slideRef, { format: "jpg", quality: 0.92, result: "tmpfile" });
-      if (await Sharing.isAvailableAsync()) await Sharing.shareAsync(uri, { mimeType: "image/jpeg", dialogTitle: "Bebix" });
+      if (await Sharing.isAvailableAsync()) await Sharing.shareAsync(uri, { mimeType: "image/jpeg", dialogTitle: "TROA" });
     } catch {
       showToast(t("month_recap_share_error"));
     } finally {
@@ -120,7 +120,7 @@ export default function MonthRecapScreen() {
 
   return (
     <View className="flex-1" style={{ backgroundColor: BG[slide.kind] }}>
-      {/* Pjesa që ndahet si foto: diapozitivi me logon e vogël Bebix. */}
+      {/* Pjesa që ndahet si foto: diapozitivi me logon e vogël TROA. */}
       <View ref={slideRef} collapsable={false} className="flex-1" style={{ backgroundColor: BG[slide.kind] }}>
         <MotiView key={index} from={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ type: "timing", duration: 350 }} className="flex-1">
           {slide.kind === "photo" ? (
@@ -159,7 +159,7 @@ export default function MonthRecapScreen() {
             </View>
           )}
         </MotiView>
-        <Text className="absolute bottom-5 left-0 right-0 text-center font-bodySemibold text-[12px] text-white/70">Bebix</Text>
+        <Text className="absolute bottom-5 left-0 right-0 text-center font-bodySemibold text-[12px] text-white/70">TROA</Text>
       </View>
 
       {/* Prekja: majtas = mbrapa, djathtas = përpara; mbajtja e ndal. */}

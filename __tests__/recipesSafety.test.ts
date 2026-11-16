@@ -4,7 +4,7 @@ import { ALLERGENS, DIET_TAGS, MEAL_TYPES, NUTRIENTS, RECIPE_STAGES, SEASONS, UN
 import { normalize } from "@/lib/recipes/catalog";
 
 /**
- * Siguria e përmbajtjes së recetave: asnjë recetë s'i shkel rregullat e Bebix-it. Ekzekutohet mbi kopjen e app-it
+ * Siguria e përmbajtjes së recetave: asnjë recetë s'i shkel rregullat e TROA-s. Ekzekutohet mbi kopjen e app-it
  * (content/recipes/sq.json), që testi SQL e krahason me bazën. Çdo grup i ri recetash kalon këtu para se të
  * bëhet migrim.
  */

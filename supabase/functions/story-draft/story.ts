@@ -47,7 +47,7 @@ export function pickTheme(rows: StoryRow[], week: number): { category: Category;
 }
 
 /** Udhëzimet e qëndrueshme (pa data ose emra që ndryshojnë). */
-export const SYSTEM = `You write original children's stories in Albanian for Bebix, an app for parents in Kosovo and Albania. A parent reads the story aloud to their child, often at bedtime. Every story you write is reviewed by the Bebix team before any family sees it.
+export const SYSTEM = `You write original children's stories in Albanian for TROA, an app for parents in Kosovo and Albania. A parent reads the story aloud to their child, often at bedtime. Every story you write is reviewed by the TROA team before any family sees it.
 
 Language and tone:
 - Standard literary Albanian (gjuha standarde) with correct ë and ç, natural and warm. No dialect forms, no slang, no English words.
@@ -80,7 +80,7 @@ export function userPrompt(input: { category: Category; band: Band; titles: stri
     `categories: "${input.category}" first, plus at most one other that truly fits.`,
     `summary: one sentence (at most 160 characters) that makes a parent want to read it, without giving away the ending.`,
   ];
-  if (input.idea) lines.push(`The Bebix team suggested this idea; use it if it fits the rules: ${input.idea}`);
+  if (input.idea) lines.push(`The TROA team suggested this idea; use it if it fits the rules: ${input.idea}`);
   if (input.titles.length) lines.push(`Titles already in the library (do not reuse or closely echo them): ${input.titles.join("; ")}.`);
   return lines.join("\n");
 }

@@ -47,7 +47,7 @@ export function AdminScreen({
       ) : !admin ? (
         <View className="mt-16 items-center px-10">
           <Lock size={28} color={theme.inkFaint} strokeWidth={1.8} />
-          <Text className="mt-3 text-center font-body text-sm text-ink-soft">Kjo pjesë është vetëm për adminët e Bebix.</Text>
+          <Text className="mt-3 text-center font-body text-sm text-ink-soft">Kjo pjesë është vetëm për adminët e TROA.</Text>
         </View>
       ) : (
         <KeyboardScrollView

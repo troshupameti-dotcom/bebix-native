@@ -1,5 +1,5 @@
 /**
- * Paleta e Bebix — "Tranquil Oasis". Burimi i vetëm i ngjyrave për light dhe dark.
+ * Paleta e TROA — "Tranquil Oasis". Burimi i vetëm i ngjyrave për light dhe dark.
  *
  * Përdoret nga dy vende:
  *   1. tailwind.config.js — i kthen në variabla CSS (--c-*), që çdo klasë si

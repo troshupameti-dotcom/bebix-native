@@ -2,7 +2,7 @@ import { useCallback, useMemo, useState } from "react";
 import { View, Text, TextInput, Pressable, FlatList, ScrollView, RefreshControl, useWindowDimensions } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { router } from "expo-router";
-import { CalendarDays, Carrot, Clock, Heart, Search, ShieldCheck, Snowflake, X } from "lucide-react-native";
+import { CalendarDays, Carrot, Clock, Heart, Search, ShieldCheck, SlidersHorizontal, Snowflake, X } from "lucide-react-native";
 import { Chip, SectionTitle } from "@/components/stories/StoryParts";
 import { MEAL_LABEL, RecipeCard, RecipeCover, RecipeRow, STAGE_LABEL, useRecipeText } from "@/components/recipes/RecipeParts";
 import { ReadyForSolidsCard } from "@/components/recipes/ReadyForSolidsCard";
@@ -74,10 +74,13 @@ export default function RecipesLibrary() {
   const [seasonal, setSeasonal] = useState(false);
   const [albanian, setAlbanian] = useState(false);
   const [favoritesOnly, setFavoritesOnly] = useState(false);
+  // Filtrat rrinë të mbledhur: përmbajtja del e para. Butoni tregon sa janë zgjedhur.
+  const [showFilters, setShowFilters] = useState(false);
 
   const favoriteSet = useMemo(() => new Set(favs.favorites), [favs.favorites]);
   const bySlug = useMemo(() => new Map(index.recipes.map((r) => [r.slug, r])), [index.recipes]);
   const excluded = useMemo(() => [...new Set([...without, ...(avoidChild ? child.allergens : [])])], [without, avoidChild, child.allergens]);
+  const activeFilters = [meal, time, stage, style, freezer, seasonal, albanian, favoritesOnly, avoidChild].filter(Boolean).length + without.length;
   const filtering = !!(query.trim() || meal || time || stage || style || excluded.length || freezer || seasonal || albanian || favoritesOnly);
 
   const results = useMemo(
@@ -141,7 +144,8 @@ export default function RecipesLibrary() {
         ))}
       </ScrollView>
 
-      <View className="mt-3 flex-row items-center gap-2 rounded-2xl border border-ink/10 bg-surface px-3.5" style={{ minHeight: 46 }}>
+      <View className="mt-3 flex-row items-center" style={{ gap: 8 }}>
+      <View className="flex-1 flex-row items-center gap-2 rounded-2xl border border-ink/10 bg-surface px-3.5" style={{ minHeight: 46 }}>
         <Search size={16} color={c.inkFaint} />
         <TextInput
           value={query}
@@ -160,7 +164,26 @@ export default function RecipesLibrary() {
           </Pressable>
         ) : null}
       </View>
+        <Pressable
+          onPress={() => {
+            haptics.select();
+            setShowFilters((v) => !v);
+          }}
+          accessibilityRole="button"
+          accessibilityState={{ expanded: showFilters }}
+          accessibilityLabel={activeFilters ? `${t("recipes_filters")}, ${activeFilters}` : t("recipes_filters")}
+          className={`flex-row items-center justify-center rounded-2xl px-3.5 ${showFilters || activeFilters ? "bg-ink" : "border border-ink/10 bg-surface"}`}
+          style={{ minHeight: 46, gap: 6 }}
+        >
+          <SlidersHorizontal size={16} color={showFilters || activeFilters ? c.cream : c.ink} />
+          <Text className={`font-bodyMedium text-[13.5px] ${showFilters || activeFilters ? "text-cream" : "text-ink"}`}>
+            {activeFilters ? `${t("recipes_filters")} · ${activeFilters}` : t("recipes_filters")}
+          </Text>
+        </Pressable>
+      </View>
 
+      {showFilters ? (
+        <>
       <ScrollView horizontal showsHorizontalScrollIndicator={false} className="mt-3" style={bleed} contentContainerStyle={rowPad}>
         {MEAL_TYPES.map((m) => (
           <Chip key={m} label={t(MEAL_LABEL[m])} selected={meal === m} onPress={() => setMeal(meal === m ? null : m)} />
@@ -194,6 +217,8 @@ export default function RecipesLibrary() {
         <Chip label={t("recipes_style_puree")} selected={style === "puree"} onPress={() => setStyle(style === "puree" ? null : "puree")} />
         <Chip label={t("recipes_style_blw")} selected={style === "blw"} onPress={() => setStyle(style === "blw" ? null : "blw")} />
       </ScrollView>
+        </>
+      ) : null}
 
       {filtering ? (
         <SectionTitle title={favoritesOnly ? t("recipes_favorites") : t("recipes_results")} sub={countLabel(results.length)} />

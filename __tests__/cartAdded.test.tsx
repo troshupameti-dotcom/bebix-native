@@ -1,6 +1,6 @@
 /**
  * Animacioni i shtimit në shportë: çdo `addToCart` (produkti, "Porosit përsëri", kartat te Bebi) e lajmëron
- * dhe `CartAddedHost` tregon karrocën me "U shtua në shportë ✅". Disa produkte njëherësh = një animacion.
+ * dhe `CartAddedHost` tregon karrocën me "U shtua në shportë". Disa produkte njëherësh = një animacion.
  */
 import { useEffect } from "react";
 import { act } from "react-test-renderer";
@@ -9,7 +9,7 @@ import { CartAddedHost } from "@/components/shop/CartAddedHost";
 import { announceCartAdded, onCartAdded } from "@/lib/shop/cartAdded";
 import { useAppState } from "@/lib/state/AppStateContext";
 
-const LABEL = "U shtua në shportë ✅";
+const LABEL = "U shtua në shportë";
 const count = (texts: string[]) => texts.filter((x) => x === LABEL).length;
 
 describe("shtimi në shportë", () => {

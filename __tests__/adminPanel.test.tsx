@@ -1,6 +1,6 @@
 /**
  * Paneli i adminit në app: shfaqet vetëm për llogaritë te tabela `admins`, ekranet mbrohen, porositë punojnë me
- * të njëjtat veprime si paneli i webit. Bebix punon vetëm me distributorë: s'ka më partnerë, pagesa partnerësh
+ * të njëjtat veprime si paneli i webit. TROA punon vetëm me distributorë: s'ka më partnerë, pagesa partnerësh
  * apo produkte për aprovim.
  */
 import { fakeSupabase, renderScreen, visibleText } from "./helpers/screen";
@@ -61,7 +61,7 @@ describe("hyrja te paneli", () => {
     expect(visibleText(more.root)).not.toContain("Paneli i adminit");
     const orders = await renderScreen(<AdminOrders />);
     await settle();
-    expect(visibleText(orders.root)).toContain("Kjo pjesë është vetëm për adminët e Bebix.");
+    expect(visibleText(orders.root)).toContain("Kjo pjesë është vetëm për adminët e TROA.");
   });
 });
 

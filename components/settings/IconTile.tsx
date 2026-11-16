@@ -1,24 +1,31 @@
 import { View } from "react-native";
+import { useThemeColors } from "@/lib/theme/useThemeColors";
 import type { LucideIcon } from "lucide-react-native";
 
-/** Ngjyrat e pllakave të ikonave: paleta e sistemit të Apple-it, e njohur dhe e lexueshme në të dyja temat. */
+/** Ngjyrat e ikonave të cilësimeve: të qeta dhe të thella, që lexohen si ikonë mbi një pllakë të zbehtë në të dyja temat. */
 export const TILE_COLORS = {
-  red: "#FF3B30",
-  orange: "#FF9500",
-  pink: "#FF2D55",
-  purple: "#AF52DE",
-  indigo: "#5856D6",
-  blue: "#007AFF",
-  teal: "#30B0C7",
-  green: "#34C759",
-  gray: "#8E8E93",
+  red: "#C2453D",
+  orange: "#B8641A",
+  pink: "#B0476A",
+  purple: "#7D5BA6",
+  indigo: "#4F5BA8",
+  blue: "#2F6FA8",
+  teal: "#2A7F86",
+  green: "#3E7D52",
+  gray: "#6B655C",
 } as const;
 
-/** Pllaka e ikonës: katror i rrumbullakosur me ngjyrë, ikonë e bardhë (si te Cilësimet e iPhone-it). */
+/**
+ * Pllaka e ikonës: katror i rrumbullakosur me një frymë të ngjyrës dhe ikonën me ngjyrën e plotë. Më parë ishte
+ * kopje e Cilësimeve të iPhone-it (mbushje e fortë ylber, ikonë e bardhë); kështu ngjyra mbetet shenjë, jo zhurmë.
+ */
 export function IconTile({ icon: Glyph, color, size = 30 }: { icon: LucideIcon; color: string; size?: number }) {
+  const theme = useThemeColors();
+  // Në temën e errët ikonat çelen, që të mos humbasin mbi sfondin e errët.
+  const dark = theme.cream.toLowerCase() !== "#ffffff";
   return (
-    <View style={{ width: size, height: size, borderRadius: size * 0.26, backgroundColor: color, alignItems: "center", justifyContent: "center" }}>
-      <Glyph size={size * 0.58} color="#FFFFFF" strokeWidth={2.2} />
+    <View style={{ width: size, height: size, borderRadius: size * 0.3, backgroundColor: `${color}${dark ? "38" : "1F"}`, alignItems: "center", justifyContent: "center" }}>
+      <Glyph size={size * 0.56} color={dark ? theme.ink : color} strokeWidth={2.1} />
     </View>
   );
 }

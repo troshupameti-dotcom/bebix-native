@@ -1,5 +1,9 @@
 import { useState } from "react";
 import { View, Text, Pressable, Image, Animated } from "react-native";
+import { Minus, Plus, ShoppingCart, Star, Truck } from "lucide-react-native";
+import { useThemeColors } from "@/lib/theme/useThemeColors";
+import { haptics } from "@/lib/haptics";
+import { track } from "@/lib/analytics/posthog";
 import { useAppState } from "@/lib/state/AppStateContext";
 import { Icon } from "@/components/ui/Icon";
 import { shadows } from "@/lib/shadows";
@@ -29,7 +33,11 @@ function discountPercent(product: Product): number | null {
 export function ProductCard({ product, onPress, cardWidth }: Props) {
   const { t, language } = useTranslation();
   const ageLabel = formatAgeRange(product.minAgeMonths, product.maxAgeMonths, language === "en" ? "en" : "sq");
-  const { toggleFavorite, isFavorite } = useAppState();
+  const { toggleFavorite, isFavorite, addToCart, updateCartQty, removeFromCart, state } = useAppState();
+  const inCart = state.cartItems.find((i) => i.id === product.id)?.qty ?? 0;
+  // Kufiri i sasisë: stoku kur dihet.
+  const canAddMore = product.stock == null || inCart < product.stock;
+  const theme = useThemeColors();
   const fav = isFavorite(product.id);
   // Inicializues dembel: nje Animated.Value e vetme per gjithe jeten e
   // komponentit, pa lexim ref-i gjate render-it.
@@ -48,6 +56,24 @@ export function ProductCard({ product, onPress, cardWidth }: Props) {
     ? product.compareAtPrice - product.price
     : null;
 
+  const soldOut = product.stock === 0;
+  const reviews = product.reviewCount ?? 0;
+
+  function onAddToCart(e: any) {
+    e.stopPropagation?.();
+    haptics.success();
+    addToCart({ id: product.id, name: product.name, price: product.price, imageUrl: product.imageUrl ?? null, icon: product.icon });
+    track("added_to_cart", { product_id: product.id, price: product.price, source: "card" });
+  }
+
+  function changeQty(e: any, delta: number) {
+    e.stopPropagation?.();
+    haptics.select();
+    const next = inCart + delta;
+    if (next <= 0) removeFromCart(product.id);
+    else updateCartQty(product.id, next);
+  }
+
   function pressIn() {
     Animated.spring(scale, { toValue: 0.97, useNativeDriver: true, speed: 40 }).start();
   }
@@ -65,6 +91,8 @@ export function ProductCard({ product, onPress, cardWidth }: Props) {
 
   return (
     <Animated.View style={[cardWidth ? { width: cardWidth } : { width: "47%" }, { transform: [{ scale }] }]}>
+      {/* Karta si te dyqanet e mëdha online (vlerësimi, çmimi, butoni "Shto në shportë" aty), por pa korniza: vetëm
+          fotoja ka qoshe dhe hije të lehtë; teksti rri lirshëm poshtë saj. */}
       <Pressable
         onPress={onPress}
         onPressIn={pressIn}
@@ -73,15 +101,13 @@ export function ProductCard({ product, onPress, cardWidth }: Props) {
         accessibilityLabel={`${product.name}, €${product.price.toFixed(2)}`}
         className="mb-4"
       >
-        {/* A. Image area — VETËM kjo pjesë ka shadow/rounded/background si "card" */}
+        {/* A. Fotoja: sfond i bardhë edhe në temën e errët, sepse fotot e produkteve janë mbi të bardhë. */}
         <View
-          // Kornizë e bardhë (edhe në temën e errët) kur ka foto: fotot e
-          // produkteve kanë sfond të bardhë, dhe mbi krem dilnin si drejtkëndësha.
-          style={[shadows.soft, thumbnail ? { backgroundColor: "#FFFFFF", padding: 3 } : null]}
-          className={`w-full aspect-square items-center justify-center relative rounded-xl2 overflow-hidden ${thumbnail ? "" : bg}`}
+          style={[shadows.soft, thumbnail ? { backgroundColor: "#FFFFFF", padding: 6 } : null]}
+          className={`relative aspect-square w-full items-center justify-center overflow-hidden rounded-2xl ${thumbnail ? "" : bg}`}
         >
           {thumbnail ? (
-            <Image source={{ uri: thumbnail }} className="w-full h-full" resizeMode="contain" />
+            <Image source={{ uri: thumbnail }} className="h-full w-full" resizeMode="contain" style={soldOut ? { opacity: 0.45 } : undefined} />
           ) : product.emoji ? (
             // Pa foto, emoji i kategorise thote te pakten cfare lloji eshte.
             <Text
@@ -98,39 +124,31 @@ export function ProductCard({ product, onPress, cardWidth }: Props) {
             <Icon name={product.icon} size={36} color={fg} />
           )}
 
-          {/* Top-left: delivery + status badges */}
-          <View className="absolute top-2 left-2" style={{ gap: 4 }}>
-            {product.freeDelivery && (
-              <View className="bg-surface rounded-full px-2 py-1 flex-row items-center self-start" style={shadows.soft}>
-                <Icon name="cube" size={10} color="#6E7452" />
-                <Text className="font-bodyMedium text-[8px] text-olive ml-1 uppercase">{t("card_free_shipping")}</Text>
+          {/* Lart majtas: zbritja (e kuqe, si çmimi në ofertë) dhe shenja "E re" / "Top". */}
+          <View className="absolute left-2 top-2" style={{ gap: 4 }}>
+            {discount != null && (
+              <View className="self-start rounded-md px-1.5 py-0.5" style={{ backgroundColor: "#D94A4A" }}>
+                <Text className="font-bodySemibold text-[11px]" style={{ color: "#FFFFFF" }}>
+                  -{discount}%
+                </Text>
               </View>
             )}
-            {product.badge && (
-              <View className="bg-surface rounded-full px-2 py-0.5 self-start" style={shadows.soft}>
-                <Text className="font-bodySemibold text-[9px] text-ink uppercase tracking-wide">
-                  {t(BADGE_LABEL[product.badge])}
-                </Text>
+            {product.badge && product.badge !== "sale" && (
+              <View className="self-start rounded-md bg-ink px-1.5 py-0.5">
+                <Text className="font-bodySemibold text-[10px] uppercase tracking-wide text-cream">{t(BADGE_LABEL[product.badge])}</Text>
               </View>
             )}
           </View>
 
-          {/* Discount badge — top-right */}
-          {discount != null && (
-            <View className="absolute top-2 right-2 bg-orange rounded-full px-2 py-0.5">
-              <Text className="font-bodySemibold text-[9px] text-on-accent">-{discount}%</Text>
-            </View>
-          )}
-
-          {/* Favorite button — bottom-right, mbi imazhin */}
+          {/* Zemra: lart djathtas, mbi foto. */}
           <Pressable
             onPress={onHeartPress}
             hitSlop={8}
             accessibilityRole="button"
             accessibilityLabel={fav ? t("a11y_unfavorite") : t("a11y_favorite")}
             accessibilityState={{ selected: fav }}
-            className="absolute bottom-2 right-2 w-8 h-8 rounded-full bg-surface items-center justify-center"
-            style={shadows.soft}
+            className="absolute right-2 top-2 h-8 w-8 items-center justify-center rounded-full bg-surface"
+            style={shadows.press}
           >
             <Animated.View style={{ transform: [{ scale: heartScale }] }}>
               <Icon name="heart" size={16} color={fav ? "#C9702E" : "#A79D8A"} />
@@ -138,37 +156,97 @@ export function ProductCard({ product, onPress, cardWidth }: Props) {
           </Pressable>
         </View>
 
-        {/* B. Brand / Title / Price — JASHTË kornizës, direkt mbi background, pa shadow/card.
-            Marka (1 rresht), emri (gjithmonë 2 rreshta, me "…" kur vazhdon) dhe mosha (1 rresht) e zënë
-            gjithmonë të njëjtën hapësirë, edhe kur mungojnë: kështu çmimi del në të njëjtin nivel te çdo kartë. */}
-        <View className="pt-2.5 px-0.5">
-          <Text className="font-body text-xs text-ink-faint mb-1" style={{ lineHeight: 16, minHeight: 16 }} numberOfLines={1}>
+        {/* B. Të dhënat. Marka (1 rresht), emri (2 rreshta), vlerësimi/mosha (1 rresht) zënë gjithmonë të njëjtën
+            hapësirë, edhe kur mungojnë: çmimi dhe butoni dalin në të njëjtin nivel te çdo kartë. */}
+        <View className="px-0.5 pt-2.5">
+          <Text className="font-bodyMedium text-[11.5px] uppercase tracking-wide text-ink-faint" style={{ lineHeight: 15, minHeight: 15 }} numberOfLines={1}>
             {product.brand}
             {product.merchant && product.merchant !== product.brand ? ` · ${product.merchant}` : ""}
           </Text>
-          {/* Emri me shkronja të mëdha dhe të trasha (bold), maksimum 2 rreshta. */}
-          <Text className="font-display text-[15px] text-ink" style={{ lineHeight: 20, minHeight: 40 }} numberOfLines={2} ellipsizeMode="tail">
+          <Text className="mt-0.5 font-bodySemibold text-[14px] text-ink" style={{ lineHeight: 19, minHeight: 38 }} numberOfLines={2} ellipsizeMode="tail">
             {product.name}
           </Text>
-          <Text className="font-bodyMedium text-[11px] text-olive mt-0.5" style={{ lineHeight: 15, minHeight: 15 }} numberOfLines={1}>
-            {ageLabel ?? ""}
-          </Text>
-          <View className="h-2" />
-          <Price price={product.price} compareAt={product.compareAtPrice} size="md" />
-          {savings != null && (
-            <Text className="font-bodyMedium text-xs text-olive mt-1">
-              {t("prod_save_amount", { amount: savings.toFixed(2) })}
-            </Text>
-          )}
-          {product.stock != null && product.stock > 0 && product.stock <= 5 && (
-            <Text className="font-bodyMedium text-xs text-orange mt-1">
-              {t("prod_only_left", { n: product.stock })}
-            </Text>
-          )}
-          {product.stock === 0 && (
-            <Text className="font-bodyMedium text-xs text-ink-faint mt-1">
-              {t("card_out_of_stock")}
-            </Text>
+
+          {/* Yjet me numrin e vlerësimeve kur ka; përndryshe mosha e përshtatshme. */}
+          <View className="mt-1 flex-row items-center" style={{ minHeight: 16, gap: 4 }}>
+            {reviews > 0 ? (
+              <>
+                <View className="flex-row" accessibilityLabel={t("card_rating_a11y", { rating: product.rating.toFixed(1), n: reviews })}>
+                  {[1, 2, 3, 4, 5].map((i) => (
+                    <Star key={i} size={12} color="#E8A23B" fill={i <= Math.round(product.rating) ? "#E8A23B" : "transparent"} strokeWidth={1.8} />
+                  ))}
+                </View>
+                <Text className="font-body text-[11.5px] text-ink-faint">({reviews})</Text>
+              </>
+            ) : ageLabel ? (
+              <Text className="font-bodyMedium text-[11.5px] text-olive" numberOfLines={1}>
+                {ageLabel}
+              </Text>
+            ) : null}
+          </View>
+
+          <View className="mt-1.5">
+            <Price price={product.price} compareAt={product.compareAtPrice} size="md" display />
+          </View>
+
+          {/* Një rresht gjendjeje: kursimi, stoku i pakët, ose dërgesa falas. */}
+          <View className="mt-0.5 flex-row items-center" style={{ minHeight: 17, gap: 4 }}>
+            {soldOut ? null : product.stock != null && product.stock <= 5 ? (
+              <Text className="font-bodyMedium text-[11.5px]" style={{ color: "#D94A4A" }} numberOfLines={1}>
+                {t("prod_only_left", { n: product.stock })}
+              </Text>
+            ) : savings != null ? (
+              <Text className="font-bodyMedium text-[11.5px] text-olive" numberOfLines={1}>
+                {t("prod_save_amount", { amount: savings.toFixed(2) })}
+              </Text>
+            ) : product.freeDelivery ? (
+              <>
+                <Truck size={12} color={theme.olive} strokeWidth={2} />
+                <Text className="font-bodyMedium text-[11.5px] text-olive" numberOfLines={1}>
+                  {t("card_free_delivery")}
+                </Text>
+              </>
+            ) : null}
+          </View>
+
+          {soldOut ? (
+            <View className="mt-2 items-center justify-center rounded-full bg-cream-soft" style={{ minHeight: 36 }}>
+              <Text className="font-bodyMedium text-[12.5px] text-ink-faint">{t("card_out_of_stock")}</Text>
+            </View>
+          ) : inCart > 0 ? (
+            // Tashmë në shportë: sasia ndryshohet këtu, si te dyqanet e mëdha online.
+            <View className="mt-2 flex-row items-center justify-between rounded-full bg-olive-bg px-1" style={{ minHeight: 36 }}>
+              <Pressable onPress={(e) => changeQty(e, -1)} hitSlop={6} accessibilityRole="button" accessibilityLabel={`${t("card_qty_less")}: ${product.name}`} className="h-7 w-7 items-center justify-center rounded-full bg-surface">
+                <Minus size={14} color={theme.ink} strokeWidth={2.4} />
+              </Pressable>
+              <Text className="font-bodySemibold text-[13px] text-ink" accessibilityLabel={t("card_qty_in_cart", { n: inCart })}>
+                {t("card_qty_in_cart", { n: inCart })}
+              </Text>
+              <Pressable
+                onPress={(e) => changeQty(e, 1)}
+                disabled={!canAddMore}
+                hitSlop={6}
+                accessibilityRole="button"
+                accessibilityLabel={`${t("card_qty_more")}: ${product.name}`}
+                className="h-7 w-7 items-center justify-center rounded-full bg-surface"
+                style={canAddMore ? undefined : { opacity: 0.4 }}
+              >
+                <Plus size={14} color={theme.ink} strokeWidth={2.4} />
+              </Pressable>
+            </View>
+          ) : (
+            <Pressable
+              onPress={onAddToCart}
+              accessibilityRole="button"
+              accessibilityLabel={`${t("prod_add_to_cart")}: ${product.name}`}
+              className="mt-2 flex-row items-center justify-center rounded-full bg-olive active:opacity-80"
+              style={{ minHeight: 36, gap: 6 }}
+            >
+              <ShoppingCart size={14} color={theme.onAccent} strokeWidth={2.2} />
+              <Text className="font-bodySemibold text-[12.5px] text-on-accent" numberOfLines={1}>
+                {t("card_add")}
+              </Text>
+            </Pressable>
           )}
         </View>
       </Pressable>
@@ -180,12 +258,13 @@ export function ProductCard({ product, onPress, cardWidth }: Props) {
 export function ProductCardSkeleton({ cardWidth }: { cardWidth?: number }) {
   return (
     <View style={cardWidth ? { width: cardWidth } : { width: "47%" }} className="mb-4">
-      <View className="w-full aspect-square bg-cream-soft rounded-xl2" />
-      <View className="pt-2.5 px-0.5">
-        <View className="w-1/2 h-3 bg-cream-soft rounded mb-2" />
-        <View className="w-full h-3.5 bg-cream-soft rounded mb-1.5" />
-        <View className="w-3/4 h-3.5 bg-cream-soft rounded mb-3" />
-        <View className="w-1/3 h-5 bg-cream-soft rounded" />
+      <View className="aspect-square w-full rounded-2xl bg-cream-soft" />
+      <View className="px-0.5 pt-2.5">
+        <View className="mb-2 h-3 w-1/2 rounded bg-cream-soft" />
+        <View className="mb-1.5 h-3.5 w-full rounded bg-cream-soft" />
+        <View className="mb-3 h-3.5 w-3/4 rounded bg-cream-soft" />
+        <View className="mb-3 h-5 w-1/3 rounded bg-cream-soft" />
+        <View className="h-9 w-full rounded-full bg-cream-soft" />
       </View>
     </View>
   );

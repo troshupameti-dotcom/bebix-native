@@ -10,8 +10,8 @@ type LogoProps = {
   variant?: "wordmark" | "full";
 };
 
-/** Logoja e plotë: shenja "b" me fjalën poshtë (1314×1313, e tejdukshme): mjaft e madhe për ekranet 3x. */
-const FULL_RATIO = 1313 / 1314;
+/** Logoja e plotë: fjala TROA me gjurmën brenda O-së (1314×474, e tejdukshme): mjaft e madhe për ekranet 3x. */
+const FULL_RATIO = 474 / 1314;
 
 /**
  * Fjala "bebix", e njëjta si te webi.
@@ -44,7 +44,7 @@ export function Logo({ size = "lg", variant = "wordmark" }: LogoProps) {
           source={isDark ? require("@/assets/images/logo-full-dark.png") : require("@/assets/images/logo-full.png")}
           style={{ width: fullWidth, height: fullWidth * FULL_RATIO }}
           contentFit="contain"
-          accessibilityLabel="Bebix"
+          accessibilityLabel="TROA"
         />
       </MotiView>
     );
