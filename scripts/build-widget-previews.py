@@ -71,7 +71,7 @@ def quick() -> Image.Image:
 def mini() -> Image.Image:
     w = h = 150
     img, d = canvas(w, h)
-    text(d, 14, 14, "Bebix · Ana", font("bold", 12), INK)
+    text(d, 14, 14, "TROA · Ana", font("bold", 12), INK)
     rows = [(FEED, "Ushqimi", "09:40"), (DIAPER, "Pelena", "10:15"), (SLEEP, "Gjumi", "08:30")]
     top, rh = 38, (h - 38 - 12) / 3
     for i, ((tint, _), label, value) in enumerate(rows):
