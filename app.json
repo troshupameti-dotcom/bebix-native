@@ -27,7 +27,7 @@
       "googleServicesFile": "./google-services.json",
       "adaptiveIcon": {
         "foregroundImage": "./assets/adaptive-icon.png",
-        "backgroundColor": "#F3F3F1"
+        "backgroundColor": "#F7EDE5"
       },
       "permissions": [
         "android.permission.CAMERA",
@@ -51,12 +51,12 @@
           "image": "./assets/splash.png",
           "imageWidth": 300,
           "resizeMode": "contain",
-          "backgroundColor": "#F3F3F1",
+          "backgroundColor": "#F7EDE5",
           "android": {
             "image": "./assets/splash-android-blank.png",
             "imageWidth": 288,
             "resizeMode": "contain",
-            "backgroundColor": "#F3F3F1"
+            "backgroundColor": "#F7EDE5"
           }
         }
       ],
