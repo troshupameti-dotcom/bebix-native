@@ -118,7 +118,7 @@ Bebix. For your baby, with love.
 ```
 
 **Kategoria:** Prindërim (Parenting). **Etiketat:** bebe, prindër, dyqan.
-**Email kontakti:** `info.bebix@gmail.com`. **Faqja:** `https://www.bebix.store`.
+**Email kontakti:** `info.troababy@gmail.com`. **Faqja:** `https://www.bebix.store`.
 **Politika e privatësisë:** `https://www.bebix.store/sq/legal/privacy`.
 
 ---

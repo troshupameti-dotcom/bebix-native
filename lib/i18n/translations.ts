@@ -1550,7 +1550,7 @@ export const translations = {
     ai_report_note_ph: "Shënim (opsional)",
     ai_report_send: "Dërgo raportimin",
     ai_report_sent: "Faleminderit. Raportimin e shqyrton ekipi i TROA-s.",
-    ai_report_failed: "Raportimi s'u dërgua. Provoni përsëri, ose na shkruani te info.bebix@gmail.com.",
+    ai_report_failed: "Raportimi s'u dërgua. Provoni përsëri, ose na shkruani te info.troababy@gmail.com.",
     ai_chat_input_ph: "Shkruaj një pyetje...",
 
     // ---- Përrallat ----
@@ -3685,7 +3685,7 @@ export const translations = {
     ai_report_note_ph: "Note (optional)",
     ai_report_send: "Send report",
     ai_report_sent: "Thank you. The TROA team will review your report.",
-    ai_report_failed: "The report wasn't sent. Please try again, or write to us at info.bebix@gmail.com.",
+    ai_report_failed: "The report wasn't sent. Please try again, or write to us at info.troababy@gmail.com.",
     ai_chat_input_ph: "Type a question...",
 
     // ---- Përrallat ----

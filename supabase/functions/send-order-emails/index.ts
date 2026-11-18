@@ -17,9 +17,14 @@ const supabase = createClient(Deno.env.get("SUPABASE_URL")!, Deno.env.get("SUPAB
 });
 
 const RESEND_KEY = Deno.env.get("RESEND_API_KEY");
-const FROM = Deno.env.get("ORDER_EMAIL_FROM") ?? "TROA <porosi@bebix.store>";
-const REPLY_TO = "info.bebix@gmail.com";
-const ADMIN_TO = Deno.env.get("ADMIN_ALERT_EMAIL") ?? "info.bebix@gmail.com";
+// Emri i dërguesit është TROA edhe nëse sekreti ORDER_EMAIL_FROM ka ende emrin e vjetër "Bebix".
+const FROM = (Deno.env.get("ORDER_EMAIL_FROM") ?? "TROA <porosi@bebix.store>").replace(/^\s*"?bebix"?\s*</i, "TROA <");
+/** Email-i i dyqanit (u ndërrua më 18 nëntor 2026 nga info.bebix@gmail.com). */
+const SHOP_EMAIL = "info.troababy@gmail.com";
+const REPLY_TO = SHOP_EMAIL;
+// Njoftimet e porosive shkojnë te adresa e re; sekreti ADMIN_ALERT_EMAIL vlen vetëm kur s'është adresa e vjetër.
+const ADMIN_ENV = (Deno.env.get("ADMIN_ALERT_EMAIL") ?? "").trim();
+const ADMIN_TO = ADMIN_ENV && ADMIN_ENV.toLowerCase() !== "info.bebix@gmail.com" ? ADMIN_ENV : SHOP_EMAIL;
 const SITE = "https://www.bebix.store";
 
 type Lang = "sq" | "en";
@@ -165,7 +170,7 @@ function itemsTable(o: Order, meta: Meta, L: (typeof TX)[Lang]): string {
 }
 
 function shell(title: string, body: string, lang: Lang): string {
-  // Logoja (shenja "b×" + "bebix") ka sfondin e bardhë të ngulitur në imazh, me qoshe të rrumbullakëta. Klientët e emailit
+  // Logoja (TROA) ka sfondin e bardhë të ngulitur në imazh, me qoshe të rrumbullakëta. Klientët e emailit
   // në modalitetin e errët (Gmail dhe Outlook në telefon) ndryshojnë ngjyrat e HTML-së, por imazhet s'i prekin kurrë: në
   // emailin e çelët logoja bashkohet me kartën e bardhë, në të errëtin del si pllakë e pastër. 3x për ekranet retina.
   return `<!doctype html><html lang="${lang}"><head><meta charset="utf-8"><meta name="color-scheme" content="light"><meta name="supported-color-schemes" content="light"></head><body style="margin:0;background:#f8f6f2;font-family:Arial,Helvetica,sans-serif;">

@@ -25,8 +25,10 @@ const anonKey = Deno.env.get("SUPABASE_ANON_KEY")!;
 const apiKey = Deno.env.get("ANTHROPIC_API_KEY") ?? "";
 const MODEL = Deno.env.get("STORY_MODEL") ?? "claude-opus-5-5";
 const RESEND_KEY = Deno.env.get("RESEND_API_KEY");
-const REVIEW_EMAIL = Deno.env.get("STORY_REVIEW_EMAIL") ?? "info.bebix@gmail.com";
-const FROM = Deno.env.get("ORDER_EMAIL_FROM") ?? "TROA <porosi@bebix.store>";
+// Adresa e re e dyqanit; sekreti STORY_REVIEW_EMAIL vlen vetëm kur s'është adresa e vjetër.
+const REVIEW_ENV = (Deno.env.get("STORY_REVIEW_EMAIL") ?? "").trim();
+const REVIEW_EMAIL = REVIEW_ENV && REVIEW_ENV.toLowerCase() !== "info.bebix@gmail.com" ? REVIEW_ENV : "info.troababy@gmail.com";
+const FROM = (Deno.env.get("ORDER_EMAIL_FROM") ?? "TROA <porosi@bebix.store>").replace(/^\s*"?bebix"?\s*</i, "TROA <");
 const ADMIN_DAILY_LIMIT = 5;
 const WEEK_GAP_MS = 6 * 86_400_000;
 
