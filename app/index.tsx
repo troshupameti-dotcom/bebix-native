@@ -10,7 +10,7 @@ export default function Index() {
   if (loading) {
     return (
       // E njëjta figurë, sfond dhe madhësi si splash-i: kalimi s'duket fare.
-      <View className="flex-1 items-center justify-center" style={{ backgroundColor: "#F7EDE5" }}>
+      <View className="flex-1 items-center justify-center" style={{ backgroundColor: "#58572D" }}>
         <Image source={require("@/assets/images/splash-logo.png")} style={{ width: 300, height: 300 }} contentFit="contain" />
       </View>
     );

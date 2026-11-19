@@ -31,6 +31,6 @@ export function BrandSplash({ until }: { until: number }) {
 }
 
 const styles = StyleSheet.create({
-  wrap: { backgroundColor: "#F7EDE5", alignItems: "center", justifyContent: "center", zIndex: 1000 },
+  wrap: { backgroundColor: "#58572D", alignItems: "center", justifyContent: "center", zIndex: 1000 },
   logo: { width: 300, height: 300 },
 });
