@@ -45,6 +45,17 @@ jobs:
           echo 'KERNEL=="kvm", GROUP="kvm", MODE="0666", OPTIONS+="static_node=kvm"' | sudo tee /etc/udev/rules.d/99-kvm4all.rules
           sudo udevadm control --reload-rules
           sudo udevadm trigger --name-match=kvm
+      # Mjetet e SDK-së në makinën e GitHub janë të vjetra: s'e lexojnë listën e re të paketave të Google
+      # (SDK XML 4) dhe shkarkimi i emulatorit dështon ("Failed to download package"). I ndërrojmë me të rejat.
+      - name: Mjetet e reja të Android SDK
+        run: |
+          curl -sSfL -o /tmp/cmdline-tools.zip https://dl.google.com/android/repository/commandlinetools-linux-14742923_latest.zip
+          sudo rm -rf "$ANDROID_HOME/cmdline-tools/latest"
+          sudo mkdir -p "$ANDROID_HOME/cmdline-tools"
+          sudo unzip -q /tmp/cmdline-tools.zip -d "$ANDROID_HOME/cmdline-tools"
+          sudo mv "$ANDROID_HOME/cmdline-tools/cmdline-tools" "$ANDROID_HOME/cmdline-tools/latest"
+          sudo chown -R "$USER" "$ANDROID_HOME"
+          "$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager" --version
       - name: Hapja në Android 14
         uses: reactivecircus/android-emulator-runner@v2
         with:
