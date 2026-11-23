@@ -49,8 +49,15 @@ function cacheFile(): File | null {
   }
 }
 
-async function writeCache(list: Recipe[]): Promise<void> {
-  const json = JSON.stringify(list);
+/**
+ * Kopja e ruajtur: recetat dhe gjendja e serverit kur u morën. `count` dhe `maxUpdatedAt` lejojnë që hapja tjetër
+ * të pyesë vetëm "a ka ndryshuar diçka?" (dy kërkesa të vogla), jo ta shkarkojë gjithë listën; `slugs` janë të
+ * gjitha recetat e publikuara (edhe ato që app-i i hedh si të paplota), për të dalluar kur një recetë hiqet.
+ */
+export type RecipeCache = { recipes: Recipe[]; count: number | null; maxUpdatedAt: string | null; slugs: string[] };
+
+async function writeCache(cache: RecipeCache): Promise<void> {
+  const json = JSON.stringify({ v: 2, ...cache });
   try {
     const file = cacheFile();
     if (!file) throw new Error("no file system");
@@ -62,15 +69,29 @@ async function writeCache(list: Recipe[]): Promise<void> {
   }
 }
 
-async function readCache(): Promise<Recipe[] | null> {
+/** Kopja e ruajtur; formati i parë (vetëm lista e recetave) lexohet ende, pa të dhënat e sinkronizimit. */
+export function parseCache(raw: unknown): RecipeCache | null {
+  if (Array.isArray(raw)) return raw.length ? { recipes: raw as Recipe[], count: null, maxUpdatedAt: null, slugs: [] } : null;
+  if (!raw || typeof raw !== "object") return null;
+  const c = raw as Partial<RecipeCache>;
+  if (!Array.isArray(c.recipes) || !c.recipes.length) return null;
+  return {
+    recipes: c.recipes,
+    count: typeof c.count === "number" ? c.count : null,
+    maxUpdatedAt: typeof c.maxUpdatedAt === "string" ? c.maxUpdatedAt : null,
+    slugs: Array.isArray(c.slugs) ? c.slugs.filter((x): x is string => typeof x === "string") : [],
+  };
+}
+
+async function readCache(): Promise<RecipeCache | null> {
   try {
     const file = cacheFile();
-    if (file?.exists) return JSON.parse(await file.text()) as Recipe[];
+    if (file?.exists) return parseCache(JSON.parse(await file.text()));
   } catch {
     // Skedari i dëmtuar: provohet kopja e vjetër.
   }
   const saved = await AsyncStorage.getItem(SAVED_KEY);
-  return saved ? (JSON.parse(saved) as Recipe[]) : null;
+  return saved ? parseCache(JSON.parse(saved)) : null;
 }
 
 type BundledRecipe = Omit<Recipe, "coverUrl" | "coverSvg" | "updatedAt">;
@@ -186,38 +207,96 @@ export function findRecipe(slug: string): Recipe | null {
   return cachedRecipes().recipes.find((r) => r.slug === slug) ?? BUNDLED_RECIPES.find((r) => r.slug === slug) ?? null;
 }
 
-async function fetchServer(): Promise<Recipe[] | null> {
-  const rows: Row[] = [];
+const valid = (r: Recipe) => r.ingredients.length > 0 && r.steps.length > 0;
+
+/** Faqe pas faqeje, me renditje të qëndrueshme; null kur një faqe dështon. */
+async function fetchPages<T>(columns: string, since: string | null, pageSize: number): Promise<T[] | null> {
+  const rows: T[] = [];
   for (let page = 0; page < MAX_PAGES; page++) {
-    const { data, error } = await supabase
-      .from("recipes")
-      .select(COLUMNS)
-      .eq("status", "published")
+    let query = supabase.from("recipes").select(columns).eq("status", "published");
+    if (since) query = query.gte("updated_at", since);
+    const { data, error } = await query
       .order("sort_order", { ascending: true })
       .order("slug", { ascending: true })
-      .range(page * PAGE, page * PAGE + PAGE - 1);
+      .range(page * pageSize, page * pageSize + pageSize - 1);
     if (error || !Array.isArray(data)) return null;
-    rows.push(...(data as unknown as Row[]));
-    if (data.length < PAGE) break;
+    rows.push(...(data as unknown as T[]));
+    if (data.length < pageSize) break;
   }
-  return rows.map(toRecipe).filter((r) => r.ingredients.length && r.steps.length);
+  return rows;
+}
+
+/** "A ka ndryshuar diçka?": numri i recetave të publikuara dhe ndryshimi i fundit, pa shkarkuar receta. */
+async function fetchSummary(): Promise<{ count: number; maxUpdatedAt: string | null } | null> {
+  const [counted, newest] = await Promise.all([
+    supabase.from("recipes").select("slug", { count: "exact", head: true }).eq("status", "published"),
+    supabase.from("recipes").select("updated_at").eq("status", "published").order("updated_at", { ascending: false }).limit(1),
+  ]);
+  if (counted.error || newest.error || typeof counted.count !== "number") return null;
+  const top = (newest.data as { updated_at: string | null }[] | null)?.[0];
+  return { count: counted.count, maxUpdatedAt: top?.updated_at ?? null };
+}
+
+/**
+ * Bashkon ndryshimet me kopjen: recetat e ndryshuara zëvendësojnë të vjetrat (sipas slug), të rejat shtohen, dhe kur
+ * jepet lista e plotë e slug-eve, hiqen ato që s'janë më të publikuara.
+ */
+export function mergeRecipes(cached: Recipe[], changed: Recipe[], keep: Set<string> | null): Recipe[] {
+  const bySlug = new Map(cached.map((r) => [r.slug, r]));
+  for (const r of changed) {
+    if (valid(r)) bySlug.set(r.slug, r);
+    else bySlug.delete(r.slug);
+  }
+  return [...bySlug.values()].filter((r) => !keep || keep.has(r.slug));
+}
+
+/**
+ * Hapja e parë (ose pa kopje): të gjitha recetat. Më pas: dy kërkesa të vogla; kur s'ka ndryshuar asgjë, s'shkarkohet
+ * asnjë recetë. Kur ka ndryshime, merren vetëm recetat e ndryshuara që nga hera e fundit; kur numri s'përputhet
+ * (është hequr ose fshehur një recetë), merren vetëm slug-et për të hequr ato që s'janë më.
+ * Kështu 10 000 receta s'shkarkohen sa herë hapet app-i (rreth 26 MB), por vetëm një herë.
+ */
+async function syncServer(cache: RecipeCache | null): Promise<RecipeCache | null> {
+  const summary = await fetchSummary();
+  if (!summary) return null;
+  if (cache && cache.count === summary.count && cache.maxUpdatedAt === summary.maxUpdatedAt && cache.maxUpdatedAt) return cache;
+
+  if (!cache || !cache.maxUpdatedAt || cache.count == null) {
+    const rows = await fetchPages<Row>(COLUMNS, null, PAGE);
+    if (!rows) return null;
+    return { recipes: rows.map(toRecipe).filter(valid), count: summary.count, maxUpdatedAt: summary.maxUpdatedAt, slugs: rows.map((r) => r.slug) };
+  }
+
+  const changedRows = await fetchPages<Row>(COLUMNS, cache.maxUpdatedAt, PAGE);
+  if (!changedRows) return null;
+  const known = new Set([...cache.slugs, ...changedRows.map((r) => r.slug)]);
+  let slugs = [...known];
+  let keep: Set<string> | null = null;
+  if (known.size !== summary.count) {
+    const list = await fetchPages<{ slug: string }>("slug", null, 1000);
+    if (!list) return null;
+    slugs = list.map((r) => r.slug);
+    keep = new Set(slugs);
+  }
+  return {
+    recipes: mergeRecipes(cache.recipes, changedRows.map(toRecipe), keep),
+    count: summary.count,
+    maxUpdatedAt: summary.maxUpdatedAt,
+    slugs,
+  };
 }
 
 export async function loadRecipes(): Promise<RecipeIndex> {
-  const server = await fetchServer().catch(() => null);
-  if (server && server.length) {
-    memory = { recipes: sortRecipes(server), source: "server" };
-    await writeCache(server);
+  const cache = await readCache().catch(() => null);
+  const synced = await syncServer(cache).catch(() => null);
+  if (synced && synced.recipes.length) {
+    memory = { recipes: sortRecipes(synced.recipes), source: "server" };
+    if (synced !== cache) await writeCache(synced);
     return memory;
   }
-  try {
-    const list = await readCache();
-    if (Array.isArray(list) && list.length) {
-      memory = { recipes: sortRecipes(list), source: "saved" };
-      return memory;
-    }
-  } catch {
-    // Kopja e ruajtur e dëmtuar: kalohet te recetat e app-it.
+  if (cache && cache.recipes.length) {
+    memory = { recipes: sortRecipes(cache.recipes), source: "saved" };
+    return memory;
   }
   memory = { recipes: sortRecipes(BUNDLED_RECIPES), source: "bundled" };
   return memory;
