@@ -6,6 +6,8 @@ import { CalendarDays, Carrot, Clock, Heart, Search, ShieldCheck, SlidersHorizon
 import { Chip, SectionTitle } from "@/components/stories/StoryParts";
 import { MEAL_LABEL, RecipeCard, RecipeCover, RecipeRow, STAGE_LABEL, useRecipeText } from "@/components/recipes/RecipeParts";
 import { ReadyForSolidsCard } from "@/components/recipes/ReadyForSolidsCard";
+import { SuggestionsBlock } from "@/components/recipes/SuggestionsBlock";
+import { useFoods } from "@/lib/recipes/foods";
 import { useTranslation } from "@/lib/i18n/LanguageContext";
 import { useThemeColors } from "@/lib/theme/useThemeColors";
 import { haptics } from "@/lib/haptics";
@@ -56,6 +58,9 @@ export default function RecipesLibrary() {
   const { tries } = useFoodTries();
   const access = useCareAccess();
   const tried = access.canSee ? triedFoodsCount(tries) : 0;
+  const foods = useFoods();
+  // Provat shihen vetëm nga kush ka leje (si te "Ushqimet e para"); pa to, sugjerimet bazohen vetëm te mosha.
+  const visibleTries = useMemo(() => (access.canSee ? tries : []), [access.canSee, tries]);
   const { plan } = useMealPlan();
   const todayKey = isoDay(new Date());
   const plannedLeft = weekDays(weekStartOf(new Date())).filter((d) => d >= todayKey).flatMap((d) => MEAL_TYPES.map((m) => plan[slotKey(d, m)])).filter(Boolean).length;
@@ -274,6 +279,20 @@ export default function RecipesLibrary() {
               }}
             />
           </View>
+          {/* Sugjerimet sipas moshës dhe provave: ushqime të reja, receta me ushqimet që i njeh, receta me një ushqim të ri. */}
+          {chosenBand === undefined ? (
+            <SuggestionsBlock
+              recipes={index.recipes}
+              foods={foods}
+              tries={visibleTries}
+              months={child.months}
+              allergens={child.allergens}
+              name={child.name}
+              padH={padH}
+              favorites={favoriteSet}
+              onOpen={open}
+            />
+          ) : null}
           {sections.map((s) => (
             <View key={s.key}>
               <SectionTitle title={s.title} />
