@@ -16,6 +16,7 @@ const LIBRARY = new URL("../migrations/20261110090100_recipes_library_1.sql", im
 const LIBRARY_2 = new URL("../migrations/20261112090100_recipes_library_2.sql", import.meta.url);
 const FIXES = new URL("../migrations/20261113090000_recipes_language_fixes.sql", import.meta.url);
 const LIBRARY_3 = new URL("../migrations/20261114090100_recipes_library_3.sql", import.meta.url);
+const LIBRARY_4 = new URL("../migrations/20261123090100_recipes_library_4.sql", import.meta.url);
 const SEED = JSON.parse(fs.readFileSync(new URL("../../content/recipes/sq.json", import.meta.url), "utf8"));
 const db = new PGlite();
 process.on("uncaughtException", (e) => { console.log("GABIM i papritur:", String(e.message).slice(0, 300)); process.exit(1); });
@@ -40,7 +41,7 @@ grant select, insert, update, delete on storage.objects to authenticated;
 `);
 await db.exec(AFTER_OCT_30);
 await db.exec("grant usage on schema public, auth, storage to service_role;");
-for (const [file, label] of [[TABLE, "tabela"], [LIBRARY, "biblioteka"], [LIBRARY_2, "receta e dimrit"], [FIXES, "gjuha e njësuar"], [LIBRARY_3, "20 recetat e reja"]]) {
+for (const [file, label] of [[TABLE, "tabela"], [LIBRARY, "biblioteka"], [LIBRARY_2, "receta e dimrit"], [FIXES, "gjuha e njësuar"], [LIBRARY_3, "20 recetat e reja"], [LIBRARY_4, "20 recetat e dimrit 2026"]]) {
   for (const name of ["i pari", "i dyti"]) {
     try { await db.exec(fs.readFileSync(file, "utf8")); console.log(`OK  migrimi i ${label}s (${name})`); }
     catch (e) { console.log(`GABIM te migrimi i ${label}s:`, e.message); process.exit(1); }
