@@ -82,11 +82,13 @@ export default function ShareCardScreen() {
   const cardRef = useRef<ViewInstance>(null);
 
   const babyName = state.profile.nickname || state.profile.babyName || t("your_baby");
-  const dateIso = params.kind === "milestone" || params.kind === "moment" ? (sourceMoment?.date ?? new Date().toISOString()) : new Date().toISOString();
+  const dateIso = params.kind === "milestone" || params.kind === "moment" || params.kind === "pregnancy" ? (sourceMoment?.date ?? new Date().toISOString()) : new Date().toISOString();
   // Karta e shtatzënisë: nënshkrimi është "x ditë deri në lindje" (nga data e pritur e fëmijës aktiv), jo data e sotme.
   const { child } = useActiveChild();
   const preg = params.kind === "pregnancy" ? pregnancyProgress(child.dueDate ?? null) : null;
-  const dateLabel = preg ? (preg.daysLeft > 0 ? t("preg_days_left", { n: preg.daysLeft }) : t("preg_due_now")) : formatDate(dateIso, lang);
+  // Java e sotme: "x ditë deri në lindje". Një foto barku e një jave të kaluar: data e fotos.
+  const isThisWeek = !!preg && params.n === preg.week;
+  const dateLabel = preg && isThisWeek ? (preg.daysLeft > 0 ? t("preg_days_left", { n: preg.daysLeft }) : t("preg_due_now")) : formatDate(dateIso, lang);
   const content = buildCardContent({ kind: params.kind, n: params.n, babyName, moment: sourceMoment, dateLabel, t });
 
   // Parapamja: e gjerë sa ekrani; story-ja kufizohet nga lartësia.

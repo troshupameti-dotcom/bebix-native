@@ -1,13 +1,14 @@
 import { useCallback, useEffect, useState, type ComponentType } from "react";
 import { Pressable, Text, View } from "react-native";
 import { router, useFocusEffect, type Href } from "expo-router";
-import { Baby, Footprints, Luggage, Timer } from "lucide-react-native";
+import { Baby, Camera, Footprints, Luggage, Timer } from "lucide-react-native";
 import { BottomSheet } from "@/components/ui/BottomSheet";
 import { Icon } from "@/components/ui/Icon";
 import { FormField } from "@/components/baby/FormField";
 import { pregnancyProgress } from "@/lib/age/engine";
 import { loadPregnancyWeek, type PregnancyWeek } from "@/lib/parent/pregnancy";
 import { bagProgress, loadBag } from "@/lib/parent/pregnancyTools";
+import { bumpPhotos } from "@/lib/baby/bump";
 import { formatDobInput, parseDobInput } from "@/lib/babyProfile";
 import { saveBabyProfileRemote } from "@/lib/babySync";
 import { resolveChildren } from "@/lib/children/resolve";
@@ -24,7 +25,8 @@ import { haptics } from "@/lib/haptics";
 export function PregnancyHome({ dueDate, babyName }: { dueDate: string | null; babyName: string | null }) {
   const { t, lang } = useTranslation();
   const tones = useTones();
-  const { updateProfile } = useAppState();
+  const { state, updateProfile } = useAppState();
+  const bumpCount = bumpPhotos(state.baby.moments).length;
   const progress = pregnancyProgress(dueDate);
   const [content, setContent] = useState<PregnancyWeek | null>(null);
   const [born, setBorn] = useState(false);
@@ -120,6 +122,13 @@ export function PregnancyHome({ dueDate, babyName }: { dueDate: string | null; b
       </View>
 
       <Text className="mt-5 font-bodySemibold text-[15px] text-ink">{t("preg_tools_title")}</Text>
+      <ToolRow
+        icon={Camera}
+        tone={tones.orange}
+        title={t("bump_title")}
+        hint={bumpCount > 0 ? t("bump_hint", { n: bumpCount }) : t("bump_hint_empty")}
+        href="/(main)/baby/bump"
+      />
       <ToolRow
         icon={Footprints}
         tone={tones.pink}
