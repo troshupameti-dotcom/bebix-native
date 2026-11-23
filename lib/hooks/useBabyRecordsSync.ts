@@ -12,6 +12,7 @@ import { clearChildrenStore, getChildrenState, setChildrenState } from "@/lib/ch
 import { registerChildSwitchRunner, takeChildSwitch } from "@/lib/children/switchRequest";
 import { parseDate } from "@/lib/age/engine";
 import { claimDataOwner, claimLocalData } from "@/lib/auth/localDataOwner";
+import { clearPregnancyTools } from "@/lib/parent/pregnancyTools";
 import { resolveDataOwnerId, resolveDataOwnerIdStrict } from "@/lib/baby/household";
 import { registerSyncRequest, resetSyncStatus, setSyncPhase } from "@/lib/baby/syncStatus";
 import { supabase } from "@/lib/supabase/client";
@@ -202,6 +203,7 @@ export function useBabyRecordsSync(isAuthenticated: boolean) {
         await resetBabyRecordsSyncState();
         await clearChildrenStore();
         await clearChildSnapshots();
+        await clearPregnancyTools();
         if (cancelled) return;
         reset.current();
         queued.current = false;

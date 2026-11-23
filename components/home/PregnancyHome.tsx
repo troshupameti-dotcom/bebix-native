@@ -1,10 +1,12 @@
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState, type ComponentType } from "react";
 import { Pressable, Text, View } from "react-native";
-import { Baby } from "lucide-react-native";
+import { router, useFocusEffect, type Href } from "expo-router";
+import { Baby, Footprints, Luggage, Timer } from "lucide-react-native";
 import { BottomSheet } from "@/components/ui/BottomSheet";
 import { FormField } from "@/components/baby/FormField";
 import { pregnancyProgress } from "@/lib/age/engine";
 import { loadPregnancyWeek, type PregnancyWeek } from "@/lib/parent/pregnancy";
+import { bagProgress, loadBag } from "@/lib/parent/pregnancyTools";
 import { formatDobInput, parseDobInput } from "@/lib/babyProfile";
 import { saveBabyProfileRemote } from "@/lib/babySync";
 import { resolveChildren } from "@/lib/children/resolve";
@@ -30,6 +32,18 @@ export function PregnancyHome({ dueDate, babyName }: { dueDate: string | null; b
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
   const week = progress?.week ?? null;
+  const [bag, setBag] = useState(() => bagProgress([]));
+
+  // Pas kthimit nga çanta, numri "x nga y" rifreskohet.
+  useFocusEffect(
+    useCallback(() => {
+      let alive = true;
+      void loadBag().then((l) => alive && setBag(bagProgress(l)));
+      return () => {
+        alive = false;
+      };
+    }, []),
+  );
 
   useEffect(() => {
     let alive = true;
@@ -90,6 +104,29 @@ export function PregnancyHome({ dueDate, babyName }: { dueDate: string | null; b
         ) : null}
       </View>
 
+      <Text className="mt-5 font-bodySemibold text-[15px] text-ink">{t("preg_tools_title")}</Text>
+      <ToolRow
+        icon={Footprints}
+        tone={tones.pink}
+        title={t("preg_kicks_title")}
+        hint={t("preg_kicks_hint")}
+        href="/(main)/baby/kicks"
+      />
+      <ToolRow
+        icon={Timer}
+        tone={tones.purple}
+        title={t("preg_contr_title")}
+        hint={t("preg_contr_hint")}
+        href="/(main)/baby/contractions"
+      />
+      <ToolRow
+        icon={Luggage}
+        tone={tones.green}
+        title={t("preg_bag_title")}
+        hint={t("preg_bag_hint", { done: bag.done, total: bag.total })}
+        href="/(main)/baby/hospital-bag"
+      />
+
       <Pressable
         onPress={() => {
           haptics.tap();
@@ -140,5 +177,30 @@ export function PregnancyHome({ dueDate, babyName }: { dueDate: string | null; b
         </View>
       </BottomSheet>
     </View>
+  );
+}
+
+type IconCmp = ComponentType<{ size?: number; color?: string; strokeWidth?: number }>;
+
+function ToolRow({ icon: IconC, tone, title, hint, href }: { icon: IconCmp; tone: { tint: string; tintBg: string }; title: string; hint: string; href: Href }) {
+  return (
+    <Pressable
+      onPress={() => {
+        haptics.tap();
+        router.push(href);
+      }}
+      accessibilityRole="button"
+      accessibilityHint={hint}
+      style={shadows.soft}
+      className="mt-2 flex-row items-center rounded-2xl bg-surface p-4"
+    >
+      <View style={{ backgroundColor: tone.tintBg }} className="mr-3 h-10 w-10 items-center justify-center rounded-xl">
+        <IconC size={20} color={tone.tint} strokeWidth={2.2} />
+      </View>
+      <View className="flex-1">
+        <Text className="font-bodySemibold text-[15px] text-ink">{title}</Text>
+        <Text className="mt-0.5 font-body text-[12.5px] text-ink-soft">{hint}</Text>
+      </View>
+    </Pressable>
   );
 }
