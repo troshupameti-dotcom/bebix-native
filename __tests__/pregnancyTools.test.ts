@@ -1,6 +1,6 @@
 import {
-  BAG_ITEMS, KICK_GOAL, addKick, bagProgress, finishKicks, formatSec, intervalSec, kickMinutes, kickWindowOver,
-  startContraction, stopContraction, summarizeContractions, toggleBagItem, undoKick, type Contraction, type KickState,
+  BAG_ITEMS, EMPTY_BAG, KICK_GOAL, addCustomItem, addKick, bagProgress, finishKicks, formatSec, intervalSec, kickMinutes, kickWindowOver,
+  parseBag, removeCustomItem, startContraction, stopContraction, summarizeContractions, toggleBagItem, undoKick, type Contraction, type KickState,
 } from "@/lib/parent/pregnancyTools";
 import { translations } from "@/lib/i18n/translations";
 
@@ -104,19 +104,50 @@ describe("kontraksionet", () => {
   });
 });
 
-describe("çanta e maternitetit", () => {
-  it("shenjat ndërrohen dhe numërohen pa dyfishime", () => {
-    let c = toggleBagItem([], "id_card");
-    c = toggleBagItem(c, "car_seat");
-    expect(bagProgress([...c, "id_card", "s'ekziston"])).toEqual({ done: 2, total: BAG_ITEMS.length });
-    expect(toggleBagItem(c, "id_card")).toEqual(["car_seat"]);
+describe("lista e përgatitjes", () => {
+  const hospital = BAG_ITEMS.filter((i) => i.phase === "hospital").length;
+
+  it("tri faza; çanta e maternitetit mbetet me 20 sende", () => {
+    expect(hospital).toBe(20);
+    expect(BAG_ITEMS.filter((i) => i.phase === "before").length).toBeGreaterThan(5);
+    expect(BAG_ITEMS.filter((i) => i.phase === "after").length).toBeGreaterThan(5);
+    expect(new Set(BAG_ITEMS.map((i) => i.id)).size).toBe(BAG_ITEMS.length);
   });
 
-  it("çdo send ka tekst në shqip dhe anglisht", () => {
+  it("shenjat numërohen sipas fazës, pa dyfishime", () => {
+    let b = toggleBagItem(EMPTY_BAG, "id_card");
+    b = toggleBagItem(b, "car_seat");
+    b = toggleBagItem(b, "crib");
+    expect(bagProgress(b, "hospital")).toEqual({ done: 2, total: hospital });
+    expect(bagProgress(b, "before").done).toBe(1);
+    expect(bagProgress(b).done).toBe(3);
+    expect(toggleBagItem(b, "id_card").checked).toEqual(["car_seat", "crib"]);
+  });
+
+  it("sendet e prindit: shtohen në fazën e zgjedhur, pa bosh dhe pa përsëritje, dhe hiqen bashkë me shenjën", () => {
+    let b = addCustomItem(EMPTY_BAG, "  Kapelë   leshi ", "hospital", "custom:a");
+    expect(b.custom).toEqual([{ id: "custom:a", label: "Kapelë leshi", phase: "hospital" }]);
+    expect(addCustomItem(b, "kapelë LESHI", "hospital", "custom:b")).toBe(b);
+    expect(addCustomItem(b, "   ", "after", "custom:c")).toBe(b);
+    b = toggleBagItem(b, "custom:a");
+    expect(bagProgress(b, "hospital")).toEqual({ done: 1, total: hospital + 1 });
+    b = removeCustomItem(b, "custom:a");
+    expect(b).toEqual(EMPTY_BAG);
+  });
+
+  it("lexon edhe formatin e vjetër (vetëm shenjat) dhe hedh të panjohurat", () => {
+    expect(parseBag(["id_card", "wipes"])).toEqual({ checked: ["id_card", "wipes"], custom: [] });
+    const parsed = parseBag({ checked: ["id_card", "s'ekziston", "custom:x"], custom: [{ id: "custom:x", label: "Libër", phase: "after" }, { id: "bad", label: "x", phase: "after" }] });
+    expect(parsed).toEqual({ checked: ["id_card", "custom:x"], custom: [{ id: "custom:x", label: "Libër", phase: "after" }] });
+    expect(parseBag(null)).toEqual(EMPTY_BAG);
+  });
+
+  it("çdo sugjerim ka tekst në shqip dhe anglisht; dyqani vetëm te sendet e ushqyerjes", () => {
     for (const item of BAG_ITEMS) {
       const key = `bag_item_${item.id}` as keyof typeof translations.sq;
       expect(translations.sq[key]).toBeTruthy();
       expect(translations.en[key as keyof typeof translations.en]).toBeTruthy();
     }
+    expect(BAG_ITEMS.filter((i) => i.shopQuery).map((i) => i.id)).toEqual(["bottles_sterilizer", "milk_storage", "pacifier"]);
   });
 });

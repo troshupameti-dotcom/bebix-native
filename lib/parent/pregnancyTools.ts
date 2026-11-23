@@ -1,7 +1,7 @@
 import AsyncStorage from "@react-native-async-storage/async-storage";
 
 /**
- * Mjetet e shtatzënisë: numëruesi i lëvizjeve, kronometri i kontraksioneve dhe çanta e maternitetit.
+ * Mjetet e shtatzënisë: numëruesi i lëvizjeve, kronometri i kontraksioneve dhe lista e përgatitjes (çanta e maternitetit).
  * Gjithçka rri vetëm në telefon (pa server, pa SQL): janë shënime të çastit, jo histori që ndahet me familjen.
  * Çelësat nisin me "bebix_", ndaj fshihen bashkë me llogarinë (lib/account/deleteAccount.ts) dhe kur në telefon
  * hyn një llogari tjetër (`clearPregnancyTools`).
@@ -144,42 +144,123 @@ export function formatSec(sec: number): string {
   return `${m}:${String(s).padStart(2, "0")}`;
 }
 
-// ---------- Çanta e maternitetit ----------
+// ---------- Lista e përgatitjes (para, në maternitet, pas lindjes) ----------
 
+/** Kur duhet: gjërat për shtëpinë para lindjes, çanta e maternitetit, javët e para pas lindjes. */
+export type BagPhase = "before" | "hospital" | "after";
+export const BAG_PHASES: BagPhase[] = ["before", "hospital", "after"];
+/** Grupet brenda çantës së maternitetit. */
 export type BagGroup = "docs" | "mom" | "baby";
-export type BagItem = { id: string; group: BagGroup };
+/**
+ * Sugjerimet e TROA-s. `shopQuery`: kërkimi te dyqani për sendet që dyqani i shet (ushqyerja); butoni thotë
+ * "Shiko në dyqan", jo "në stok", sepse stoku ndryshon.
+ */
+export type BagItem = { id: string; phase: BagPhase; group?: BagGroup; shopQuery?: string };
+/** Sendet që i shkruan vetë prindi. */
+export type CustomBagItem = { id: string; label: string; phase: BagPhase };
+export type BagState = { checked: string[]; custom: CustomBagItem[] };
+
+export const EMPTY_BAG: BagState = { checked: [], custom: [] };
+export const MAX_CUSTOM_LABEL = 80;
 
 /** Renditja e listës; tekstet janë te përkthimet (`bag_item_<id>`). */
 export const BAG_ITEMS: BagItem[] = [
-  { id: "id_card", group: "docs" },
-  { id: "pregnancy_file", group: "docs" },
-  { id: "phone_numbers", group: "docs" },
-  { id: "nightgown", group: "mom" },
-  { id: "robe_slippers", group: "mom" },
-  { id: "maternity_pads", group: "mom" },
-  { id: "underwear", group: "mom" },
-  { id: "nursing_bra", group: "mom" },
-  { id: "nipple_cream", group: "mom" },
-  { id: "toiletries", group: "mom" },
-  { id: "charger", group: "mom" },
-  { id: "snacks", group: "mom" },
-  { id: "going_home_mom", group: "mom" },
-  { id: "bodysuits", group: "baby" },
-  { id: "hat_socks", group: "baby" },
-  { id: "newborn_diapers", group: "baby" },
-  { id: "wipes", group: "baby" },
-  { id: "swaddle", group: "baby" },
-  { id: "going_home_baby", group: "baby" },
-  { id: "car_seat", group: "baby" },
+  // Para lindjes, në shtëpi
+  { id: "crib", phase: "before" },
+  { id: "stroller", phase: "before" },
+  { id: "diapers_stock", phase: "before" },
+  { id: "changing_spot", phase: "before" },
+  { id: "clothes_0_3", phase: "before" },
+  { id: "bath_set", phase: "before" },
+  { id: "thermometer", phase: "before" },
+  { id: "nail_care", phase: "before" },
+  { id: "bottles_sterilizer", phase: "before", shopQuery: "sterilizim" },
+  { id: "pediatrician", phase: "before" },
+  { id: "freezer_meals", phase: "before" },
+  // Çanta e maternitetit
+  { id: "id_card", phase: "hospital", group: "docs" },
+  { id: "pregnancy_file", phase: "hospital", group: "docs" },
+  { id: "phone_numbers", phase: "hospital", group: "docs" },
+  { id: "nightgown", phase: "hospital", group: "mom" },
+  { id: "robe_slippers", phase: "hospital", group: "mom" },
+  { id: "maternity_pads", phase: "hospital", group: "mom" },
+  { id: "underwear", phase: "hospital", group: "mom" },
+  { id: "nursing_bra", phase: "hospital", group: "mom" },
+  { id: "nipple_cream", phase: "hospital", group: "mom" },
+  { id: "toiletries", phase: "hospital", group: "mom" },
+  { id: "charger", phase: "hospital", group: "mom" },
+  { id: "snacks", phase: "hospital", group: "mom" },
+  { id: "going_home_mom", phase: "hospital", group: "mom" },
+  { id: "bodysuits", phase: "hospital", group: "baby" },
+  { id: "hat_socks", phase: "hospital", group: "baby" },
+  { id: "newborn_diapers", phase: "hospital", group: "baby" },
+  { id: "wipes", phase: "hospital", group: "baby" },
+  { id: "swaddle", phase: "hospital", group: "baby" },
+  { id: "going_home_baby", phase: "hospital", group: "baby" },
+  { id: "car_seat", phase: "hospital", group: "baby" },
+  // Pas lindjes, javët e para
+  { id: "nursing_pillow", phase: "after" },
+  { id: "milk_storage", phase: "after", shopQuery: "gjirit" },
+  { id: "nursing_pads", phase: "after" },
+  { id: "more_maternity_pads", phase: "after" },
+  { id: "pacifier", phase: "after", shopQuery: "qetësues" },
+  { id: "burp_cloths", phase: "after" },
+  { id: "sleep_sack", phase: "after" },
+  { id: "water_by_bed", phase: "after" },
+  { id: "help_plan", phase: "after" },
+  { id: "first_checkup", phase: "after" },
 ];
 
-export function bagProgress(checked: string[]): { done: number; total: number } {
-  const ids = new Set(BAG_ITEMS.map((i) => i.id));
-  return { done: new Set(checked.filter((c) => ids.has(c))).size, total: BAG_ITEMS.length };
+const SUGGESTED_IDS = new Set(BAG_ITEMS.map((i) => i.id));
+
+/** Gjithë sendet e listës (sugjerimet dhe ato të prindit), opsionalisht vetëm të një faze. */
+function allIds(state: BagState, phase?: BagPhase): Set<string> {
+  const ids = BAG_ITEMS.filter((i) => !phase || i.phase === phase).map((i) => i.id);
+  for (const c of state.custom) if (!phase || c.phase === phase) ids.push(c.id);
+  return new Set(ids);
 }
 
-export function toggleBagItem(checked: string[], id: string): string[] {
-  return checked.includes(id) ? checked.filter((c) => c !== id) : [...checked, id];
+export function bagProgress(state: BagState, phase?: BagPhase): { done: number; total: number } {
+  const ids = allIds(state, phase);
+  return { done: new Set(state.checked.filter((c) => ids.has(c))).size, total: ids.size };
+}
+
+export function toggleBagItem(state: BagState, id: string): BagState {
+  const checked = state.checked.includes(id) ? state.checked.filter((c) => c !== id) : [...state.checked, id];
+  return { ...state, checked };
+}
+
+/** Shton një send të prindit; teksti bosh ose i përsëritur (në të njëjtën fazë) s'shtohet. */
+export function addCustomItem(state: BagState, label: string, phase: BagPhase, id: string = `custom:${Date.now().toString(36)}${Math.random().toString(36).slice(2, 6)}`): BagState {
+  const clean = label.replace(/\s+/g, " ").trim().slice(0, MAX_CUSTOM_LABEL);
+  if (!clean) return state;
+  const dup = state.custom.some((c) => c.phase === phase && c.label.toLocaleLowerCase() === clean.toLocaleLowerCase());
+  if (dup) return state;
+  return { ...state, custom: [...state.custom, { id, label: clean, phase }] };
+}
+
+export function removeCustomItem(state: BagState, id: string): BagState {
+  return { checked: state.checked.filter((c) => c !== id), custom: state.custom.filter((c) => c.id !== id) };
+}
+
+/**
+ * Gjendja e ruajtur: versioni i parë ruante vetëm listën e shenjave (string[]); tani ruhen edhe sendet e prindit.
+ * Çdo gjë e panjohur ose e prishur hidhet.
+ */
+export function parseBag(raw: unknown): BagState {
+  if (Array.isArray(raw)) return { checked: raw.filter((x): x is string => typeof x === "string"), custom: [] };
+  if (!raw || typeof raw !== "object") return EMPTY_BAG;
+  const r = raw as { checked?: unknown; custom?: unknown };
+  const custom = Array.isArray(r.custom)
+    ? r.custom.filter(
+        (c): c is CustomBagItem =>
+          !!c && typeof c === "object" && typeof (c as CustomBagItem).id === "string" && (c as CustomBagItem).id.startsWith("custom:") &&
+          typeof (c as CustomBagItem).label === "string" && BAG_PHASES.includes((c as CustomBagItem).phase),
+      )
+    : [];
+  const known = new Set([...SUGGESTED_IDS, ...custom.map((c) => c.id)]);
+  const checked = Array.isArray(r.checked) ? r.checked.filter((x): x is string => typeof x === "string" && known.has(x)) : [];
+  return { checked, custom };
 }
 
 // ---------- Ruajtja ----------
@@ -213,11 +294,10 @@ export async function loadContractions(): Promise<Contraction[]> {
 }
 export const saveContractions = (l: Contraction[]) => writeJson(CONTRACTIONS_KEY, l);
 
-export async function loadBag(): Promise<string[]> {
-  const l = await readJson<string[]>(BAG_KEY, []);
-  return Array.isArray(l) ? l : [];
+export async function loadBag(): Promise<BagState> {
+  return parseBag(await readJson<unknown>(BAG_KEY, null));
 }
-export const saveBag = (l: string[]) => writeJson(BAG_KEY, l);
+export const saveBag = (state: BagState) => writeJson(BAG_KEY, state);
 
 /** Kur në telefon hyn një llogari tjetër: shënimet e shtatzënisë s'i kalojnë asaj. */
 export async function clearPregnancyTools(): Promise<void> {

@@ -1,4 +1,5 @@
 import AsyncStorage from "@react-native-async-storage/async-storage";
+import { File, Paths } from "expo-file-system";
 import bundled from "@/content/recipes/sq.json";
 import { supabase } from "@/lib/supabase/client";
 import { sortRecipes } from "@/lib/recipes/catalog";
@@ -29,8 +30,48 @@ const COLUMNS =
   "family_factor, ingredients, steps, serve_by_age, allergens, diet_tags, nutrients, freezer_friendly, storage_note, freezer_note, " +
   "reheat_note, choking_note, family_tip, season, is_albanian, cover_key, cover_url, cover_svg, featured, sort_order, updated_at";
 const PAGE = 200;
-const MAX_PAGES = 5;
+/** Deri në 10 000 receta: praktikisht pa kufi. Kufiri mbron vetëm nga një cikël pa fund nëse serveri gabon. */
+const MAX_PAGES = 50;
+/** Kopja e vjetër në AsyncStorage (lexohet ende, nëse s'ka skedar). */
 const SAVED_KEY = "bebix_recipes_v1";
+/**
+ * Kopja pa rrjet ruhet në skedar, jo në AsyncStorage: në Android një vlerë e AsyncStorage s'lexohet dot mbi ~2 MB
+ * (rreth 700 receta), dhe atëherë app-i pa rrjet binte te 100 recetat që vijnë me të.
+ */
+const CACHE_FILE = "recipes-v1.json";
+
+function cacheFile(): File | null {
+  try {
+    return new File(Paths.document, CACHE_FILE);
+  } catch {
+    // Web ose test: pa sistem skedarësh.
+    return null;
+  }
+}
+
+async function writeCache(list: Recipe[]): Promise<void> {
+  const json = JSON.stringify(list);
+  try {
+    const file = cacheFile();
+    if (!file) throw new Error("no file system");
+    if (!file.exists) file.create({ intermediates: true });
+    await file.write(json);
+    await AsyncStorage.removeItem(SAVED_KEY).catch(() => {});
+  } catch {
+    await AsyncStorage.setItem(SAVED_KEY, json).catch(() => {});
+  }
+}
+
+async function readCache(): Promise<Recipe[] | null> {
+  try {
+    const file = cacheFile();
+    if (file?.exists) return JSON.parse(await file.text()) as Recipe[];
+  } catch {
+    // Skedari i dëmtuar: provohet kopja e vjetër.
+  }
+  const saved = await AsyncStorage.getItem(SAVED_KEY);
+  return saved ? (JSON.parse(saved) as Recipe[]) : null;
+}
 
 type BundledRecipe = Omit<Recipe, "coverUrl" | "coverSvg" | "updatedAt">;
 
@@ -166,12 +207,11 @@ export async function loadRecipes(): Promise<RecipeIndex> {
   const server = await fetchServer().catch(() => null);
   if (server && server.length) {
     memory = { recipes: sortRecipes(server), source: "server" };
-    await AsyncStorage.setItem(SAVED_KEY, JSON.stringify(server)).catch(() => {});
+    await writeCache(server);
     return memory;
   }
   try {
-    const saved = await AsyncStorage.getItem(SAVED_KEY);
-    const list = saved ? (JSON.parse(saved) as Recipe[]) : null;
+    const list = await readCache();
     if (Array.isArray(list) && list.length) {
       memory = { recipes: sortRecipes(list), source: "saved" };
       return memory;

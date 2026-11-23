@@ -7,7 +7,7 @@ import { Icon } from "@/components/ui/Icon";
 import { FormField } from "@/components/baby/FormField";
 import { pregnancyProgress } from "@/lib/age/engine";
 import { loadPregnancyWeek, type PregnancyWeek } from "@/lib/parent/pregnancy";
-import { bagProgress, loadBag } from "@/lib/parent/pregnancyTools";
+import { EMPTY_BAG, bagProgress, loadBag } from "@/lib/parent/pregnancyTools";
 import { bumpPhotos } from "@/lib/baby/bump";
 import { formatDobInput, parseDobInput } from "@/lib/babyProfile";
 import { saveBabyProfileRemote } from "@/lib/babySync";
@@ -35,7 +35,7 @@ export function PregnancyHome({ dueDate, babyName }: { dueDate: string | null; b
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
   const week = progress?.week ?? null;
-  const [bag, setBag] = useState(() => bagProgress([]));
+  const [bag, setBag] = useState(() => bagProgress(EMPTY_BAG));
 
   // Pas kthimit nga çanta, numri "x nga y" rifreskohet.
   useFocusEffect(
