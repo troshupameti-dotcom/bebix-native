@@ -140,3 +140,26 @@ export function formatDobInput(text: string): string {
   if (digits.length > 2) return `${digits.slice(0, 2)}.${digits.slice(2)}`;
   return digits;
 }
+
+/**
+ * Data e pritur nga dita e parë e menstruacioneve të fundit ("DD.MM.VVVV"): +280 ditë, rregulli standard (i njëjti si
+ * te llogaritësi i webit). Menstruacionet s'mund të jenë në të ardhmen; data që del duhet të kalojë kufijtë e
+ * `parseDueInput` (pra jo më shumë se 2 javë e kaluar). Kthen "VVVV-MM-DD" ose null.
+ */
+export function dueFromLmpInput(value: string, now: Date = new Date()): string | null {
+  const match = value.trim().match(/^(\d{1,2})\.(\d{1,2})\.(\d{4})$/);
+  if (!match) return null;
+  const [, dd, mm, yyyy] = match;
+  const lmp = new Date(Number(yyyy), Number(mm) - 1, Number(dd));
+  if (Number.isNaN(lmp.getTime()) || lmp.getDate() !== Number(dd) || lmp.getMonth() !== Number(mm) - 1) return null;
+  const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+  if (lmp > today) return null;
+  // Me ditë kalendarike (jo milisekonda), që ndërrimi i orës verore të mos e lëvizë datën.
+  const due = new Date(lmp.getFullYear(), lmp.getMonth(), lmp.getDate() + 280);
+  return parseDueInput(formatDayInput(due), now);
+}
+
+/** Data → "DD.MM.VVVV", si e shkruan prindi. */
+export function formatDayInput(date: Date): string {
+  return `${String(date.getDate()).padStart(2, "0")}.${String(date.getMonth() + 1).padStart(2, "0")}.${date.getFullYear()}`;
+}

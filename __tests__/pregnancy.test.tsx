@@ -11,7 +11,7 @@ import CreateProfile from "@/app/(auth)/create-profile";
 import { NowCard } from "@/components/baby/NowCard";
 import { PregnancyHome } from "@/components/home/PregnancyHome";
 import { pregnancyProgress } from "@/lib/age/engine";
-import { getPendingProfile, parseDueInput } from "@/lib/babyProfile";
+import { dueFromLmpInput, getPendingProfile, parseDueInput } from "@/lib/babyProfile";
 import { __resetChildrenStoreForTests } from "@/lib/children/store";
 
 const NOW = new Date(2026, 9, 14, 12, 0);
@@ -42,6 +42,15 @@ describe("java e shtatzënisë", () => {
     expect(parseDueInput("01.09.2026", NOW)).toBeNull();
     expect(parseDueInput("01.12.2027", NOW)).toBeNull();
     expect(parseDueInput("31.02.2027", NOW)).toBeNull();
+  });
+
+  it("nga menstruacionet e fundit: +280 ditë, me të njëjtët kufij", () => {
+    expect(dueFromLmpInput("14.10.2026", NOW)).toBe("2027-07-21");
+    expect(dueFromLmpInput("01.01.2026", NOW)).toBe("2026-10-08");
+    // Data e dalë do të ishte më shumë se 2 javë e kaluar.
+    expect(dueFromLmpInput("20.12.2025", NOW)).toBeNull();
+    expect(dueFromLmpInput("15.10.2026", NOW)).toBeNull();
+    expect(dueFromLmpInput("31.02.2026", NOW)).toBeNull();
   });
 });
 

@@ -8,7 +8,7 @@ import { AuthInput } from "@/components/auth/AuthInput";
 import { PrimaryButton } from "@/components/auth/PrimaryButton";
 import { Icon } from "@/components/ui/Icon";
 import { useAppState } from "@/lib/state/AppStateContext";
-import { savePendingProfile, parseDobInput, parseDueInput, formatDobInput } from "@/lib/babyProfile";
+import { savePendingProfile, parseDobInput, parseDueInput, formatDobInput, dueFromLmpInput } from "@/lib/babyProfile";
 import { useTranslation } from "@/lib/i18n/LanguageContext";
 import { BackButton, goBackOr } from "@/components/ui/BackButton";
 
@@ -26,6 +26,9 @@ export default function CreateProfileScreen() {
   const [error, setError] = useState<string | null>(null);
   // "Pres bebe": në vend të datëlindjes pyetet data e pritur e lindjes (shtatzënia).
   const [expecting, setExpecting] = useState(false);
+  // Kur nëna s'e di datën e pritur: shkruan ditën e parë të menstruacioneve të fundit dhe data llogaritet (+280 ditë).
+  const [fromLmp, setFromLmp] = useState(false);
+  const dueDate = (input: string) => (fromLmp ? dueFromLmpInput(input) : parseDueInput(input));
 
   function goBack() {
     if (step === 0) {
@@ -63,7 +66,7 @@ export default function CreateProfileScreen() {
         setError(t(expecting ? "create_profile_error_due_required" : "create_profile_error_dob_required"));
         return;
       }
-      if (expecting ? !parseDueInput(dobInput) : !parseDobInput(dobInput)) {
+      if (expecting ? !dueDate(dobInput) : !parseDobInput(dobInput)) {
         setError(t("create_profile_error_dob"));
         return;
       }
@@ -73,7 +76,7 @@ export default function CreateProfileScreen() {
 
   async function handleFinish() {
     const babyDob = !expecting ? parseDobInput(dobInput) : null;
-    const babyDueDate = expecting ? parseDueInput(dobInput) : null;
+    const babyDueDate = expecting ? dueDate(dobInput) : null;
 
     // Edhe në telefon menjëherë (jo vetëm te serveri pas regjistrimit): Cilësimet e bebit i shohin që në hapjen e parë.
     const [y, m, d] = (babyDob ?? "").split("-").map(Number);
@@ -159,6 +162,7 @@ export default function CreateProfileScreen() {
                         key={String(exp)}
                         onPress={() => {
                           setExpecting(exp);
+                          setFromLmp(false);
                           setDobInput("");
                           setError(null);
                         }}
@@ -175,7 +179,7 @@ export default function CreateProfileScreen() {
                 )}
                 {step === 2 && (
                   <AuthInput
-                    label={t(expecting ? "onb_due_label" : "create_profile_dob_label")}
+                    label={t(expecting ? (fromLmp ? "onb_lmp_label" : "onb_due_label") : "create_profile_dob_label")}
                     placeholder={t("create_profile_dob_ph")}
                     keyboardType="number-pad"
                     maxLength={10}
@@ -185,6 +189,27 @@ export default function CreateProfileScreen() {
                     autoFocus
                   />
                 )}
+                {step === 2 && expecting ? (
+                  <View className="mt-3">
+                    {fromLmp && dueDate(dobInput) ? (
+                      <Text className="mb-2 font-bodySemibold text-[14px] text-ink">
+                        {t("onb_lmp_result", { date: dobInputFromKey(dueDate(dobInput)!) })}
+                      </Text>
+                    ) : null}
+                    <Pressable
+                      onPress={() => {
+                        setFromLmp((v) => !v);
+                        setDobInput("");
+                        setError(null);
+                      }}
+                      accessibilityRole="button"
+                      hitSlop={8}
+                      className="self-start"
+                    >
+                      <Text className="font-bodyMedium text-[13.5px] text-olive underline">{t(fromLmp ? "onb_due_toggle" : "onb_lmp_toggle")}</Text>
+                    </Pressable>
+                  </View>
+                ) : null}
               </View>
             </MotiView>
           ) : (
@@ -212,4 +237,10 @@ export default function CreateProfileScreen() {
       </KeyboardSafeView>
     </SafeAreaView>
   );
+}
+
+/** "2027-05-22" → "22.05.2027". */
+function dobInputFromKey(key: string): string {
+  const [y, m, d] = key.split("-");
+  return `${d}.${m}.${y}`;
 }

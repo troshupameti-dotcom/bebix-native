@@ -3,7 +3,7 @@ import { Pressable, Text, View } from "react-native";
 import { BottomSheet } from "@/components/ui/BottomSheet";
 import { FormField } from "@/components/baby/FormField";
 import { useTranslation } from "@/lib/i18n/LanguageContext";
-import { formatDobInput, parseDobInput, parseDueInput } from "@/lib/babyProfile";
+import { dueFromLmpInput, formatDobInput, parseDobInput, parseDueInput } from "@/lib/babyProfile";
 import { haptics } from "@/lib/haptics";
 import { addChildAndSwitch, childErrorMessage } from "@/components/children/childActions";
 
@@ -16,17 +16,21 @@ export function AddChildSheet({ visible, onClose, onPremium }: { visible: boolea
   const [busy, setBusy] = useState(false);
   // "Ka lindur" (datëlindja) ose "Pritet" (data e pritur e lindjes, shtatzënia).
   const [kind, setKind] = useState<"born" | "expecting">("born");
+  // "S'e di datën?": dita e parë e menstruacioneve të fundit, data e pritur llogaritet (+280 ditë).
+  const [fromLmp, setFromLmp] = useState(false);
+  const dueDate = fromLmp ? dueFromLmpInput(dob) : parseDueInput(dob);
 
   function close() {
     setName("");
     setDob("");
     setError(null);
     setKind("born");
+    setFromLmp(false);
     onClose();
   }
 
   async function save() {
-    const date = kind === "born" ? parseDobInput(dob) : parseDueInput(dob);
+    const date = kind === "born" ? parseDobInput(dob) : dueDate;
     if (!date) {
       setError(t("children_err_date"));
       return;
@@ -62,7 +66,10 @@ export function AddChildSheet({ visible, onClose, onPremium }: { visible: boolea
           {(["born", "expecting"] as const).map((k) => (
             <Pressable
               key={k}
-              onPress={() => setKind(k)}
+              onPress={() => {
+                setKind(k);
+                setFromLmp(false);
+              }}
               accessibilityRole="tab"
               accessibilityState={{ selected: kind === k }}
               className={`flex-1 items-center rounded-xl py-2 ${kind === k ? "bg-surface" : ""}`}
@@ -75,13 +82,32 @@ export function AddChildSheet({ visible, onClose, onPremium }: { visible: boolea
         </View>
         <FormField label={t("children_name_label")} placeholder={t("children_name_ph")} value={name} onChangeText={setName} autoCapitalize="words" />
         <FormField
-          label={t(kind === "born" ? "children_dob_label" : "children_due_label")}
+          label={t(kind === "born" ? "children_dob_label" : fromLmp ? "onb_lmp_label" : "children_due_label")}
           placeholder={t("children_dob_ph")}
           value={dob}
           onChangeText={(v) => setDob(formatDobInput(v))}
           keyboardType="number-pad"
           maxLength={10}
         />
+        {kind === "expecting" ? (
+          <View>
+            {fromLmp && dueDate ? (
+              <Text className="mb-2 font-bodySemibold text-[14px] text-ink">{t("onb_lmp_result", { date: dueDate.split("-").reverse().join(".") })}</Text>
+            ) : null}
+            <Pressable
+              onPress={() => {
+                setFromLmp((v) => !v);
+                setDob("");
+                setError(null);
+              }}
+              accessibilityRole="button"
+              hitSlop={8}
+              className="self-start"
+            >
+              <Text className="font-bodyMedium text-[13.5px] text-olive underline">{t(fromLmp ? "onb_due_toggle" : "onb_lmp_toggle")}</Text>
+            </Pressable>
+          </View>
+        ) : null}
         {error ? (
           <Text accessibilityRole="alert" className="font-body text-[13px] text-orange">
             {error}
