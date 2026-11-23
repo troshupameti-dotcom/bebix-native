@@ -14,7 +14,7 @@ import {
 } from "@/lib/community/autoGroups";
 
 /**
- * "Grupe për bebin tënd": 1–2 sugjerime me "Bashkohu" dhe "Jo tash" (30
+ * "Grupe për bebin tënd": 1–2 sugjerime me "Bashkohu" dhe "Jo tani" (30
  * ditë). Kur bebi rritet: "Bebi po rritet: bashkohu te 6–12 muaj", me
  * mundësinë për të dalë nga grupi i vjetër. Prindi vendos vetë; asgjë s'bëhet
  * automatikisht. `showProfileLink`: pa datëlindje, një lidhje e vogël te

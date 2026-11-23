@@ -97,7 +97,7 @@ export function growthPair(list: Suggestion[]): { join: AutoKey; leave: AutoKey 
   return join && leave ? { join: join.key, leave: leave.key } : null;
 }
 
-// --- "Jo tash" (30 ditë, vetëm në këtë telefon) ------------------------------
+// --- "Jo tani" (30 ditë, vetëm në këtë telefon) ------------------------------
 
 const SNOOZE_KEY = "bebix_auto_groups_snooze_v1";
 export const SNOOZE_DAYS = 30;

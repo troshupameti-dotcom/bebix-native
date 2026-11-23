@@ -74,7 +74,7 @@ describe("grupet sipas moshës", () => {
     expect(parseAutoKey("birth:2026-Q5")).toBeNull();
   });
 
-  it("'Jo tash' skadon pas kohës së vet", () => {
+  it("'Jo tani' skadon pas kohës së vet", () => {
     const now = new Date("2026-10-15T12:00:00Z");
     expect([...activeSnoozes({ "age:3-6": "2026-11-10T00:00:00Z", "age:0-3": "2026-10-01T00:00:00Z" }, now)]).toEqual(["age:3-6"]);
   });
