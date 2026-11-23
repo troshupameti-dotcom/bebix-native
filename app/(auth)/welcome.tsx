@@ -15,10 +15,12 @@ import { useTranslation } from "@/lib/i18n/LanguageContext";
 import type { TranslationKey } from "@/lib/i18n/translations";
 
 
-const SLIDES: { taglineKey: TranslationKey; image: number }[] = [
-  { taglineKey: "welcome_tagline_1", image: require("@/assets/images/onboarding/baby-first-steps.jpg") },
-  { taglineKey: "welcome_tagline_2", image: require("@/assets/images/onboarding/track-illustration.jpg") },
-  { taglineKey: "welcome_tagline_3", image: require("@/assets/images/onboarding/shop-products.jpg") },
+// Çdo faqe: foto, titull i shkurtër dhe një fjali me dobinë konkrete (jo vetëm slogan), që prindi ta kuptojë në
+// 3 sekonda çfarë merr.
+const SLIDES: { titleKey: TranslationKey; subKey: TranslationKey; image: number }[] = [
+  { titleKey: "welcome_title_1", subKey: "welcome_sub_1", image: require("@/assets/images/onboarding/baby-first-steps.jpg") },
+  { titleKey: "welcome_title_2", subKey: "welcome_sub_2", image: require("@/assets/images/onboarding/track-illustration.jpg") },
+  { titleKey: "welcome_title_3", subKey: "welcome_sub_3", image: require("@/assets/images/onboarding/shop-products.jpg") },
 ];
 
 export default function WelcomeScreen() {
@@ -73,7 +75,7 @@ export default function WelcomeScreen() {
               from={{ opacity: 0, translateY: 24 }}
               animate={{ opacity: 1, translateY: 0 }}
               transition={{ type: "timing", duration: 500, delay: 100 }}
-              className="aspect-[3/4] w-full max-h-[70%] overflow-hidden rounded-xl3 bg-cream-soft"
+              className="aspect-[3/4] w-full max-h-[62%] overflow-hidden rounded-xl3 bg-cream-soft"
               style={{
                 shadowColor: theme.ink,
                 shadowOpacity: 0.08,
@@ -90,7 +92,8 @@ export default function WelcomeScreen() {
               animate={{ opacity: 1, translateY: 0 }}
               transition={{ type: "timing", duration: 400, delay: 200 }}
             >
-              <Text className="mt-3 text-center font-body text-base text-ink-soft">{t(slide.taglineKey)}</Text>
+              <Text accessibilityRole="header" className="mt-4 text-center font-display text-2xl text-ink">{t(slide.titleKey)}</Text>
+              <Text className="mt-1.5 px-2 text-center font-body text-[15px] leading-[21px] text-ink-soft">{t(slide.subKey)}</Text>
             </MotiView>
           </View>
         ))}

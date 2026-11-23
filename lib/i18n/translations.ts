@@ -4,8 +4,14 @@ export const translations = {
   sq: {
     // ---- Auth / Onboarding ----
     welcome_tagline_1: "Për çdo hap të vogël.",
+    welcome_title_1: "Nga shtatzënia deri në 12 vjeç",
+    welcome_sub_1: "Gjithçka për bebin në një vend: dita, nata, ushqimi, përrallat dhe dyqani.",
     welcome_tagline_2: "Ndiq ushqyerjen, gjumin dhe rritjen.",
+    welcome_title_2: "Gjithë dita, me një prekje",
+    welcome_sub_2: "Ushqimi, pelenat dhe gjumi. Natën, me butona të mëdhenj dhe ekran të errët.",
     welcome_tagline_3: "Produkte të zgjedhura për bebin tënd.",
+    welcome_title_3: "Dyqani për bebe",
+    welcome_sub_3: "Marka të njohura dhe dërgesë në shtëpi. Porosit edhe pa llogari.",
     welcome_create_profile: "Krijo profilin tim",
     welcome_guest_shop: "Shiko dyqanin pa llogari",
     welcome_have_account: "Ke llogari? Hyr",
@@ -2145,10 +2151,16 @@ export const translations = {
   en: {
     // ---- Auth / Onboarding ----
     welcome_tagline_1: "For every little step.",
-    welcome_tagline_2: "Track feeding, sleep and growth — beautifully.",
-    welcome_tagline_3: "Discover carefully selected products for your little one.",
-    welcome_create_profile: "Create My Profile",
-    welcome_guest_shop: "Continue to Shop without Login",
+    welcome_title_1: "From pregnancy to age 12",
+    welcome_sub_1: "Everything for your baby in one place: days, nights, food, stories and the shop.",
+    welcome_tagline_2: "Track feeding, sleep and growth.",
+    welcome_title_2: "The whole day, in one tap",
+    welcome_sub_2: "Feeding, diapers and sleep. At night, with big buttons and a dark screen.",
+    welcome_tagline_3: "Carefully selected products for your little one.",
+    welcome_title_3: "The baby shop",
+    welcome_sub_3: "Trusted brands, delivered home. Order even without an account.",
+    welcome_create_profile: "Create my profile",
+    welcome_guest_shop: "Browse the shop without an account",
     welcome_have_account: "Have an account? Log in",
 
     create_profile_step_baby_title: "What's your baby's name?",
