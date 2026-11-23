@@ -1,5 +1,5 @@
 /**
- * Modaliteti i natës i ri: e kuqe mbi të zezë, ekrani i errësuar vetë, drita e kuqe, "Nata deri tani",
+ * Modaliteti i natës i ri: e kuqe mbi të zezë, ekrani i errësuar vetë, drita e bardhë, "Nata deri tani",
  * ndërrimi i gjirit pa ndalur timerin. Ekrani me provider-at e vërtetë; logjika veç, me orë të fiksuar.
  */
 import { renderScreen, visibleText, button } from "./helpers/screen";
@@ -8,6 +8,7 @@ import { BackHandler, Platform } from "react-native";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { NightMode } from "@/components/baby/NightMode";
 import { NIGHT_COLORS } from "@/components/baby/NightClock";
+import { LIGHT_COLOR } from "@/components/baby/NightLight";
 import { cleanPrefs } from "@/lib/baby/nightMode";
 import { brightnessController } from "@/lib/baby/nightScreen";
 import { translations } from "@/lib/i18n/translations";
@@ -81,7 +82,7 @@ describe("ndriçimi i ekranit", () => {
   });
 });
 
-/** Elementi me rolin "adjustable" (drita e kuqe). */
+/** Elementi me rolin "adjustable" (drita e bardhë). */
 const lightView = (root: ReactTestInstance): ReactTestInstance | undefined =>
   root.findAll((n) => n.props.accessibilityRole === "adjustable" && typeof n.props.onAccessibilityAction === "function")[0];
 const a11y = (node: ReactTestInstance, actionName: string) =>
@@ -109,12 +110,15 @@ describe("pamja e natës", () => {
     expect(visibleText(r.root)).toContain(sq.night_btn_wake);
   });
 
-  it("“Drita”: krejt ekrani dritë e kuqe; fuqia ndryshon; prekja kthen dhe fuqia mbahet mend", async () => {
+  it("“Drita”: krejt ekrani dritë e bardhë e ngrohtë; fuqia ndryshon; prekja kthen dhe fuqia mbahet mend", async () => {
     const r = await renderScreen(<NightMode />);
     await act(async () => {
       byLabel(r.root, sq.night_light).props.onPress();
     });
     expect(lightView(r.root)).toBeDefined();
+    // e bardhë e ngrohtë, jo e kuqe
+    expect(LIGHT_COLOR).toBe("#FFF6E6");
+    expect(r.root.findAll((n) => typeof n.type === "string" && n.props.style?.backgroundColor === LIGHT_COLOR).length).toBeGreaterThan(0);
     expect(visibleText(r.root)).toContain(`↑  ${sq.night_swipe_up}`);
     expect(visibleText(r.root)).toContain(`↓  ${sq.night_swipe_down}`);
     expect(lightView(r.root)!.props.accessibilityValue.now).toBe(40);

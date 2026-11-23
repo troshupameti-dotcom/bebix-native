@@ -475,11 +475,12 @@ export default function CommunityScreen() {
         </View>
       </View>
 
-      {/* Kërkimi lart, nën titull: gjithmonë i dukshëm, edhe kur rrjedha zbret poshtë. */}
-      <View className="pb-3">
+      {/* Kërkimi lart, nën titull: gjithmonë i dukshëm, edhe kur rrjedha zbret poshtë. I hollë (rreth 38 pt), që të mos
+          zërë vend; pa mbushjen e brendshme të Android-it, që e bënte më të trashë se te iPhone. */}
+      <View className="pb-2">
         <View className="px-5">
-          <View className="flex-row items-center bg-surface border border-cream-line rounded-xl2 px-3.5 py-2.5">
-            <Icon name="search" size={18} color={theme.inkFaint} />
+          <View className="flex-row items-center bg-surface border border-cream-line rounded-xl px-3" style={{ height: 38 }}>
+            <Icon name="search" size={16} color={theme.inkFaint} />
             <TextInput
               value={queryInput}
               onChangeText={setQueryInput}
@@ -487,7 +488,8 @@ export default function CommunityScreen() {
               placeholderTextColor={theme.inkFaint}
               returnKeyType="search"
               autoCorrect={false}
-              className="flex-1 ml-2 font-body text-sm text-ink"
+              className="flex-1 ml-2 font-body text-[13.5px] text-ink"
+              style={{ paddingVertical: 0 }}
             />
             {queryInput.length > 0 && (
               <Pressable onPress={() => { setQueryInput(""); changeFilters({ query: "" }); }} hitSlop={8} accessibilityLabel={t("community_clear_search")}>

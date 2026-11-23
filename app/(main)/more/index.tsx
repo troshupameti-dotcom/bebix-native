@@ -45,7 +45,7 @@ type Section = { key: string; title: string; rows: Row[] };
 
 const C = TILE_COLORS;
 
-/** Një rresht: ikona me ngjyrë, emri, vlera aktuale dhe shigjeta. Zonë prekjeje ≥ 52pt. */
+/** Një rresht: ikona me ngjyrë, emri, vlera aktuale dhe shigjeta. Zonë prekjeje ≥ 48pt (minimumi i Android-it). */
 function SettingsRow({ row, last, subtitle }: { row: Row; last: boolean; subtitle?: string }) {
   const theme = useThemeColors();
   return (
@@ -56,14 +56,14 @@ function SettingsRow({ row, last, subtitle }: { row: Row; last: boolean; subtitl
       }}
       accessibilityRole="button"
       accessibilityLabel={[row.label, row.badge, subtitle].filter(Boolean).join(", ")}
-      style={({ pressed }) => ({ minHeight: 52, backgroundColor: pressed ? theme.creamSoft : "transparent" })}
+      style={({ pressed }) => ({ minHeight: 48, backgroundColor: pressed ? theme.creamSoft : "transparent" })}
       className="flex-row items-center pl-4"
     >
       <View className="mr-3.5">
         <IconTile icon={row.icon} color={row.color} />
       </View>
-      <View className={`flex-1 flex-row items-center self-stretch pr-3 ${last ? "" : "border-b border-cream-line"}`} style={{ minHeight: 52 }}>
-        <View className="flex-1 py-2">
+      <View className={`flex-1 flex-row items-center self-stretch pr-3 ${last ? "" : "border-b border-cream-line"}`} style={{ minHeight: 48 }}>
+        <View className="flex-1 py-1.5">
           <Text className="font-bodyMedium text-[15.5px] text-ink" style={row.destructive ? { color: C.red } : undefined}>
             {row.label}
           </Text>
@@ -79,8 +79,8 @@ function SettingsRow({ row, last, subtitle }: { row: Row; last: boolean; subtitl
 
 function SectionCard({ section }: { section: Section }) {
   return (
-    <View className="mb-6">
-      <Text accessibilityRole="header" className="mb-2 px-6 font-bodyMedium text-[12.5px] uppercase text-ink-faint">
+    <View className="mb-5">
+      <Text accessibilityRole="header" className="mb-1.5 px-6 font-bodyMedium text-[12.5px] uppercase text-ink-faint">
         {section.title}
       </Text>
       <View className="mx-4 overflow-hidden rounded-2xl bg-surface" style={shadows.soft}>
@@ -125,12 +125,12 @@ function ControlTile({
       accessibilityRole={role}
       accessibilityState={role === "switch" ? { checked: on } : undefined}
       accessibilityLabel={`${label}: ${value}`}
-      style={({ pressed }) => [shadows.soft, { flex: 1, aspectRatio: 1, transform: [{ scale: pressed ? 0.96 : 1 }] }]}
-      className="justify-between rounded-[22px] bg-surface p-3.5"
+      style={({ pressed }) => [shadows.soft, { flex: 1, height: 96, transform: [{ scale: pressed ? 0.96 : 1 }] }]}
+      className="justify-between rounded-[20px] bg-surface px-3 py-2.5"
     >
-      <View style={{ width: 44, height: 44, borderRadius: 22, alignItems: "center", justifyContent: "center", backgroundColor: on ? color : theme.creamSoft }}>
+      <View style={{ width: 36, height: 36, borderRadius: 18, alignItems: "center", justifyContent: "center", backgroundColor: on ? color : theme.creamSoft }}>
         {Glyph ? (
-          <Glyph size={21} color={on ? "#FFFFFF" : theme.ink} strokeWidth={2.2} />
+          <Glyph size={18} color={on ? "#FFFFFF" : theme.ink} strokeWidth={2.2} />
         ) : (
           <Text style={{ color: on ? "#FFFFFF" : theme.ink, fontSize: 14, fontFamily: "Inter_700Bold" }}>{text}</Text>
         )}
@@ -284,12 +284,12 @@ export default function MoreScreen() {
   return (
     <SafeAreaView className="flex-1 bg-cream" edges={["top"]}>
       <ScrollView ref={scrollRef} showsVerticalScrollIndicator={false} keyboardShouldPersistTaps="handled" contentContainerStyle={{ paddingBottom: 40 }}>
-        <Text accessibilityRole="header" className="mb-3 mt-2 px-5 font-display text-3xl text-ink">
+        <Text accessibilityRole="header" className="mb-2.5 mt-1 px-5 font-display text-3xl text-ink">
           {t("nav_more")}
         </Text>
 
         {/* Kërkimi: gjen edhe pa "ë/ç" dhe me fjalë të afërta. */}
-        <View className="mx-4 mb-5 flex-row items-center rounded-xl bg-surface px-3.5" style={[shadows.soft, { minHeight: 44 }]}>
+        <View className="mx-4 mb-3.5 flex-row items-center rounded-xl bg-surface px-3" style={[shadows.soft, { minHeight: 40 }]}>
           <Search size={17} color={theme.inkFaint} strokeWidth={2.2} />
           <TextInput
             value={query}
@@ -300,7 +300,7 @@ export default function MoreScreen() {
             returnKeyType="search"
             autoCorrect={false}
             className="ml-2.5 flex-1 font-body text-[15px] text-ink"
-            style={{ paddingVertical: 10 }}
+            style={{ paddingVertical: 8 }}
           />
           {searching ? (
             <Pressable onPress={() => setQuery("")} hitSlop={10} accessibilityRole="button" accessibilityLabel={t("a11y_close")} className="h-7 w-7 items-center justify-center rounded-full bg-cream-soft">
@@ -330,10 +330,10 @@ export default function MoreScreen() {
               accessibilityRole="button"
               accessibilityLabel={`${profile.parentName || t("add_your_name")}, ${t("profile_hint")}`}
               style={({ pressed }) => [shadows.soft, { opacity: pressed ? 0.9 : 1 }]}
-              className="mx-4 mb-5 flex-row items-center rounded-2xl bg-surface p-4"
+              className="mx-4 mb-3 flex-row items-center rounded-2xl bg-surface px-3.5 py-3"
             >
-              <View className="mr-4 h-16 w-16 items-center justify-center overflow-hidden rounded-full bg-olive-bg">
-                {profile.parentPhoto ? <Image source={{ uri: profile.parentPhoto }} className="h-16 w-16" /> : <UserRound size={28} color={theme.olive} strokeWidth={2} />}
+              <View className="mr-3 h-12 w-12 items-center justify-center overflow-hidden rounded-full bg-olive-bg">
+                {profile.parentPhoto ? <Image source={{ uri: profile.parentPhoto }} className="h-12 w-12" /> : <UserRound size={22} color={theme.olive} strokeWidth={2} />}
               </View>
               <View className="flex-1">
                 <Text className="font-bodySemibold text-[17px] text-ink" numberOfLines={1}>
@@ -343,7 +343,7 @@ export default function MoreScreen() {
                   {email ?? t("profile_hint")}
                 </Text>
                 {babyName ? (
-                  <View className="mt-2 flex-row items-center self-start rounded-full bg-olive-bg px-2.5 py-1">
+                  <View className="mt-1.5 flex-row items-center self-start rounded-full bg-olive-bg px-2.5 py-0.5">
                     <Baby size={13} color={theme.olive} strokeWidth={2.2} />
                     <Text className="ml-1.5 font-bodyMedium text-xs text-olive" numberOfLines={1}>
                       {babyAge ? `${babyName} · ${babyAge}` : babyName}
@@ -360,10 +360,10 @@ export default function MoreScreen() {
                 accessibilityRole="button"
                 accessibilityLabel="Paneli i adminit: porositë, produktet, ekspertët, raportimet dhe përrallat"
                 style={({ pressed }) => [shadows.soft, { opacity: pressed ? 0.9 : 1 }]}
-                className="mx-4 mb-5 flex-row items-center rounded-2xl bg-surface p-4"
+                className="mx-4 mb-3 flex-row items-center rounded-2xl bg-surface px-3.5 py-3"
               >
-                <View className="mr-3.5">
-                  <IconTile icon={ShieldCheck} color={C.indigo} size={40} />
+                <View className="mr-3">
+                  <IconTile icon={ShieldCheck} color={C.indigo} size={34} />
                 </View>
                 <View className="flex-1">
                   <Text className="font-bodySemibold text-sm text-ink">Paneli i adminit</Text>
@@ -374,7 +374,7 @@ export default function MoreScreen() {
             ) : null}
 
             {/* Qendra e kontrollit: tema, modaliteti i natës, gjuha. */}
-            <View className="mx-4 mb-6 flex-row" style={{ gap: 12 }}>
+            <View className="mx-4 mb-5 flex-row" style={{ gap: 10 }}>
               <ControlTile
                 icon={Contrast}
                 label={t("appearance")}
@@ -424,10 +424,10 @@ export default function MoreScreen() {
               accessibilityRole="button"
               accessibilityLabel={`${t("expert_cta_title")} ${t("expert_cta_sub")}`}
               style={({ pressed }) => [shadows.soft, { opacity: pressed ? 0.9 : 1 }]}
-              className="mx-4 mb-6 flex-row items-center rounded-2xl bg-surface p-4"
+              className="mx-4 mb-5 flex-row items-center rounded-2xl bg-surface px-3.5 py-3"
             >
-              <View className="mr-3.5">
-                <IconTile icon={Stethoscope} color={C.teal} size={40} />
+              <View className="mr-3">
+                <IconTile icon={Stethoscope} color={C.teal} size={34} />
               </View>
               <View className="flex-1">
                 <Text className="font-bodySemibold text-sm text-ink">{t("expert_cta_title")}</Text>

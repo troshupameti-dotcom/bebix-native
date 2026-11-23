@@ -22,7 +22,7 @@ export type NightPrefs = {
   clock: NightClockStyle;
   /** Ndriçimi i ekranit gjatë pamjes së natës (0–1); null = s'preket, mbetet ai i telefonit. */
   dimLevel: number | null;
-  /** Fuqia e dritës së kuqe (0–1), e mbajtur mend nga hera e fundit. */
+  /** Fuqia e dritës (0–1), e mbajtur mend nga hera e fundit. */
   lightLevel: number;
   textColor: NightTextColor;
 };

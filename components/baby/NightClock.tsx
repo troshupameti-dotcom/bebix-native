@@ -1,3 +1,6 @@
+import { useEffect } from "react";
+import { Image, View } from "react-native";
+import Animated, { Easing, cancelAnimation, interpolate, useAnimatedStyle, useReducedMotion, useSharedValue, withRepeat, withTiming } from "react-native-reanimated";
 import Svg, { Circle, Defs, Line, RadialGradient, Stop } from "react-native-svg";
 import type { NightTextColor } from "@/lib/baby/nightMode";
 
@@ -18,14 +21,12 @@ export const NIGHT_COLORS = {
   /** Fytyra e orës analoge (qendra dhe mesi i gradientit). */
   faceCenter: "#1A0402",
   faceMid: "#0A0100",
-  /** Drita e kuqe: ngjyra e plotë, fuqia vjen nga ndriçimi dhe tejdukshmëria. */
-  glow: "#FF1A00",
 };
 export type NightPalette = typeof NIGHT_COLORS;
 
 /**
  * Ngjyrat e shkrimeve që zgjedh prindi te cilësimet. E kuqja (më sipër) mbetet parazgjedhja; të tjerat janë më të
- * ndritshme dhe kanë më shumë dritë të kaltër. Sfondi mbetet i zi dhe drita e kuqe (`glow`) mbetet e kuqe kudo.
+ * ndritshme dhe kanë më shumë dritë të kaltër. Sfondi mbetet i zi.
  */
 export const NIGHT_PALETTES: Record<NightTextColor, NightPalette> = {
   red: NIGHT_COLORS,
@@ -46,6 +47,8 @@ export function nightPalette(color: NightTextColor | undefined): NightPalette {
  * Ora e murit, e rrumbullakët, pa numra: 60 vija (ato të orëve më të gjata dhe
  * më të trasha), akrepat e orës dhe të minutës, dhe një akrep i hollë sekondash.
  * Fytyra ka një gradient të butë që e bën të duket e thellë, jo e sheshtë.
+ * Në mes rri bufi i TROA-s, i vizatuar me vija në ngjyrën e orës (assets/images/night/owl-lines.png, nga logoja),
+ * i zbehtë që akrepat të lexohen mbi të, dhe merr frymë ngadalë (pa lëvizje me "Zvogëlo lëvizjen").
  */
 export function AnalogNightClock({ now, size = 240, colors: C = NIGHT_COLORS }: { now: Date; size?: number; colors?: NightPalette }) {
   const r = size / 2;
@@ -93,8 +96,24 @@ export function AnalogNightClock({ now, size = 240, colors: C = NIGHT_COLORS }: 
     return <Line x1={back.x} y1={back.y} x2={tip.x} y2={tip.y} stroke={color} strokeWidth={width} strokeLinecap="round" />;
   };
 
+  const reduceMotion = useReducedMotion();
+  const breath = useSharedValue(0);
+  useEffect(() => {
+    if (reduceMotion) return;
+    breath.value = withRepeat(withTiming(1, { duration: 4200, easing: Easing.inOut(Easing.sin) }), -1, true);
+    return () => cancelAnimation(breath);
+  }, [breath, reduceMotion]);
+  const owlStyle = useAnimatedStyle(() => ({
+    opacity: interpolate(breath.value, [0, 1], [0.3, 0.42]),
+    transform: [{ scale: interpolate(breath.value, [0, 1], [0.985, 1.02]) }],
+  }));
+  // Bufi brenda vijave të orëve (rrezja e brendshme 0.74): 1.06 r i lartë.
+  const owlH = r * 1.06;
+  const owlW = owlH * (355 / 480);
+
   return (
-    <Svg width={size} height={size} viewBox={`0 0 ${size} ${size}`} accessibilityRole="image">
+    <View style={{ width: size, height: size }} accessibilityRole="image">
+    <Svg width={size} height={size} viewBox={`0 0 ${size} ${size}`} style={{ position: "absolute" }}>
       <Defs>
         <RadialGradient id="face" cx="50%" cy="42%" r="60%">
           <Stop offset="0%" stopColor={C.faceCenter} />
@@ -106,6 +125,11 @@ export function AnalogNightClock({ now, size = 240, colors: C = NIGHT_COLORS }: 
       <Circle cx={cx} cy={cy} r={r - 1} fill="url(#face)" />
       <Circle cx={cx} cy={cy} r={r - 2} fill="none" stroke={C.line} strokeWidth={2} />
       <Circle cx={cx} cy={cy} r={r * 0.95} fill="none" stroke={C.line} strokeWidth={0.8} opacity={0.6} />
+    </Svg>
+    <Animated.View style={[{ position: "absolute", left: cx - owlW / 2, top: cy - owlH / 2 + r * 0.02, width: owlW, height: owlH }, owlStyle]}>
+      <Image source={require("@/assets/images/night/owl-lines.png")} style={{ width: owlW, height: owlH, tintColor: C.text }} resizeMode="contain" accessible={false} />
+    </Animated.View>
+    <Svg width={size} height={size} viewBox={`0 0 ${size} ${size}`} style={{ position: "absolute" }}>
       {ticks}
       {hand(hourAngle, r * 0.5, r * 0.08, 6, C.text)}
       {hand(minuteAngle, r * 0.72, r * 0.1, 3.6, C.text)}
@@ -113,5 +137,6 @@ export function AnalogNightClock({ now, size = 240, colors: C = NIGHT_COLORS }: 
       <Circle cx={cx} cy={cy} r={6} fill={C.text} />
       <Circle cx={cx} cy={cy} r={2.4} fill={C.bg} />
     </Svg>
+    </View>
   );
 }

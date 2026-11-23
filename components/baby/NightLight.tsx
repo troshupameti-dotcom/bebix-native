@@ -1,7 +1,6 @@
 import { useEffect, useRef } from "react";
 import { BackHandler, Text, View, useWindowDimensions, type AccessibilityActionEvent, type GestureResponderEvent } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
-import { NIGHT_COLORS as C } from "@/components/baby/NightClock";
 import { useKeepScreenOn } from "@/lib/baby/nightScreen";
 import { useTranslation } from "@/lib/i18n/LanguageContext";
 import { haptics } from "@/lib/haptics";
@@ -17,11 +16,14 @@ export function lightBrightness(level: number): number {
   return 0.05 + 0.95 * clamp(level);
 }
 
-/** Tejdukshmëria e të kuqes: punon edhe kur telefoni s'lejon ndryshimin e ndriçimit. */
+/** E bardha e ngrohtë e dritës (pak e verdhë, jo e kaltër): sheh mirë ngjyrat e pelenës dhe s'të verbon. */
+export const LIGHT_COLOR = "#FFF6E6";
+
+/** Tejdukshmëria e dritës mbi të zezë: punon edhe kur telefoni s'lejon ndryshimin e ndriçimit. */
 const glowOpacity = (level: number) => 0.3 + 0.7 * clamp(level);
 
 /**
- * Drita e kuqe e natës: krejt ekrani ndriçon i kuq, për ndërrimin e pelenës pa dritën e bardhë të llambës së
+ * Drita e natës: krejt ekrani ndriçon i bardhë i ngrohtë, për ndërrimin e pelenës pa llambën e fortë të
  * telefonit (që e zgjon bebin). Rrëshqitja lart/poshtë e ndryshon fuqinë, një prekje kthen te pamja e natës.
  * Ekrani s'fiket vetë sa kohë drita është ndezur; pas LIGHT_MINUTES fiket ajo vetë.
  */
@@ -75,8 +77,8 @@ export function NightLight({ level, onLevel, onClose }: { level: number; onLevel
     else if (name === "activate") onClose();
   };
 
-  // Teksti mbi të kuqe: i errët, që të mos shtojë dritë të bardhë.
-  const ink = "rgba(0,0,0,0.62)";
+  // Teksti mbi të bardhë: gri e errët, i lexueshëm në çdo fuqi drite.
+  const ink = "rgba(0,0,0,0.55)";
 
   return (
     <View
@@ -92,9 +94,9 @@ export function NightLight({ level, onLevel, onClose }: { level: number; onLevel
       accessibilityValue={{ min: 0, max: 100, now: Math.round(level * 100) }}
       accessibilityActions={[{ name: "increment" }, { name: "decrement" }, { name: "activate" }]}
       onAccessibilityAction={onAction}
-      style={{ flex: 1, backgroundColor: C.bg }}
+      style={{ flex: 1, backgroundColor: "#000000" }}
     >
-      <View style={{ position: "absolute", top: 0, right: 0, bottom: 0, left: 0, backgroundColor: C.glow, opacity: glowOpacity(level) }} />
+      <View style={{ position: "absolute", top: 0, right: 0, bottom: 0, left: 0, backgroundColor: LIGHT_COLOR, opacity: glowOpacity(level) }} />
       {/* Vetëm dy rreshta: lart = më shumë dritë, poshtë = më pak. Prekja kthen te pamja e natës. */}
       <SafeAreaView style={{ flex: 1, alignItems: "center", justifyContent: "center", gap: 28 }} edges={["top", "bottom"]}>
         <Text style={{ color: ink, fontSize: 20, fontFamily: "Inter_600SemiBold" }}>{`↑  ${t("night_swipe_up")}`}</Text>

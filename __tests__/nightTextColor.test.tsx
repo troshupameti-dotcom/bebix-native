@@ -41,11 +41,10 @@ describe("ngjyra e shkrimeve natën", () => {
     expect(nightPalette(undefined)).toBe(NIGHT_COLORS);
   });
 
-  it("çdo ngjyrë: sfondi i zi, drita e kuqe mbetet e kuqe, teksti lexohet mbi qiellin e natës", () => {
+  it("çdo ngjyrë: sfondi i zi, teksti lexohet mbi qiellin e natës", () => {
     for (const key of NIGHT_TEXT_COLORS) {
       const p = NIGHT_PALETTES[key];
       expect(p.bg).toBe("#000000");
-      expect(p.glow).toBe(NIGHT_COLORS.glow);
       for (const sky of [NIGHT_SKY.top, NIGHT_SKY.mid]) {
         expect(contrast(p.text, sky)).toBeGreaterThanOrEqual(4.5);
         expect(contrast(p.soft, p.button)).toBeGreaterThanOrEqual(2.5);

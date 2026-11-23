@@ -104,7 +104,7 @@ function ClockOption({ style, selected, label, now, colors: C }: { style: NightC
 /**
  * Modaliteti i natës: së pari çelësi "Ndize vetë natën" (si te Apple), pastaj,
  * kur është i ndezur, orari. Poshtë: pamja e orës (digjitale ose analoge, pa
- * numra), ndriçimi i ekranit natën, drita e kuqe dhe "Provoje tani".
+ * numra), ndriçimi i ekranit natën, drita e bardhë dhe "Provoje tani".
  */
 export default function NightModeSettings() {
   const { t } = useTranslation();
@@ -202,7 +202,7 @@ export default function NightModeSettings() {
           <Text className="mt-2 px-2 pb-1 font-body text-xs leading-5 text-ink-soft">{t("night_dim_hint")}</Text>
         </View>
 
-        {/* 5) Drita e kuqe */}
+        {/* 5) Drita e bardhë */}
         <View style={shadows.soft} className="mt-4 flex-row rounded-xl2 bg-surface px-4 py-3.5">
           <View className="mr-3 h-9 w-9 items-center justify-center rounded-full" style={{ backgroundColor: NIGHT_COLORS.bg }}>
             <Icon name="flash" size={16} color={NIGHT_COLORS.text} />

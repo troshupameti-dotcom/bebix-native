@@ -20,16 +20,16 @@ import { NightLight, lightBrightness } from "@/components/baby/NightLight";
 import { NightSky } from "@/components/baby/NightSky";
 
 /** Një nga tre butonat e natës: i madh, katror, me ikonë dhe një fjalë. */
-function NightButton({ icon, label, onPress, on = false, colors: C }: { icon: IconName; label: string; onPress: () => void; on?: boolean; colors: NightPalette }) {
+function NightButton({ icon, label, onPress, on = false, size, colors: C }: { icon: IconName; label: string; onPress: () => void; on?: boolean; size: number; colors: NightPalette }) {
   return (
     <Pressable
       onPress={onPress}
       accessibilityRole="button"
       accessibilityLabel={label}
       style={({ pressed }) => ({
-        flex: 1,
-        aspectRatio: 1,
-        maxHeight: 132,
+        // Përmasa e llogaritur (jo flex + aspectRatio + maxHeight): Android-i i shtrinte ndryshe nga iPhone-i.
+        width: size,
+        height: size,
         backgroundColor: pressed || on ? C.buttonOn : C.button,
         borderColor: on ? C.soft : C.line,
         borderWidth: 1,
@@ -51,7 +51,7 @@ type Saved = { kind: "feeding" | "diaper" | "sleep"; id: string | null; text: st
 
 /**
  * Pamja e natës, e thjeshtë: ora, sa kohë fle (ose është zgjuar) bebi, dhe tre butona poshtë ku arrin gishti i
- * madh: Ushqim, Pelenë, Gjumë. Lart vetëm ikona e dritës së kuqe dhe "Mbyll". E kuqe mbi qiellin e natës (blu e
+ * madh: Ushqim, Pelenë, Gjumë. Lart vetëm ikona e dritës (e bardhë) dhe "Mbyll". E kuqe mbi qiellin e natës (blu e
  * mesnatës shumë e errët, Hëna dhe yjet: NightSky), ekrani i errësuar vetë; pa animacione dhe pa emoji. Çdo prekje
  * dridhet dhe shkruan "U ruajt" me mundësi anulimi.
  */
@@ -62,8 +62,10 @@ export function NightMode() {
   // ngjyra e shkrimeve e zgjedhur te cilësimet (e kuqja si parazgjedhje)
   const C = nightPalette(night.prefs.textColor);
   const b = state.baby;
-  const { height } = useWindowDimensions();
+  const { width, height } = useWindowDimensions();
   const compact = height < 720;
+  // Tre butona katrorë me hapësirë 12 mes tyre dhe 16 anash; jo më të mëdhenj se 120.
+  const btn = Math.floor(Math.min(compact ? 104 : 120, (width - 32 - 24) / 3));
   const [now, setNow] = useState(() => new Date());
   const [timer, setTimer] = useState<BreastTimer | null>(null);
   const [saved, setSaved] = useState<Saved | null>(null);
@@ -177,12 +179,13 @@ export function NightMode() {
   const analog = night.prefs.clock === "analog";
 
   return (
-    <SafeAreaView style={{ flex: 1, backgroundColor: C.bg }} edges={["top", "bottom"]}>
+    <SafeAreaView style={{ flex: 1, backgroundColor: C.bg }} edges={["top"]}>
+      {/* Poshtë s'ka "bottom": shiriti i skedave nën këtë pamje e mban vetë hapësirën e telefonit (Android/iPhone). */}
       <StatusBar barStyle="light-content" />
       {/* Qielli me Hënën dhe yjet: pas gjithçkaje, pa marrë prekje */}
       <NightSky />
       <View style={{ flexDirection: "row", alignItems: "center", justifyContent: "space-between", paddingHorizontal: 12, paddingTop: 4 }}>
-        {/* Drita e kuqe: vetëm ikona (emri i saj u lexohet lexuesve të ekranit). */}
+        {/* Drita e bardhë: vetëm ikona (emri i saj u lexohet lexuesve të ekranit). */}
         <Pressable
           onPress={() => {
             haptics.tap();
@@ -236,10 +239,10 @@ export function NightMode() {
       </View>
 
       {/* Tre butona, poshtë, ku arrin gishti i madh me një dorë. */}
-      <View style={{ flexDirection: "row", gap: 12, paddingHorizontal: 16, paddingBottom: 16 }}>
-        <NightButton icon="spoon" label={feedLabel} onPress={feed} on={!!timer} colors={C} />
-        <NightButton icon="diaper" label={t("night_btn_diaper")} onPress={diaper} colors={C} />
-        <NightButton icon="moon" label={ongoing ? t("night_btn_wake") : t("night_btn_sleep")} onPress={toggleSleep} on={!!ongoing} colors={C} />
+      <View style={{ flexDirection: "row", justifyContent: "center", gap: 12, paddingHorizontal: 16, paddingBottom: 14 }}>
+        <NightButton icon="spoon" label={feedLabel} onPress={feed} on={!!timer} size={btn} colors={C} />
+        <NightButton icon="diaper" label={t("night_btn_diaper")} onPress={diaper} size={btn} colors={C} />
+        <NightButton icon="moon" label={ongoing ? t("night_btn_wake") : t("night_btn_sleep")} onPress={toggleSleep} on={!!ongoing} size={btn} colors={C} />
       </View>
     </SafeAreaView>
   );
