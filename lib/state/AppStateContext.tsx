@@ -772,9 +772,10 @@ function buildValue(state: AppState, dispatch: React.Dispatch<Action>) {
       availableMilestonePresets: () => milestoneCatalog.filter((m) => !b.milestoneActiveKeys.includes(m.key)),
 
       // ---- Timeline (unified, also manually-added custom events) ----
-      addTimelineEvent: (title: string, date: string) => {
+      /** `id` vetëm kur thirrësi duhet ta gjejë më vonë ngjarjen (p.sh. dhëmbët: "tooth-LL1-…"); duhet të jetë unik. */
+      addTimelineEvent: (title: string, date: string, id?: string) => {
         const at = nowIso();
-        const event: TimelineEvent = { id: uid(), title, date, color: "olive", note: "", createdAt: at, updatedAt: at, editCount: 0, deletedAt: null, archivedAt: null };
+        const event: TimelineEvent = { id: id ?? uid(), title, date, color: "olive", note: "", createdAt: at, updatedAt: at, editCount: 0, deletedAt: null, archivedAt: null };
         update((cur) => ({ timeline: withAdd(cur.timeline, event) }));
       },
       updateTimelineEvent: (id: string, patch: Partial<TimelineEvent>) =>

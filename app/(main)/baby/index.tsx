@@ -9,6 +9,7 @@ import { SectionHeader } from "@/components/baby/SectionHeader";
 import { StatCard } from "@/components/baby/StatCard";
 import { GrowthOverview } from "@/components/baby/GrowthOverview";
 import { latestGrowth } from "@/lib/baby/growthLatest";
+import { eruptedTeeth } from "@/lib/baby/teeth";
 import { AddTile } from "@/components/baby/AddTile";
 import { FormField } from "@/components/baby/FormField";
 import { DateTimeField } from "@/components/baby/DateTimeField";
@@ -21,7 +22,7 @@ import { haptics } from "@/lib/haptics";
 import { computeAgeText, formatDate, formatTime } from "@/lib/dateUtils";
 import { shadows } from "@/lib/shadows";
 import { useThemeColors } from "@/lib/theme/useThemeColors";
-import { themedTone } from "@/lib/theme/tone";
+import { themedTone, useTones } from "@/lib/theme/tone";
 import { NowCard } from "@/components/baby/NowCard";
 import { WeeklyRecapCard } from "@/components/baby/WeeklyRecapCard";
 import { MemoriesCard } from "@/components/baby/MemoriesCard";
@@ -146,6 +147,7 @@ function DayTile({ color, label, value }: { color: string; label: string; value:
 export default function BabyProfileScreen() {
   const { t, lang } = useTranslation();
   const { state, baby, hydrated } = useAppState();
+  const tones = useTones();
   const { showToast } = useToast();
   const { profile } = state;
   const b = state.baby;
@@ -884,6 +886,23 @@ export default function BabyProfileScreen() {
               </Pressable>
               ) : null}
             </View>
+            {can("teeth") ? (
+              <Pressable
+                onPress={() => router.push("/(main)/baby/teeth")}
+                accessibilityRole="button"
+                className="mt-3 flex-row items-center gap-3 rounded-2xl border border-ink/10 bg-surface p-4"
+                style={[shadows.soft, { minHeight: 68 }]}
+              >
+                <View className="h-11 w-11 items-center justify-center rounded-2xl" style={{ backgroundColor: tones.blue.tintBg }}>
+                  <Icon name="tooth" size={20} color={tones.blue.tint} />
+                </View>
+                <View className="flex-1">
+                  <Text className="font-bodySemibold text-[15px] text-ink">{t("teeth_title")}</Text>
+                  <Text className="mt-0.5 font-body text-[12.5px] text-ink-soft">{t("teeth_count", { n: eruptedTeeth(b.timeline).size })}</Text>
+                </View>
+                <Icon name="chevronRight" size={16} color={tones.inkSoft} />
+              </Pressable>
+            ) : null}
           </MotiView>
         )}
 
