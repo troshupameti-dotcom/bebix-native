@@ -14,6 +14,51 @@ import type { DiaperEntry, FeedingEntry, SleepEntry } from "@/lib/state/babyType
 const DISMISSED_KEY = "bebix_recap_dismissed_v1";
 
 /**
+ * Grafiku i vogël i gjumit: 7 shtylla (e hënë → e diel), një ngjyrë, maja të rrumbullakëta 4 px mbi vijën bazë,
+ * dita me më shumë gjumë shkruhet te titulli (te shtylla s'ka vend). Lexuesi i ekranit merr të gjitha ditët me orët.
+ */
+function SleepBars({ minutes, color, track, soft }: { minutes: number[]; color: string; track: string; soft: string }) {
+  const { t } = useTranslation();
+  const max = Math.max(...minutes);
+  if (max <= 0) return null;
+  const short = t("recap_days").split(",");
+  const long = t("recap_days_long").split(",");
+  const best = minutes.indexOf(max);
+  const H = 56;
+  const label = minutes.map((m, i) => `${long[i]}: ${m > 0 ? durationLabel(m, t) : "–"}`).join(", ");
+  return (
+    <View className="mt-3" accessible accessibilityRole="image" accessibilityLabel={`${t("recap_chart_title")}. ${label}`}>
+      <Text className="font-bodyMedium text-[12.5px]" style={{ color: soft }}>
+        {t("recap_chart_title")} · {t("recap_chart_best", { d: durationLabel(max, t), day: long[best] })}
+      </Text>
+      <View className="mt-2 flex-row items-end" style={{ height: H, gap: 6 }}>
+        {minutes.map((m, i) => (
+          <View key={i} className="flex-1 items-center justify-end" style={{ height: H }}>
+            <View
+              style={{
+                width: "70%",
+                maxWidth: 22,
+                height: m > 0 ? Math.max(3, Math.round((m / max) * H)) : 2,
+                backgroundColor: m > 0 ? color : track,
+                borderTopLeftRadius: 4,
+                borderTopRightRadius: 4,
+              }}
+            />
+          </View>
+        ))}
+      </View>
+      <View className="flex-row" style={{ gap: 6, borderTopWidth: 1, borderTopColor: track, paddingTop: 3 }}>
+        {short.map((d, i) => (
+          <Text key={i} className="flex-1 text-center font-body text-[11px]" style={{ color: soft }}>
+            {d}
+          </Text>
+        ))}
+      </View>
+    </View>
+  );
+}
+
+/**
  * Përmbledhja e javës së kaluar, e hënë–e mërkurë, derisa prindi ta mbyllë.
  * Vetëm lajme të mira si trend; pjesa tjetër neutrale.
  */
@@ -90,6 +135,7 @@ export function WeeklyRecapCard({
           {t("recap_night_avg", { d: durationLabel(recap.stats.nightSleepMin, t) })}
         </Text>
       ) : null}
+      <SleepBars minutes={recap.sleepByDay} color={tones.amber.tint} track={tones.amber.tint + "33"} soft={tones.inkSoft} />
       <Text className="mt-2.5 font-bodyMedium text-[12.5px]" style={{ color: tones.inkSoft }}>{t("recap_kind")}</Text>
     </MotiView>
   );

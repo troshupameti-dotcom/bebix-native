@@ -1,4 +1,4 @@
-import { buildWeeklyRecap, mondayOf, showRecapCard, weekStats } from "@/lib/baby/weeklyRecap";
+import { buildWeeklyRecap, mondayOf, showRecapCard, sleepByDay, weekStats } from "@/lib/baby/weeklyRecap";
 import type { DiaperEntry, FeedingEntry, SleepEntry } from "@/lib/state/babyTypes";
 
 const life = { createdAt: "", updatedAt: "", editCount: 0, deletedAt: null as string | null, archivedAt: null as string | null };
@@ -78,5 +78,14 @@ describe("përmbledhja e javës", () => {
     expect(showRecapCard(new Date(2026, 9, 15, 9), null, recap)).toBe(false);
     expect(showRecapCard(new Date(2026, 9, 12, 9), "2026-10-05", recap)).toBe(false);
     expect(showRecapCard(new Date(2026, 9, 12, 9), null, null)).toBe(false);
+  });
+
+  it("grafiku: gjumi i çdo dite, e hënë → e diel; gjumi pas mesnate i takon natës së mëparshme", () => {
+    // çdo ditë: 600 min natën (21:00) + 60 min gjumë dite
+    expect(buildWeeklyRecap(week(5, 600), new Date(2026, 9, 12, 9))!.sleepByDay).toEqual([660, 660, 660, 660, 660, 660, 660]);
+    const monday = new Date(2026, 9, 5);
+    const log = [sleep(at(6, 2), 120, false), sleep(at(6, 14), 45, true), sleep(at(4, 22), 300, false), sleep(at(12, 21), 300, false)];
+    // 02:00 e martë → e hëna; dremitja 14:00 e martë → e marta; jashtë javës: s'numërohen
+    expect(sleepByDay(log, monday)).toEqual([120, 45, 0, 0, 0, 0, 0]);
   });
 });

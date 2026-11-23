@@ -34,6 +34,8 @@ export type WeeklyRecap = {
   stats: WeekStats;
   previous: WeekStats | null;
   highlights: RecapHighlight[];
+  /** Minutat e gjumit për çdo ditë të javës, e hënë → e diel (sipas ditës kur nisi gjumi). */
+  sleepByDay: number[];
 };
 
 /** Sa minuta duhet ndryshimi që të quhet trend (më pak = zhurmë e shënimeve). */
@@ -100,6 +102,24 @@ export function weekStats(
 }
 
 /**
+ * Gjumi i çdo dite të javës (minuta), e hënë → e diel, për grafikun e kartës. Gjumi i natës i përket ditës kur nisi;
+ * gjumi pas mesnate (para 07:00) i përket ditës së mëparshme, si te mesatarja e natës.
+ */
+export function sleepByDay(sleepLog: SleepEntry[], weekStart: Date): number[] {
+  const days = Array.from({ length: 7 }, () => 0);
+  const from = weekStart.getTime();
+  for (const s of visible(sleepLog)) {
+    if (!s.endAt) continue;
+    const start = new Date(s.startAt);
+    const owner = !s.isNap && start.getHours() < 7 ? addDays(start, -1) : start;
+    const i = Math.floor((new Date(owner.getFullYear(), owner.getMonth(), owner.getDate()).getTime() - from) / 86_400_000 + 0.5);
+    if (i < 0 || i > 6) continue;
+    days[i] += Math.max(0, (new Date(s.endAt).getTime() - start.getTime()) / MIN - (s.pausedIntervalsMin ?? 0));
+  }
+  return days.map((m) => Math.round(m));
+}
+
+/**
  * Përmbledhja për javën që sapo mbaroi. `null` kur java s'ka të paktën 3 ditë
  * me shënime — një përmbledhje nga një ditë e vetme do të ishte e rreme.
  */
@@ -124,7 +144,7 @@ export function buildWeeklyRecap(
       highlights.push({ kind: "longest_sleep_up", minutes: stats.longestSleepMin });
     }
   }
-  return { weekKey: dateKey(weekStart), weekStart: weekStart.toISOString(), stats, previous, highlights };
+  return { weekKey: dateKey(weekStart), weekStart: weekStart.toISOString(), stats, previous, highlights, sleepByDay: sleepByDay(logs.sleepLog, weekStart) };
 }
 
 /** Karta shfaqet e hënë–e mërkurë, derisa prindi ta mbyllë. */
