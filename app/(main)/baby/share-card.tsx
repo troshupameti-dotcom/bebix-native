@@ -13,6 +13,8 @@ import { useToast } from "@/lib/toast/ToastContext";
 import { haptics } from "@/lib/haptics";
 import { formatDate } from "@/lib/dateUtils";
 import { useMomentUri } from "@/lib/baby/useMomentUri";
+import { useActiveChild } from "@/lib/age/useActiveChild";
+import { pregnancyProgress } from "@/lib/age/engine";
 import {
   availableTemplates, buildCardContent, CARD_SIZE, defaultTemplate, parseCardParams, pickDefaultPhoto, selectablePhotos,
   type CardAspect, type CardTemplate,
@@ -81,7 +83,11 @@ export default function ShareCardScreen() {
 
   const babyName = state.profile.nickname || state.profile.babyName || t("your_baby");
   const dateIso = params.kind === "milestone" || params.kind === "moment" ? (sourceMoment?.date ?? new Date().toISOString()) : new Date().toISOString();
-  const content = buildCardContent({ kind: params.kind, n: params.n, babyName, moment: sourceMoment, dateLabel: formatDate(dateIso, lang), t });
+  // Karta e shtatzënisë: nënshkrimi është "x ditë deri në lindje" (nga data e pritur e fëmijës aktiv), jo data e sotme.
+  const { child } = useActiveChild();
+  const preg = params.kind === "pregnancy" ? pregnancyProgress(child.dueDate ?? null) : null;
+  const dateLabel = preg ? (preg.daysLeft > 0 ? t("preg_days_left", { n: preg.daysLeft }) : t("preg_due_now")) : formatDate(dateIso, lang);
+  const content = buildCardContent({ kind: params.kind, n: params.n, babyName, moment: sourceMoment, dateLabel, t });
 
   // Parapamja: e gjerë sa ekrani; story-ja kufizohet nga lartësia.
   const previewW = aspect === "story" ? Math.min(screenW - 40, (screenH * 0.5) / (16 / 9)) : Math.min(screenW - 40, 420);

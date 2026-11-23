@@ -3,6 +3,7 @@ import { Pressable, Text, View } from "react-native";
 import { router, useFocusEffect, type Href } from "expo-router";
 import { Baby, Footprints, Luggage, Timer } from "lucide-react-native";
 import { BottomSheet } from "@/components/ui/BottomSheet";
+import { Icon } from "@/components/ui/Icon";
 import { FormField } from "@/components/baby/FormField";
 import { pregnancyProgress } from "@/lib/age/engine";
 import { loadPregnancyWeek, type PregnancyWeek } from "@/lib/parent/pregnancy";
@@ -87,6 +88,20 @@ export function PregnancyHome({ dueDate, babyName }: { dueDate: string | null; b
         <View className="mt-3 h-2 overflow-hidden rounded-full" style={{ backgroundColor: tones.pink.chip }}>
           <View style={{ width: `${pct * 100}%`, backgroundColor: tones.pink.tint }} className="h-2 rounded-full" />
         </View>
+        <Pressable
+          onPress={() => {
+            haptics.tap();
+            router.push({ pathname: "/(main)/baby/share-card", params: { kind: "pregnancy", n: String(progress.week) } });
+          }}
+          accessibilityRole="button"
+          hitSlop={8}
+          className="mt-3 flex-row items-center gap-1.5 self-start"
+        >
+          <Icon name="share" size={15} color={tones.pink.tint} />
+          <Text className="font-bodySemibold text-[13.5px]" style={{ color: tones.pink.tint }}>
+            {t("preg_share")}
+          </Text>
+        </Pressable>
         {content ? (
           <View className="mt-4">
             <Text className="font-bodySemibold text-[15px]" style={{ color: tones.ink }}>

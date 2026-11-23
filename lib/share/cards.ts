@@ -7,11 +7,11 @@ import type { TranslationKey } from "@/lib/i18n/translations";
  * TROA. Funksione të pastra: përmbajtja, foto e parazgjedhur, shabllonet.
  */
 
-export type CardKind = "day100" | "month" | "half" | "year" | "milestone" | "moment";
+export type CardKind = "day100" | "month" | "half" | "year" | "milestone" | "moment" | "pregnancy";
 export type CardTemplate = "cream" | "photo" | "pastel" | "night";
 export type CardAspect = "square" | "story";
 
-export const CARD_KINDS: CardKind[] = ["day100", "month", "half", "year", "milestone", "moment"];
+export const CARD_KINDS: CardKind[] = ["day100", "month", "half", "year", "milestone", "moment", "pregnancy"];
 
 /** Madhësia e imazhit që ndahet (piksela): katror për postim, 9:16 për story. */
 export const CARD_SIZE: Record<CardAspect, { width: number; height: number }> = {
@@ -27,6 +27,8 @@ export function parseCardParams(p: { kind?: string; n?: string; momentId?: strin
   if (!kind) return null;
   const n = p.n != null && /^\d{1,3}$/.test(p.n) ? Number(p.n) : null;
   if ((kind === "month" || kind === "year") && (n == null || n < 1)) return null;
+  // Java e shtatzënisë: 1–42.
+  if (kind === "pregnancy" && (n == null || n < 1 || n > 42)) return null;
   return { kind, n, momentId: p.momentId && /^[\w-]{1,80}$/.test(p.momentId) ? p.momentId : null };
 }
 
@@ -69,6 +71,15 @@ export function buildCardContent(input: {
         unit: t(n === 1 ? "card_unit_year" : "card_unit_years"),
         emoji: "🎂",
         title: t("card_title_year", { name, n: n ?? 0 }),
+        subtitle: dateLabel,
+      };
+    case "pregnancy":
+      // Pa emër: gjatë shtatzënisë shpesh s'ka ende. Nënshkrimi (ditët deri në lindje) vjen nga ekrani.
+      return {
+        big: String(n),
+        unit: t(n === 1 ? "card_unit_week" : "card_unit_weeks"),
+        emoji: "🤍",
+        title: t("card_title_preg"),
         subtitle: dateLabel,
       };
     case "milestone":

@@ -54,4 +54,12 @@ describe("kartat për t'u ndarë", () => {
     expect(defaultTemplate(true)).toBe("photo");
     expect(defaultTemplate(false)).toBe("cream");
   });
+
+  it("java e shtatzënisë: 1–42, numri i madh është java, nënshkrimi vjen nga ekrani", () => {
+    expect(parseCardParams({ kind: "pregnancy", n: "32" })).toEqual({ kind: "pregnancy", n: 32, momentId: null });
+    expect(parseCardParams({ kind: "pregnancy" })).toBeNull();
+    expect(parseCardParams({ kind: "pregnancy", n: "43" })).toBeNull();
+    const c = buildCardContent({ kind: "pregnancy", n: 32, babyName: "Bebi", moment: null, dateLabel: "56 ditë deri në lindje", t });
+    expect(c).toMatchObject({ big: "32", unit: "javë", title: "Po të presim me padurim", subtitle: "56 ditë deri në lindje" });
+  });
 });
