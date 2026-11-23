@@ -125,7 +125,7 @@ function ControlTile({
       accessibilityRole={role}
       accessibilityState={role === "switch" ? { checked: on } : undefined}
       accessibilityLabel={`${label}: ${value}`}
-      style={({ pressed }) => [shadows.soft, { flex: 1, height: 96, transform: [{ scale: pressed ? 0.96 : 1 }] }]}
+      style={({ pressed }) => [shadows.soft, { flex: 1, flexBasis: 0, minWidth: 0, height: 96, transform: [{ scale: pressed ? 0.96 : 1 }] }]}
       className="justify-between rounded-[20px] bg-surface px-3 py-2.5"
     >
       <View style={{ width: 36, height: 36, borderRadius: 18, alignItems: "center", justifyContent: "center", backgroundColor: on ? color : theme.creamSoft }}>

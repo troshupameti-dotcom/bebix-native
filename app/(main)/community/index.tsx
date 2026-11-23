@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { View, Text, FlatList, RefreshControl, Pressable, TextInput, ActivityIndicator } from "react-native";
+import { View, Text, FlatList, RefreshControl, Pressable, TextInput, ActivityIndicator, useWindowDimensions } from "react-native";
 import { CloudOff, MessagesSquare, SearchX, Sprout, UserPlus } from "lucide-react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useRouter, useFocusEffect, useLocalSearchParams } from "expo-router";
@@ -68,6 +68,7 @@ export default function CommunityScreen() {
   const { state } = useAppState();
   const { t, language } = useTranslation();
   const theme = useThemeColors();
+  const { width: winWidth } = useWindowDimensions();
   const specialties = useSpecialties();
   const listRef = useRef<FlatList<CommunityPost>>(null);
   const myId = useCurrentUserId();
@@ -321,6 +322,8 @@ export default function CommunityScreen() {
     return specialties.list.filter((s) => present.has(s.key));
   }, [experts, specialties]);
 
+  // Në telefonat e ngushtë (≤ 340 pt) emrat e skedave dalin më të vegjël, që të mos priten ("Për mos…").
+  const tabFont = winWidth <= 340 ? "text-[12.5px]" : "text-[14px]";
   const tabs: { key: FeedTab; label: string }[] = [
     { key: "all", label: ageGroup ? t("community_tab_all") : t("community_tab_foryou") },
     ...(ageGroup ? [{ key: "age" as FeedTab, label: t("community_tab_age") }] : []),
@@ -506,7 +509,7 @@ export default function CommunityScreen() {
           const on = tab === tb.key;
           return (
             <Pressable key={tb.key} onPress={() => pickTab(tb.key)} accessibilityRole="tab" accessibilityState={{ selected: on }} className="flex-1 items-center pt-1" style={{ minHeight: 44 }}>
-              <Text numberOfLines={1} className={`py-2 text-[14px] ${on ? "font-bodySemibold text-ink" : "font-bodyMedium text-ink-faint"}`}>
+              <Text numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.8} className={`py-2 ${tabFont} ${on ? "font-bodySemibold text-ink" : "font-bodyMedium text-ink-faint"}`}>
                 {tb.label}
               </Text>
               <View className={`h-[3px] w-8 rounded-full ${on ? "bg-olive" : ""}`} />
