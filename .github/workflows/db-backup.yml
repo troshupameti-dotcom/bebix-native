@@ -1,0 +1,121 @@
+name: Backup i bazës
+
+# Kopje e plotë çdo natë: baza Supabase (llogaritë, fëmijët, shënimet, porositë...) dhe skedarët e Storage.
+# Supabase Free s'bën asnjë backup vetë. Kopja ruhet këtu, jashtë Supabase, 30 ditë, ndaj mbijeton
+# edhe një fshirje të projektit. Repoja është publike: gjithçka enkriptohet (AES-256) para ngarkimit
+# dhe në log s'del asnjë e dhënë klienti, vetëm numrat gjithsej.
+#
+# Sekretet (Settings → Secrets and variables → Actions):
+#   SUPABASE_DB_URL            Supabase → Connect → "Session pooler" (lidhja direkte s'punon nga GitHub, është vetëm IPv6)
+#   SUPABASE_SERVICE_ROLE_KEY  Supabase → Project Settings → API Keys → service_role ose secret
+#   BACKUP_PASSPHRASE          fjalëkalimi i kopjeve; pa të kopja s'hapet dot nga askush
+#
+# Hapja e një kopjeje (shkarko artefaktin te faqja e run-it në Actions):
+#   gpg --decrypt troa-backup-VVVV-MM-DD.tar.gz.gpg | tar xz
+# Rikthimi në një projekt të ri Supabase (rolet, struktura, pastaj të dhënat pa trigger-a):
+#   psql --single-transaction -v ON_ERROR_STOP=1 -f roles.sql -f schema.sql \
+#        -c 'SET session_replication_role = replica' -f data.sql --dbname "<lidhja e projektit të ri>"
+#   Skedarët: storage/<kova>/... ngarkohen sërish me të njëjtën rrugë; kovat sipas storage/buckets.json.
+# Lënë jashtë qëllimisht: cron.job_run_details dhe net._http_response (histori teknike, ~110 MB, s'janë të dhëna klientësh).
+
+on:
+  schedule:
+    - cron: "30 1 * * *" # çdo natë 02:30 ora e Shqipërisë në dimër (03:30 në verë)
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: db-backup
+  cancel-in-progress: false
+
+defaults:
+  run:
+    shell: bash
+
+jobs:
+  backup:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    env:
+      SUPABASE_URL: https://mkpayczhqmbpqwwxjtjf.supabase.co
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Kontrollo sekretet
+        env:
+          SUPABASE_DB_URL: ${{ secrets.SUPABASE_DB_URL }}
+          SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+          BACKUP_PASSPHRASE: ${{ secrets.BACKUP_PASSPHRASE }}
+        run: |
+          missing=""
+          [ -n "$SUPABASE_DB_URL" ] || missing="$missing SUPABASE_DB_URL"
+          [ -n "$SUPABASE_SERVICE_ROLE_KEY" ] || missing="$missing SUPABASE_SERVICE_ROLE_KEY"
+          [ -n "$BACKUP_PASSPHRASE" ] || missing="$missing BACKUP_PASSPHRASE"
+          if [ -n "$missing" ]; then echo "::error::Mungojnë sekretet:$missing"; exit 1; fi
+          if [ ${#BACKUP_PASSPHRASE} -lt 16 ]; then echo "::error::BACKUP_PASSPHRASE duhet të ketë të paktën 16 shkronja"; exit 1; fi
+          case "$SUPABASE_DB_URL" in *"[YOUR-PASSWORD]"*) echo "::error::Te SUPABASE_DB_URL vendos fjalëkalimin në vend të [YOUR-PASSWORD]"; exit 1;; esac
+          # Fjalëkalimi i bazës fshihet nga log-u edhe kur del i vetëm, jo vetëm si pjesë e lidhjes.
+          pw=$(node -e 'try { console.log(decodeURIComponent(new URL(process.env.SUPABASE_DB_URL).password)) } catch { process.exit(1) }') \
+            || { echo "::error::SUPABASE_DB_URL s'është lidhje e vlefshme (postgresql://...)"; exit 1; }
+          if [ -n "$pw" ]; then echo "::add-mask::$pw"; fi
+
+      - uses: supabase/setup-cli@v1
+        with:
+          version: 3.4.0
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - name: Baza (rolet, struktura, të dhënat)
+        env:
+          SUPABASE_DB_URL: ${{ secrets.SUPABASE_DB_URL }}
+        run: |
+          mkdir -p backup
+          supabase db dump --remote="$SUPABASE_DB_URL" --role-only -f backup/roles.sql
+          supabase db dump --remote="$SUPABASE_DB_URL" -f backup/schema.sql
+          supabase db dump --remote="$SUPABASE_DB_URL" --data-only --use-copy \
+            -x cron.job_run_details,net._http_response -f backup/data.sql
+
+      - name: Provo që kopja e bazës është e plotë
+        run: |
+          for f in roles schema data; do
+            [ -s "backup/$f.sql" ] || { echo "::error::backup/$f.sql është bosh"; exit 1; }
+          done
+          grep -q '^COPY "auth"."users"' backup/data.sql || { echo "::error::Mungojnë llogaritë (auth.users)"; exit 1; }
+          tables=$(grep -c '^COPY "public"\.' backup/data.sql || true)
+          [ "$tables" -ge 10 ] || { echo "::error::Vetëm $tables tabela public në kopje"; exit 1; }
+          rows=$(awk '/^COPY /{on=1; next} /^\\\.$/{on=0; next} on{n++} END{print n+0}' backup/data.sql)
+          echo "Baza: $tables tabela public, $rows rreshta gjithsej" | tee -a "$GITHUB_STEP_SUMMARY"
+
+      - name: Skedarët (Storage)
+        env:
+          SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+        run: |
+          npm install --prefix "$RUNNER_TEMP/sb" --no-save --no-audit --no-fund @supabase/supabase-js@2.109.0 > /dev/null
+          NODE_PATH="$RUNNER_TEMP/sb/node_modules" node scripts/backup-storage.cjs backup/storage | tee -a "$GITHUB_STEP_SUMMARY"
+
+      - name: Enkripto dhe provo hapjen
+        env:
+          BACKUP_PASSPHRASE: ${{ secrets.BACKUP_PASSPHRASE }}
+        run: |
+          name="troa-backup-$(date -u +%Y-%m-%d)"
+          tar -czf - -C backup . | gpg --batch --yes --pinentry-mode loopback --symmetric --cipher-algo AES256 \
+            --passphrase-file <(printf '%s' "$BACKUP_PASSPHRASE") -o "$name.tar.gz.gpg"
+          rm -rf backup
+          # Kopja hapet me të njëjtin fjalëkalim dhe ka të tria pjesët e bazës.
+          gpg --batch --quiet --pinentry-mode loopback --passphrase-file <(printf '%s' "$BACKUP_PASSPHRASE") \
+            -d "$name.tar.gz.gpg" | tar -tzf - > "$RUNNER_TEMP/list.txt"
+          for f in roles schema data; do grep -qx "./$f.sql" "$RUNNER_TEMP/list.txt" || { echo "::error::$f.sql mungon"; exit 1; }; done
+          echo "Kopja: $name.tar.gz.gpg, $(du -h "$name.tar.gz.gpg" | cut -f1), e enkriptuar" | tee -a "$GITHUB_STEP_SUMMARY"
+          echo "BACKUP_NAME=$name" >> "$GITHUB_ENV"
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: ${{ env.BACKUP_NAME }}
+          path: ${{ env.BACKUP_NAME }}.tar.gz.gpg
+          retention-days: 30
+          compression-level: 0
+          if-no-files-found: error
