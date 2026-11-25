@@ -123,6 +123,27 @@ export function parseDueInput(value: string, now: Date = new Date()): string | n
   return localDateKey(d);
 }
 
+export type DueMonth = { year: number; month: number }; // month 0–11
+
+/** Muajt që zgjidhen si muaji i pritur i lindjes: ky muaj dhe 9 të tjerët (shtatzënia zgjat rreth 9 muaj). */
+export function dueMonthOptions(now: Date = new Date()): DueMonth[] {
+  return Array.from({ length: 10 }, (_, i) => {
+    const d = new Date(now.getFullYear(), now.getMonth() + i, 1);
+    return { year: d.getFullYear(), month: d.getMonth() };
+  });
+}
+
+/**
+ * Muaji i pritur → data e pritur "VVVV-MM-DD". Askush s'e di ditën e saktë, prandaj merret mesi i muajit (15-ta);
+ * për muajin e sotëm, kur 15-ta ka kaluar, merret sot. Java e shtatzënisë del me rreth ±2 javë. null jashtë kufijve
+ * të `parseDueInput`.
+ */
+export function dueFromMonth(m: DueMonth, now: Date = new Date()): string | null {
+  const mid = new Date(m.year, m.month, 15);
+  const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+  return parseDueInput(formatDayInput(mid < today ? today : mid), now);
+}
+
 /** "YYYY-MM-DD" e datës LOKALE (jo UTC): 15 mars në orën 00:30 mbetet 15 mars. */
 export function localDateKey(date: Date): string {
   return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}-${String(date.getDate()).padStart(2, "0")}`;

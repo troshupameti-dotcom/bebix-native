@@ -34,6 +34,7 @@ describe("regjistrimi", () => {
     }
     const r = await renderScreen(<><CreateProfile /><Probe /></>);
     const type = async (v: string) => act(async () => { r.root.findByType(TextInput).props.onChangeText(v); });
+    await press(r.root, "Kam bebe ose fëmijë");
     await type("Ana");
     await press(r.root, "Vazhdo");
     await type("Mami");

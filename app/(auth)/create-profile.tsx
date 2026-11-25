@@ -7,90 +7,104 @@ import { SafeAreaView } from "react-native-safe-area-context";
 import { AuthInput } from "@/components/auth/AuthInput";
 import { PrimaryButton } from "@/components/auth/PrimaryButton";
 import { Icon } from "@/components/ui/Icon";
+import { DueMonthPicker } from "@/components/children/DueMonthPicker";
 import { useAppState } from "@/lib/state/AppStateContext";
-import { savePendingProfile, parseDobInput, parseDueInput, formatDobInput, dueFromLmpInput } from "@/lib/babyProfile";
+import { savePendingProfile, parseDobInput, formatDobInput, dueFromMonth, type DueMonth } from "@/lib/babyProfile";
 import { useTranslation } from "@/lib/i18n/LanguageContext";
+import type { TranslationKey } from "@/lib/i18n/translations";
 import { BackButton, goBackOr } from "@/components/ui/BackButton";
 
-type Step = 0 | 1 | 2 | 3;
+/** Ku është prindi: ka bebe/fëmijë, pret bebe, ose s'ka ende fëmijë (gjyshër, dhurata, planifikim). */
+type Kind = "born" | "expecting" | "none";
+type Step = "kind" | "baby" | "parent" | "date" | "done";
+
+const FLOW: Record<Kind, Step[]> = {
+  born: ["kind", "baby", "parent", "date", "done"],
+  expecting: ["kind", "baby", "parent", "date", "done"],
+  // Pa fëmijë: vetëm emri i prindit; fëmija shtohet më vonë te "Fëmijët".
+  none: ["kind", "parent", "done"],
+};
+
+const KINDS: { kind: Kind; title: TranslationKey; sub: TranslationKey }[] = [
+  { kind: "born", title: "onb_kind_born", sub: "onb_kind_born_sub" },
+  { kind: "expecting", title: "onb_kind_expecting", sub: "onb_kind_expecting_sub" },
+  { kind: "none", title: "onb_kind_none", sub: "onb_kind_none_sub" },
+];
 
 export default function CreateProfileScreen() {
   const { t } = useTranslation();
   const { redirect } = useLocalSearchParams<{ redirect?: string }>();
   const { updateProfile } = useAppState();
 
-  const [step, setStep] = useState<Step>(0);
+  const [kind, setKind] = useState<Kind | null>(null);
+  const [step, setStep] = useState<Step>("kind");
   const [babyName, setBabyName] = useState("");
   const [parentName, setParentName] = useState("");
   const [dobInput, setDobInput] = useState("");
+  // "Pres bebe": vetëm muaji i pritur, se ditën e saktë s'e di askush.
+  const [dueMonth, setDueMonth] = useState<DueMonth | null>(null);
   const [error, setError] = useState<string | null>(null);
-  // "Pres bebe": në vend të datëlindjes pyetet data e pritur e lindjes (shtatzënia).
-  const [expecting, setExpecting] = useState(false);
-  // Kur nëna s'e di datën e pritur: shkruan ditën e parë të menstruacioneve të fundit dhe data llogaritet (+280 ditë).
-  const [fromLmp, setFromLmp] = useState(false);
-  const dueDate = (input: string) => (fromLmp ? dueFromLmpInput(input) : parseDueInput(input));
+
+  const flow = FLOW[kind ?? "born"];
+  const index = flow.indexOf(step);
+  const dots = flow.length - 1; // "done" s'ka pikë
 
   function goBack() {
-    if (step === 0) {
+    setError(null);
+    if (step === "kind") {
       goBackOr("/(auth)/welcome");
       return;
     }
+    setStep(flow[index - 1]);
+  }
+
+  function chooseKind(k: Kind) {
+    setKind(k);
     setError(null);
-    setStep((s) => (s - 1) as Step);
+    setStep(FLOW[k][1]);
   }
 
   function handleNext() {
     setError(null);
-
-    if (step === 0) {
-      if (!babyName.trim()) {
-        setError(t("create_profile_error_baby_name"));
-        return;
-      }
-      setStep(1);
+    if (step === "baby" && !babyName.trim()) {
+      setError(t("create_profile_error_baby_name"));
       return;
     }
-
-    if (step === 1) {
-      if (!parentName.trim()) {
-        setError(t("create_profile_error_parent_name"));
-        return;
-      }
-      setStep(2);
+    if (step === "parent" && !parentName.trim()) {
+      setError(t("create_profile_error_parent_name"));
       return;
     }
-
-    if (step === 2) {
-      // E detyrueshme: datëlindja (ose, te "Pres bebe", data e pritur). Pa të app-i s'di moshën dhe s'përshtatet.
+    if (step === "date" && kind === "born") {
+      // E detyrueshme: pa datëlindje app-i s'di moshën dhe s'përshtatet.
       if (!dobInput.trim()) {
-        setError(t(expecting ? "create_profile_error_due_required" : "create_profile_error_dob_required"));
+        setError(t("create_profile_error_dob_required"));
         return;
       }
-      if (expecting ? !dueDate(dobInput) : !parseDobInput(dobInput)) {
+      if (!parseDobInput(dobInput)) {
         setError(t("create_profile_error_dob"));
         return;
       }
-      setStep(3);
     }
+    if (step === "date" && kind === "expecting" && !(dueMonth && dueFromMonth(dueMonth))) {
+      setError(t("onb_due_month_required"));
+      return;
+    }
+    setStep(flow[index + 1]);
   }
 
   async function handleFinish() {
-    const babyDob = !expecting ? parseDobInput(dobInput) : null;
-    const babyDueDate = expecting ? dueDate(dobInput) : null;
+    const babyDob = kind === "born" ? parseDobInput(dobInput) : null;
+    const babyDueDate = kind === "expecting" && dueMonth ? dueFromMonth(dueMonth) : null;
+    const name = kind === "none" ? "" : babyName.trim();
 
     // Edhe në telefon menjëherë (jo vetëm te serveri pas regjistrimit): Cilësimet e bebit i shohin që në hapjen e parë.
     const [y, m, d] = (babyDob ?? "").split("-").map(Number);
     updateProfile({
       parentName: parentName.trim(),
-      babyName: babyName.trim() || null,
+      babyName: name || null,
       ...(babyDob ? { babyDob: new Date(y, m - 1, d).toISOString() } : {}),
     });
-    await savePendingProfile({
-      parentName: parentName.trim(),
-      babyName: babyName.trim(),
-      babyDob,
-      babyDueDate,
-    });
+    await savePendingProfile({ parentName: parentName.trim(), babyName: name, babyDob, babyDueDate });
 
     router.push({
       pathname: "/(auth)/signup",
@@ -98,11 +112,13 @@ export default function CreateProfileScreen() {
     });
   }
 
-  const stepTitles = [
-    t("create_profile_step_baby_title"),
-    t("create_profile_step_parent_title"),
-    expecting ? t("onb_due_title") : t("create_profile_step_dob_title"),
-  ];
+  const title: Record<Exclude<Step, "done">, string> = {
+    kind: t("onb_kind_title"),
+    baby: t("create_profile_step_baby_title"),
+    parent: t("create_profile_step_parent_title"),
+    date: kind === "expecting" ? t("onb_due_month_title") : t("create_profile_step_dob_title"),
+  };
+  const sub = step === "date" && kind === "expecting" ? t("onb_due_month_sub") : t("create_profile_step_sub");
 
   return (
     <SafeAreaView className="flex-1 bg-cream" edges={["top", "bottom"]}>
@@ -110,10 +126,10 @@ export default function CreateProfileScreen() {
         <View className="flex-row items-center justify-between px-4 pt-2">
           <BackButton onPress={goBack} />
 
-          {step < 3 ? (
+          {step !== "done" ? (
             <View className="flex-row gap-1.5">
-              {[0, 1, 2].map((i) => (
-                <View key={i} className={`h-1.5 w-6 rounded-full ${i <= step ? "bg-olive" : "bg-ink/10"}`} />
+              {Array.from({ length: dots }, (_, i) => (
+                <View key={i} className={`h-1.5 w-6 rounded-full ${i <= index ? "bg-olive" : "bg-ink/10"}`} />
               ))}
             </View>
           ) : (
@@ -124,18 +140,36 @@ export default function CreateProfileScreen() {
         </View>
 
         <View className="flex-1 px-6 pt-8">
-          {step < 3 ? (
+          {step !== "done" ? (
             <MotiView
               key={step}
               from={{ opacity: 0, translateY: 10 }}
               animate={{ opacity: 1, translateY: 0 }}
               transition={{ type: "timing", duration: 350 }}
             >
-              <Text className="font-display text-2xl text-ink">{stepTitles[step]}</Text>
-              <Text className="mt-2 font-body text-sm text-ink-soft">{t("create_profile_step_sub")}</Text>
+              <Text accessibilityRole="header" className="font-display text-2xl text-ink">
+                {title[step]}
+              </Text>
+              <Text className="mt-2 font-body text-sm text-ink-soft">{sub}</Text>
 
               <View className="mt-8">
-                {step === 0 && (
+                {step === "kind" && (
+                  <View style={{ gap: 12 }}>
+                    {KINDS.map((k) => (
+                      <Pressable
+                        key={k.kind}
+                        onPress={() => chooseKind(k.kind)}
+                        accessibilityRole="button"
+                        style={{ borderRadius: 18, borderWidth: 1, paddingHorizontal: 18, paddingVertical: 16 }}
+                        className={kind === k.kind ? "border-olive bg-olive/10" : "border-cream-line bg-surface"}
+                      >
+                        <Text className="font-bodySemibold text-[16px] text-ink">{t(k.title)}</Text>
+                        <Text className="mt-1 font-body text-[13.5px] leading-[19px] text-ink-soft">{t(k.sub)}</Text>
+                      </Pressable>
+                    ))}
+                  </View>
+                )}
+                {step === "baby" && (
                   <AuthInput
                     label={t("create_profile_baby_name_label")}
                     placeholder={t("create_profile_baby_name_ph")}
@@ -145,7 +179,7 @@ export default function CreateProfileScreen() {
                     autoFocus
                   />
                 )}
-                {step === 1 && (
+                {step === "parent" && (
                   <AuthInput
                     label={t("create_profile_parent_name_label")}
                     placeholder={t("create_profile_parent_name_ph")}
@@ -155,31 +189,9 @@ export default function CreateProfileScreen() {
                     autoFocus
                   />
                 )}
-                {step === 2 && (
-                  <View className="mb-5 flex-row rounded-2xl bg-cream-soft p-1" accessibilityRole="tablist">
-                    {[false, true].map((exp) => (
-                      <Pressable
-                        key={String(exp)}
-                        onPress={() => {
-                          setExpecting(exp);
-                          setFromLmp(false);
-                          setDobInput("");
-                          setError(null);
-                        }}
-                        accessibilityRole="tab"
-                        accessibilityState={{ selected: expecting === exp }}
-                        className={`flex-1 items-center rounded-xl py-2.5 ${expecting === exp ? "bg-surface" : ""}`}
-                      >
-                        <Text className={`font-bodyMedium text-[13px] ${expecting === exp ? "text-ink" : "text-ink-faint"}`}>
-                          {t(exp ? "onb_kind_expecting" : "onb_kind_born")}
-                        </Text>
-                      </Pressable>
-                    ))}
-                  </View>
-                )}
-                {step === 2 && (
+                {step === "date" && kind === "born" && (
                   <AuthInput
-                    label={t(expecting ? (fromLmp ? "onb_lmp_label" : "onb_due_label") : "create_profile_dob_label")}
+                    label={t("create_profile_dob_label")}
                     placeholder={t("create_profile_dob_ph")}
                     keyboardType="number-pad"
                     maxLength={10}
@@ -189,27 +201,22 @@ export default function CreateProfileScreen() {
                     autoFocus
                   />
                 )}
-                {step === 2 && expecting ? (
-                  <View className="mt-3">
-                    {fromLmp && dueDate(dobInput) ? (
-                      <Text className="mb-2 font-bodySemibold text-[14px] text-ink">
-                        {t("onb_lmp_result", { date: dobInputFromKey(dueDate(dobInput)!) })}
-                      </Text>
-                    ) : null}
-                    <Pressable
-                      onPress={() => {
-                        setFromLmp((v) => !v);
-                        setDobInput("");
+                {step === "date" && kind === "expecting" && (
+                  <View>
+                    <DueMonthPicker
+                      value={dueMonth}
+                      onChange={(m) => {
+                        setDueMonth(m);
                         setError(null);
                       }}
-                      accessibilityRole="button"
-                      hitSlop={8}
-                      className="self-start"
-                    >
-                      <Text className="font-bodyMedium text-[13.5px] text-olive underline">{t(fromLmp ? "onb_due_toggle" : "onb_lmp_toggle")}</Text>
-                    </Pressable>
+                    />
+                    {error ? (
+                      <Text accessibilityRole="alert" className="mt-3 font-body text-[13px] text-orange">
+                        {error}
+                      </Text>
+                    ) : null}
                   </View>
-                ) : null}
+                )}
               </View>
             </MotiView>
           ) : (
@@ -228,19 +235,15 @@ export default function CreateProfileScreen() {
           )}
         </View>
 
-        <View className="px-6 pb-6">
-          <PrimaryButton
-            label={step < 3 ? t("create_profile_continue") : t("create_profile_create_account")}
-            onPress={step < 3 ? handleNext : handleFinish}
-          />
-        </View>
+        {step !== "kind" ? (
+          <View className="px-6 pb-6">
+            <PrimaryButton
+              label={step !== "done" ? t("create_profile_continue") : t("create_profile_create_account")}
+              onPress={step !== "done" ? handleNext : handleFinish}
+            />
+          </View>
+        ) : null}
       </KeyboardSafeView>
     </SafeAreaView>
   );
-}
-
-/** "2027-05-22" → "22.05.2027". */
-function dobInputFromKey(key: string): string {
-  const [y, m, d] = key.split("-");
-  return `${d}.${m}.${y}`;
 }

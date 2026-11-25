@@ -3,9 +3,10 @@ import { Pressable, Text, View } from "react-native";
 import { BottomSheet } from "@/components/ui/BottomSheet";
 import { FormField } from "@/components/baby/FormField";
 import { useTranslation } from "@/lib/i18n/LanguageContext";
-import { dueFromLmpInput, formatDobInput, parseDobInput, parseDueInput } from "@/lib/babyProfile";
+import { dueFromMonth, formatDobInput, parseDobInput, type DueMonth } from "@/lib/babyProfile";
 import { haptics } from "@/lib/haptics";
 import { addChildAndSwitch, childErrorMessage } from "@/components/children/childActions";
+import { DueMonthPicker } from "@/components/children/DueMonthPicker";
 
 /** Fëmija i ri: emri dhe datëlindja. I dyti pa Premium hap dritaren e Premium-it (`onPremium`). */
 export function AddChildSheet({ visible, onClose, onPremium }: { visible: boolean; onClose: () => void; onPremium: () => void }) {
@@ -16,23 +17,22 @@ export function AddChildSheet({ visible, onClose, onPremium }: { visible: boolea
   const [busy, setBusy] = useState(false);
   // "Ka lindur" (datëlindja) ose "Pritet" (data e pritur e lindjes, shtatzënia).
   const [kind, setKind] = useState<"born" | "expecting">("born");
-  // "S'e di datën?": dita e parë e menstruacioneve të fundit, data e pritur llogaritet (+280 ditë).
-  const [fromLmp, setFromLmp] = useState(false);
-  const dueDate = fromLmp ? dueFromLmpInput(dob) : parseDueInput(dob);
+  // "Pritet": vetëm muaji i pritur, se ditën e saktë s'e di askush.
+  const [dueMonth, setDueMonth] = useState<DueMonth | null>(null);
 
   function close() {
     setName("");
     setDob("");
     setError(null);
     setKind("born");
-    setFromLmp(false);
+    setDueMonth(null);
     onClose();
   }
 
   async function save() {
-    const date = kind === "born" ? parseDobInput(dob) : dueDate;
+    const date = kind === "born" ? parseDobInput(dob) : dueMonth ? dueFromMonth(dueMonth) : null;
     if (!date) {
-      setError(t("children_err_date"));
+      setError(t(kind === "born" ? "children_err_date" : "onb_due_month_required"));
       return;
     }
     setBusy(true);
@@ -68,7 +68,7 @@ export function AddChildSheet({ visible, onClose, onPremium }: { visible: boolea
               key={k}
               onPress={() => {
                 setKind(k);
-                setFromLmp(false);
+                setError(null);
               }}
               accessibilityRole="tab"
               accessibilityState={{ selected: kind === k }}
@@ -81,33 +81,27 @@ export function AddChildSheet({ visible, onClose, onPremium }: { visible: boolea
           ))}
         </View>
         <FormField label={t("children_name_label")} placeholder={t("children_name_ph")} value={name} onChangeText={setName} autoCapitalize="words" />
-        <FormField
-          label={t(kind === "born" ? "children_dob_label" : fromLmp ? "onb_lmp_label" : "children_due_label")}
-          placeholder={t("children_dob_ph")}
-          value={dob}
-          onChangeText={(v) => setDob(formatDobInput(v))}
-          keyboardType="number-pad"
-          maxLength={10}
-        />
-        {kind === "expecting" ? (
-          <View>
-            {fromLmp && dueDate ? (
-              <Text className="mb-2 font-bodySemibold text-[14px] text-ink">{t("onb_lmp_result", { date: dueDate.split("-").reverse().join(".") })}</Text>
-            ) : null}
-            <Pressable
-              onPress={() => {
-                setFromLmp((v) => !v);
-                setDob("");
+        {kind === "born" ? (
+          <FormField
+            label={t("children_dob_label")}
+            placeholder={t("children_dob_ph")}
+            value={dob}
+            onChangeText={(v) => setDob(formatDobInput(v))}
+            keyboardType="number-pad"
+            maxLength={10}
+          />
+        ) : (
+          <View className="gap-2">
+            <Text className="font-bodyMedium text-[13.5px] text-ink-soft">{t("onb_due_month_title")}</Text>
+            <DueMonthPicker
+              value={dueMonth}
+              onChange={(m) => {
+                setDueMonth(m);
                 setError(null);
               }}
-              accessibilityRole="button"
-              hitSlop={8}
-              className="self-start"
-            >
-              <Text className="font-bodyMedium text-[13.5px] text-olive underline">{t(fromLmp ? "onb_due_toggle" : "onb_lmp_toggle")}</Text>
-            </Pressable>
+            />
           </View>
-        ) : null}
+        )}
         {error ? (
           <Text accessibilityRole="alert" className="font-body text-[13px] text-orange">
             {error}

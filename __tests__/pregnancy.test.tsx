@@ -11,7 +11,7 @@ import CreateProfile from "@/app/(auth)/create-profile";
 import { NowCard } from "@/components/baby/NowCard";
 import { PregnancyHome } from "@/components/home/PregnancyHome";
 import { pregnancyProgress } from "@/lib/age/engine";
-import { dueFromLmpInput, getPendingProfile, parseDueInput } from "@/lib/babyProfile";
+import { dueFromLmpInput, dueFromMonth, dueMonthOptions, getPendingProfile, parseDueInput } from "@/lib/babyProfile";
 import { __resetChildrenStoreForTests } from "@/lib/children/store";
 
 const NOW = new Date(2026, 9, 14, 12, 0);
@@ -52,6 +52,18 @@ describe("java e shtatzënisë", () => {
     expect(dueFromLmpInput("15.10.2026", NOW)).toBeNull();
     expect(dueFromLmpInput("31.02.2026", NOW)).toBeNull();
   });
+
+  it("vetëm muaji: 10 muaj nga ky; data = mesi i muajit, ose sot kur mesi ka kaluar", () => {
+    const opts = dueMonthOptions(NOW);
+    expect(opts).toHaveLength(10);
+    expect(opts[0]).toEqual({ year: 2026, month: 9 });
+    expect(opts[9]).toEqual({ year: 2027, month: 6 });
+    expect(dueFromMonth({ year: 2027, month: 2 }, NOW)).toBe("2027-03-15");
+    expect(dueFromMonth({ year: 2026, month: 9 }, NOW)).toBe("2026-10-15");
+    expect(dueFromMonth({ year: 2026, month: 9 }, new Date(2026, 9, 20))).toBe("2026-10-20");
+    for (const m of opts) expect(dueFromMonth(m, NOW)).not.toBeNull();
+    expect(dueFromMonth({ year: 2027, month: 9 }, NOW)).toBeNull();
+  });
 });
 
 describe("kreu gjatë shtatzënisë", () => {
@@ -77,7 +89,7 @@ describe("kreu gjatë shtatzënisë", () => {
     await settle();
     const text = visibleText(r.root);
     expect(text).toContain("Java 20 e shtatzënisë");
-    expect(text).toContain("140 ditë deri në lindje");
+    expect(text).toContain("Rreth 140 ditë deri në lindje");
     expect(r.root.findAll((n) => n.type === NowCard)).toHaveLength(0);
     expect(text).not.toContain("Ditari");
   });
@@ -100,21 +112,39 @@ describe("kreu gjatë shtatzënisë", () => {
 });
 
 describe("onboarding-u", () => {
-  it("“Pres bebe”: pyet datën e pritur dhe e ruan për krijimin e fëmijës", async () => {
+  it("“Pres bebe”: pyet vetëm muajin e pritur dhe e ruan për krijimin e fëmijës", async () => {
     const r = await renderScreen(<CreateProfile />);
     const type = async (v: string) => act(async () => { r.root.findByType(TextInput).props.onChangeText(v); });
+    await press(r.root, "Pres bebe");
     await type("Bebi");
     await press(r.root, "Vazhdo");
     await type("Mami");
     await press(r.root, "Vazhdo");
-    await press(r.root, "Pres bebe");
-    expect(visibleText(r.root)).toEqual(expect.arrayContaining(["Kur pritet bebi?", "Data e pritur e lindjes"]));
-    const due = new Date();
-    due.setMonth(due.getMonth() + 3);
-    await type(`${pad(due.getDate())}${pad(due.getMonth() + 1)}${due.getFullYear()}`);
+    expect(visibleText(r.root)).toContain("Në cilin muaj pritet bebi?");
+    expect(r.root.findAllByType(TextInput)).toHaveLength(0);
+    // Pa muaj s'kalohet.
+    await press(r.root, "Vazhdo");
+    expect(visibleText(r.root)).toContain("Zgjidh muajin për të vazhduar.");
+    const m = dueMonthOptions()[3];
+    const months = "Janar,Shkurt,Mars,Prill,Maj,Qershor,Korrik,Gusht,Shtator,Tetor,Nëntor,Dhjetor".split(",");
+    await act(async () => {
+      r.root.find((n) => n.props.accessibilityLabel === `${months[m.month]} ${m.year}` && typeof n.props.onPress === "function").props.onPress();
+    });
     await press(r.root, "Vazhdo");
     await press(r.root, "Krijo llogarinë");
     const pending = await getPendingProfile();
-    expect(pending).toMatchObject({ babyName: "Bebi", babyDob: null, babyDueDate: ymd(due) });
+    expect(pending).toMatchObject({ babyName: "Bebi", babyDob: null, babyDueDate: `${m.year}-${pad(m.month + 1)}-15` });
+  });
+
+  it("“S'kam ende fëmijë”: vetëm emri i prindit, pa bebe dhe pa data", async () => {
+    const r = await renderScreen(<CreateProfile />);
+    expect(visibleText(r.root)).toEqual(expect.arrayContaining(["Kam bebe ose fëmijë", "Pres bebe", "S'kam ende fëmijë"]));
+    await press(r.root, "S'kam ende fëmijë");
+    expect(visibleText(r.root)).toContain("Si quhesh?");
+    await act(async () => { r.root.findByType(TextInput).props.onChangeText("Gjyshja"); });
+    await press(r.root, "Vazhdo");
+    await press(r.root, "Krijo llogarinë");
+    const pending = await getPendingProfile();
+    expect(pending).toEqual({ parentName: "Gjyshja", babyName: "", babyDob: null, babyDueDate: null });
   });
 });

@@ -43,6 +43,8 @@ import { PostpartumCard } from "@/components/parent/PostpartumCard";
 import { ChildSwitcher } from "@/components/children/ChildSwitcher";
 import { ChildHome } from "@/components/home/ChildHome";
 import { PregnancyHome } from "@/components/home/PregnancyHome";
+import { NoChildHome } from "@/components/home/NoChildHome";
+import { useChildren } from "@/lib/children/store";
 import { useActiveChild } from "@/lib/age/useActiveChild";
 import { hasFeature, type Feature } from "@/lib/age/stageConfig";
 import { setNightOverride, useNightMode } from "@/lib/baby/nightMode";
@@ -160,6 +162,7 @@ export default function BabyProfileScreen() {
   useScrollToTop(scrollRef);
   // Kreu sipas fazës së fëmijës aktiv (lib/age/stageConfig.ts): çka s'vlen për moshën, fshihet. Pa datë: si më parë.
   const ageInfo = useActiveChild();
+  const childrenMode = useChildren().mode;
   const can = (feature: Feature) => hasFeature(ageInfo.stage, feature);
   const trackers = can("trackers");
   const visibleTabs = trackers ? TABS : (["today"] as const);
@@ -628,6 +631,18 @@ export default function BabyProfileScreen() {
     );
   }
 
+
+  // "S'kam ende fëmijë": serveri u pyet dhe s'ka asnjë fëmijë, emër, datë apo shënim. Kreu pa pjesët e bebit (as
+  // mënyra e natës). Pa përgjigje nga serveri, ose me shënime të vjetra, mbetet kreu i zakonshëm.
+  const noChild =
+    role !== "viewer" &&
+    childrenMode !== "unknown" &&
+    !ageInfo.childId &&
+    !profile.babyName &&
+    !profile.babyDob &&
+    !ageInfo.child.dueDate &&
+    feedings.length + sleeps.length + diapers.length === 0;
+  if (noChild) return <NoChildHome greeting={`${greeting()}${profile.parentName ? `, ${profile.parentName.split(" ")[0]}` : ""}`} />;
 
   if (night.active && role !== "viewer") return <NightMode />;
 

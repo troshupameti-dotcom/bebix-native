@@ -1,7 +1,7 @@
 import { useCallback, useState } from "react";
 import { ActivityIndicator, Alert, Pressable, ScrollView, Text, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
-import { useFocusEffect } from "expo-router";
+import { useFocusEffect, useLocalSearchParams } from "expo-router";
 import { Lock, Plus } from "lucide-react-native";
 import { BackButton } from "@/components/ui/BackButton";
 import { AddChildSheet } from "@/components/children/AddChildSheet";
@@ -37,7 +37,9 @@ export default function ChildrenScreen() {
   const { showToast } = useToast();
   const me = useCurrentUserId();
   const { mode, children, activeChildId } = useChildren();
-  const [adding, setAdding] = useState(false);
+  // `?add=1` (nga kreu pa fëmijë): dritarja "Fëmijë i ri" hapet menjëherë.
+  const { add } = useLocalSearchParams<{ add?: string }>();
+  const [adding, setAdding] = useState(add === "1");
   const [premium, setPremium] = useState(false);
   const [busy, setBusy] = useState<string | null>(null);
 
